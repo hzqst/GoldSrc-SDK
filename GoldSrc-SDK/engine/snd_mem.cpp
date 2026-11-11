@@ -534,8 +534,8 @@ void ResampleSfx( sfx_t* sfx, int inrate, int inwidth, byte* data, int datasize 
 	int srcsample;
 	float stepscale;
 	int i;
-	int sample, samplefrac, fracstep;
-	unsigned int lastsample;
+	int sample, fracstep;
+	std::uint64_t samplefrac, lastsample;
 	sfxcache_t* sc;
 
 	sc = (sfxcache_t*)Cache_Check( &sfx->cache );
@@ -587,12 +587,15 @@ void ResampleSfx( sfx_t* sfx, int inrate, int inwidth, byte* data, int datasize 
 
 	if ( outcount > 0 )
 	{
-		lastsample = (unsigned int)( outcount - 1 ) * (unsigned int)fracstep;
-		if ( lastsample > INT_MAX || ( lastsample >> 8 ) >= (unsigned int)datasize )
+		lastsample = (std::uint64_t)( outcount - 1 ) * (unsigned int)fracstep;
+		// Source positions index complete samples, not bytes. Keep the product
+		// wide so a wrapped count cannot bypass this check.
+		if ( datasize < inwidth || lastsample > INT_MAX ||
+			( lastsample >> 8 ) >= (unsigned int)( datasize / inwidth ) )
 		{
 			Con_DPrintf( "ResampleSfx: %s has invalid resample count: %d step: %d datasize: %d\n", sfx->name, outcount,
 				fracstep, datasize );
-			memset( sc->data, 0, outcount );
+			memset( sc->data, 0, (size_t)outcount * sc->width );
 			return;
 		}
 	}
@@ -602,7 +605,7 @@ void ResampleSfx( sfx_t* sfx, int inrate, int inwidth, byte* data, int datasize 
 
 	for ( i = 0; i < outcount; i++ )
 	{
-		srcsample = samplefrac >> 8;
+		srcsample = (int)( samplefrac >> 8 );
 		samplefrac += fracstep;
 
 		if ( inwidth == 2 )
