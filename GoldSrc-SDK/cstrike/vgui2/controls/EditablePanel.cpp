@@ -547,7 +547,7 @@ void EditablePanel::OnSizeChanged( int wide, int tall )
 	for ( int i = 0; i < GetChildCount(); i++ )
 	{
 		Panel* child = GetChild( i );
-		if ( !child )
+		if ( !child || child->IsPopup() )
 			continue;
 
 		int x, y, w, t;
