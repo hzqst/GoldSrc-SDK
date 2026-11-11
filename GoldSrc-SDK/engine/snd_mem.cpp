@@ -37,14 +37,26 @@ WAV loading
 byte* data_p;
 int iff_chunk_len;
 
+static constexpr int WAV_CHUNK_HEADER_BYTES = 8;
+static constexpr int WAV_RIFF_HEADER_BYTES = 12;
+static constexpr int WAV_PCM_FORMAT_BYTES = 16;
+static constexpr int WAV_CUE_BYTES = 28;
+static constexpr int WAV_LOOP_LIST_BYTES = 24;
+static constexpr int WAV_MAX_CHUNK_BYTES = 100 * 1024 * 1024;
+
+static bool WavChunkHasBytes( int bytes )
+{
+	return data_p && bytes >= 0 && iff_chunk_len >= bytes &&
+		iff_end - data_p >= WAV_CHUNK_HEADER_BYTES &&
+		bytes <= iff_end - data_p - WAV_CHUNK_HEADER_BYTES;
+}
+
 int GetLittleLong()
 {
 	int val;
 
-	val = data_p[0];
-	val += data_p[1] << 8;
-	val += data_p[2] << 16;
-	val += data_p[3] << 24;
+	val = (int)( (std::uint32_t)data_p[0] | ( (std::uint32_t)data_p[1] << 8 ) |
+		( (std::uint32_t)data_p[2] << 16 ) | ( (std::uint32_t)data_p[3] << 24 ) );
 	data_p += 4;
 	return val;
 }
@@ -62,20 +74,40 @@ void FindNextChunk( char* name )
 {
 	while ( last_chunk < iff_end )
 	{
+		if ( iff_end - last_chunk < WAV_CHUNK_HEADER_BYTES )
+			break;
 		data_p = last_chunk + 4;
 		iff_chunk_len = GetLittleLong();
 		if ( iff_chunk_len < 0 )
 			break;
 
-		if ( !_stricmp( name, "LIST" ) && data_p + iff_chunk_len > iff_end )
-			break;
-		if ( iff_chunk_len > 100 * 1024 * 1024 )
+		if ( iff_chunk_len > WAV_MAX_CHUNK_BYTES )
 			break;
 
-//		if (iff_chunk_len > 1024*1024)
-//			Sys_Error ("FindNextChunk: %i length is past the 1 meg sanity limit", iff_chunk_len);
-		data_p -= 8;
-		last_chunk = data_p + 8 + ( ( iff_chunk_len + 1 ) & ~1 );
+		data_p = last_chunk;
+		auto remaining = iff_end - data_p - WAV_CHUNK_HEADER_BYTES;
+		last_chunk = iff_end;
+		if ( iff_chunk_len <= remaining )
+		{
+			last_chunk = data_p + WAV_CHUNK_HEADER_BYTES + iff_chunk_len;
+			if ( ( iff_chunk_len & 1 ) && last_chunk < iff_end )
+			{
+				// Shipped Cool Edit WAVs such as death6.wav can omit the data pad.
+				bool unpaddedList = false;
+				if ( !Q_strncmp( (char*)data_p, "data", 4 ) &&
+					iff_end - last_chunk >= WAV_CHUNK_HEADER_BYTES &&
+					!Q_strncmp( (char*)last_chunk, "LIST", 4 ) )
+				{
+					byte* chunk = data_p;
+					data_p = last_chunk + 4;
+					int listBytes = GetLittleLong();
+					data_p = chunk;
+					unpaddedList = listBytes >= 4 && listBytes <= iff_end - last_chunk - WAV_CHUNK_HEADER_BYTES;
+				}
+				if ( !unpaddedList )
+					++last_chunk;
+			}
+		}
 		if ( !Q_strncmp( (char*)data_p, name, 4 ) )
 			return;
 	}
@@ -361,7 +393,7 @@ qboolean GetWavinfo( char* name, byte* wav, int wavlength, wavinfo_t* info )
 {
 	int samples;
 
-	if ( !wav || !info )
+	if ( !name || !wav || !info || wavlength < WAV_RIFF_HEADER_BYTES )
 		return FALSE;
 
 	Q_memset( info, 0, sizeof( *info ) );
@@ -371,18 +403,23 @@ qboolean GetWavinfo( char* name, byte* wav, int wavlength, wavinfo_t* info )
 
 	// find "RIFF" chunk
 	FindChunk( "RIFF" );
-	if ( !data_p || Q_strncmp( (char*)( data_p + 8 ), "WAVE", 4 ) )
+	if ( !WavChunkHasBytes( 4 ) || Q_strncmp( (char*)( data_p + 8 ), "WAVE", 4 ) )
 	{
 		Con_Printf( "Missing RIFF/WAVE chunks\n" );
 		return FALSE;
 	}
+
+	byte* riffStart = data_p;
+	int riffLength = iff_chunk_len;
+	if ( riffLength < iff_end - data_p - WAV_CHUNK_HEADER_BYTES )
+		iff_end = data_p + WAV_CHUNK_HEADER_BYTES + riffLength;
 
 	// get "fmt " chunk
 	iff_data = data_p + 12;
 // DumpChunks ();
 
 	FindChunk( "fmt " );
-	if ( !data_p )
+	if ( !WavChunkHasBytes( WAV_PCM_FORMAT_BYTES ) || !WavChunkHasBytes( iff_chunk_len ) )
 	{
 		Con_Printf( "Missing fmt chunk\n" );
 		return FALSE;
@@ -398,8 +435,9 @@ qboolean GetWavinfo( char* name, byte* wav, int wavlength, wavinfo_t* info )
 	info->channels = GetLittleShort();
 	info->rate = GetLittleLong();
 	data_p += 4 + 2;
-	info->width = GetLittleShort() / 8;
-	if ( !info->width )
+	int bits = GetLittleShort();
+	info->width = bits / 8;
+	if ( ( bits != 8 && bits != 16 ) || info->rate <= 0 || info->channels <= 0 )
 	{
 		Con_Printf( "Invalid sample width\n" );
 		return FALSE;
@@ -409,17 +447,26 @@ qboolean GetWavinfo( char* name, byte* wav, int wavlength, wavinfo_t* info )
 	FindChunk( "cue " );
 	if ( data_p )
 	{
+		if ( !WavChunkHasBytes( WAV_CUE_BYTES ) || !WavChunkHasBytes( iff_chunk_len ) )
+			return FALSE;
 		data_p += 32;
 		info->loopstart = GetLittleLong();
+		if ( info->loopstart < 0 )
+			return FALSE;
 //		Con_Printf("loopstart=%d\n", sfx->loopstart);
 
 		// if the next chunk is a LIST chunk, look for a cue length marker
 		FindNextChunk( "LIST" );
-		if ( data_p && !Q_strncmp( (char*)( data_p + 28 ), "mark", 4 ) )
+		if ( data_p && !WavChunkHasBytes( iff_chunk_len ) )
+			return FALSE;
+		if ( WavChunkHasBytes( WAV_LOOP_LIST_BYTES ) && !Q_strncmp( (char*)( data_p + 28 ), "mark", 4 ) )
 		{
 			// this is not a proper parse, but it works with cooledit...
 			data_p += 24;
-			info->samples = info->loopstart + GetLittleLong(); // samples in loop
+			int loopSamples = GetLittleLong();
+			if ( loopSamples < 0 || loopSamples > INT_MAX - info->loopstart )
+				return FALSE;
+			info->samples = info->loopstart + loopSamples;
 		}
 	}
 	else
@@ -433,16 +480,26 @@ qboolean GetWavinfo( char* name, byte* wav, int wavlength, wavinfo_t* info )
 		return FALSE;
 	}
 
+	if ( name[0] != CHAR_STREAM && !WavChunkHasBytes( iff_chunk_len ) )
+		return FALSE;
+	if ( (std::uint64_t)( data_p - riffStart ) + WAV_CHUNK_HEADER_BYTES + (std::uint64_t)iff_chunk_len >
+		(std::uint64_t)riffLength + WAV_CHUNK_HEADER_BYTES )
+		return FALSE;
 	data_p += 4;
 	samples = GetLittleLong() / info->width;
 
 	if ( info->samples )
 	{
 		if ( samples < info->samples )
-			Sys_Error( "Sound %s has a bad loop length", name );
+		{
+			Con_Printf( "Sound %s has a bad loop length\n", name );
+			return FALSE;
+		}
 	}
 	else
 		info->samples = samples;
+	if ( info->loopstart >= info->samples )
+		return FALSE;
 
 	info->dataofs = (int)( data_p - wav );
 
