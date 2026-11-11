@@ -394,6 +394,7 @@ void				Mod_NeedCRC( const char* name, qboolean needed );
 void				Mod_FillInCRCInfo( qboolean trackCRC, int modelNumber );
 
 void				Mod_LoadBrushModel( model_t* model, void* buffer );
+void				Mod_CreateInlineModels( model_t* world );
 void				Mod_LoadAliasModel( model_t* model, void* buffer );
 void				Mod_LoadSpriteModel( model_t* model, void* buffer );
 void				Mod_LoadStudioModel( model_t* model, void* buffer );

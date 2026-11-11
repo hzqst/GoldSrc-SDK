@@ -5090,6 +5090,7 @@ int SV_SpawnServer( qboolean, char* mapName, char* startspot )
 		sv.active = 0;
 		return 0;
 	}
+	Mod_CreateInlineModels( sv.worldmodel );
 	Sequence_OnLevelLoad( mapName );
 	ContinueLoadingProgressBar( "Server", 4, 0.0f );
 	if ( gmodinfo.clientcrccheck )
