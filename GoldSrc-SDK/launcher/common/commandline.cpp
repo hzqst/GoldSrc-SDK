@@ -27,16 +27,13 @@
 #endif
 
 #define COMMAND_BUFFER_SIZE			4096
-#define PARAMETER_VALUE_LIMIT		128
 #define FORMATTED_INTEGER_LENGTH	64
 #define PARAMETER_FILE_MARK			( (char)'@' )
 
 #if defined(_WIN32)
 #define PARAMETER_FILE_BUFFER_SIZE	MAX_PATH
-#define PARAMETER_VALUE_BUFFER_SIZE	PARAMETER_VALUE_LIMIT
 #else
 #define PARAMETER_FILE_BUFFER_SIZE	COMMAND_BUFFER_SIZE
-#define PARAMETER_VALUE_BUFFER_SIZE	( PARAMETER_VALUE_LIMIT + 1 )
 #endif
 
 static bool IsCommandWhitespace( char character )
@@ -69,6 +66,7 @@ public:
 
 private:
 	char*	m_pszCmdLine;
+	std::string m_ParmValue;
 };
 
 static CCommandLine g_CmdLine;
@@ -231,7 +229,6 @@ void CCommandLine::CreateCmdLine( const char* commandLine )
 
 const char* CCommandLine::CheckParm( const char* parameter, char** value )
 {
-	static char parameterValue[PARAMETER_VALUE_BUFFER_SIZE];
 	if ( value )
 		*value = NULL;
 	if ( !m_pszCmdLine || !parameter || !*parameter )
@@ -248,9 +245,8 @@ const char* CCommandLine::CheckParm( const char* parameter, char** value )
 			const auto next = ReadToken( cursor );
 			if ( next.begin != next.end && !next.IsParameter() )
 			{
-				strncpy( parameterValue, next.value.c_str(), sizeof( parameterValue ) - 1 );
-				parameterValue[sizeof( parameterValue ) - 1] = '\0';
-				*value = parameterValue;
+				m_ParmValue = next.value;
+				*value = &m_ParmValue[0];
 			}
 		}
 		return token.begin;
