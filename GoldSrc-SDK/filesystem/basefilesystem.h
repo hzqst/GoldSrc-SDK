@@ -391,6 +391,7 @@ public:
 	bool FileInSearchPaths( const char* pSearchWildcard, const char* pFileName,
 			int minSearchPathID, int maxSearchPathID );
 	bool FindNextFileHelper( FindData_t* pFindData );
+	bool IsDuplicateFindDirectory( int searchPath, int limitedPathID ) const;
 
 	void AddPackFiles( const char* pPath );
 	bool AddPackFileFromPath( const char* pPath, const char* pakfile,
