@@ -95,35 +95,20 @@ const char* CCommandLine::GetCmdLine()
 #if !defined(_WIN32)
 void CCommandLine::CreateCmdLine( int argc, const char** argv )
 {
-	char commandLine[COMMAND_BUFFER_SIZE];
-	int index;
-
-	commandLine[0] = '\0';
-
-	for ( index = 0; index < argc; ++index )
+	std::string full;
+	for ( int i = 0; i < argc; ++i )
 	{
-		const char* argument = argv[index];
-
-		if ( strchr( argument, ' ' ) != NULL )
-		{
-			strcat( commandLine, "\"" );
-			strncat( commandLine, argument, COMMAND_BUFFER_SIZE );
-			strcat( commandLine, "\"" );
-		}
-		else
-		{
-			strncat( commandLine, argument, COMMAND_BUFFER_SIZE );
-		}
-
-		strcat( commandLine, " " );
+		if ( i )
+			full += ' ';
+		const char* argument = argv[i] ? argv[i] : "";
+		const bool quoted = !*argument || strpbrk( argument, " \t\r\n\v\f" );
+		if ( quoted )
+			full += '"';
+		full += argument;
+		if ( quoted )
+			full += '"';
 	}
-
-	if ( argc > 0 )
-	{
-		commandLine[strlen( commandLine ) - 1] = '\0';
-	}
-
-	CreateCmdLine( commandLine );
+	CreateCmdLine( full.c_str() );
 }
 #endif
 
