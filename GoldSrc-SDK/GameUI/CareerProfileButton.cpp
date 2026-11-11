@@ -31,7 +31,7 @@ CProfileButton::CProfileButton( CCareerProfileFrame* parent, const char* name,
 #endif
 		m_image[i] = vgui2::scheme()->GetImage( filename, false );
 	}
-	m_name[0] = 0;
+	m_name.clear();
 	m_active = false;
 	m_pParent = parent;
 }
@@ -45,8 +45,7 @@ CProfileButton::~CProfileButton()
 
 void CProfileButton::SetProfileName( const char* name )
 {
-	strncpy( m_name, name, sizeof( m_name ) );
-	m_name[sizeof( m_name ) - 1] = 0;
+	m_name = name;
 }
 
 void CProfileButton::OnMouseDoublePressed( vgui2::MouseCode mouseCode )
@@ -58,7 +57,7 @@ void CProfileButton::OnMouseDoublePressed( vgui2::MouseCode mouseCode )
 		vgui2::Button::OnMouseDoublePressed( mouseCode );
 		return;
 	}
-	m_pParent->OnCommand( UTIL_va( (char*)"SelectProfile %s", m_name ) );
+	m_pParent->OnCommand( ( "SelectProfile " + m_name ).c_str() );
 	m_pParent->OnCommand( "ResumeProfile" );
 }
 

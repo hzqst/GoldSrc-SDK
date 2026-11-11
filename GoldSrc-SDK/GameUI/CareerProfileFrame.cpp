@@ -22,6 +22,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
+#include <vector>
 
 #ifdef _WIN32
 #define CAREER_TEXTURE_PATH_MAX	_MAX_PATH
@@ -170,35 +171,29 @@ int CCareerProfileFrame::PopulateProfiles()
 {
 	m_pProfileList->DeleteAllItems();
 	m_profiles.RemoveAll();
-	m_name[0] = 0;
+	m_name.clear();
 	ProfileVector profiles = TheCareerGame->BuildProfileList();
 	int latestTime = 0;
 	for ( ProfileVector::iterator it = profiles.begin(); it != profiles.end(); ++it )
 	{
 		CCareerProfileData* profile = *it;
-		wchar_t profileName[62];
-		vgui2::localize()->ConvertANSIToUnicode( profile->name.c_str(), profileName, sizeof( profileName ) );
-		CProfileButton* button = new CProfileButton( this, "ProfileButton", profileName, profile->medals );
+		std::vector<wchar_t> profileName( profile->name.size() + 1, L'\0' );
+		vgui2::localize()->ConvertANSIToUnicode( profile->name.c_str(), profileName.data(),
+			(int)( profileName.size() * sizeof( wchar_t ) ) );
+		CProfileButton* button = new CProfileButton( this, "ProfileButton", profileName.data(), profile->medals );
 		button->SetProfileName( profile->name.c_str() );
-		char command[62];
-#ifdef _WIN32
-		_snprintf( command, sizeof( command ), "SelectProfileAndFocus %s", profile->name.c_str() );
-#else
-		snprintf( command, sizeof( command ), "SelectProfileAndFocus %s", profile->name.c_str() );
-#endif
-		button->SetCommand( command );
+		button->SetCommand( ( "SelectProfileAndFocus " + profile->name ).c_str() );
 		button->AddActionSignalTarget( this );
 		m_pProfileList->AddItem( button );
 		m_profiles.AddElement( button );
 		if ( profile->filetime >= latestTime )
 		{
-			strncpy( m_name, profile->name.c_str(), sizeof( m_name ) );
-			m_name[sizeof( m_name ) - 1] = 0;
+			m_name = profile->name;
 			latestTime = profile->filetime;
 		}
 		delete profile;
 	}
-	UpdateSelectedProfile( m_name );
+	UpdateSelectedProfile( m_name.c_str() );
 	m_pResumeButton->SetEnabled( !profiles.empty() );
 	m_pDeleteButton->SetEnabled( !profiles.empty() );
 	m_pProfileList->SetSliderYOffset( 2 );
@@ -227,10 +222,9 @@ void CCareerProfileFrame::ChooseDifficulty()
 
 void CCareerProfileFrame::UpdateSelectedProfile( const char* profile )
 {
-	strncpy( m_name, profile, sizeof( m_name ) );
-	m_name[sizeof( m_name ) - 1] = 0;
+	m_name = profile;
 	for ( int i = 0; i < m_profiles.GetCount(); i++ )
-		m_profiles[i]->SetActive( !strcmp( m_name, m_profiles[i]->GetProfileName() ) );
+		m_profiles[i]->SetActive( m_name == m_profiles[i]->GetProfileName() );
 }
 
 void CCareerProfileFrame::PopulateMissionPacks()
@@ -298,12 +292,14 @@ void CCareerProfileFrame::OnCommand( const char* command )
 		bool exists = false;
 		for ( ProfileVector::iterator it = profiles.begin(); it != profiles.end(); ++it )
 		{
-			if ( !stricmp( ( *it )->name.c_str(), engine->pfnGetCvarString( (char*)"name" ) ) )
+			if ( ( *it )->name == engine->pfnGetCvarString( (char*)"name" ) )
 				exists = true;
+			delete *it;
 		}
 		if ( !exists )
 		{
-			TheCareerGame->CreateBlankProfile();
+			if ( !TheCareerGame->CreateBlankProfile() )
+				return;
 			PopulateProfiles();
 			UpdateSelectedProfile( engine->pfnGetCvarString( (char*)"name" ) );
 			ChooseDifficulty();
@@ -319,7 +315,8 @@ void CCareerProfileFrame::OnCommand( const char* command )
 	}
 	else if ( !stricmp( command, "ReallyCreateProfile" ) )
 	{
-		TheCareerGame->CreateBlankProfile();
+		if ( !TheCareerGame->CreateBlankProfile() )
+			return;
 		PopulateProfiles();
 		UpdateSelectedProfile( engine->pfnGetCvarString( (char*)"name" ) );
 		ChooseDifficulty();
@@ -343,53 +340,55 @@ void CCareerProfileFrame::OnCommand( const char* command )
 	}
 	else if ( !strcmp( command, "ResumeProfile" ) )
 	{
-		if ( !m_name[0] )
+		if ( m_name.empty() )
 		{
 			OnCommand( "NewProfile" );
 			return;
 		}
-		engine->Cvar_Set( (char*)"name", m_name );
+		engine->Cvar_Set( (char*)"name", const_cast<char*>( m_name.c_str() ) );
 		ChooseDifficulty();
 	}
-	else if ( !strcmp( command, "DeleteProfile" ) && m_name[0] )
+	else if ( !strcmp( command, "DeleteProfile" ) && !m_name.empty() )
 	{
-		wchar_t name[256];
-		wchar_t text[256];
-		vgui2::localize()->ConvertANSIToUnicode( m_name, name, sizeof( name ) );
-		vgui2::localize()->ConstructString( text, sizeof( text ),
-			vgui2::localize()->Find( "#Career_DeleteProfileText" ), 1, name );
+		std::vector<wchar_t> name( m_name.size() + 1, L'\0' );
+		vgui2::localize()->ConvertANSIToUnicode( m_name.c_str(), name.data(), (int)( name.size() * sizeof( wchar_t ) ) );
+		wchar_t* format = vgui2::localize()->Find( "#Career_DeleteProfileText" );
+		if ( !format )
+			format = const_cast<wchar_t*>( L"Delete %s1?" );
+		std::vector<wchar_t> text( wcslen( format ) + name.size(), L'\0' );
+		vgui2::localize()->ConstructString( text.data(), (int)( text.size() * sizeof( wchar_t ) ), format, 1, name.data() );
 		CCareerQueryBox* box = new CCareerQueryBox( vgui2::localize()->Find( "#Career_DeleteProfileTitle" ),
-			text, "CareerBoxDelete", this );
+			text.data(), "CareerBoxDelete", this );
 		box->SetCancelButtonAsDefault();
-		box->SetLabelText( text );
+		box->SetLabelText( text.data() );
 		box->AddActionSignalTarget( this );
 		box->ShowWindow();
 	}
-	else if ( !strcmp( command, "ReallyDeleteProfile" ) && m_name[0] )
+	else if ( !strcmp( command, "ReallyDeleteProfile" ) && !m_name.empty() )
 	{
-		TheCareerGame->DeleteProfile( m_name );
-		m_name[0] = 0;
+		TheCareerGame->DeleteProfile( m_name.c_str() );
+		m_name.clear();
 		PopulateProfiles();
 	}
-	else if ( !strcmp( command, "ChooseDifficulty0" ) && m_name[0] )
+	else if ( !strcmp( command, "ChooseDifficulty0" ) && !m_name.empty() )
 	{
 		engine->Cvar_SetValue( (char*)"cl_career_difficulty", 0 );
 		if ( HandleDifficulty( CAREER_DIFFICULTY_EASY ) )
 			Close();
 	}
-	else if ( !strcmp( command, "ChooseDifficulty1" ) && m_name[0] )
+	else if ( !strcmp( command, "ChooseDifficulty1" ) && !m_name.empty() )
 	{
 		engine->Cvar_SetValue( (char*)"cl_career_difficulty", 1 );
 		if ( HandleDifficulty( CAREER_DIFFICULTY_NORMAL ) )
 			Close();
 	}
-	else if ( !strcmp( command, "ChooseDifficulty2" ) && m_name[0] )
+	else if ( !strcmp( command, "ChooseDifficulty2" ) && !m_name.empty() )
 	{
 		engine->Cvar_SetValue( (char*)"cl_career_difficulty", 2 );
 		if ( HandleDifficulty( CAREER_DIFFICULTY_HARD ) )
 			Close();
 	}
-	else if ( !strcmp( command, "ChooseDifficulty3" ) && m_name[0] )
+	else if ( !strcmp( command, "ChooseDifficulty3" ) && !m_name.empty() )
 	{
 		engine->Cvar_SetValue( (char*)"cl_career_difficulty", 3 );
 		if ( HandleDifficulty( CAREER_DIFFICULTY_EXPERT ) )
