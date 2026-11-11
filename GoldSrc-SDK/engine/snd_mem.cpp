@@ -10,6 +10,7 @@
 #include <climits>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 
 #define CHAR_STREAM		'*'		// as one of 1st 2 chars in name, indicates streaming wav data
 #define CHAR_USERVOX	'?'		// as one of 1st 2 chars in name, indicates user realtime voice data
@@ -21,6 +22,7 @@ extern cvar_t fs_precache_timings;
 sfxcache_t* VoiceSE_GetSFXCache( sfx_t* sound );
 qboolean GetWavinfo( char* name, byte* wav, int length, wavinfo_t* info );
 void ResampleSfx( sfx_t* sound, int inputRate, int inputWidth, byte* data, int dataBytes );
+extern "C" void Wavstream_Close( int index );
 
 byte* iff_data;
 byte* iff_end;
@@ -144,6 +146,11 @@ sfxcache_t* S_LoadStreamSound( sfx_t* s, channel_t* ch )
 	stream = &wavstreams[ch - channels];
 	if ( sc && stream->hFile )
 		return sc;
+	const auto closeStream = [ch]( wavstream_t* )
+	{
+		Wavstream_Close( (int)( ch - channels ) );
+	};
+	std::unique_ptr<wavstream_t, decltype( closeStream )> streamCleanup( stream, closeStream );
 
 	// load it in
 	Q_strcpy( namebuffer, "sound" );
@@ -216,6 +223,7 @@ sfxcache_t* S_LoadStreamSound( sfx_t* s, channel_t* ch )
 	else
 		ResampleSfx( s, info.rate, info.width, data, cbread );
 
+	(void)streamCleanup.release();
 	return sc;
 }
 
@@ -298,6 +306,13 @@ sfxcache_t* S_LoadSound( sfx_t* s, channel_t* ch )
 		}
 	}
 
+	const auto releaseReadBuffer = [data]( void* file )
+	{
+		FS_ReleaseReadBuffer( file, data );
+		FS_Close( file );
+	};
+	std::unique_ptr<void, decltype( releaseReadBuffer )> fileCleanup( hFile, releaseReadBuffer );
+
 	if ( !GetWavinfo( s->name, data, len, &info ) )
 	{
 		Con_DPrintf( "Failed loading %s\n", s->name );
@@ -366,11 +381,7 @@ sfxcache_t* S_LoadSound( sfx_t* s, channel_t* ch )
 
 	ResampleSfx( s, sc->speed, sc->width, data + info.dataofs, len - info.dataofs );
 
-	if ( hFile )
-	{
-		FS_ReleaseReadBuffer( hFile, data );
-		FS_Close( hFile );
-	}
+	fileCleanup.reset();
 
 	if ( fs_precache_timings.value )
 	{
