@@ -1867,9 +1867,10 @@ void ParseSaveTables( SAVERESTOREDATA* pSaveData, SAVE_HEADER* pHeader, int upda
 
 		if ( updateGlobals )
 		{
-			sv.lightstyles[light.index] = (char*)Hunk_Alloc( Q_strlen( light.style ) + 1 );
-			Q_strncpy( sv.lightstyles[light.index], light.style, 3 );
-			sv.lightstyles[light.index][3] = '\0';
+			light.style[sizeof( light.style ) - 1] = '\0';
+			int styleLength = Q_strlen( light.style );
+			sv.lightstyles[light.index] = (char*)Hunk_Alloc( styleLength + 1 );
+			Q_memcpy( sv.lightstyles[light.index], light.style, styleLength + 1 );
 		}
 	}
 }
