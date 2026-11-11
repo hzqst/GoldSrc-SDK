@@ -1,3 +1,5 @@
+#include "sys_argv.h"
+
 #if defined( SW_RENDERER )
 
 #include <winsock2.h>
@@ -365,29 +367,8 @@ void Sys_ShutdownArgv()
 void Sys_InitArgv( char* commandLine )
 {
 	argv[0] = (char*)com_empty_string;
-	int argc = 1;
-	host_parms.argc = 1;
-	while ( *commandLine != '\0' && argc < MAX_NUM_ARGVS )
-	{
-		if ( (unsigned char)( *commandLine - 33 ) > 0x5D )
-		{
-			char character;
-			do
-			{
-				character = *++commandLine;
-			} while ( (unsigned char)( *commandLine - 33 ) > 0x5D && character != '\0' );
-			if ( character == '\0' )
-				break;
-		}
-
-		host_parms.argc = ++argc;
-		argv[argc - 1] = commandLine;
-		while ( (unsigned char)( *commandLine - 33 ) <= 0x5D )
-			++commandLine;
-		if ( *commandLine == '\0' )
-			break;
-		*commandLine++ = '\0';
-	}
+	int argc = Sys_ParseArgv( commandLine, argv, MAX_NUM_ARGVS );
+	host_parms.argc = argc;
 
 	host_parms.argv = argv;
 	COM_InitArgv( argc, argv );
@@ -989,8 +970,6 @@ bool CGameUIFuncs::IsConnectedToVACSecureServer()
 
 namespace
 {
-constexpr unsigned char kCommandTokenSpan = 0x5D;
-constexpr int kArgumentLimit = 49;
 constexpr int kFourteenMegabytes = 0xE00000;
 constexpr int kFourteenMegabytesMinusOne = 0xDFFFFF;
 constexpr int kOneHundredTwentyEightMegabytes = 0x8000000;
@@ -1012,11 +991,6 @@ constexpr int kCdKeyRandomMaximum = 0x7FFFFFFF;
 #endif
 constexpr float kBytesToMegabytes = 0.00000095367431640625f;
 
-bool IsCommandTokenCharacter( char character )
-{
-	unsigned char span = static_cast<unsigned char>( static_cast<unsigned char>( character ) - 33 );
-	return span <= kCommandTokenSpan;
-}
 }
 
 class IDedicatedExports : public IBaseInterface
@@ -1272,29 +1246,8 @@ void Sys_ShutdownArgv()
 void Sys_InitArgv( char* commandLine )
 {
 	argv[0] = const_cast<char*>( com_empty_string );
-	int argc = 1;
-	host_parms.argc = 1;
-	while ( *commandLine != '\0' && argc <= kArgumentLimit )
-	{
-		if ( !IsCommandTokenCharacter( *commandLine ) )
-		{
-			char character;
-			do
-			{
-				character = *++commandLine;
-			} while ( !IsCommandTokenCharacter( *commandLine ) && character != '\0' );
-			if ( character == '\0' )
-				break;
-		}
-
-		host_parms.argc = ++argc;
-		argv[argc - 1] = commandLine;
-		while ( IsCommandTokenCharacter( *commandLine ) )
-			++commandLine;
-		if ( *commandLine == '\0' )
-			break;
-		*commandLine++ = '\0';
-	}
+	int argc = Sys_ParseArgv( commandLine, argv, MAX_NUM_ARGVS );
+	host_parms.argc = argc;
 
 	host_parms.argv = argv;
 	COM_InitArgv( argc, argv );
