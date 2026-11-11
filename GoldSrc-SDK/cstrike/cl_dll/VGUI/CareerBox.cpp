@@ -18,6 +18,7 @@
 #include "vgui/KeyValues.h"
 #include "vgui_controls/Controls.h"
 #include "vgui/IInput.h"
+#include "vgui/IPanel.h"
 #include "vgui/ISurface.h"
 #include "vgui/ILocalize.h"
 #include "vgui/IImage.h"
@@ -107,6 +108,33 @@ void CCareerBaseBox::BringToFront()
 		s_currentBox->MoveToFront();
 		s_currentBox->DoModal();
 	}
+}
+
+bool CCareerBaseBox::HasVisibleChildPopup()
+{
+	if ( !s_currentBox || !s_currentBox->IsVisible() ||
+		vgui2::input()->GetAppModalSurface() != s_currentBox->GetVPanel() )
+		return false;
+
+	vgui2::VPANEL box = s_currentBox->GetVPanel();
+	for ( int i = 0; i < vgui2::surface()->GetPopupCount(); ++i )
+	{
+		vgui2::VPANEL popup = vgui2::surface()->GetPopup( i );
+		if ( !popup || popup == box )
+			continue;
+		bool descendant = false;
+		vgui2::VPANEL panel = popup;
+		for ( ; panel; panel = vgui2::ipanel()->GetParent( panel ) )
+		{
+			if ( !vgui2::ipanel()->IsVisible( panel ) )
+				break;
+			if ( panel == box )
+				descendant = true;
+		}
+		if ( descendant && !panel )
+			return true;
+	}
+	return false;
 }
 
 void CCareerBaseBox::UndoModal()

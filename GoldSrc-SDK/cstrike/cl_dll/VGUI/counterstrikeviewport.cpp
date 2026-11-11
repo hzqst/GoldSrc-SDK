@@ -522,7 +522,8 @@ void CounterStrikeViewport::OnTick()
 	}
 	if ( m_inClientUI )
 	{
-		CCareerBaseBox::BringToFront();
+		if ( !CCareerBaseBox::HasVisibleChildPopup() )
+			CCareerBaseBox::BringToFront();
 	}
 	else
 	{
