@@ -70,6 +70,8 @@ Use `/p:Configuration=Debug` for a debug build.
 
 Runtime and game binaries are placed under `GoldSrc-SDK/`:
 
+Copy the contents of `GoldSrc-SDK/deploy/platform/` into the game's `platform/` directory to install the accompanying UI resources, including the Career error translations.
+
 ```text
 bin/Win32/Release/
 bin/Win32/Debug/

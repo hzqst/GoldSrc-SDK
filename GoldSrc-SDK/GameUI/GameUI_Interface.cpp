@@ -149,6 +149,7 @@ void CGameUI::Initialize( CreateInterfaceFn* factories, int count )
 	m_FactoryList[4] = clientFactory;
 	vgui2::VGuiControls_Init( "GameUI", m_FactoryList, count );
 	vgui2::localize()->AddFile( vgui2::filesystem(), "resource/gameui_%language%.txt" );
+	vgui2::localize()->AddFile( vgui2::filesystem(), "resource/gameui_career_%language%.txt" );
 	staticPanel = new CBasePanel;
 	staticPanel->SetBounds( 0, 0, 400, 300 );
 	staticPanel->SetPaintBorderEnabled( false );
