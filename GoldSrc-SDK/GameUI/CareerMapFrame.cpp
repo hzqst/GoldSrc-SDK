@@ -660,8 +660,10 @@ void CCareerMapFrame::OnThink()
 	if ( !m_numTriplets || !TheCareerGame->AreChecksumsOk() )
 	{
 		OnCommand( "Close" );
-		vgui2::MessageBox* error = new vgui2::MessageBox( "Cannot start game",
-			"WARNING: Game data is corrupt or missing.", NULL );
+		const wchar_t* title = vgui2::localize()->Find( "#Career_CannotStartGameTitle" );
+		const wchar_t* text = vgui2::localize()->Find( "#Career_CorruptMissionDataText" );
+		vgui2::MessageBox* error = new vgui2::MessageBox( title ? title : L"Cannot start game",
+			text ? text : L"WARNING: Game data is corrupt or missing.", NULL );
 		error->DoModal( NULL );
 	}
 }
