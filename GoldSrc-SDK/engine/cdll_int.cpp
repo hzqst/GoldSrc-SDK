@@ -205,6 +205,8 @@ int hudIsNoClipping()
 cl_entity_t* hudGetLocalPlayer()
 {
 	g_engdstAddrs.GetLocalPlayer();
+	if ( !cl_entities )
+		return NULL;
 	return &cl_entities[cl.playernum + 1];
 }
 
