@@ -233,7 +233,7 @@ void CClientScoreBoardDialog::UpdateTeamInfo()
 		g_TeamInfo[team].ping = 0;
 		g_TeamInfo[team].packetloss = 0;
 	}
-	for ( int player = 1; player < MAX_PLAYERS; ++player )
+	for ( int player = 1; player <= MAX_PLAYERS && player <= gEngfuncs.GetMaxClients(); ++player )
 	{
 		if ( g_PlayerInfoList[player].name == NULL || !g_PlayerExtraInfo[player].teamname[0] )
 			continue;
@@ -329,7 +329,7 @@ void CClientScoreBoardDialog::UpdatePlayerInfo()
 {
 	int selected = -1;
 	m_iSectionId = 0;
-	for ( int player = 1; player < MAX_PLAYERS; ++player )
+	for ( int player = 1; player <= MAX_PLAYERS && player <= gEngfuncs.GetMaxClients(); ++player )
 	{
 		if ( gEngfuncs.GetEntityByIndex( player ) && g_PlayerInfoList[player].name )
 		{

@@ -667,7 +667,7 @@ void CSpectatorGUI::UpdateSpectatorPlayerList()
 
 	m_pBottomBar->m_pPlayerList->DeleteAllItems();
 	int itemID = 0;
-	for ( int player = 1; player < gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); ++player )
+	for ( int player = 1; player <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); ++player )
 	{
 		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
 		if ( !info.name || info.thisplayer || info.dead || !CanSpectateTeam( info.teamnumber ) )

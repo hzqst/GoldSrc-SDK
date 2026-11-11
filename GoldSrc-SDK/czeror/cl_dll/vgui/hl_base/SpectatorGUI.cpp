@@ -404,7 +404,7 @@ void CSpectatorGUI::UpdateSpectatorPlayerList()
 		return;
 	m_pBottomBar->m_pPlayerList->DeleteAllItems();
 	int item = 0;
-	for ( int player = 1; player < MAX_PLAYERS; ++player )
+	for ( int player = 1; player <= MAX_PLAYERS && player <= gEngfuncs.GetMaxClients(); ++player )
 	{
 		if ( g_PlayerInfoList[player].name == NULL || gEngfuncs.GetLocalPlayer()->index == player || g_PlayerExtraInfo[player].dead || !CanSpectateTeam( g_PlayerExtraInfo[player].teamnumber ) )
 			continue;

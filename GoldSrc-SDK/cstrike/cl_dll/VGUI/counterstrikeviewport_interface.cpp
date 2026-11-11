@@ -205,7 +205,8 @@ int GetMaxTeams()
 
 int GetMaxPlayers()
 {
-	return MAX_PLAYERS;
+	const int maxClients = gEngfuncs.GetMaxClients();
+	return maxClients < MAX_PLAYERS ? maxClients : MAX_PLAYERS;
 }
 
 
