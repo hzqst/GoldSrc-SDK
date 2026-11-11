@@ -41,62 +41,6 @@ public:
 	void WriteScriptHeader( FileHandle_t file ) override;
 };
 
-static void SanitizeToAscii( char* destination, int destinationSize, const char* text )
-{
-	const unsigned char* source = (const unsigned char*)text;
-	const unsigned char* sourceEnd = source + strlen( text );
-	char* end = destination + destinationSize - 1;
-
-	while ( source != sourceEnd && destination != end )
-	{
-		unsigned char first = *source;
-		unsigned int glyph;
-		if ( first < 0x80 )
-		{
-			glyph = first;
-			++source;
-		}
-		else if ( first < 0xC0 )
-		{
-			do
-			{
-				++source;
-			}
-			while ( source < sourceEnd && ( *source & 0xC0 ) == 0x80 );
-			continue;
-		}
-		else
-		{
-			int length = sizeof( unsigned int ) * CHAR_BIT;
-			if ( first != 0xFF )
-			{
-				length = 0;
-				for ( unsigned int mask = 0x80; first & mask; mask >>= 1 )
-					++length;
-			}
-			if ( sourceEnd - source < length )
-				break;
-
-			if ( first < 0xE0 )
-				glyph = ( ( first & 0x1F ) << 6 ) | ( source[1] & 0x3F );
-			else if ( first < 0xF0 )
-				glyph = ( ( first & 0x0F ) << 12 ) | ( ( source[1] & 0x3F ) << 6 ) | ( source[2] & 0x3F );
-			else if ( first < 0xF8 )
-			{
-				glyph = ( ( first & 7 ) << 18 ) | ( ( source[1] & 0x3F ) << 12 ) |
-					( ( source[2] & 0x3F ) << 6 ) | ( source[3] & 0x3F );
-			}
-			else
-				glyph = 0xFFFD;
-			source += length;
-		}
-
-		if ( glyph < 0x80 )
-			*destination++ = (char)first;
-	}
-	*destination = 0;
-}
-
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -254,25 +198,22 @@ void CCreateMultiplayerGameGameplayPage::LoadGameOptionsList()
 
 	CScriptObject* object = m_pDescription->pObjList;
 	vgui2::Panel* parent = m_pOptionsList;
-	char personaName[128] = { 0 };
 	char hostName[256];
-	if ( SteamFriends() && SteamFriends()->GetPersonaName() )
+	const char* personaName = SteamFriends() ? SteamFriends()->GetPersonaName() : NULL;
+	if ( !personaName || !personaName[0] )
+		personaName = "Someone";
+	const char suffix[] = "'s Server";
+	const size_t maxNameBytes = sizeof( hostName ) - sizeof( suffix );
+	size_t nameBytes = strlen( personaName );
+	if ( nameBytes > maxNameBytes )
 	{
-		SanitizeToAscii( personaName, sizeof( personaName ), SteamFriends()->GetPersonaName() );
-		if ( !personaName[0] || !strlen( personaName ) )
-		{
-			strncpy( personaName, "Someone", sizeof( personaName ) - 1 );
-			personaName[sizeof( personaName ) - 1] = 0;
-		}
-		for ( size_t length = strlen( personaName ); length && personaName[length - 1] == ' '; --length )
-			personaName[length - 1] = 0;
+		nameBytes = maxNameBytes;
+		// Do not split a UTF-8 sequence at the hostname capacity boundary.
+		while ( nameBytes && ( (unsigned char)personaName[nameBytes] & 0xC0 ) == 0x80 )
+			--nameBytes;
 	}
-#ifdef _WIN32
-	_snprintf( hostName, sizeof( hostName ) - 1, "%s's Server", personaName );
-#else
-	snprintf( hostName, sizeof( hostName ) - 1, "%s's Server", personaName );
-#endif
-	hostName[sizeof( hostName ) - 1] = 0;
+	memcpy( hostName, personaName, nameBytes );
+	memcpy( hostName + nameBytes, suffix, sizeof( suffix ) );
 
 	for ( ; object; object = object->pNext )
 	{
