@@ -338,6 +338,8 @@ extern "C" void VOX_ReadSentenceFile()
 	{
 		while ( cursor < end && ( *cursor == '\t' || *cursor == '\n' || *cursor == '\r' || *cursor == ' ' ) )
 			++cursor;
+		if ( cursor >= end )
+			break;
 		char* name = nullptr;
 		char* words = cursor;
 		if ( *cursor != '/' )
@@ -355,9 +357,11 @@ extern "C" void VOX_ReadSentenceFile()
 			*cursor++ = 0;
 		if ( name )
 		{
-			std::size_t bytes = std::strlen( name ) + std::strlen( words ) + 2;
-			rgpszrawsentence[count] = static_cast<char*>( Mem_Malloc( bytes ) );
-			Q_memcpy( rgpszrawsentence[count], name, bytes );
+			std::size_t nameBytes = std::strlen( name ) + 1;
+			std::size_t wordsBytes = std::strlen( words ) + 1;
+			rgpszrawsentence[count] = static_cast<char*>( Mem_Malloc( nameBytes + wordsBytes ) );
+			Q_memcpy( rgpszrawsentence[count], name, nameBytes );
+			Q_memcpy( rgpszrawsentence[count] + nameBytes, words, wordsBytes );
 			if ( ++count >= MAX_SENTENCES )
 				break;
 		}
