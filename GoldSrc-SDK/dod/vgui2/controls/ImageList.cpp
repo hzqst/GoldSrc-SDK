@@ -39,9 +39,9 @@ void BlankImage::GetSize( int& wide, int& tall )
 namespace vgui2
 {
 ImageList::ImageList( bool deleteImagesWhenDone )
-	: m_bDeleteImagesWhenDone( deleteImagesWhenDone )
+	: m_pBlankImage( new BlankImage ), m_bDeleteImagesWhenDone( deleteImagesWhenDone )
 {
-	m_Images.AddToTail( new BlankImage );
+	m_Images.AddToTail( m_pBlankImage );
 }
 
 //-----------------------------------------------------------------------------
@@ -52,8 +52,10 @@ ImageList::~ImageList()
 	if ( m_bDeleteImagesWhenDone )
 	{
 		for ( int index = 1; index < m_Images.Count(); index++ )
-			delete m_Images[index];
+			if ( m_Images[index] != m_pBlankImage )
+				delete m_Images[index];
 	}
+	delete m_pBlankImage;
 }
 
 //-----------------------------------------------------------------------------

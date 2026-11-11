@@ -38,6 +38,7 @@ public:
 
 private:
 	CUtlVector<IImage*>	m_Images;
+	IImage*				m_pBlankImage;
 	bool				m_bDeleteImagesWhenDone;
 };
 } // namespace vgui
