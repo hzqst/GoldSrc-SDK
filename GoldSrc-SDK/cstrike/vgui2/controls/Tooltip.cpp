@@ -41,7 +41,11 @@ void Tooltip::InvalidateLayout()
 Tooltip::Tooltip( Panel*, const char* text )
 {
 	if ( !s_pTooltipWindow )
+	{
 		s_pTooltipWindow = new TextEntry( NULL, "tooltip" );
+		// Shared by all helpers; parent panels must only detach this window.
+		s_pTooltipWindow->SetAutoDelete( false );
+	}
 	s_iTooltipWindowCount++;
 
 	// this line prevents the main window from losing focus
