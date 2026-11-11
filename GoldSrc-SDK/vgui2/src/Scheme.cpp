@@ -251,15 +251,18 @@ Color CScheme::GetColor( const char* colorName, Color defaultColor )
 {
 	int r, g, b, a;
 	const char* s;
+	int symbol = g_pKeyValues->GetSymbolForString( colorName );
 
-	s = colors->GetString( colorName, NULL );
+	KeyValues* color = colors->FindKey( symbol );
+	s = color ? color->GetString( NULL, NULL ) : colors->GetString( colorName, NULL );
 	if ( s )
 	{
 		sscanf( s, "%d %d %d %d", &r, &g, &b, &a );
 		return Color( r, g, b, a );
 	}
 
-	s = baseSettings->GetString( colorName, NULL );
+	KeyValues* setting = baseSettings->FindKey( symbol );
+	s = setting ? setting->GetString( NULL, NULL ) : baseSettings->GetString( colorName, NULL );
 	if ( s )
 	{
 		if ( sscanf( s, "%d %d %d %d", &r, &g, &b, &a ) >= 3 )
