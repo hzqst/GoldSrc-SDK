@@ -33,9 +33,12 @@
 #include "vgui/MessageMap.h"
 
 #include <cctype>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+#include "BuildModeLayout.h"
 
 #if !defined( _WIN32 )
 #define _snprintf snprintf
@@ -78,10 +81,14 @@ const char* ParseTokenFromString( const char** string )
 
 namespace vgui2
 {
+
 BuildModeDialog::BuildModeDialog( BuildGroup* buildGroup ) : Frame( NULL, NULL, true, false )
 {
-	SetMinimumSize( 300, 256 );
-	SetSize( 300, 400 );
+	Panel* context = buildGroup->GetContextPanel();
+	SetProportional( context && context->IsProportional() );
+	SetHDProportional( context && context->IsHDProportional() );
+	SetMinimumSize( GetProportionalScaledValue( 300 ), GetProportionalScaledValue( 256 ) );
+	SetSize( GetProportionalScaledValue( 300 ), GetProportionalScaledValue( 400 ) );
 
 	m_pCurrentPanel = NULL;
 	_undoSettings = NULL;
@@ -472,36 +479,38 @@ void BuildModeDialog::PerformLayout()
 {
 	Frame::PerformLayout();
 
-	int wide = 0;
-	int tall = 0;
-	GetSize( wide, tall );
-
-	int statusTall = m_pStatusLabel->GetTall();
-	m_pFileSelectionCombo->SetBounds( 16, 40, wide - 32, statusTall );
-	int labelY = statusTall + 44;
-	m_pStatusLabel->SetBounds( 16, labelY, wide - 32, m_pStatusLabel->GetTall() );
-
-	int labelTall = m_pStatusLabel->GetTall();
-	m_pPanelList->m_pControls->SetPos( 16, labelY + labelTall + 4 );
-	m_pPanelList->m_pControls->SetSize( wide - 32, tall - ( labelY + labelTall + 100 ) );
-
-	int buttonY = tall - 16 - m_pApplyButton->GetTall();
-	int rightEdge = m_pVarsButton->GetWide();
-	rightEdge += m_pDeleteButton->GetWide() + 16;
-	rightEdge += m_pAddNewControlCombo->GetWide() + 12;
-	int applyX = rightEdge - m_pApplyButton->GetWide();
-	m_pApplyButton->SetPos( applyX, buttonY );
-	int exitX = applyX - m_pExitButton->GetWide() - 6;
-	m_pExitButton->SetPos( exitX, buttonY );
-	m_pSaveButton->SetPos( exitX - m_pSaveButton->GetWide() - 6, buttonY );
-
-	int dividerY = buttonY - ( m_pDivider->GetTall() + 8 );
-	m_pDivider->SetBounds( 16, dividerY, wide - 32, 2 );
-	int toolY = dividerY - ( m_pVarsButton->GetTall() + 8 );
-	m_pVarsButton->SetPos( 16, toolY );
-	int deleteX = m_pVarsButton->GetWide() + 22;
-	m_pDeleteButton->SetPos( deleteX, toolY );
-	m_pAddNewControlCombo->SetPos( deleteX + m_pDeleteButton->GetWide() + 6, toolY );
+	int clientX, clientY, clientWide, clientTall;
+	GetClientArea( clientX, clientY, clientWide, clientTall );
+	int margin = GetProportionalScaledValue( 16 );
+	int gap = GetProportionalScaledValue( 6 );
+	int rowHeight = EditorControlHeight( m_pStatusLabel );
+	Panel* controls[] = { m_pFileSelectionCombo, m_pAddNewControlCombo, m_pExitButton,
+		m_pSaveButton, m_pApplyButton, m_pDeleteButton, m_pVarsButton };
+	for ( Panel* control : controls )
+		rowHeight = std::max( rowHeight, EditorControlHeight( control ) );
+	int x = std::max( margin, clientX );
+	int width = std::max( 0, GetWide() - 2 * x );
+	int fileY = clientY + gap;
+	m_pFileSelectionCombo->SetBounds( x, fileY, width, rowHeight );
+	int statusY = fileY + rowHeight + gap;
+	m_pStatusLabel->SetBounds( x, statusY, width, rowHeight );
+	int buttonWidth = GetProportionalScaledValue( 64 );
+	int buttonY = clientY + clientTall - gap - rowHeight;
+	m_pApplyButton->SetBounds( x + width - buttonWidth, buttonY, buttonWidth, rowHeight );
+	m_pExitButton->SetBounds( x + width - 2 * buttonWidth - gap, buttonY, buttonWidth, rowHeight );
+	m_pSaveButton->SetBounds( x + width - 3 * buttonWidth - 2 * gap, buttonY, buttonWidth, rowHeight );
+	int dividerHeight = std::max( 1, GetProportionalScaledValue( 2 ) );
+	int dividerY = buttonY - gap - dividerHeight;
+	m_pDivider->SetBounds( x, dividerY, width, dividerHeight );
+	int toolY = dividerY - gap - rowHeight;
+	int varsWidth = GetProportionalScaledValue( 72 );
+	m_pVarsButton->SetBounds( x, toolY, varsWidth, rowHeight );
+	int deleteX = x + varsWidth + gap;
+	m_pDeleteButton->SetBounds( deleteX, toolY, buttonWidth, rowHeight );
+	int addX = deleteX + buttonWidth + gap;
+	m_pAddNewControlCombo->SetBounds( addX, toolY, std::max( 0, x + width - addX ), rowHeight );
+	int listY = statusY + rowHeight + gap;
+	m_pPanelList->m_pControls->SetBounds( x, listY, width, std::max( 0, toolY - gap - listY ) );
 }
 
 //-----------------------------------------------------------------------------
@@ -610,7 +619,7 @@ void BuildModeDialog::SetActiveControl( Panel* controlToEdit )
 #else
 		Label* label = new Label( this, NULL, fieldName );
 #endif
-		label->SetSize( 96, 24 );
+		label->SetSize( GetProportionalScaledValue( 96 ), EditorControlHeight( label ) );
 		label->SetContentAlignment( Label::a_east );
 
 		TextEntry* edit = NULL;
@@ -711,7 +720,7 @@ void BuildModeDialog::CreateControls()
 {
 	m_pPanelList = new PanelList;
 	m_pPanelList->m_pResourceData = new KeyValues( "BuildDialog" );
-	m_pPanelList->m_pControls = new PanelListPanel( this, "BuildModeControls" );
+	m_pPanelList->m_pControls = new BuildModePropertyList( this );
 
 	// file to edit combo box is first
 	m_pFileSelectionCombo = new ComboBox( this, "FileSelectionCombo", 10, false );
