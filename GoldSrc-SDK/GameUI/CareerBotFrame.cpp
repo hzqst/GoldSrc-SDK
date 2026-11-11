@@ -21,6 +21,8 @@
 #include "vgui_controls/Controls.h"
 
 #include <algorithm>
+#include <cwchar>
+#include <limits>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -369,11 +371,15 @@ void CBotButton::SetCharacter( const CCareerCharacter* character )
 			m_pText[i]->SetColor( Color( 255, 255, 255, 255 ) );
 		}
 
-		wchar_t wInt[2] = { L'0', 0 };
-		wchar_t wbuf[128];
-		wInt[0] = (wchar_t)( L'0' + m_char->GetPoints() % 10 );
-		vgui2::localize()->ConstructString( wbuf, sizeof( wbuf ), vgui2::localize()->Find( "#Career_Cost" ), 1, wInt );
-		m_pText[TEXT_POINTS]->SetText( wbuf );
+		wchar_t wInt[std::numeric_limits<int>::digits10 + 3];
+		swprintf( wInt, sizeof( wInt ) / sizeof( wInt[0] ), L"%d", m_char->GetPoints() );
+		const wchar_t* costFormat = vgui2::localize()->Find( "#Career_Cost" );
+		if ( !costFormat )
+			costFormat = L"Cost: %s1";
+		std::vector<wchar_t> wbuf( wcslen( costFormat ) + sizeof( wInt ) / sizeof( wInt[0] ), L'\0' );
+		vgui2::localize()->ConstructString( wbuf.data(), (int)( wbuf.size() * sizeof( wchar_t ) ),
+			const_cast<wchar_t*>( costFormat ), 1, wInt );
+		m_pText[TEXT_POINTS]->SetText( wbuf.data() );
 		m_pText[TEXT_POINTS]->SetColor( GetSchemeColor( "BotPoints", GetSchemeColor( "ControlBG", scheme ), scheme ) );
 		m_pText[TEXT_POINTS]->SetFont( scheme->GetFontEx( scheme->GetResourceString( "BotPointsFont" ),
 				IsProportional(), IsHDProportional() ) );
