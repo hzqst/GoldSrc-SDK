@@ -446,6 +446,11 @@ qboolean CL_PrecacheResources( void )
 		case t_model:
 		{
 			int modelIndex = p->nIndex;
+			if ( modelIndex < 0 || modelIndex >= MAX_MODELS )
+			{
+				Con_DPrintf( "CL_PrecacheResources: model %s has invalid precache index %i\n", p->szFileName, modelIndex );
+				break;
+			}
 			if ( modelIndex >= cl.model_precache_count )
 			{
 				cl.model_precache_count = modelIndex + 1;
@@ -532,6 +537,12 @@ void CL_PrecacheBSPModels( const char* mapName )
 
 		if ( p->type != t_model || p->szFileName[0] != '*' )
 			continue;
+
+		if ( p->nIndex < 0 || p->nIndex >= MAX_MODELS )
+		{
+			Con_DPrintf( "CL_PrecacheBSPModels: model %s has invalid precache index %i\n", p->szFileName, p->nIndex );
+			continue;
+		}
 
 		cl.model_precache[p->nIndex] = Mod_ForName( p->szFileName, FALSE, FALSE );
 		if ( cl.model_precache[p->nIndex] )
