@@ -1,3 +1,5 @@
+#include "beam_color.h"
+
 #if defined( SW_RENDERER )
 
 #include "r_local.h"
@@ -1027,6 +1029,7 @@ void R_BeamDraw( BEAM* pbeam, float frametime )
 	}
 
 	// update life cycle
+	ScopedLegacyBeamColors legacyColors( ( pbeam->flags & FBEAM_LEGACY_COLOR255 ) != 0 );
 	pbeam->t = (float)( pbeam->freq + ( pbeam->die - cl.time ) );
 	if ( pbeam->t != 0 )
 		pbeam->t = (float)( 1.0 - pbeam->freq / pbeam->t );
@@ -4071,6 +4074,7 @@ void R_BeamDraw( BEAM* pbeam, float frametime )
 	}
 
 	// update life cycle
+	ScopedLegacyBeamColors legacyColors( ( pbeam->flags & FBEAM_LEGACY_COLOR255 ) != 0 );
 	pbeam->t = (float)( pbeam->freq + ( pbeam->die - cl.time ) );
 	if ( pbeam->t != 0 )
 		pbeam->t = (float)( 1.0 - pbeam->freq / pbeam->t );

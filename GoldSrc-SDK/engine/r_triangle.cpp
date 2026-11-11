@@ -1,3 +1,7 @@
+#include "beam_color.h"
+
+bool r_legacyBeamColors = false;
+
 #if defined( SW_RENDERER )
 
 #include "r_local.h"
@@ -31,6 +35,9 @@ void tri_Soft_CullFace( TRICULLSTYLE style )
 
 void tri_Soft_Color4f( float r, float g, float b, float a )
 {
+	r = R_DecodeBeamColor( r );
+	g = R_DecodeBeamColor( g );
+	b = R_DecodeBeamColor( b );
 	if ( r_fullbright.value == 1.0f )
 	{
 		r_icolormix.r = COLOR_FULLBRIGHT;
@@ -443,11 +450,15 @@ void tri_GL_Vertex3f( float x, float y, float z )
 
 void tri_GL_Color4f( float x, float y, float z, float w )
 {
+	x = R_DecodeBeamColor( x );
+	y = R_DecodeBeamColor( y );
+	z = R_DecodeBeamColor( z );
 	if ( gRenderMode == kRenderTransAlpha )
 		qglColor4ub( (GLubyte)(int)( x * 255.9f ), (GLubyte)(int)( y * 255.9f ), (GLubyte)(int)( z * 255.9f ),
 			(GLubyte)(int)( w * 255.0f ) );
 	else
-		qglColor4f( x * w, y * w, z * w, 1.0f );
+		qglColor4f( R_ClampBeamVertexColor( x * w ), R_ClampBeamVertexColor( y * w ),
+			R_ClampBeamVertexColor( z * w ), 1.0f );
 
 	gGlR = x;
 	gGlG = y;
@@ -466,7 +477,9 @@ void tri_GL_Color4ub( byte r, byte g, byte b, byte a )
 
 void tri_GL_Brightness( float x )
 {
-	qglColor4f( x * gGlR * gGlW, x * gGlG * gGlW, x * gGlB * gGlW, 1.0f );
+	// Clamp after per-vertex brightness, before texture modulation, as fixed GL did.
+	qglColor4f( R_ClampBeamVertexColor( x * gGlR * gGlW ), R_ClampBeamVertexColor( x * gGlG * gGlW ),
+		R_ClampBeamVertexColor( x * gGlB * gGlW ), 1.0f );
 }
 
 void tri_GL_RenderMode( int mode )
