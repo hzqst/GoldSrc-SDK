@@ -6,6 +6,7 @@
 //=============================================================================
 
 #include "hud.h"
+#include <memory>
 #include "cl_util.h"
 #include "dod_shared.h"
 #include "game_controls/iviewport.h"
@@ -801,22 +802,26 @@ bool CHudSpectator::ParseOverviewFile()
 	level[strlen( level ) - 4] = 0;
 	char filename[255];
 	sprintf( filename, "overviews/%s.txt", level );
-	char* data = (char*)gEngfuncs.COM_LoadFile( filename, 5, NULL );
-	if ( !data )
+	char* const fileBuffer = (char*)gEngfuncs.COM_LoadFile( filename, 5, NULL );
+	if ( !fileBuffer )
 	{
 		gEngfuncs.Con_Printf( "Couldn't open file %s. Using default values for overiew mode.\n", filename );
 		return false;
 	}
+	auto releaseFile = []( void* buffer ) { gEngfuncs.COM_FreeFile( buffer ); };
+	std::unique_ptr<void, decltype( releaseFile )> fileCleanup( fileBuffer, releaseFile );
+	char* cursor = fileBuffer;
+
 	char token[1024];
 	while ( true )
 	{
-		data = gEngfuncs.COM_ParseFile( data, token );
-		if ( !data )
+		cursor = gEngfuncs.COM_ParseFile( cursor, token );
+		if ( !cursor )
 			break;
 		if ( !stricmp( token, "global" ) )
 		{
 			// parse the global data
-			data = gEngfuncs.COM_ParseFile( data, token );
+			cursor = gEngfuncs.COM_ParseFile( cursor, token );
 			if ( stricmp( token, "{" ) )
 			{
 				gEngfuncs.Con_Printf( "Error parsing overview file %s. (expected { )\n", filename );
@@ -824,36 +829,36 @@ bool CHudSpectator::ParseOverviewFile()
 			}
 			while ( true )
 			{
-				data = gEngfuncs.COM_ParseFile( data, token );
+				cursor = gEngfuncs.COM_ParseFile( cursor, token );
 				if ( !stricmp( token, "}" ) )
 					break;
 				if ( !stricmp( token, "zoom" ) )
 				{
-					data = gEngfuncs.COM_ParseFile( data, token );
+					cursor = gEngfuncs.COM_ParseFile( cursor, token );
 					m_OverviewData.zoom = (float)atof( token );
 				}
 				else if ( !stricmp( token, "origin" ) )
 				{
 					for ( int component = 0; component < 3; component++ )
 					{
-						data = gEngfuncs.COM_ParseFile( data, token );
+						cursor = gEngfuncs.COM_ParseFile( cursor, token );
 						m_OverviewData.origin[component] = (float)atof( token );
 					}
 				}
 				else if ( !stricmp( token, "rotated" ) )
 				{
-					data = gEngfuncs.COM_ParseFile( data, token );
+					cursor = gEngfuncs.COM_ParseFile( cursor, token );
 					m_OverviewData.rotated = atoi( token );
 				}
 				else if ( !stricmp( token, "inset" ) )
 				{
-					data = gEngfuncs.COM_ParseFile( data, token );
+					cursor = gEngfuncs.COM_ParseFile( cursor, token );
 					m_OverviewData.insetWindowX = (int)atof( token );
-					data = gEngfuncs.COM_ParseFile( data, token );
+					cursor = gEngfuncs.COM_ParseFile( cursor, token );
 					m_OverviewData.insetWindowY = (int)atof( token );
-					data = gEngfuncs.COM_ParseFile( data, token );
+					cursor = gEngfuncs.COM_ParseFile( cursor, token );
 					m_OverviewData.insetWindowWidth = (int)atof( token );
-					data = gEngfuncs.COM_ParseFile( data, token );
+					cursor = gEngfuncs.COM_ParseFile( cursor, token );
 					m_OverviewData.insetWindowHeight = (int)atof( token );
 				}
 				else
@@ -872,7 +877,7 @@ bool CHudSpectator::ParseOverviewFile()
 				gEngfuncs.Con_Printf( "Error parsing overview file %s. ( too many layers )\n", filename );
 				return false;
 			}
-			data = gEngfuncs.COM_ParseFile( data, token );
+			cursor = gEngfuncs.COM_ParseFile( cursor, token );
 			if ( stricmp( token, "{" ) )
 			{
 				gEngfuncs.Con_Printf( "Error parsing overview file %s. (expected { )\n", filename );
@@ -880,17 +885,17 @@ bool CHudSpectator::ParseOverviewFile()
 			}
 			while ( true )
 			{
-				data = gEngfuncs.COM_ParseFile( data, token );
+				cursor = gEngfuncs.COM_ParseFile( cursor, token );
 				if ( !stricmp( token, "}" ) )
 					break;
 				if ( !stricmp( token, "image" ) )
 				{
-					data = gEngfuncs.COM_ParseFile( data, token );
+					cursor = gEngfuncs.COM_ParseFile( cursor, token );
 					strcpy( m_OverviewData.layersImages[m_OverviewData.layers], token );
 				}
 				else if ( !stricmp( token, "height" ) )
 				{
-					data = gEngfuncs.COM_ParseFile( data, token );
+					cursor = gEngfuncs.COM_ParseFile( cursor, token );
 					m_OverviewData.layersHeights[m_OverviewData.layers] = (float)atof( token );
 				}
 				else
@@ -902,7 +907,6 @@ bool CHudSpectator::ParseOverviewFile()
 			m_OverviewData.layers++;
 		}
 	}
-	gEngfuncs.COM_FreeFile( data );
 	m_mapZoom = m_OverviewData.zoom;
 	m_mapOrigin = m_OverviewData.origin;
 	return true;
