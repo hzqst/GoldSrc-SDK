@@ -69,29 +69,20 @@ CCommandLine::~CCommandLine()
 #if !defined( _WIN32 )
 void CCommandLine::CreateCmdLine( int argc, const char** argv )
 {
-	char szFull[COMMAND_LINE_SIZE];
-	szFull[0] = '\0';
-
+	std::string full;
 	for ( int i = 0; i < argc; ++i )
 	{
-		if ( strchr( argv[i], ' ' ) )
-		{
-			strcat( szFull, "\"" );
-			strncat( szFull, argv[i], sizeof( szFull ) );
-			strcat( szFull, "\"" );
-		}
-		else
-		{
-			strncat( szFull, argv[i], sizeof( szFull ) );
-		}
-
-		strcat( szFull, " " );
+		if ( i )
+			full += ' ';
+		const char* argument = argv[i] ? argv[i] : "";
+		const bool quoted = !*argument || strpbrk( argument, " \t\r\n\v\f" );
+		if ( quoted )
+			full += '"';
+		full += argument;
+		if ( quoted )
+			full += '"';
 	}
-
-	if ( argc > 0 )
-		szFull[strlen( szFull ) - 1] = '\0';
-
-	CreateCmdLine( szFull );
+	CreateCmdLine( full.c_str() );
 }
 #endif
 
