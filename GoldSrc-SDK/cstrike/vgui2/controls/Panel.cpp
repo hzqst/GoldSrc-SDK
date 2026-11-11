@@ -1194,6 +1194,9 @@ Panel::~Panel()
 	_markedForDeletion = true;
 	Panel::SetParent( static_cast<VPANEL>( 0 ) );
 
+	delete m_pTooltips;
+	m_pTooltips = nullptr;
+
 	while ( ipanel()->GetChildCount( _vpanel ) != 0 )
 	{
 		const VPANEL child = ipanel()->GetChild( _vpanel, 0 );
