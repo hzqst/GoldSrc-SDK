@@ -34,6 +34,7 @@ public:
 	void SetLabelText( const char* text );
 	static void CloseOpenBoxes( bool force );
 	static void BringToFront();
+	static bool HasVisibleChildPopup();
 	static void UndoModal();
 	void ActivateBuildMode() override;
 	void SetAutoClose( bool autoClose ) { m_shouldAutoClose = autoClose; }
