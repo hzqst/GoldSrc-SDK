@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: The document. Exposes functions for object creation, deletion, and
 //			manipulation. Holds the current tool. Handles GUI messages that are

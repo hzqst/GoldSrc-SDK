@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2003, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2003, Valve LLC, All rights reserved. ============
 //
 // Purpose: This helper is used for entities that represent a line between two
 //			entities. Examples of these are: beams and special node connections.

@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2003, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2003, Valve LLC, All rights reserved. ============
 //
 // Purpose: Implements a decal helper. The decal attaches itself to nearby
 //			solids, dynamically creating decal faces as necessary.

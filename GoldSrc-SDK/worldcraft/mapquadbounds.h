@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: A helper that measures the extents of the only non-NODRAW face of
 //			its only solid sibling. Writes the extents as four vector keyvalues:

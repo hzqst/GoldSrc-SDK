@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: Implements a factory for entity helpers. When an entity is created,
 //			the helpers from its class definition in the FGD are each instantiated

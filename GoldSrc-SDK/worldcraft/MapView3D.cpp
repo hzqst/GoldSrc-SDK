@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: Implements the 3D view message handling. This class is responsible
 //			for 3D camera control, activating tools in the 3D view, calling

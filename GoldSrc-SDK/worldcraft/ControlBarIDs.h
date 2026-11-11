@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2002, Valve LLC, All rights reserved. ============
 //
 // Purpose: If you create a control bar, add its ID here. If you want to add it
 //			to the View menu, you must make the menu ID the same as the value

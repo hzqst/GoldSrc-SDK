@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: Implements a system for managing prefabs. There are two types
 //			of prefabs implemented here: Half-Life style prefabs, and Half-Life 2

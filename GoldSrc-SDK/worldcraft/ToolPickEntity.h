@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2003, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2003, Valve LLC, All rights reserved. ============
 //
 // Purpose: Tool used for picking entities for filling out entity properties and
 //			I/O connections. Anywhere you see an entity name field there should

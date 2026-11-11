@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: Implements the cordon tool. The cordon tool defines a rectangular
 //			volume that acts as a visibility filter. Only objects that intersect

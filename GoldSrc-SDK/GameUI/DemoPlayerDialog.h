@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 //
 // Purpose: DemoPlayerDialog.h: interface for the CDemoPlayerDialog class.

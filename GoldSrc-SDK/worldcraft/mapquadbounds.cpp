@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: Implements an entity helper that extracts the bounds of a non-nodraw
 //			face from a solid sibling, saving them as keyvalues in the entity.

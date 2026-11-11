@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2002, Valve LLC, All rights reserved. ============
 //
 // Purpose: Defines a base set of services for operations in an orthorgraphic
 //			projection. This is used as a base class for the 2D view and for

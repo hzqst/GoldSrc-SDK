@@ -1,4 +1,4 @@
-//========= Copyright © 1996-2001, Valve LLC, All rights reserved. ============
+//========= Copyright Â© 1996-2001, Valve LLC, All rights reserved. ============
 //
 // Purpose: Implements a class that encapsulates much of the functionality
 //			of entities. CMapWorld and CMapEntity are both derived from this
