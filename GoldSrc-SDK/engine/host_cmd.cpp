@@ -1867,6 +1867,12 @@ void ParseSaveTables( SAVERESTOREDATA* pSaveData, SAVE_HEADER* pHeader, int upda
 
 		if ( updateGlobals )
 		{
+			if ( light.index < 0 || light.index >= MAX_LIGHTSTYLES )
+			{
+				Con_Printf( "Ignoring invalid saved lightstyle index %d\n", light.index );
+				continue;
+			}
+
 			light.style[sizeof( light.style ) - 1] = '\0';
 			int styleLength = Q_strlen( light.style );
 			sv.lightstyles[light.index] = (char*)Hunk_Alloc( styleLength + 1 );
