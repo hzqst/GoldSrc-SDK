@@ -285,11 +285,7 @@ int CBottomBar::PlayerAddItem( int itemID, wchar_t* text, KeyValues* data )
 
 void CBottomBar::SetPlayerText( const wchar_t* text )
 {
-	int length = (int)wcslen( text ) + 1;
-	CUtlVector<char> ansiText;
-	ansiText.AddMultipleToTail( length );
-	localize()->ConvertUnicodeToANSI( text, ansiText.Base(), length );
-	m_pPlayerList->SetText( ansiText.Base() );
+	m_pPlayerList->SetText( text );
 }
 
 CSpectatorGUI::CSpectatorGUI( Panel* parent ) : Frame( parent, "SpectatorGUI", true, false )

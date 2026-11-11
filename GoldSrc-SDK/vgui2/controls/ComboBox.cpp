@@ -22,10 +22,14 @@
 #include "vgui/KeyValues.h"
 
 #include <climits>
+#include <cstdlib>
 #include <cstring>
 #include <cwchar>
 #include <cwctype>
 #include <memory>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 namespace vgui2
 {
@@ -290,31 +294,30 @@ bool ComboBox::UpdateItem( int itemID, const wchar_t* itemText, const KeyValues*
 	if ( !m_pDropDown->IsValidMenuID( itemID ) )
 		return false;
 
-	size_t length = wcslen( itemText );
-	if ( length >= INT_MAX )
-		return false;
-
-	int len = (int)length + 1;
-	std::unique_ptr<char[]> ansi( new char[len] );
-	localize()->ConvertUnicodeToANSI( itemText, ansi.get(), len );
-
 	// when the menu item is selected it will send the custom message "SetText"
-	m_pDropDown->UpdateMenuItem( itemID, itemText, new KeyValues( "SetText", "text", ansi.get() ), userData );
+	m_pDropDown->UpdateMenuItem( itemID, itemText, new KeyValues( "SetText", "text", itemText ), userData );
 	InvalidateLayout( false, false );
 	return true;
 }
 
 int ComboBox::AddItem( const wchar_t* itemText, const KeyValues* userData )
 {
-	size_t length = wcslen( itemText );
-	if ( length >= INT_MAX )
+#ifdef _WIN32
+	int len = WideCharToMultiByte( CP_UTF8, 0, itemText, -1, NULL, 0, NULL, NULL );
+#else
+	size_t bytes = std::wcstombs( NULL, itemText, 0 );
+	if ( bytes >= INT_MAX )
+		return m_pDropDown->GetInvalidMenuID();
+	int len = (int)bytes + 1;
+#endif
+	if ( len <= 0 )
 		return m_pDropDown->GetInvalidMenuID();
 
-	int len = (int)length + 1;
 	std::unique_ptr<char[]> ansi( new char[len] );
-	localize()->ConvertUnicodeToANSI( itemText, ansi.get(), len );
+	if ( localize()->ConvertUnicodeToANSI( itemText, ansi.get(), len ) <= 0 )
+		return m_pDropDown->GetInvalidMenuID();
 
-	return m_pDropDown->AddMenuItem( ansi.get(), new KeyValues( "SetText", "text", itemText ), this, userData );
+	return m_pDropDown->AddMenuItem( ansi.get(), itemText, new KeyValues( "SetText", "text", itemText ), this, userData );
 }
 
 //-----------------------------------------------------------------------------

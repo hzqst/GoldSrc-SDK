@@ -25,6 +25,11 @@
 #include <cstring>
 #include <cwchar>
 #include <cwctype>
+#include <climits>
+#include <cstdlib>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 namespace vgui2
 {
@@ -255,22 +260,28 @@ bool ComboBox::UpdateItem( int itemID, const wchar_t* text, const KeyValues* use
 {
 	if ( !m_pDropDown->IsValidMenuID( itemID ) )
 		return false;
-	int length = (int)wcslen( text ) + 1;
-	CUtlVector<char> ansi;
-	ansi.AddMultipleToTail( length );
-	localize()->ConvertUnicodeToANSI( text, ansi.Base(), length );
-	m_pDropDown->UpdateMenuItem( itemID, text, new KeyValues( "SetText", "text", ansi.Base() ), userData );
+	m_pDropDown->UpdateMenuItem( itemID, text, new KeyValues( "SetText", "text", text ), userData );
 	InvalidateLayout( false, false );
 	return true;
 }
 
 int ComboBox::AddItem( const wchar_t* text, const KeyValues* userData )
 {
-	int length = (int)wcslen( text ) + 1;
+#ifdef _WIN32
+	int length = WideCharToMultiByte( CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL );
+#else
+	size_t bytes = std::wcstombs( NULL, text, 0 );
+	if ( bytes >= INT_MAX )
+		return m_pDropDown->GetInvalidMenuID();
+	int length = (int)bytes + 1;
+#endif
+	if ( length <= 0 )
+		return m_pDropDown->GetInvalidMenuID();
 	CUtlVector<char> ansi;
 	ansi.AddMultipleToTail( length );
-	localize()->ConvertUnicodeToANSI( text, ansi.Base(), length );
-	return m_pDropDown->AddMenuItem( ansi.Base(), new KeyValues( "SetText", "text", text ), this, userData );
+	if ( localize()->ConvertUnicodeToANSI( text, ansi.Base(), length ) <= 0 )
+		return m_pDropDown->GetInvalidMenuID();
+	return m_pDropDown->AddMenuItem( ansi.Base(), text, new KeyValues( "SetText", "text", text ), this, userData );
 }
 
 //-----------------------------------------------------------------------------
