@@ -9,6 +9,8 @@
 
 #include "ComboBox.h"
 #include "Label.h"
+#include "Menu.h"
+#include "MenuItem.h"
 #include "URLLabel.h"
 #include "vgui/ILocalize.h"
 #include "vgui/IScheme.h"
@@ -32,12 +34,72 @@
 #define CAREER_TEXTURE_PATH_MAX	PATH_MAX
 #endif
 
+class MissionPackMenu : public vgui2::Menu
+{
+public:
+	MissionPackMenu( vgui2::Panel* parent ) : vgui2::Menu( parent, "MissionPackMenu" ), m_visibleLines( -1 )
+	{
+		AddActionSignalTarget( parent );
+	}
+
+	void PerformLayout() override
+	{
+		vgui2::Menu::PerformLayout();
+		int count = GetItemCount();
+		if ( !count )
+			return;
+		int rowHeight = GetMenuItem( GetMenuID( 0 ) )->GetTall();
+		if ( rowHeight < 1 )
+			rowHeight = 1;
+		int left, top, right, bottom;
+		GetInset( left, top, right, bottom );
+		int x = 0, y = GetParent()->GetTall();
+		GetParent()->LocalToScreen( x, y );
+		y += GetParent()->GetProportionalScaledValue( 1 );
+		int workX, workY, workWide, workTall;
+		vgui2::surface()->GetWorkspaceBounds( workX, workY, workWide, workTall );
+		int maxTop = workY + workTall - top - bottom - rowHeight;
+		if ( y > maxTop )
+			y = maxTop;
+		if ( y < workY )
+			y = workY;
+		int visibleLines = ( workY + workTall - y - top - bottom ) / rowHeight;
+		if ( visibleLines < 1 )
+			visibleLines = 1;
+		if ( visibleLines > count )
+			visibleLines = count;
+		if ( visibleLines == count )
+		{
+			for ( int i = 0; i < count; ++i )
+				GetMenuItem( GetMenuID( i ) )->SetVisible( true );
+		}
+		if ( m_visibleLines != visibleLines )
+		{
+			m_visibleLines = visibleLines;
+			SetNumberOfVisibleItems( visibleLines );
+		}
+		vgui2::Menu::PerformLayout();
+		SetPos( x, y );
+		vgui2::Panel* scrollbar = FindChildByName( "MenuScrollBar", false );
+		if ( scrollbar )
+			scrollbar->SetEnabled( true );
+	}
+
+private:
+	int m_visibleLines;
+};
+
 class MissionPackComboBox : public vgui2::ComboBox
 {
 public:
 	MissionPackComboBox( CCareerProfileFrame* parent, const char* name, int numLines, bool allowEdit )
 		: vgui2::ComboBox( parent, name, numLines, allowEdit ), m_pParent( parent )
 	{
+		SetMenu( new MissionPackMenu( this ) );
+	}
+	void OnShowMenu( vgui2::Menu* menu ) override
+	{
+		menu->PerformLayout();
 	}
 	void OnMenuItemSelected() override
 	{
