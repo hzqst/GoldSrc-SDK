@@ -212,7 +212,15 @@ void CCareerNewProfileBox::OnCommand( const char* command )
 {
 	if ( !stricmp( command, "Ok" ) )
 	{
-		m_pEntry->ApplyChanges( true );
+		size_t characters = (size_t)m_pEntry->GetTextLength() + 1;
+		if ( characters > INT_MAX / ( 4 * sizeof( wchar_t ) ) )
+			return;
+		std::vector<wchar_t> wideName( characters, L'\0' );
+		m_pEntry->GetText( wideName.data(), (int)( wideName.size() * sizeof( wchar_t ) ) );
+		std::vector<char> name( characters * 4, '\0' );
+		if ( vgui2::localize()->ConvertUnicodeToANSI( wideName.data(), name.data(), (int)name.size() ) <= 0 || !name[0] )
+			return;
+		engine->Cvar_Set( (char*)"name", name.data() );
 		CCareerBaseBox::OnCommand( "CreateProfile" );
 	}
 	else
@@ -248,7 +256,7 @@ CCareerDifficultyBox::CCareerDifficultyBox( const char* panelName, vgui2::Panel*
 
 	vgui2::EditablePanel::LoadControlSettings( "resource/CareerBoxDifficulty.res", NULL );
 	const char* name = engine->pfnGetCvarString( "name" );
-	CCareerProfileData* profile = TheCareerGame->GetProfileForName( CCareerGame::GetSaveGamePlayerName( name ) );
+	CCareerProfileData* profile = TheCareerGame->GetProfileForName( name );
 	if ( name )
 	{
 		size_t nameLength = strlen( name ) + 1;

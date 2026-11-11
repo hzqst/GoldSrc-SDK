@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CareerBaseFrame.h"
+#include <string>
 
 class CCareerPanelListPanel;
 class CProfileButton;
@@ -39,7 +40,7 @@ private:
 	vgui2::Button*				m_pResumeButton;
 	vgui2::Button*				m_pDeleteButton;
 	vgui2::Button*				m_pNewButton;
-	char						m_name[32];
+	std::string					m_name;
 	vgui2::Label*				m_pMissionPackBackground;
 	vgui2::Label*				m_pMissionPackAuthor;
 	vgui2::Label*				m_pMissionPackDescription;

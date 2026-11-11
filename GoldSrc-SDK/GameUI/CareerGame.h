@@ -143,7 +143,7 @@ public:
 	ProfileVector BuildProfileList();
 	CCareerProfileData* GetProfileForName( const char* name );
 	void DeleteProfile( const char* name );
-	void CreateBlankProfile();
+	bool CreateBlankProfile();
 	bool SaveProfile( bool updateConfig );
 	bool LoadProfile( CareerDifficultyType difficulty );
 
@@ -181,13 +181,15 @@ protected:
 	static bool			m_checksumsOk;
 
 private:
+	void ExecuteProfileConfig();
+
 	CCareerProfileData*	m_currentProfile;
 	BufferWriter*		m_writer;
 	int					m_reputationPoints;
 	int					m_reputationPointsFlashed;
 	CharCostVector		m_costAvailability;
 	bool				m_queuedLoadMenu;
-	char				m_queuedName[32];
+	std::string			m_queuedName;
 	bool				m_wasMapDefeatedAtStart;
 	bool				m_needAutosave;
 	CharacterVec		m_hiredCharacters;

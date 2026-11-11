@@ -298,7 +298,7 @@ CCareerGame::CCareerGame()
 	m_reputationPoints = 0;
 	m_reputationPointsFlashed = 0;
 	m_queuedLoadMenu = false;
-	m_queuedName[0] = 0;
+	m_queuedName.clear();
 	m_isCT = 1;
 	m_currentProfile = new CCareerProfileData;
 	m_writer = new BufferWriter;
@@ -705,12 +705,7 @@ void CCareerGame::SendMatchCommand()
 	m_needAutosave = true;
 	m_wasMapDefeatedAtStart = m_pLastMap->IsDefeated();
 	float tutorEnable = engine->pfnGetCvarFloat( "tutor_enable" );
-#ifdef _WIN32
-	_snprintf( command, sizeof( command ), "wait\nexec Save/%s.cfg\n", GetSaveGamePlayerName( NULL ) );
-#else
-	snprintf( command, sizeof( command ), "wait\nexec Save/%s.cfg\n", GetSaveGamePlayerName( NULL ) );
-#endif
-	engine->pfnClientCmd( command );
+	ExecuteProfileConfig();
 #ifdef _WIN32
 	_snprintf( command, sizeof( command ), "wait\ntutor_enable %d\n", tutorEnable > 0.0f );
 #else
@@ -881,7 +876,7 @@ void CCareerGame::Reset()
 	m_botPoolSliderPosition = 0;
 	m_canUnpause = true;
 	m_queuedLoadMenu = false;
-	m_queuedName[0] = 0;
+	m_queuedName.clear();
 	m_pLastMap = NULL;
 	m_lastMapName[0] = 0;
 	m_matchReputationGain = 0;
@@ -938,8 +933,7 @@ void CCareerGame::OnRoundEndMenuClose( bool stillPlaying )
 	{
 		m_queuedLoadMenu = true;
 		char nameCvar[] = "name";
-		strncpy( m_queuedName, engine->pfnGetCvarString( nameCvar ), sizeof( m_queuedName ) );
-		m_queuedName[sizeof( m_queuedName ) - 1] = 0;
+		m_queuedName = m_currentProfile->name.empty() ? engine->pfnGetCvarString( nameCvar ) : m_currentProfile->name;
 	}
 }
 
@@ -956,8 +950,7 @@ void CCareerGame::OnMatchEndMenuClose( bool stillPlaying )
 	{
 		m_queuedLoadMenu = true;
 		char nameCvar[] = "name";
-		strncpy( m_queuedName, engine->pfnGetCvarString( nameCvar ), sizeof( m_queuedName ) );
-		m_queuedName[sizeof( m_queuedName ) - 1] = 0;
+		m_queuedName = m_currentProfile->name.empty() ? engine->pfnGetCvarString( nameCvar ) : m_currentProfile->name;
 	}
 }
 
@@ -975,17 +968,11 @@ void CCareerGame::Update()
 	if ( level && level[0] )
 		return;
 
-	engine->Cvar_Set( "name", m_queuedName );
-	engine->pfnClientCmd( UTIL_va( (char*)"name \"%s\"", m_queuedName ) );
+	engine->Cvar_Set( "name", const_cast<char*>( m_queuedName.c_str() ) );
 	CCareerBaseFrame* frame = (CCareerBaseFrame*)g_pTaskbar->OnOpenResumeCareerGameDialog( GetDifficulty() );
 	if ( frame )
 		frame->ShowAutosaveNotice();
 
-#ifdef _WIN32
-	m_queuedName[0] = 0;
 	m_queuedLoadMenu = false;
-#else
-	m_queuedLoadMenu = false;
-	m_queuedName[0] = 0;
-#endif
+	m_queuedName.clear();
 }

@@ -2,6 +2,7 @@
 
 #include "Button.h"
 #include "GameUI/ICareerUI.h"
+#include <string>
 
 class CCareerProfileFrame;
 
@@ -25,7 +26,7 @@ public:
 	Color GetBgColor() override;
 	void SetActive( bool active ) { m_active = active; }
 	bool IsActive() { return m_active; }
-	const char* GetProfileName() { return m_name; }
+	const char* GetProfileName() { return m_name.c_str(); }
 	vgui2::IBorder* GetBorder( bool depressed, bool armed, bool selected, bool keyFocus ) override;
 
 protected:
@@ -39,7 +40,7 @@ protected:
 	int						m_interImagePad;
 	int						m_postImagePad;
 	CCareerProfileFrame*	m_pParent;
-	char					m_name[32];
+	std::string				m_name;
 	Color					m_bgColor;
 	Color					m_activeBgColor;
 	vgui2::IBorder*			m_armedBorder;
