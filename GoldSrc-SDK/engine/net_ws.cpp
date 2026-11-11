@@ -33,6 +33,7 @@ typedef int SOCKET;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <atomic>
 
 #if !defined( _WIN32 )
 #define _snprintf snprintf
@@ -784,6 +785,7 @@ int net_sleepforever = 1;
 #if defined( _WIN32 )
 HANDLE hNetThread;
 DWORD dwNetThreadId;
+static std::atomic<bool> net_thread_stop_requested{ false };
 #endif
 
 cvar_t net_address = { const_cast<char*>( "net_address" ), const_cast<char*>( "" ), 0, 0.0f, nullptr };
@@ -833,7 +835,7 @@ DWORD WINAPI NET_ThreadEntry( void* )
 {
 	constexpr long NET_THREAD_POLL_MICROSECONDS = 20000;
 	constexpr DWORD NET_THREAD_SLEEP_MILLISECONDS = 1;
-	for ( ;; )
+	while ( !net_thread_stop_requested.load() )
 	{
 		fd_set readSockets;
 		readSockets.fd_count = 0;
@@ -849,12 +851,14 @@ DWORD WINAPI NET_ThreadEntry( void* )
 			}
 		}
 		timeval timeout = { 0, NET_THREAD_POLL_MICROSECONDS };
-		int ready = select( maxSocket + 1, &readSockets, nullptr, nullptr, net_sleepforever ? nullptr : &timeout );
-		while ( ready != 0 )
+		int ready = select( maxSocket + 1, &readSockets, nullptr, nullptr, &timeout );
+		while ( ready > 0 && !net_thread_stop_requested.load() )
 		{
 			qboolean idle = true;
 			for ( int source = 0; source < NET_SOCKET_SOURCES; ++source )
 			{
+				if ( net_thread_stop_requested.load() )
+					break;
 				if ( use_thread && net_thread_initialized )
 					EnterCriticalSection( &net_thread_cs );
 				if ( NET_QueuePacket( static_cast<netsrc_t>( source ) ) )
@@ -889,6 +893,7 @@ DWORD WINAPI NET_ThreadEntry( void* )
 		}
 		Sleep( NET_THREAD_SLEEP_MILLISECONDS );
 	}
+	return 0;
 }
 #endif
 
@@ -921,6 +926,7 @@ void NET_StartThread()
 #else
 	if ( use_thread && !net_thread_initialized )
 	{
+		net_thread_stop_requested.store( false );
 		net_thread_initialized = true;
 		InitializeCriticalSection( &net_thread_cs );
 		hNetThread = CreateThread( nullptr, 0, NET_ThreadEntry, nullptr, 0, &dwNetThreadId );
@@ -941,12 +947,14 @@ void NET_StopThread()
 	if ( use_thread && net_thread_initialized )
 		net_thread_initialized = false;
 #else
-	if ( use_thread && net_thread_initialized )
+	if ( hNetThread )
 	{
-#ifdef _MSC_VER
-#pragma warning( suppress: 6258 )
-#endif
-		TerminateThread( hNetThread, 0 );
+		net_thread_stop_requested.store( true );
+		if ( WaitForSingleObject( hNetThread, INFINITE ) != WAIT_OBJECT_0 )
+			Sys_Error( "Couldn't wait for network thread shutdown\n" );
+		CloseHandle( hNetThread );
+		hNetThread = nullptr;
+		dwNetThreadId = 0;
 		DeleteCriticalSection( &net_thread_cs );
 		net_thread_initialized = false;
 	}
@@ -1088,20 +1096,10 @@ void NET_ClearLagData( qboolean client, qboolean server )
 
 void NET_Shutdown()
 {
-#if !defined( _WIN32 )
-#else
-	if ( use_thread && net_thread_initialized )
-		EnterCriticalSection( &net_thread_cs );
-#endif
+	NET_StopThread();
 	NET_ClearLaggedList( &g_pLagData[NS_CLIENT] );
 	NET_ClearLaggedList( &g_pLagData[NS_SERVER] );
-#if !defined( _WIN32 )
-#else
-	if ( use_thread && net_thread_initialized )
-		LeaveCriticalSection( &net_thread_cs );
-#endif
 	NET_Config( false );
-	NET_StopThread();
 	for ( int source = 0; source < NET_SOCKET_SOURCES; ++source )
 	{
 		net_messages_t* message = messages[source];
@@ -2270,14 +2268,12 @@ void NET_AllocateQueues()
 		message->next = normalqueue;
 		normalqueue = message;
 	} while ( remaining != 0 );
-	if ( use_thread != 0 && net_thread_initialized == false )
-		net_thread_initialized = true;
+	NET_StartThread();
 }
 
 void NET_FlushQueues()
 {
-	if ( use_thread != 0 && net_thread_initialized != false )
-		net_thread_initialized = false;
+	NET_StopThread();
 	for ( int source = 0; source < NET_SOCKET_SOURCES; ++source )
 	{
 		net_messages_t* message = messages[source];
