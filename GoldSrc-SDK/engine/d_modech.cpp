@@ -14,7 +14,7 @@ int d_pix_min;
 int d_pix_max;
 int d_pix_shift;
 int d_scantable[MAXHEIGHT];
-short* zspantable[MAXHEIGHT];
+zbuf_t* zspantable[MAXHEIGHT];
 
 void D_Patch()
 {

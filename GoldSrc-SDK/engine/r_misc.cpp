@@ -202,22 +202,22 @@ void R_ScreenLuminance()
 #endif
 	if ( !buffer )
 		return;
-	int min = 999999;
+	int min = (std::numeric_limits<zbuf_t>::max)();
 	int max = 0;
-	unsigned short* z = (unsigned short*)d_pzbuffer;
+	zbuf_t* z = d_pzbuffer;
 	for ( unsigned short y = 0; y < vid.height; y++ )
 	{
 		for ( unsigned short x = 0; x < vid.width; x++ )
 		{
 			int depth = *z++;
-			if ( !( depth & 32768 ) )
+			if ( depth >= 0 )
 			{
 				if ( depth <= min )
 					min = depth;
 				if ( depth >= max )
 					max = depth;
 			}
-			*(unsigned short*)buffer = (unsigned short)depth;
+			*(unsigned short*)buffer = D_LegacyDepth( depth );
 			buffer += 2;
 		}
 	}

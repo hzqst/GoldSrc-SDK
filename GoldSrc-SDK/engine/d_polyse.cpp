@@ -31,19 +31,21 @@ edgetable edgetables[12] =
 // FIXME: some of these can become statics
 int a_sstepxfrac, a_tstepxfrac, r_lstepx, a_ststepxwhole;
 int r_sstepx, r_tstepx, r_lstepy, r_sstepy, r_tstepy;
-int r_zistepx, r_zistepy;
+double r_zistepx, r_zistepy;
 int d_aspancount, d_countextrastep;
 spanpackage_t* a_spans;
 spanpackage_t* d_pedgespanpackage;
 byte* d_pdest;
 byte* d_ptex;
-short* d_pz;
-int d_sfrac, d_tfrac, d_light, d_zi;
+zbuf_t* d_pz;
+int d_sfrac, d_tfrac, d_light;
+double d_zi;
 int d_ptexextrastep, d_sfracextrastep, d_tfracextrastep;
 int d_lightextrastep, d_pdestextrastep;
 int d_lightbasestep, d_pdestbasestep, d_ptexbasestep;
 int d_sfracbasestep, d_tfracbasestep;
-int d_ziextrastep, d_zibasestep, d_pzextrastep, d_pzbasestep;
+double d_ziextrastep, d_zibasestep;
+int d_pzextrastep, d_pzbasestep;
 byte* skintable[480];
 int skinwidth;
 byte* skinstart;
@@ -96,11 +98,11 @@ void D_PolysetDrawFinalVerts( finalvert_t* verts, int numverts )
 		if ( verts->v[0] >= r_refdef.vrectright || verts->v[1] >= r_refdef.vrectbottom )
 			continue;
 
-		short* pz = &zspantable[verts->v[1]][verts->v[0]];
-		if ( *pz > verts->v[5] >> 16 )
+		zbuf_t* pz = &zspantable[verts->v[1]][verts->v[0]];
+		if ( *pz > verts->v[5] )
 			continue;
 
-		*pz = (short)( verts->v[5] >> 16 );
+		*pz = verts->v[5];
 		word* pdest = (word*)&d_viewbuffer[d_scantable[verts->v[1]] + 2 * verts->v[0]];
 		word* color = &r_palette[4 * skintable[verts->v[3] >> 16][verts->v[2] >> 16]];
 		int light = (unsigned short)verts->v[4];
@@ -151,15 +153,15 @@ void D_PolysetRecursiveTriangle( int* lp1, int* lp2, int* lp3 )
 
 	for ( int i = 0; i < 4; i++ )
 		newvert[i] = ( lp1[i] + lp2[i] ) >> 1;
-	newvert[5] = ( lp1[5] + lp2[5] ) >> 1;
+	newvert[5] = (int)( ( (std::int64_t)lp1[5] + lp2[5] ) >> 1 );
 
 	if ( lp1[1] > lp2[1] || ( lp1[1] == lp2[1] && lp1[0] <= lp2[0] ) )
 	{
-		int zi = newvert[5] >> 16;
-		short* pz = &zspantable[newvert[1]][newvert[0]];
+		zbuf_t zi = newvert[5];
+		zbuf_t* pz = &zspantable[newvert[1]][newvert[0]];
 		if ( zi >= *pz )
 		{
-			*pz = (short)zi;
+			*pz = zi;
 			word* pdest = (word*)&d_viewbuffer[d_scantable[newvert[1]] + newvert[0]];
 			*pdest = (word)hlRGB( r_palette, d_pcolormap[skintable[newvert[3] >> 16][newvert[2] >> 16]] );
 		}
@@ -287,8 +289,8 @@ void D_PolysetCalcGradients( int lskinwidth )
 
 	t0 = (float)( r_p0[5] - r_p2[5] );
 	t1 = (float)( r_p1[5] - r_p2[5] );
-	r_zistepx = (int)( ( t1 * p01_minus_p21 - t0 * p11_minus_p21 ) * xstepdenominv );
-	r_zistepy = (int)( ( t1 * p00_minus_p20 - t0 * p10_minus_p20 ) * ystepdenominv );
+	r_zistepx = std::trunc( ( t1 * p01_minus_p21 - t0 * p11_minus_p21 ) * xstepdenominv );
+	r_zistepy = std::trunc( ( t1 * p00_minus_p20 - t0 * p10_minus_p20 ) * ystepdenominv );
 #else
 	double denominv = 1.0 / d_xdenom;
 	float xstepdenominv = (float)denominv;
@@ -317,9 +319,9 @@ void D_PolysetCalcGradients( int lskinwidth )
 	t0 = r_p0[5] - r_p2[5];
 	t1 = r_p1[5] - r_p2[5];
 	gradient = (float)( ( t1 * p01_minus_p21 - t0 * p11_minus_p21 ) * xstepdenominv );
-	r_zistepx = (int)gradient;
+	r_zistepx = std::trunc( gradient );
 	gradient = (float)( ( t1 * p00_minus_p20 - t0 * p10_minus_p20 ) * ystepdenominv );
-	r_zistepy = (int)gradient;
+	r_zistepy = std::trunc( gradient );
 #endif
 
 	a_sstepxfrac = r_sstepx & 0xFFFF;
@@ -406,15 +408,15 @@ void D_PolysetDrawSpans8( spanpackage_t* pspanpackage )
 		if ( count )
 		{
 			word* pdest = (word*)pspanpackage->pdest;
-			short* pz = pspanpackage->pz;
+			zbuf_t* pz = pspanpackage->pz;
 			byte* ptex = pspanpackage->ptex;
 			unsigned int sfrac = pspanpackage->sfrac;
 			int tfrac = pspanpackage->tfrac;
 			unsigned int light = pspanpackage->light;
-			int zi = pspanpackage->zi;
+			double zi = pspanpackage->zi;
 			do
 			{
-				if ( zi >> 16 >= *pz )
+				if ( D_ClampDepth( zi ) >= *pz )
 				{
 					word* color = &r_palette[4 * *ptex];
 					int shade = light & COLOR_LIGHTMASK;
@@ -427,7 +429,7 @@ void D_PolysetDrawSpans8( spanpackage_t* pspanpackage )
 					else
 						*pdest = (word)( ( ( red << 8 ) & COLOR_REDMASK_565 )
 								| ( ( green << 3 ) & COLOR_GREENMASK_565 ) | ( blue >> 3 ) );
-					*pz = (short)( zi >> 16 );
+					*pz = D_ClampDepth( zi );
 				}
 				pz++;
 				pdest++;
@@ -466,15 +468,15 @@ void D_PolysetDrawHole( spanpackage_t* pspanpackage )
 		if ( count )
 		{
 			word* pdest = (word*)pspanpackage->pdest;
-			short* pz = pspanpackage->pz;
+			zbuf_t* pz = pspanpackage->pz;
 			byte* ptex = pspanpackage->ptex;
 			unsigned int sfrac = pspanpackage->sfrac;
 			int tfrac = pspanpackage->tfrac;
 			unsigned int light = pspanpackage->light;
-			int zi = pspanpackage->zi;
+			double zi = pspanpackage->zi;
 			do
 			{
-				if ( zi >> 16 >= *pz )
+				if ( D_ClampDepth( zi ) >= *pz )
 				{
 					if ( *ptex != 255 )
 					{
@@ -490,7 +492,7 @@ void D_PolysetDrawHole( spanpackage_t* pspanpackage )
 							*pdest = (word)( ( ( red << 8 ) & COLOR_REDMASK_565 )
 									| ( ( green << 3 ) & COLOR_GREENMASK_565 ) | ( blue >> 3 ) );
 					}
-					*pz = (short)( zi >> 16 );
+					*pz = D_ClampDepth( zi );
 				}
 				pz++;
 				pdest++;
@@ -529,15 +531,15 @@ void D_PolysetDrawSpansTrans( spanpackage_t* pspanpackage )
 		if ( count )
 		{
 			word* pdest = (word*)pspanpackage->pdest;
-			short* pz = pspanpackage->pz;
+			zbuf_t* pz = pspanpackage->pz;
 			byte* ptex = pspanpackage->ptex;
 			unsigned int sfrac = pspanpackage->sfrac;
 			int tfrac = pspanpackage->tfrac;
 			unsigned int light = pspanpackage->light;
-			int zi = pspanpackage->zi;
+			double zi = pspanpackage->zi;
 			do
 			{
-				if ( zi >> 16 >= *pz )
+				if ( D_ClampDepth( zi ) >= *pz )
 				{
 					word* color = &r_palette[4 * *ptex];
 					int shade = light & COLOR_LIGHTMASK;
@@ -597,15 +599,15 @@ void D_PolysetDrawSpansTransAdd( spanpackage_t* pspanpackage )
 		if ( count )
 		{
 			word* pdest = (word*)pspanpackage->pdest;
-			short* pz = pspanpackage->pz;
+			zbuf_t* pz = pspanpackage->pz;
 			byte* ptex = pspanpackage->ptex;
 			unsigned int sfrac = pspanpackage->sfrac;
 			unsigned int tfrac = pspanpackage->tfrac;
 			unsigned int light = pspanpackage->light;
-			int zi = pspanpackage->zi;
+			double zi = pspanpackage->zi;
 			do
 			{
-				if ( zi >> 16 >= *pz )
+				if ( D_ClampDepth( zi ) >= *pz )
 				{
 					word* color = &r_palette[4 * *ptex];
 					int shade = light & COLOR_LIGHTMASK;

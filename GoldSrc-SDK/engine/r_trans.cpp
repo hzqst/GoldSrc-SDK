@@ -40,12 +40,12 @@ void D_DrawTranslucentTexture( espan_t* pspan )
 	float s8stepu = d_sdivzstepu * 8.0f;
 	float t8stepu = d_tdivzstepu * 8.0f;
 	float zi8stepu = d_zistepu * 8.0f;
-	int izistep = (int)( d_zistepu * 32768.0f * 65536.0f );
+	double izistep = D_DepthAccumulator( d_zistepu );
 	int sstep = 0, tstep = 0;
 	do
 	{
 		word* dest = (word*)( d_viewbuffer + pspan->u * 2 + pspan->v * screenwidth );
-		short* zbuf = zspantable[pspan->v] + pspan->u;
+		zbuf_t* zbuf = zspantable[pspan->v] + pspan->u;
 		float sdivz = (float)pspan->v * d_sdivzstepv + d_sdivzorigin + (float)pspan->u * d_sdivzstepu;
 		float tdivz = (float)pspan->v * d_tdivzstepv + d_tdivzorigin + (float)pspan->u * d_tdivzstepu;
 		float zi = (float)pspan->v * d_zistepv + d_ziorigin + (float)pspan->u * d_zistepu;
@@ -60,14 +60,14 @@ void D_DrawTranslucentTexture( espan_t* pspan )
 			t = bbextentt;
 		else if ( t < 0 )
 			t = 0;
-		int izi;
+		double izi;
 		if ( zi > 0.9 )
 		{
 			izistep = 0;
 			izi = 0x7F000000;
 		}
 		else
-			izi = (int)( zi * 32768.0f * 65536.0f );
+			izi = D_DepthAccumulator( zi );
 		int count = pspan->count;
 		do
 		{
@@ -109,7 +109,7 @@ void D_DrawTranslucentTexture( espan_t* pspan )
 			}
 			do
 			{
-				if ( *zbuf < ( izi >> 16 ) )
+				if ( *zbuf < D_ClampDepth( izi ) )
 				{
 					word src = ( (word*)cacheblock )[( t >> 16 ) * cachewidth + ( s >> 16 )];
 					unsigned int pixel = ( (unsigned int)*dest << 16 | *dest ) & rgbmask;
@@ -155,20 +155,20 @@ void D_DrawTranslucentTexture( espan_t* pspan )
 
 void D_DrawTranslucentColor( espan_t* pspan )
 {
-	int izistep = (int)(float)( 32768.0 * d_zistepu * 65536.0 );
+	double izistep = D_DepthAccumulator( d_zistepu );
 	do
 	{
 		word* dest = (word*)( d_viewbuffer + 2 * pspan->u + pspan->v * screenwidth );
-		short* zbuf = zspantable[pspan->v] + pspan->u;
+		zbuf_t* zbuf = zspantable[pspan->v] + pspan->u;
 		float zi = (float)pspan->v * d_zistepv + d_ziorigin + (float)pspan->u * d_zistepu;
-		int izi;
+		double izi;
 		if ( zi > 0.9 )
 		{
 			izistep = 0;
 			izi = 0x7F000000;
 		}
 		else
-			izi = (int)( zi * 32768.0f * 65536.0f );
+			izi = D_DepthAccumulator( zi );
 		int count = pspan->count;
 		do
 		{
@@ -184,7 +184,7 @@ void D_DrawTranslucentColor( espan_t* pspan )
 			int gmask = is15bit ? COLOR_GREENMASK_555 : COLOR_GREENMASK_565;
 			do
 			{
-				if ( *zbuf < ( izi >> 16 ) )
+				if ( *zbuf < D_ClampDepth( izi ) )
 					*dest = (word)( color + ( ( ( inverse * ( *dest & 31 ) ) >> 8 ) & 31
 						| ( ( inverse * ( *dest & rmask ) ) >> 8 ) & rmask
 						| ( ( inverse * ( *dest & gmask ) ) >> 8 ) & gmask ) );
@@ -209,12 +209,12 @@ void D_DrawTranslucentAdd( espan_t* pspan )
 	float s8stepu = d_sdivzstepu * 8.0f;
 	float t8stepu = d_tdivzstepu * 8.0f;
 	float zi8stepu = d_zistepu * 8.0f;
-	int izistep = (int)( d_zistepu * 32768.0f * 65536.0f );
+	double izistep = D_DepthAccumulator( d_zistepu );
 	int sstep = 0, tstep = 0;
 	do
 	{
 		word* dest = (word*)( d_viewbuffer + pspan->u * 2 + pspan->v * screenwidth );
-		short* zbuf = zspantable[pspan->v] + pspan->u;
+		zbuf_t* zbuf = zspantable[pspan->v] + pspan->u;
 		float sdivz = (float)pspan->v * d_sdivzstepv + d_sdivzorigin + (float)pspan->u * d_sdivzstepu;
 		float tdivz = (float)pspan->v * d_tdivzstepv + d_tdivzorigin + (float)pspan->u * d_tdivzstepu;
 		float zi = (float)pspan->v * d_zistepv + d_ziorigin + (float)pspan->u * d_zistepu;
@@ -229,14 +229,14 @@ void D_DrawTranslucentAdd( espan_t* pspan )
 			t = bbextentt;
 		else if ( t < 0 )
 			t = 0;
-		int izi;
+		double izi;
 		if ( zi > 0.9 )
 		{
 			izistep = 0;
 			izi = 0x7F000000;
 		}
 		else
-			izi = (int)( zi * 32768.0f * 65536.0f );
+			izi = D_DepthAccumulator( zi );
 		int count = pspan->count;
 		do
 		{
@@ -278,7 +278,7 @@ void D_DrawTranslucentAdd( espan_t* pspan )
 			}
 			do
 			{
-				if ( *zbuf < ( izi >> 16 ) )
+				if ( *zbuf < D_ClampDepth( izi ) )
 				{
 					word src = ( (word*)cacheblock )[( t >> 16 ) * cachewidth + ( s >> 16 )];
 					unsigned int pixel = ( (unsigned int)*dest << 16 | *dest ) & rgbmask;
@@ -344,12 +344,12 @@ void D_DrawTransHoles( espan_t* pspan )
 	float s8stepu = d_sdivzstepu * 8.0f;
 	float t8stepu = d_tdivzstepu * 8.0f;
 	float zi8stepu = d_zistepu * 8.0f;
-	int izistep = (int)( d_zistepu * 32768.0f * 65536.0f );
+	double izistep = D_DepthAccumulator( d_zistepu );
 	int sstep = 0, tstep = 0;
 	do
 	{
 		word* dest = (word*)( d_viewbuffer + pspan->u * 2 + pspan->v * screenwidth );
-		short* zbuf = zspantable[pspan->v] + pspan->u;
+		zbuf_t* zbuf = zspantable[pspan->v] + pspan->u;
 		float sdivz = (float)pspan->v * d_sdivzstepv + d_sdivzorigin + (float)pspan->u * d_sdivzstepu;
 		float tdivz = (float)pspan->v * d_tdivzstepv + d_tdivzorigin + (float)pspan->u * d_tdivzstepu;
 		float zi = (float)pspan->v * d_zistepv + d_ziorigin + (float)pspan->u * d_zistepu;
@@ -364,14 +364,14 @@ void D_DrawTransHoles( espan_t* pspan )
 			t = bbextentt;
 		else if ( t < 0 )
 			t = 0;
-		int izi;
+		double izi;
 		if ( zi > 0.9 )
 		{
 			izistep = 0;
 			izi = 0x7F000000;
 		}
 		else
-			izi = (int)( zi * 32768.0f * 65536.0f );
+			izi = D_DepthAccumulator( zi );
 		int count = pspan->count;
 		do
 		{
@@ -413,13 +413,13 @@ void D_DrawTransHoles( espan_t* pspan )
 			}
 			do
 			{
-				if ( *zbuf < ( izi >> 16 ) )
+				if ( *zbuf < D_ClampDepth( izi ) )
 				{
 					word src = ( (word*)cacheblock )[( t >> 16 ) * cachewidth + ( s >> 16 )];
 					if ( src != 31 )
 					{
 						*dest = src;
-						*zbuf = (short)( izi >> 16 );
+						*zbuf = D_ClampDepth( izi );
 					}
 				}
 				dest++;

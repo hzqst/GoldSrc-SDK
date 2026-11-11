@@ -19,7 +19,7 @@ D_SpriteDrawSpans
 void D_SpriteDrawSpans( sspan_t* pspan )
 {
 	float z = 65536.0f / d_ziorigin;
-	int izi = (int)( d_ziorigin * 32768.0f );
+	const zbuf_t izi = D_DepthFromZi( d_ziorigin );
 	fixed16_t sstep = 0;
 	fixed16_t tstep = 0; // ditto
 	byte* pbase = cacheblock;
@@ -64,13 +64,13 @@ void D_SpriteDrawSpans( sspan_t* pspan )
 			}
 
 			word* pdest = (word*)( d_viewbuffer + 2 * pspan->u + pspan->v * screenwidth );
-			short* pz = zspantable[pspan->v] + pspan->u;
+			zbuf_t* pz = zspantable[pspan->v] + pspan->u;
 			do
 			{
 				byte btemp = pbase[( t >> 16 ) * cachewidth + ( s >> 16 )];
 				if ( btemp != 255 && izi >= *pz )
 				{
-					*pz = (short)izi;
+					*pz = izi;
 					*pdest = r_palette[btemp];
 				}
 				++pz;
@@ -88,7 +88,7 @@ void D_SpriteDrawSpans( sspan_t* pspan )
 void D_SpriteDrawSpansTrans( sspan_t* pspan )
 {
 	float z = 65536.0f / d_ziorigin;
-	int izi = (int)( d_ziorigin * 32768.0f );
+	const zbuf_t izi = D_DepthFromZi( d_ziorigin );
 	fixed16_t sstep = 0;
 	fixed16_t tstep = 0;
 	byte* pbase = cacheblock;
@@ -131,7 +131,7 @@ void D_SpriteDrawSpansTrans( sspan_t* pspan )
 			}
 
 			word* pdest = (word*)( d_viewbuffer + 2 * pspan->u + pspan->v * screenwidth );
-			short* pz = zspantable[pspan->v] + pspan->u;
+			zbuf_t* pz = zspantable[pspan->v] + pspan->u;
 			do
 			{
 				byte btemp = pbase[( t >> 16 ) * cachewidth + ( s >> 16 )];
@@ -164,7 +164,7 @@ void D_SpriteDrawSpansTrans( sspan_t* pspan )
 void D_SpriteDrawSpansAdd( sspan_t* pspan )
 {
 	float z = 65536.0f / d_ziorigin;
-	int izi = (int)( d_ziorigin * 32768.0f );
+	const zbuf_t izi = D_DepthFromZi( d_ziorigin );
 	fixed16_t sstep = 0;
 	fixed16_t tstep = 0;
 	byte* pbase = cacheblock;
@@ -207,7 +207,7 @@ void D_SpriteDrawSpansAdd( sspan_t* pspan )
 			}
 
 			word* pdest = (word*)( d_viewbuffer + 2 * pspan->u + pspan->v * screenwidth );
-			short* pz = zspantable[pspan->v] + pspan->u;
+			zbuf_t* pz = zspantable[pspan->v] + pspan->u;
 			do
 			{
 				word color = r_palette[pbase[( t >> 16 ) * cachewidth + ( s >> 16 )]];
@@ -351,7 +351,7 @@ void D_SpriteDrawSpansGlow( sspan_t* pspan )
 void D_SpriteDrawSpansAlpha( sspan_t* pspan )
 {
 	float z = 65536.0f / d_ziorigin;
-	int izi = (int)( d_ziorigin * 32768.0f );
+	const zbuf_t izi = D_DepthFromZi( d_ziorigin );
 	fixed16_t sstep = 0;
 	fixed16_t tstep = 0;
 	byte* pbase = cacheblock;
@@ -398,7 +398,7 @@ void D_SpriteDrawSpansAlpha( sspan_t* pspan )
 			}
 
 			word* pdest = (word*)( d_viewbuffer + 2 * pspan->u + pspan->v * screenwidth );
-			short* pz = zspantable[pspan->v] + pspan->u;
+			zbuf_t* pz = zspantable[pspan->v] + pspan->u;
 			do
 			{
 				byte btemp = pbase[( t >> 16 ) * cachewidth + ( s >> 16 )];

@@ -48,6 +48,7 @@ void D_DrawParticle( particle_t* particle )
 	float z = zi * 32768.0f;
 	int izi = (int)z;
 	int pix = izi >> d_pix_shift;
+	const zbuf_t pixelDepth = D_DepthFromZi( zi );
 	if ( voxel )
 	{
 		if ( pix < d_vox_min )
@@ -64,15 +65,15 @@ void D_DrawParticle( particle_t* particle )
 	}
 
 	byte* dest = d_viewbuffer + d_scantable[v] + u * sizeof( particle->packedColor );
-	short* pz = zspantable[v] + u;
+	zbuf_t* pz = zspantable[v] + u;
 	for ( int count = pix << d_y_aspect_shift; count; count-- )
 	{
 		short* color = (short*)dest;
 		for ( int i = 0; i < pix; i++ )
 		{
-			if ( izi >= pz[i] )
+			if ( pixelDepth >= pz[i] )
 			{
-				pz[i] = (short)izi;
+				pz[i] = pixelDepth;
 				color[i] = particle->packedColor;
 			}
 		}
