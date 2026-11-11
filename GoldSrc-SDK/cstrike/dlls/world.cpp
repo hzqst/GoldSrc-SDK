@@ -30,6 +30,7 @@
 #include "player.h"
 #include "weapons.h"
 #include "gamerules.h"
+#include "career_tasks.h"
 
 extern CBaseEntity* g_pLastSpawn;
 extern CBaseEntity* g_pLastCTSpawn;
@@ -342,6 +343,7 @@ void RestoreGlobalState( SAVERESTOREDATA* pSaveData )
 
 void ResetGlobalState()
 {
+	CareerSessionPrepareForReset();
 	gGlobalState.ClearStates();
 	gInitHUD = TRUE;	// Init the HUD on a new game / load game
 }

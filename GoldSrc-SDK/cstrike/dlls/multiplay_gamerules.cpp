@@ -187,6 +187,7 @@ void SV_Tutor_Toggle_f();
 
 CHalfLifeMultiplay::CHalfLifeMultiplay()
 {
+	CareerSessionRestoreSettings();
 	m_VoiceGameMgr.Init( &g_GameMgrHelper, gpGlobals->maxClients );
 	RefreshSkillData();
 	g_fGameOver = FALSE;
@@ -329,6 +330,7 @@ CHalfLifeMultiplay::CHalfLifeMultiplay()
 	sv_clienttrace = CVAR_GET_POINTER( "sv_clienttrace" );
 	InstallTutor( CVAR_GET_FLOAT( "tutor_enable" ) > 0 );
 	g_pMPGameRules = this;
+	CareerSessionRestoreRules( this );
 }
 
 void SV_CareerAddTask_f()
@@ -2826,6 +2828,7 @@ void CHalfLifeMultiplay::Think()
 			++m_iSpawnPointCount_CT;
 		m_bLevelInitialized = true;
 	}
+	CareerSessionRestoreBots();
 	if ( gpGlobals->time > m_tmNextPeriodicThink )
 	{
 		int delay = (int)restartround.value;
@@ -3089,6 +3092,8 @@ void CHalfLifeMultiplay::InitHUD( CBasePlayer* pl )
 			WRITE_STRING( "START" );
 			WRITE_SHORT( m_iRoundTime );
 		MESSAGE_END();
+		if ( !pl->IsBot() )
+			TheCareerTasks->SyncToPlayer( pl );
 	}
 	else
 		SendMOTDToClient( pl->edict() );
