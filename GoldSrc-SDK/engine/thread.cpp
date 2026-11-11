@@ -6,9 +6,6 @@
 #include <process.h>
 
 extern "C" _ACRTIMP void __cdecl _wassert( const wchar_t* message, const wchar_t* file, unsigned int line );
-#else
-#include <cerrno>
-#include <unistd.h>
 #endif
 
 #if defined( _WIN32 )
@@ -23,10 +20,17 @@ static DWORD WINAPI ThreadFunc( void* pv )
 	if ( !self )
 		_wassert( L"thread", L"c:\\buildslave\\goldsrc_win32\\build\\GoldSrc\\engine\\thread.cpp", 110 );
 
-	while ( self->m_bThreadRunning )
+	for ( ;; )
 	{
-		WaitForSingleObject( self->m_hEvent, INFINITE );
+		if ( WaitForSingleObject( self->m_hEvent, INFINITE ) != WAIT_OBJECT_0 )
+			return 0;
 		EnterCriticalSection( &self->m_mutex );
+		if ( !self->m_bThreadRunning )
+		{
+			self->m_nCmds = 0;
+			LeaveCriticalSection( &self->m_mutex );
+			break;
+		}
 
 		int count = self->m_nCmds;
 		memcpy( self->_m_rgCmds, self->m_rgCmds, sizeof( CThread::threadcmds ) * count );
@@ -43,22 +47,30 @@ static DWORD WINAPI ThreadFunc( void* pv )
 		}
 	}
 
-	self->m_bThreadStopped = true;
 	return 1;
 }
 #else
 static void* ThreadFunc( void* pv )
 {
 	CThread* self = (CThread*)pv;
-	while ( self->m_bThreadRunning )
+	for ( ;; )
 	{
 		int count;
 
 		pthread_mutex_lock( &self->m_mutex );
-		if ( !self->m_cSet )
+		while ( !self->m_cSet && self->m_bThreadRunning )
 		{
-			while ( pthread_cond_wait( &self->m_Condition, &self->m_mutex ) == EINTR )
-				;
+			if ( pthread_cond_wait( &self->m_Condition, &self->m_mutex ) != 0 )
+			{
+				pthread_mutex_unlock( &self->m_mutex );
+				return NULL;
+			}
+		}
+		if ( !self->m_bThreadRunning )
+		{
+			self->m_nCmds = 0;
+			pthread_mutex_unlock( &self->m_mutex );
+			break;
 		}
 
 		count = self->m_nCmds;
@@ -76,23 +88,19 @@ static void* ThreadFunc( void* pv )
 		}
 	}
 
-	self->m_bThreadStopped = true;
 	return (void*)1;
 }
 #endif
 
 CThread::CThread()
 #if defined( _WIN32 )
-	: m_hEvent( NULL ), m_mutex{}, m_bThreadRunning( false ), m_bThreadStopped( false ), m_nCmds( 0 ),
+	: m_hEvent( NULL ), m_mutex{}, m_bThreadRunning( false ), m_bThreadStopped( true ), m_nCmds( 0 ),
 	  _m_nCmds( 0 ), m_rgCmds{}, _m_rgCmds{}, m_hThread( NULL ), m_dwThreadID( 0 )
+#else
+	: m_mutex{}, m_Condition{}, m_cSet( 0 ), m_bThreadRunning( false ), m_bThreadStopped( true ),
+	  m_nCmds( 0 ), _m_nCmds( 0 ), m_rgCmds{}, _m_rgCmds{}, m_dwThreadID{}
 #endif
 {
-#if !defined( _WIN32 )
-	m_bThreadRunning = false;
-	m_dwThreadID = 0;
-	m_cSet = 0;
-	m_bThreadStopped = false;
-#endif
 }
 
 CThread::~CThread()
@@ -101,6 +109,9 @@ CThread::~CThread()
 
 bool CThread::AddThreadItem( vfunc pfn, int param1, int param2 )
 {
+	if ( m_bThreadStopped )
+		return false;
+
 #if defined( _WIN32 )
 	EnterCriticalSection( &m_mutex );
 #else
@@ -121,7 +132,7 @@ bool CThread::AddThreadItem( vfunc pfn, int param1, int param2 )
 		}
 	}
 
-	if ( m_nCmds >= MAX_THREAD_CMDS )
+	if ( !m_bThreadRunning || m_nCmds >= MAX_THREAD_CMDS )
 	{
 #if defined( _WIN32 )
 		LeaveCriticalSection( &m_mutex );
@@ -137,11 +148,9 @@ bool CThread::AddThreadItem( vfunc pfn, int param1, int param2 )
 	m_nCmds++;
 
 #if defined( _WIN32 )
-	LeaveCriticalSection( &m_mutex );
 	SetEvent( m_hEvent );
+	LeaveCriticalSection( &m_mutex );
 #else
-	pthread_mutex_unlock( &m_mutex );
-	pthread_mutex_lock( &m_mutex );
 	m_cSet = 1;
 	pthread_cond_signal( &m_Condition );
 	pthread_mutex_unlock( &m_mutex );
@@ -151,66 +160,108 @@ bool CThread::AddThreadItem( vfunc pfn, int param1, int param2 )
 
 bool CThread::Shutdown()
 {
-#if defined( _WIN32 )
-	if ( !m_hEvent )
+	if ( m_bThreadStopped )
 		return true;
 
-	m_bThreadStopped = false;
+#if defined( _WIN32 )
+	EnterCriticalSection( &m_mutex );
 	m_bThreadRunning = false;
-	SetEvent( m_hEvent );
+	BOOL signaled = SetEvent( m_hEvent );
+	LeaveCriticalSection( &m_mutex );
+	if ( !signaled )
+		return false;
 
-	for ( int i = 100; !m_bThreadStopped && --i > 0; )
-		Sleep( 1 );
+	// A copied batch may still be executing. Join before destroying anything it uses.
+	if ( WaitForSingleObject( m_hThread, INFINITE ) != WAIT_OBJECT_0 )
+		return false;
 
+	CloseHandle( m_hThread );
 	CloseHandle( m_hEvent );
+	m_hThread = NULL;
+	m_hEvent = NULL;
+	m_dwThreadID = 0;
 	DeleteCriticalSection( &m_mutex );
 #else
-	int i;
-
-	m_bThreadStopped = false;
-	m_bThreadRunning = false;
-
 	pthread_mutex_lock( &m_mutex );
+	m_bThreadRunning = false;
 	m_cSet = 1;
-	pthread_cond_signal( &m_Condition );
+	int signaled = pthread_cond_signal( &m_Condition );
 	pthread_mutex_unlock( &m_mutex );
+	if ( signaled != 0 )
+		return false;
 
-	for ( i = 0; i < 99 && !m_bThreadStopped; i++ )
-		usleep( 1000 );
+	if ( pthread_join( m_dwThreadID, NULL ) != 0 )
+		return false;
 
+	m_dwThreadID = pthread_t{};
 	pthread_cond_destroy( &m_Condition );
 	pthread_mutex_destroy( &m_mutex );
 #endif
+	m_bThreadStopped = true;
+	m_nCmds = 0;
+	_m_nCmds = 0;
 	cdaudio->Shutdown();
 	return true;
 }
 
 bool CThread::Init()
 {
+	if ( !m_bThreadStopped )
+		return m_bThreadRunning;
+
+	m_nCmds = 0;
+	_m_nCmds = 0;
 #if defined( _WIN32 )
 	InitializeCriticalSection( &m_mutex );
 	m_hEvent = CreateEventA( NULL, TRUE, FALSE, NULL );
+	if ( !m_hEvent )
+	{
+		DeleteCriticalSection( &m_mutex );
+		return false;
+	}
+	m_bThreadStopped = false;
 	m_bThreadRunning = true;
 	cdaudio->Init();
 	m_hThread = CreateThread( NULL, 0, ThreadFunc, this, 0, &m_dwThreadID );
-	return m_hThread != NULL;
+	if ( m_hThread )
+		return true;
+
+	m_dwThreadID = 0;
+	CloseHandle( m_hEvent );
+	m_hEvent = NULL;
+	DeleteCriticalSection( &m_mutex );
 #else
 	pthread_mutexattr_t attr;
-	pthread_t tid;
-	int created;
 
-	pthread_mutexattr_init( &attr );
-	pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE );
-	pthread_mutex_init( &m_mutex, &attr );
+	if ( pthread_mutexattr_init( &attr ) != 0 )
+		return false;
+	int initialized = pthread_mutexattr_settype( &attr, PTHREAD_MUTEX_RECURSIVE );
+	if ( initialized == 0 )
+		initialized = pthread_mutex_init( &m_mutex, &attr );
 	pthread_mutexattr_destroy( &attr );
-	pthread_cond_init( &m_Condition, NULL );
+	if ( initialized != 0 )
+		return false;
+	if ( pthread_cond_init( &m_Condition, NULL ) != 0 )
+	{
+		pthread_mutex_destroy( &m_mutex );
+		return false;
+	}
 	m_cSet = 0;
+	m_bThreadStopped = false;
 	m_bThreadRunning = true;
 	cdaudio->Init();
-	created = pthread_create( &tid, NULL, ThreadFunc, this );
-	m_dwThreadID = tid;
-	return created == 0;
+	if ( pthread_create( &m_dwThreadID, NULL, ThreadFunc, this ) == 0 )
+		return true;
+
+	m_dwThreadID = pthread_t{};
+	pthread_cond_destroy( &m_Condition );
+	pthread_mutex_destroy( &m_mutex );
 #endif
+	m_bThreadRunning = false;
+	m_bThreadStopped = true;
+	m_nCmds = 0;
+	cdaudio->Shutdown();
+	return false;
 }
 
 static CThread g_Thread;
