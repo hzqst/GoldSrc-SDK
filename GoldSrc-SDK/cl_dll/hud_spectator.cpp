@@ -6,6 +6,7 @@
 //=============================================================================
 
 #include "hud.h"
+#include <memory>
 #include "cl_util.h"
 #include "cl_entity.h"
 #include "triangleapi.h"
@@ -1252,7 +1253,6 @@ bool CHudSpectator::ParseOverviewFile( )
 	char token[1024];
 	float height;
 	
-	char *pfile  = NULL;
 
 	memset( &m_OverviewData, 0, sizeof(m_OverviewData));
 
@@ -1277,64 +1277,68 @@ bool CHudSpectator::ParseOverviewFile( )
 	
 	sprintf(filename, "overviews/%s.txt", levelname );
 
-	pfile = (char *)gEngfuncs.COM_LoadFile( filename, 5, NULL);
+	char* const fileBuffer = (char *)gEngfuncs.COM_LoadFile( filename, 5, NULL);
 
-	if (!pfile)
+	if (!fileBuffer)
 	{
 		gEngfuncs.Con_DPrintf("Couldn't open file %s. Using default values for overiew mode.\n", filename );
 		return false;
 	}
+	auto releaseFile = []( void* buffer ) { gEngfuncs.COM_FreeFile( buffer ); };
+	std::unique_ptr<void, decltype( releaseFile )> fileCleanup( fileBuffer, releaseFile );
+	char* cursor = fileBuffer;
+
 	
 	
 	while (true)
 	{
-		pfile = gEngfuncs.COM_ParseFile(pfile, token);
+		cursor = gEngfuncs.COM_ParseFile(cursor, token);
 
-		if (!pfile)
+		if (!cursor)
 			break;
 
 		if ( !stricmp( token, "global" ) )
 		{
 			// parse the global data
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
+			cursor = gEngfuncs.COM_ParseFile(cursor, token);
 			if ( stricmp( token, "{" ) ) 
 			{
 				gEngfuncs.Con_Printf("Error parsing overview file %s. (expected { )\n", filename );
 				return false;
 			}
 
-			pfile = gEngfuncs.COM_ParseFile(pfile,token);
+			cursor = gEngfuncs.COM_ParseFile(cursor,token);
 
 			while (stricmp( token, "}") )
 			{
 				if ( !stricmp( token, "zoom" ) )
 				{
-					pfile = gEngfuncs.COM_ParseFile(pfile,token);
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					m_OverviewData.zoom = atof( token );
 				} 
 				else if ( !stricmp( token, "origin" ) )
 				{
-					pfile = gEngfuncs.COM_ParseFile(pfile, token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor, token);
 					m_OverviewData.origin[0] = atof( token );
-					pfile = gEngfuncs.COM_ParseFile(pfile,token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					m_OverviewData.origin[1] = atof( token );
-					pfile = gEngfuncs.COM_ParseFile(pfile, token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor, token);
 					m_OverviewData.origin[2] = atof( token );
 				}
 				else if ( !stricmp( token, "rotated" ) )
 				{
-					pfile = gEngfuncs.COM_ParseFile(pfile,token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					m_OverviewData.rotated = atoi( token );
 				}
 				else if ( !stricmp( token, "inset" ) )
 				{
-					pfile = gEngfuncs.COM_ParseFile(pfile,token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					m_OverviewData.insetWindowX = atof( token );
-					pfile = gEngfuncs.COM_ParseFile(pfile,token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					m_OverviewData.insetWindowY = atof( token );
-					pfile = gEngfuncs.COM_ParseFile(pfile,token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					m_OverviewData.insetWindowWidth = atof( token );
-					pfile = gEngfuncs.COM_ParseFile(pfile,token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					m_OverviewData.insetWindowHeight = atof( token );
 
 				}
@@ -1344,7 +1348,7 @@ bool CHudSpectator::ParseOverviewFile( )
 					return false;
 				}
 
-				pfile = gEngfuncs.COM_ParseFile(pfile,token); // parse next token
+				cursor = gEngfuncs.COM_ParseFile(cursor,token); // parse next token
 
 			}
 		}
@@ -1358,7 +1362,7 @@ bool CHudSpectator::ParseOverviewFile( )
 				return false;
 			}
 
-			pfile = gEngfuncs.COM_ParseFile(pfile,token);
+			cursor = gEngfuncs.COM_ParseFile(cursor,token);
 
 				
 			if ( stricmp( token, "{" ) ) 
@@ -1367,20 +1371,20 @@ bool CHudSpectator::ParseOverviewFile( )
 				return false;
 			}
 
-			pfile = gEngfuncs.COM_ParseFile(pfile,token);
+			cursor = gEngfuncs.COM_ParseFile(cursor,token);
 
 			while (stricmp( token, "}") )
 			{
 				if ( !stricmp( token, "image" ) )
 				{
-					pfile = gEngfuncs.COM_ParseFile(pfile,token);
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					strcpy(m_OverviewData.layersImages[ m_OverviewData.layers ], token);
 					
 					
 				} 
 				else if ( !stricmp( token, "height" ) )
 				{
-					pfile = gEngfuncs.COM_ParseFile(pfile,token); 
+					cursor = gEngfuncs.COM_ParseFile(cursor,token);
 					height = atof(token);
 					m_OverviewData.layersHeights[ m_OverviewData.layers ] = height;
 				}
@@ -1390,7 +1394,7 @@ bool CHudSpectator::ParseOverviewFile( )
 					return false;
 				}
 
-				pfile = gEngfuncs.COM_ParseFile(pfile,token); // parse next token
+				cursor = gEngfuncs.COM_ParseFile(cursor,token); // parse next token
 			}
 
 			m_OverviewData.layers++;
@@ -1398,7 +1402,6 @@ bool CHudSpectator::ParseOverviewFile( )
 		}
 	}
 
-	gEngfuncs.COM_FreeFile( pfile );
 
 	m_mapZoom = m_OverviewData.zoom;
 	m_mapOrigin = m_OverviewData.origin;
