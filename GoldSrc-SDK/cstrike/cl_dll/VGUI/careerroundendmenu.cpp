@@ -402,8 +402,23 @@ void CCSCareerRoundEndMenu::Update()
 	gViewPortInterface->CloseTutorTextWindow();
 }
 
+void CCSCareerRoundEndMenu::OnKeyCodePressed( vgui2::KeyCode code )
+{
+	if ( code != vgui2::KEY_ESCAPE )
+		CCSCareerBaseMenu::OnKeyCodePressed( code );
+}
+
+void CCSCareerRoundEndMenu::OnKeyCodeTyped( vgui2::KeyCode code )
+{
+	if ( code != vgui2::KEY_ESCAPE )
+		CCSCareerBaseMenu::OnKeyCodeTyped( code );
+}
+
 void CCSCareerRoundEndMenu::OnCommand( const char* command )
 {
+	if ( !_stricmp( command, "Close" ) || !_stricmp( command, "Cancel" ) )
+		return;
+
 	if ( !_stricmp( command, "disconnect" ) )
 	{
 		CCareerQueryBox* box = new CCareerQueryBox( "#Career_Surrender", "#GameUI_QuitConfirmationText", "CareerBoxSurrender", this );
