@@ -711,7 +711,8 @@ void CTaskbar::CreateGameMenu()
 	KeyValues* data = new KeyValues( "GameMenu" );
 	if ( !data->LoadFromFile( vgui2::filesystem(), "resource/GameMenu.res" ) )
 	{
-		ASSERT_AT( !("Could not load file resource/GameMenu.res"), 789 );
+		engine->Con_Printf( "Warning: could not load resource/GameMenu.res; using an empty game menu.\n" );
+		data->Clear();
 	}
 
 	m_pGameMenu = RecursiveLoadGameMenu( data );
