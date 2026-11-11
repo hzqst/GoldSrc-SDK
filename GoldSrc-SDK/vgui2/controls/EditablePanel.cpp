@@ -619,7 +619,7 @@ void EditablePanel::OnSizeChanged( int wide, int tall )
 	{
 		// perform auto-layout on the child panel
 		Panel* child = GetChild( i );
-		if ( !child )
+		if ( !child || child->IsPopup() )
 			continue;
 
 		int x, y, w, t;
