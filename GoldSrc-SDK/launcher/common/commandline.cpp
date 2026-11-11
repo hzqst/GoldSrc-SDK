@@ -12,6 +12,7 @@
 //=============================================================================
 
 #include "icommandline.h"
+#include "../../common/commandline_token.h"
 
 #include <cctype>
 #include <cstdio>
@@ -231,35 +232,30 @@ void CCommandLine::CreateCmdLine( const char* commandLine )
 const char* CCommandLine::CheckParm( const char* parameter, char** value )
 {
 	static char parameterValue[PARAMETER_VALUE_BUFFER_SIZE];
-
-	if ( m_pszCmdLine == NULL )
-	{
-		return NULL;
-	}
-
-	char* match = strstr( m_pszCmdLine, parameter );
-	if ( match != NULL && value != NULL )
-	{
+	if ( value )
 		*value = NULL;
-
-		char* separator = match;
-		while ( *separator != '\0' && *separator != ' ' )
+	if ( !m_pszCmdLine || !parameter || !*parameter )
+		return NULL;
+	const char* cursor = m_pszCmdLine;
+	while ( *cursor )
+	{
+		const auto token = ReadToken( cursor );
+		cursor = token.end;
+		if ( !token.Matches( parameter ) )
+			continue;
+		if ( value )
 		{
-			++separator;
+			const auto next = ReadToken( cursor );
+			if ( next.begin != next.end && !next.IsParameter() )
+			{
+				strncpy( parameterValue, next.value.c_str(), sizeof( parameterValue ) - 1 );
+				parameterValue[sizeof( parameterValue ) - 1] = '\0';
+				*value = parameterValue;
+			}
 		}
-
-		int index = 0;
-		while ( index < PARAMETER_VALUE_LIMIT && separator[index + 1] != '\0' && separator[index + 1] != ' ' )
-		{
-			parameterValue[index] = separator[index + 1];
-			++index;
-		}
-
-		parameterValue[index] = '\0';
-		*value = parameterValue;
+		return token.begin;
 	}
-
-	return match;
+	return NULL;
 }
 
 void CCommandLine::RemoveParm( const char* parameter )
@@ -269,42 +265,31 @@ void CCommandLine::RemoveParm( const char* parameter )
 		return;
 	}
 
-	char* command = m_pszCmdLine;
-	size_t length = strlen( command );
-
-	for ( char* match = strstr( command, parameter ); match != NULL; match = strstr( command, parameter ) )
+	const std::string parm( parameter );
+	const char* cursor = m_pszCmdLine;
+	while ( *cursor )
 	{
-		char* nextParameter = match + 1;
-		while ( nextParameter != NULL && *nextParameter != '\0' && *nextParameter != '-' && *nextParameter != '+' )
+		const auto token = ReadToken( cursor );
+		if ( !token.Matches( parm.c_str() ) )
 		{
-			++nextParameter;
+			cursor = token.end;
+			continue;
 		}
-
-		if ( nextParameter != NULL && *nextParameter != '\0' )
+		const char* next = token.end;
+		for ( ;; )
 		{
-			const size_t tail = length - (size_t)( nextParameter - command );
-			memmove( match, nextParameter, tail );
-			match[tail] = '\0';
+			const auto value = ReadToken( next );
+			next = value.begin;
+			if ( !*next || value.IsParameter() )
+				break;
+			next = value.end;
 		}
-		else
-		{
-			memset( match, 0, (size_t)( nextParameter - match ) );
-		}
-
-		command = m_pszCmdLine;
-		length = strlen( command );
+		cursor = token.begin;
+		memmove( m_pszCmdLine + ( cursor - m_pszCmdLine ), next, strlen( next ) + 1 );
 	}
-
-	for ( ;; )
-	{
-		const size_t end = strlen( m_pszCmdLine );
-		if ( end == 0 || m_pszCmdLine[end - 1] != ' ' )
-		{
-			break;
-		}
-
-		m_pszCmdLine[end - 1] = '\0';
-	}
+	size_t length = strlen( m_pszCmdLine );
+	while ( length && isspace( static_cast<unsigned char>( m_pszCmdLine[length - 1] ) ) )
+		m_pszCmdLine[--length] = '\0';
 }
 
 //-----------------------------------------------------------------------------

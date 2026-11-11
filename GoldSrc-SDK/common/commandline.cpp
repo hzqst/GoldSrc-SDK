@@ -12,10 +12,13 @@
 //=============================================================================
 
 #include "icommandline.h"
+#include "commandline_token.h"
 
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include <string>
 
 #if defined( _WIN32 )
 #include <windows.h>
@@ -180,30 +183,32 @@ void CCommandLine::RemoveParm( const char* pszParm )
 	if ( !m_pszCmdLine || !pszParm || !*pszParm )
 		return;
 
-	char* found;
-	while ( ( found = strstr( m_pszCmdLine, pszParm ) ) != NULL )
+	const std::string parm( pszParm );
+	const char* cursor = m_pszCmdLine;
+	while ( *cursor )
 	{
-		int curlen = (int)strlen( m_pszCmdLine );
-		char* pnextparam = found + 1;
-
-		while ( pnextparam && *pnextparam && *pnextparam != '-' && *pnextparam != '+' )
-			++pnextparam;
-
-		if ( pnextparam && *pnextparam )
+		const auto token = ReadToken( cursor );
+		if ( !token.Matches( parm.c_str() ) )
 		{
-			int curpos = (int)( pnextparam - m_pszCmdLine );
-			int n = curlen - curpos;
-			memmove( found, pnextparam, n );
-			found[n] = '\0';
+			cursor = token.end;
+			continue;
 		}
-		else
+		const char* next = token.end;
+		for ( ;; )
 		{
-			memset( found, 0, pnextparam - found );
+			const auto value = ReadToken( next );
+			next = value.begin;
+			if ( !*next || value.IsParameter() )
+				break;
+			next = value.end;
 		}
+		cursor = token.begin;
+		memmove( m_pszCmdLine + ( cursor - m_pszCmdLine ), next, strlen( next ) + 1 );
 	}
 
-	while ( m_pszCmdLine[strlen( m_pszCmdLine ) - 1] == ' ' )
-		m_pszCmdLine[strlen( m_pszCmdLine ) - 1] = '\0';
+	size_t length = strlen( m_pszCmdLine );
+	while ( length && isspace( static_cast<unsigned char>( m_pszCmdLine[length - 1] ) ) )
+		m_pszCmdLine[--length] = '\0';
 }
 
 //-----------------------------------------------------------------------------
@@ -273,24 +278,28 @@ const char* CCommandLine::GetCmdLine()
 char* CCommandLine::CheckParm( const char* psz, char** ppszValue )
 {
 	static char sz[MAX_PARAMETER_LEN];
-	if ( !m_pszCmdLine )
+	if ( ppszValue )
+		*ppszValue = NULL;
+	if ( !m_pszCmdLine || !psz || !*psz )
 		return NULL;
-
-	char* pret = strstr( m_pszCmdLine, psz );
-	if ( !pret || !ppszValue )
-		return pret;
-
-	*ppszValue = NULL;
-	char* p1 = pret;
-	while ( *p1 && *p1 != ' ' )
-		++p1;
-
-	char* p2 = p1 + 1;
-	int i = 0;
-	while ( i < MAX_PARAMETER_LEN && *p2 && *p2 != ' ' )
-		sz[i++] = *p2++;
-
-	sz[i] = '\0';
-	*ppszValue = sz;
-	return pret;
+	const char* cursor = m_pszCmdLine;
+	while ( *cursor )
+	{
+		const auto token = ReadToken( cursor );
+		cursor = token.end;
+		if ( !token.Matches( psz ) )
+			continue;
+		if ( ppszValue )
+		{
+			const auto value = ReadToken( cursor );
+			if ( value.begin != value.end && !value.IsParameter() )
+			{
+				strncpy( sz, value.value.c_str(), sizeof( sz ) - 1 );
+				sz[sizeof( sz ) - 1] = '\0';
+				*ppszValue = sz;
+			}
+		}
+		return m_pszCmdLine + ( token.begin - m_pszCmdLine );
+	}
+	return NULL;
 }
