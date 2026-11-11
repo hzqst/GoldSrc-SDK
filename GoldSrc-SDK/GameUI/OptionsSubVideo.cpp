@@ -220,7 +220,8 @@ void COptionsSubVideo::OnButtonChecked( KeyValues* data )
 	}
 	else if ( panel == m_pVsync )
 	{
-		OnDataChanged();
+		if ( m_pVsync->HasBeenModified() )
+			OnDataChanged();
 	}
 }
 
