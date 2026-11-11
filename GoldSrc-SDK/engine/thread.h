@@ -40,6 +40,9 @@ public:
 #endif
 
 	volatile bool m_bThreadRunning;
+	// Owner-thread lifecycle state: false until join and resource cleanup complete.
+	// Init/Shutdown and external submissions are serialized by the engine thread;
+	// callbacks may submit work until Shutdown joins them. Keep the native layout.
 	volatile bool m_bThreadStopped;
 
 	int m_nCmds;
