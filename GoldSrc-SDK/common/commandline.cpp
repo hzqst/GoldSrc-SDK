@@ -24,7 +24,6 @@
 #include <windows.h>
 #endif
 
-#define MAX_PARAMETER_LEN	128
 #define COMMAND_LINE_SIZE	4096
 
 class CCommandLine : public ICommandLine
@@ -48,6 +47,7 @@ public:
 
 private:
 	char* m_pszCmdLine;
+	std::string m_ParmValue;
 };
 
 static CCommandLine g_CmdLine;
@@ -277,7 +277,6 @@ const char* CCommandLine::GetCmdLine()
 
 char* CCommandLine::CheckParm( const char* psz, char** ppszValue )
 {
-	static char sz[MAX_PARAMETER_LEN];
 	if ( ppszValue )
 		*ppszValue = NULL;
 	if ( !m_pszCmdLine || !psz || !*psz )
@@ -294,9 +293,8 @@ char* CCommandLine::CheckParm( const char* psz, char** ppszValue )
 			const auto value = ReadToken( cursor );
 			if ( value.begin != value.end && !value.IsParameter() )
 			{
-				strncpy( sz, value.value.c_str(), sizeof( sz ) - 1 );
-				sz[sizeof( sz ) - 1] = '\0';
-				*ppszValue = sz;
+				m_ParmValue = value.value;
+				*ppszValue = &m_ParmValue[0];
 			}
 		}
 		return m_pszCmdLine + ( token.begin - m_pszCmdLine );
