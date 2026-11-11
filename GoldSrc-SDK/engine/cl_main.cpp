@@ -401,6 +401,15 @@ void CL_ReallocateDynamicData( int maxClients )
 	Q_memset( cl.frames, 0, sizeof( frame_t ) * CL_UPDATE_BACKUP );
 }
 
+static qboolean CL_IsResourceIndexValid( const resource_t* resource, int maxIndex )
+{
+	if ( resource->nIndex >= 0 && resource->nIndex < maxIndex )
+		return TRUE;
+
+	Con_DPrintf( "Resource %s has invalid precache index %i\n", resource->szFileName, resource->nIndex );
+	return FALSE;
+}
+
 qboolean CL_PrecacheResources( void )
 {
 	resource_t *p, *n;
@@ -421,6 +430,9 @@ qboolean CL_PrecacheResources( void )
 		switch ( p->type )
 		{
 		case t_sound:
+			if ( !CL_IsResourceIndexValid( p, MAX_SOUNDS ) )
+				break;
+
 			if ( p->ucFlags & RES_WASMISSING )
 			{
 				cl.sound_precache[p->nIndex] = NULL;
@@ -446,11 +458,8 @@ qboolean CL_PrecacheResources( void )
 		case t_model:
 		{
 			int modelIndex = p->nIndex;
-			if ( modelIndex < 0 || modelIndex >= MAX_MODELS )
-			{
-				Con_DPrintf( "CL_PrecacheResources: model %s has invalid precache index %i\n", p->szFileName, modelIndex );
+			if ( !CL_IsResourceIndexValid( p, MAX_MODELS ) )
 				break;
-			}
 			if ( modelIndex >= cl.model_precache_count )
 			{
 				cl.model_precache_count = modelIndex + 1;
@@ -492,6 +501,9 @@ qboolean CL_PrecacheResources( void )
 			break;
 
 		case t_eventscript:
+			if ( !CL_IsResourceIndexValid( p, MAX_EVENT_SCRIPTS ) )
+				break;
+
 			cl.event_precache[p->nIndex].filename = Mem_Strdup( p->szFileName );
 			cl.event_precache[p->nIndex].pszScript = (const char*)COM_LoadFile( p->szFileName, 5, NULL );
 
@@ -538,11 +550,8 @@ void CL_PrecacheBSPModels( const char* mapName )
 		if ( p->type != t_model || p->szFileName[0] != '*' )
 			continue;
 
-		if ( p->nIndex < 0 || p->nIndex >= MAX_MODELS )
-		{
-			Con_DPrintf( "CL_PrecacheBSPModels: model %s has invalid precache index %i\n", p->szFileName, p->nIndex );
+		if ( !CL_IsResourceIndexValid( p, MAX_MODELS ) )
 			continue;
-		}
 
 		cl.model_precache[p->nIndex] = Mod_ForName( p->szFileName, FALSE, FALSE );
 		if ( cl.model_precache[p->nIndex] )

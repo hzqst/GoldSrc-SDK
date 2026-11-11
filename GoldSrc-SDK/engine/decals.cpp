@@ -539,7 +539,7 @@ void Draw_DecalShutdown()
 
 void Draw_DecalSetName( int decal, char* name )
 {
-	if ( decal >= MAX_BASE_DECALS )
+	if ( decal < 0 || decal >= MAX_BASE_DECALS )
 		return;
 
 	Q_strncpy( decal_names[decal], name, sizeof( decal_names[0] ) - 1 );
@@ -1343,7 +1343,7 @@ void Draw_DecalShutdown()
 
 void Draw_DecalSetName( int decal, char* name )
 {
-	if ( decal >= MAX_BASE_DECALS )
+	if ( decal < 0 || decal >= MAX_BASE_DECALS )
 		return;
 
 	Q_strncpy( decal_names[decal], name, sizeof( decal_names[0] ) - 1 );
