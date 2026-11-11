@@ -1279,6 +1279,23 @@ const char* CBaseFileSystem::SearchPakFile( const char* pWildCard, int currentSe
 	return NULL;
 }
 
+bool CBaseFileSystem::IsDuplicateFindDirectory( int searchPath, int limitedPathID ) const
+{
+	const CSearchPath& current = m_SearchPaths[searchPath];
+	if ( current.m_bIsPackFile )
+		return false;
+	for ( int i = 0; i < searchPath; ++i )
+	{
+		const CSearchPath& previous = m_SearchPaths[i];
+		if ( limitedPathID != -1 && previous.m_PathID != limitedPathID )
+			continue;
+		// Registration already normalizes directory separators, case and trailing slash.
+		if ( !previous.m_bIsPackFile && previous.m_Path == current.m_Path )
+			return true;
+	}
+	return false;
+}
+
 const char* CBaseFileSystem::FindFirst( const char* pWildCard, FileFindHandle_t* pHandle, const char* pathID )
 {
 	ASSERT_AT( pWildCard, 1450 );
@@ -1310,6 +1327,9 @@ const char* CBaseFileSystem::FindFirst( const char* pWildCard, FileFindHandle_t*
 		{
 			pFindData->limitedPathID = -1;
 		}
+
+		if ( IsDuplicateFindDirectory( pFindData->currentSearchPathID, pFindData->limitedPathID ) )
+			continue;
 
 		const char* fileName = FindFirstHelper( pWildCard, pHandle, pFindData->currentSearchPathID, pFindData );
 		if ( fileName )
@@ -1437,9 +1457,13 @@ bool CBaseFileSystem::FindNextFileHelper( FindData_t* pFindData )
 
 	while ( pFindData->currentSearchPathID < m_SearchPaths.Count() )
 	{
-		if ( pFindData->limitedPathID != -1 &&
+		if ( ( pFindData->limitedPathID != -1 &&
 			 m_SearchPaths[pFindData->currentSearchPathID].m_PathID != pFindData->limitedPathID )
-			return false;
+			 || IsDuplicateFindDirectory( pFindData->currentSearchPathID, pFindData->limitedPathID ) )
+		{
+			pFindData->currentSearchPathID++;
+			continue;
+		}
 
 		if ( m_SearchPaths[pFindData->currentSearchPathID].m_bIsPackFile )
 		{
