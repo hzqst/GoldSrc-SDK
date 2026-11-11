@@ -18,6 +18,6 @@ fixed16_t bbextentt;
 pixel_t* cacheblock;
 int cachewidth;
 pixel_t* d_viewbuffer;
-short* d_pzbuffer;
+zbuf_t* d_pzbuffer;
 unsigned int d_zrowbytes;
 unsigned int d_zwidth;

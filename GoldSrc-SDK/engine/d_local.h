@@ -2,6 +2,7 @@
 
 #include "d_iface.h"
 #include "water.h"
+#include "sw_depth.h"
 
 #define MAXHEIGHT		1600
 #define MAXSPANS		6000
@@ -33,13 +34,13 @@ typedef struct sspan_s
 typedef struct
 {
 	void*	pdest;
-	short*	pz;
+	zbuf_t*	pz;
 	int		count;
 	byte*	ptex;
 	int		sfrac;
 	int		tfrac;
 	int		light;
-	int		zi;
+	double	zi;
 } spanpackage_t;
 
 typedef struct
@@ -56,7 +57,7 @@ typedef struct
 	int*	prightedgevert2;
 } edgetable;
 
-extern short*		d_pzbuffer;
+extern zbuf_t*		d_pzbuffer;
 extern unsigned int	d_zrowbytes;
 extern unsigned int	d_zwidth;
 extern pixel_t*		d_viewbuffer;
@@ -75,7 +76,7 @@ extern fixed16_t	bbextents;
 extern fixed16_t	bbextentt;
 
 extern int			d_scantable[MAXHEIGHT];
-extern short*		zspantable[MAXHEIGHT];
+extern zbuf_t*		zspantable[MAXHEIGHT];
 extern int			d_pix_min;
 extern int			d_pix_max;
 extern int			d_pix_shift;

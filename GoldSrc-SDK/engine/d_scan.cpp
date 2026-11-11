@@ -188,7 +188,7 @@ void D_InitFade()
 void D_WarpScreen()
 {
 	static unsigned short* rowptr[MAXHEIGHT];
-	static unsigned short* zrowptr[MAXHEIGHT];
+	static zbuf_t* zrowptr[MAXHEIGHT];
 	static int column[5120];
 	static int cached_width = -1;
 	static int cached_height = -1;
@@ -224,7 +224,7 @@ void D_WarpScreen()
 				v = r_refdef.vrect.height - 1;
 			v += r_refdef.vrect.y;
 			rowptr[y] = (unsigned short*)( d_viewbuffer + v * WARP_WIDTH );
-			zrowptr[y] = (unsigned short*)zspantable[v];
+			zrowptr[y] = zspantable[v];
 		}
 #if defined( _WIN32 )
 		for ( int x = 0; x < w; x++ )
@@ -248,12 +248,12 @@ void D_WarpScreen()
 	for ( int y = 0; y < h; y++, dest += vid.rowbytes )
 	{
 		unsigned short* row = rowptr[y];
-		unsigned short* zbuf = zrowptr[y];
+		zbuf_t* zbuf = zrowptr[y];
 		int count = d_depth ? w : ( w + 3 ) & ~3;
 		for ( int x = 0; x < count; x++ )
 		{
 			int u = column[x];
-			unsigned int z = d_depth ? zbuf[u] : 0;
+			unsigned int z = d_depth ? D_LegacyDepth( zbuf[u] ) : 0;
 			if ( z > 63 )
 				z = 63;
 			unsigned int pix = row[u];
@@ -482,11 +482,11 @@ void D_DrawTiled8Trans( espan_t* pspan )
 	double t16stepu = d_tdivzstepu * 16.0;
 #endif
 	float zi16stepu = (float)( d_zistepu * 16.0 );
-	int izistep = (int)(float)( d_zistepu * 32768.0 * 65536.0 );
+	double izistep = D_DepthAccumulator( d_zistepu );
 	do
 	{
 		unsigned short* dest = (unsigned short*)( d_viewbuffer + pspan->u * 2 + pspan->v * screenwidth );
-		short* zbuf = zspantable[pspan->v] + pspan->u;
+		zbuf_t* zbuf = zspantable[pspan->v] + pspan->u;
 #if defined( _WIN32 )
 		float sdivz = d_sdivzstepv * (float)pspan->v + d_sdivzorigin + d_sdivzstepu * (float)pspan->u;
 		float tdivz = d_tdivzstepv * (float)pspan->v + d_tdivzorigin + d_tdivzstepu * (float)pspan->u;
@@ -501,7 +501,7 @@ void D_DrawTiled8Trans( espan_t* pspan )
 		int s = (int)(float)( sdivz * ( 65536.0 / zi ) ) + sadjust;
 		int t = (int)(float)( ( 65536.0 / zi ) * tdivz ) + tadjust;
 #endif
-		int izi;
+		double izi;
 		if ( zi > 0.9 )
 		{
 			izistep = 0;
@@ -509,7 +509,7 @@ void D_DrawTiled8Trans( espan_t* pspan )
 		}
 		else
 		{
-			izi = (int)(float)( 32768.0 * zi * 65536.0 );
+			izi = D_DepthAccumulator( zi );
 		}
 		int count = pspan->count;
 		do
@@ -531,7 +531,7 @@ void D_DrawTiled8Trans( espan_t* pspan )
 			int tstep = ( tnext - t ) >> 4;
 			do
 			{
-				if ( *zbuf < ( izi >> 16 ) )
+				if ( *zbuf < D_ClampDepth( izi ) )
 				{
 					unsigned short src = ( (unsigned short*)cacheblock )[( ( ( t >> 16 ) & gTilemap.tMask )
 						<< gTilemap.tShift ) + ( ( s >> 16 ) & gTilemap.sMask )];
@@ -675,31 +675,21 @@ D_DrawZSpans
 */
 void D_DrawZSpans( espan_t* pspan )
 {
-	int izistep = (int)(float)( 32768.0 * d_zistepu * 65536.0 );
+	const double izistep = D_DepthAccumulator( d_zistepu );
 	do
 	{
-		short* dest = zspantable[pspan->v] + pspan->u;
+		zbuf_t* dest = zspantable[pspan->v] + pspan->u;
 #if defined( _WIN32 )
 		float zi = d_zistepv * (float)pspan->v + d_ziorigin + d_zistepu * (float)pspan->u;
 #else
 		double zi = d_zistepu * (double)pspan->u + (double)pspan->v * d_zistepv + d_ziorigin;
 #endif
-		int izi = (int)( zi * 32768.0 * 65536.0 );
-		int count = pspan->count;
-		if ( (uintptr_t)dest & 2 )
+		double izi = D_DepthAccumulator( zi );
+		for ( int i = 0; i < pspan->count; i++ )
 		{
-			*dest++ = (short)( izi >> 16 );
+			*dest++ = D_ClampDepth( izi );
 			izi += izistep;
-			count--;
 		}
-		for ( int i = 0; i < ( count >> 1 ); i++ )
-		{
-			*(unsigned int*)dest = (unsigned int)( izi >> 16 ) | ( ( izi + izistep ) & 0xFFFF0000 );
-			izi += 2 * izistep;
-			dest += 2;
-		}
-		if ( count & 1 )
-			*dest = (short)( izi >> 16 );
 		pspan = pspan->pnext;
 	}
 	while ( pspan );

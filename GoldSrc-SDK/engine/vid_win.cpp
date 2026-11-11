@@ -51,7 +51,7 @@ int VID_AllocBuffers()
 	vid.fullbright = 256;
 	is15bit = vid.is15bit;
 
-	unsigned int zbufferBytes = 2 * vid.height * vid.width;
+	unsigned int zbufferBytes = sizeof( *d_pzbuffer ) * vid.height * vid.width;
 	int cacheBytes = D_SurfaceCacheForRes( vid.width, vid.height );
 	int bufferBytes = zbufferBytes + cacheBytes;
 	if ( host_parms.memsize - bufferBytes + 1245184 < minimum_memory )
@@ -68,7 +68,7 @@ int VID_AllocBuffers()
 		d_pzbuffer = NULL;
 	}
 	VID_highhunkmark = Hunk_HighMark();
-	d_pzbuffer = (short*)Hunk_HighAllocName( bufferBytes, "video" );
+	d_pzbuffer = (zbuf_t*)Hunk_HighAllocName( bufferBytes, "video" );
 	vid_surfcache = (byte*)d_pzbuffer + zbufferBytes;
 	D_InitCaches();
 	return 1;
