@@ -2851,7 +2851,7 @@ void R_DecalShoot_( texture_t* ptexture, int index, int entity, int modelIndex, 
 		hull_t* phull;
 		vec3_t temp;
 
-		if ( gDecalModel->firstmodelsurface )
+		if ( gDecalModel != cl.worldmodel )
 		{
 			phull = &gDecalModel->hulls[0];
 
@@ -3056,7 +3056,7 @@ void R_FireCustomDecal( int textureIndex, int entity, int modelIndex, vec_t* pos
 		hull_t* phull;
 		vec3_t temp;
 
-		if ( gDecalModel->firstmodelsurface )
+		if ( gDecalModel != cl.worldmodel )
 		{
 			phull = &gDecalModel->hulls[0];
 
