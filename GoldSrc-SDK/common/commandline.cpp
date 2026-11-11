@@ -101,42 +101,24 @@ void CCommandLine::CreateCmdLine( const char* commandline )
 	{
 		if ( allowAtSign && *pSrc == '@' )
 		{
-#if defined( _WIN32 )
-			char szFileName[MAX_PATH];
-			size_t len = strcspn( ++pSrc, "" );
-#else
-			char szFileName[COMMAND_LINE_SIZE];
-			size_t len = strlen( ++pSrc );
-#endif
-			if ( len > sizeof( szFileName ) - 2 )
-			{
-				printf( "Parameter filename too long, skipping\n" );
-				pSrc += len;
-				if ( *pSrc )
-					++pSrc;
-				continue;
-			}
-
-			memcpy( szFileName, pSrc, len );
-			szFileName[len] = '\0';
-			// Skip the space after the file name
-			if ( *pSrc )
-				++pSrc;
+			const auto token = ReadToken( pSrc );
+			const std::string fileName = token.value.substr( 1 );
+			pSrc = token.end;
 
 			// Now read in parameters from file
-			FILE* fp = fopen( szFileName, "r" );
+			FILE* fp = fopen( fileName.c_str(), "r" );
 			if ( !fp )
 			{
-				printf( "Parameter file '%s' not found, skipping...", szFileName );
+				printf( "Parameter file '%s' not found, skipping...", fileName.c_str() );
 				continue;
 			}
 
-			char c = (char)fgetc( fp );
+			int c = fgetc( fp );
 			while ( c != EOF && pDst - szFull < sizeof( szFull ) - 2 )
 			{
-				*pDst++ = c == '\n' ? ' ' : c;
+				*pDst++ = c == '\n' ? ' ' : static_cast<char>( c );
 				// Get the next character, if there are more
-				c = (char)fgetc( fp );
+				c = fgetc( fp );
 			}
 
 			// Add a terminating space character
@@ -145,7 +127,7 @@ void CCommandLine::CreateCmdLine( const char* commandline )
 		}
 		else
 		{
-			allowAtSign = isspace( (signed char)*pSrc ) != 0;
+			allowAtSign = isspace( static_cast<unsigned char>( *pSrc ) ) != 0;
 			*pDst++ = *pSrc++;
 		}
 	}

@@ -115,7 +115,6 @@ void CCommandLine::CreateCmdLine( int argc, const char** argv )
 void CCommandLine::CreateCmdLine( const char* commandLine )
 {
 	char expanded[COMMAND_BUFFER_SIZE];
-	char fileName[PARAMETER_FILE_BUFFER_SIZE];
 
 	const std::string input( commandLine ? commandLine : "" );
 	char* out = expanded;
@@ -132,35 +131,15 @@ void CCommandLine::CreateCmdLine( const char* commandLine )
 
 		if ( atTokenStart && *cursor == PARAMETER_FILE_MARK )
 		{
-			++cursor;
-
-			const size_t fileNameLength = strcspn( cursor, "\0 " );
-			if ( fileNameLength >= sizeof( fileName ) - 1 )
-			{
-				printf( "Parameter filename too long, skipping\n" );
-				cursor += fileNameLength;
-				if ( *cursor == '\0' )
-				{
-					break;
-				}
-
-				++cursor;
-				continue;
-			}
-
-			memcpy( fileName, cursor, fileNameLength );
-			fileName[fileNameLength] = '\0';
-
-			if ( *cursor != '\0' )
-			{
-				++cursor;
-			}
+			const auto token = ReadToken( cursor );
+			const std::string fileName = token.value.substr( 1 );
+			cursor = token.end;
 
 			// Now read in parameters from file
-			FILE* parameterFile = fopen( fileName, "r" );
+			FILE* parameterFile = fopen( fileName.c_str(), "r" );
 			if ( parameterFile != NULL )
 			{
-				char next = (char)fgetc( parameterFile );
+				int next = fgetc( parameterFile );
 				while ( next != EOF )
 				{
 					if ( (size_t)( out - expanded ) >= sizeof( expanded ) - 2 )
@@ -173,8 +152,8 @@ void CCommandLine::CreateCmdLine( const char* commandLine )
 						next = ' ';
 					}
 
-					*out++ = next;
-					next = (char)fgetc( parameterFile );
+					*out++ = static_cast<char>( next );
+					next = fgetc( parameterFile );
 				}
 
 				// Add a terminating space character
@@ -183,7 +162,7 @@ void CCommandLine::CreateCmdLine( const char* commandLine )
 			}
 			else
 			{
-				printf( "Parameter file '%s' not found, skipping...", fileName );
+				printf( "Parameter file '%s' not found, skipping...", fileName.c_str() );
 			}
 
 			continue;
