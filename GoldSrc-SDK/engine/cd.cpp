@@ -843,6 +843,7 @@ bool CCDAudio::MP3_InitStream( int trackNum, bool looping )
 
 	int playbackRate = AIL_sample_playback_rate( AIL_stream_sample_handle( MP3stream ) );
 	AIL_set_stream_user_data( MP3stream, 0, playbackRate );
+	m_flMP3Volume = MP3_SetVolume( MP3Volume.value );
 	SetStreamVolumePan( m_MP3.volume );
 	strcpy( m_MP3.trackname, g_pszMP3trackFileMap[trackNum] );
 
