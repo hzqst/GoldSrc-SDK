@@ -80,7 +80,9 @@ const char* GetLevelName()
 
 int GetMaxPlayers()
 {
-	return 64;
+	const int maxClients = gEngfuncs.GetMaxClients();
+	const int capacity = sizeof( g_PlayerInfoList ) / sizeof( g_PlayerInfoList[0] ) - 1;
+	return maxClients < capacity ? maxClients : capacity;
 }
 
 int GetMaxTeams()

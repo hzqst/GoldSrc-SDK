@@ -71,7 +71,7 @@ void CDoDClientScoreBoardDialog::UpdatePlayerInfo()
 {
 	int selectedRow = -1;
 	m_iSectionId = 0;
-	for ( int player = 1; player < gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); player++ )
+	for ( int player = 1; player <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); player++ )
 	{
 		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
 		if ( info.name )
@@ -195,7 +195,7 @@ void CDoDClientScoreBoardDialog::UpdateTeamInfo()
 		m_TeamInfo[team].ping = 0;
 		m_TeamInfo[team].players = 0;
 	}
-	for ( int player = 1; player < 64; player++ )
+	for ( int player = 1; player <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); player++ )
 	{
 		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
 		if ( info.name && info.teamnumber >= 1 && info.teamnumber <= 3 )

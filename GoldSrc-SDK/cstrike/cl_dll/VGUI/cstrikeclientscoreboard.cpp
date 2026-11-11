@@ -171,7 +171,7 @@ int CCSClientScoreBoardDialog::GetAvatarHeaderWidth()
 
 void CCSClientScoreBoardDialog::InitScoreboardSections()
 {
-	for ( int i = 1; i < 64; ++i )
+	for ( int i = 1; i <= MAX_PLAYERS; ++i )
 	{
 		g_PlayerExtraInfo[i].sb_health = -1;
 		g_PlayerExtraInfo[i].sb_account = -1;
@@ -376,7 +376,7 @@ void CCSClientScoreBoardDialog::UpdateTeamInfo()
 	}
 
 	// recalc the team scores, then draw them
-	for ( int i = 1; i < 64; ++i )
+	for ( int i = 1; i <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); ++i )
 	{
 		VGuiLibraryPlayer_t player = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( i );
 		if ( player.name && ( player.teamnumber == 1 || player.teamnumber == 2 ) )
@@ -718,10 +718,10 @@ void CCSClientScoreBoardDialog::UpdatePlayerInfo()
 	m_pPlayerList->SetSectionFgColor( 1, GetTeamColor( 1 ) );
 	m_pPlayerList->SetSectionFgColor( 2, GetTeamColor( 2 ) );
 	int playersToShow = 0;
-	for ( int i = 1; i < 64; ++i )
+	for ( int i = 1; i <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); ++i )
 	{
 		VGuiLibraryPlayer_t player = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( i );
-		if ( player.name && i < gViewPortInterface->GetClientDllInterface()->GetMaxPlayers() )
+		if ( player.name )
 			++playersToShow;
 	}
 	m_iPlayersToShow = playersToShow;
@@ -729,10 +729,10 @@ void CCSClientScoreBoardDialog::UpdatePlayerInfo()
 	UpdateOptionalColumns();
 	UpdateHeaders();
 	int selectedItem = -1;
-	for ( int i = 1; i < 64; ++i )
+	for ( int i = 1; i <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); ++i )
 	{
 		VGuiLibraryPlayer_t player = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( i );
-		if ( player.name && gViewPortInterface->GetClientDllInterface()->GetMaxPlayers() > i )
+		if ( player.name )
 		{
 			KeyValues* data = new KeyValues( "data" );
 			GetPlayerScoreInfo( i, data );
@@ -785,7 +785,7 @@ void CCSClientScoreBoardDialog::UpdatePlayerInfo()
 	m_pPlayerList->SetSectionAlwaysVisible( 4, true );
 	m_pPlayerList->SetSectionAlwaysVisible( 5, true );
 	ITaskVec* tasks = g_pCareerUI->GetCurrentTaskVec();
-	int playerIndex = gViewPortInterface->GetClientDllInterface()->GetMaxPlayers();
+	int playerIndex = MAX_PLAYERS; // Keep Career task rows outside all player storage slots.
 	for ( ITaskVecIt it = tasks->begin(); it != tasks->end(); ++it )
 	{
 		ICareerTask* task = *it;
