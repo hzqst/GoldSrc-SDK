@@ -1467,15 +1467,10 @@ void EV_EgonFire( event_args_t *args )
 
 			int iBeamModelIndex = gEngfuncs.pEventAPI->EV_FindModelIndex( EGON_BEAM_SPRITE );
 
-			float r = 50.0f;
-			float g = 50.0f;
-			float b = 125.0f;
-
-			if ( IEngineStudio.IsHardware() )
-			{
-				r /= 100.0f;
-				g /= 100.0f;
-			}
+			// Beam RGB uses normalized components in both renderers.
+			const float r = 50.0f / 255.0f;
+			const float g = 50.0f / 255.0f;
+			const float b = 125.0f / 255.0f;
 				
 		
 			pBeam = gEngfuncs.pEfxAPI->R_BeamEntPoint ( idx | 0x1000, tr.endpos, iBeamModelIndex, 99999, 3.5, 0.2, 0.7, 55, 0, 0, r, g, b );
