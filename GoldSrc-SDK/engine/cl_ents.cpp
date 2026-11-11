@@ -170,6 +170,12 @@ CL_SetSolid
 Builds all the pmove physents for the current frame
 ===============
 */
+static bool CL_IsPredictionModel( const model_t* model )
+{
+	return model->hulls[1].firstclipnode || model->type == mod_studio
+		 || ( model->type == mod_brush && model->name[0] != '*' && model != cl.worldmodel );
+}
+
 void CL_SetSolidEntities()
 {
 	int i;
@@ -219,7 +225,7 @@ void CL_SetSolidEntities()
 			 && static_cast<unsigned int>( state->owner ) - 1u == static_cast<unsigned int>( cl.playernum ) )
 			continue;
 
-		if ( model->hulls[1].firstclipnode || model->type == mod_studio )
+		if ( CL_IsPredictionModel( model ) && pmove->numvisent < MAX_PHYSENTS )
 			CL_AddStateToEntlist( &pmove->visents[pmove->numvisent++], state );
 
 		if ( state->solid == SOLID_TRIGGER || ( state->solid == SOLID_NOT && state->skin >= CONTENTS_EMPTY ) )
@@ -229,7 +235,7 @@ void CL_SetSolidEntities()
 			continue;
 
 		VectorSubtract( state->maxs, state->mins, size );
-		if ( Length( size ) == 0.0f || ( !model->hulls[1].firstclipnode && model->type != mod_studio ) )
+		if ( Length( size ) == 0.0f || !CL_IsPredictionModel( model ) )
 			continue;
 
 		if ( state->solid == SOLID_NOT && state->skin == CONTENTS_LADDER )
