@@ -19,6 +19,7 @@
 #include <math.h>
 #include <string.h>
 #include <algorithm>
+#include <memory>
 #include "hud.h"
 #include "cl_util.h"
 #include "parsemsg.h"
@@ -295,6 +296,8 @@ void CHud::SendAutoBuyString()
 	char* file = (char*)gEngfuncs.COM_LoadFile( "autobuy.txt", 5, NULL );
 	if ( !file )
 		return;
+	auto releaseFile = []( void* buffer ) { gEngfuncs.COM_FreeFile( buffer ); };
+	std::unique_ptr<void, decltype( releaseFile )> fileCleanup( file, releaseFile );
 	char command[256] = "cl_setautobuy \"";
 	char token[1024];
 	char* scan = gEngfuncs.COM_ParseFile( file, token );
@@ -305,7 +308,6 @@ void CHud::SendAutoBuyString()
 		if ( scan )
 			strncat( command, " ", sizeof( command ) - strlen( command ) - 1 );
 	}
-	gEngfuncs.COM_FreeFile( NULL );
 	strncat( command, "\"", sizeof( command ) - strlen( command ) - 1 );
 	command[sizeof( command ) - 1] = 0;
 	gEngfuncs.pfnClientCmd( command );
@@ -316,6 +318,8 @@ void CHud::SendRebuyString()
 	char* file = (char*)gEngfuncs.COM_LoadFile( "rebuy.txt", 5, NULL );
 	if ( !file )
 		return;
+	auto releaseFile = []( void* buffer ) { gEngfuncs.COM_FreeFile( buffer ); };
+	std::unique_ptr<void, decltype( releaseFile )> fileCleanup( file, releaseFile );
 	char command[256] = "cl_setrebuy \"";
 	char token[1024];
 	bool first = true;
@@ -329,7 +333,6 @@ void CHud::SendRebuyString()
 			first = false;
 		}
 	}
-	gEngfuncs.COM_FreeFile( NULL );
 	strncat( command, "\"", sizeof( command ) - strlen( command ) - 1 );
 	command[sizeof( command ) - 1] = 0;
 	gEngfuncs.pfnClientCmd( command );
