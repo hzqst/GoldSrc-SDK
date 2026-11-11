@@ -79,11 +79,13 @@ void CContentControlDialog::ResetPassword()
 	if ( !vgui2::system()->GetRegistryString( "Software\\Valve\\Half-Life\\Settings\\User Token 2",
 			m_szGorePW, sizeof( m_szGorePW ) ) )
 		m_szGorePW[0] = 0;
+	m_bSavedPasswordEnabled = IsPasswordEnabledInDialog();
 }
 
 void CContentControlDialog::ApplyPassword()
 {
-	vgui2::system()->SetRegistryString( "Software\\Valve\\Half-Life\\Settings\\User Token 2", m_szGorePW );
+	if ( vgui2::system()->SetRegistryString( "Software\\Valve\\Half-Life\\Settings\\User Token 2", m_szGorePW ) )
+		m_bSavedPasswordEnabled = IsPasswordEnabledInDialog();
 	UpdateContentControlStatus();
 }
 
@@ -118,7 +120,7 @@ void CContentControlDialog::OnCommand( const char* command )
 		char password[256], repeatedPassword[256];
 		m_pPassword->GetText( password, sizeof( password ) );
 		m_pPassword2->GetText( repeatedPassword, sizeof( repeatedPassword ) );
-		if ( IsPasswordEnabled() )
+		if ( IsPasswordEnabledInDialog() )
 		{
 			if ( !DisablePassword( password ) )
 				return;
@@ -185,9 +187,11 @@ char* CContentControlDialog::BinPrintf( unsigned char* buffer, int length )
 
 void CContentControlDialog::WriteToken( const char* text )
 {
-	vgui2::system()->SetRegistryString( "Software\\Valve\\Half-Life\\Settings\\User Token 2", text );
+	if ( !vgui2::system()->SetRegistryString( "Software\\Valve\\Half-Life\\Settings\\User Token 2", text ) )
+		return;
 	if ( text != m_szGorePW )
 		strcpy( m_szGorePW, text );
+	m_bSavedPasswordEnabled = IsPasswordEnabledInDialog();
 
 	UpdateContentControlStatus();
 }
@@ -265,7 +269,7 @@ bool CContentControlDialog::IsPasswordEnabledInDialog()
 //-----------------------------------------------------------------------------
 void CContentControlDialog::UpdateContentControlStatus()
 {
-	bool enabled = IsPasswordEnabled(); //( m_szGorePW[0]!=0 ) ? true : false;
+	bool enabled = IsPasswordEnabledInDialog();
 	m_pStatus->SetText( enabled ? "#GameUI_ContentStatusEnabled" : "#GameUI_ContentStatusDisabled" );
 	m_pPasswordLabel->SetText( enabled ? "#GameUI_PasswordDisablePrompt" : "#GameUI_PasswordPrompt" );
 	// hide the re-entry

@@ -31,7 +31,7 @@ public:
 	void ResetPassword();
 	void ApplyPassword();
 	bool IsPasswordEnabledInDialog();
-	bool IsPasswordEnabled() { return m_szGorePW[0] != 0; }
+	bool IsPasswordEnabled() { return m_bSavedPasswordEnabled; }
 
 protected:
 	void WriteToken( const char* text );
@@ -49,6 +49,7 @@ protected:
 	};
 
 	char				m_szGorePW[MAX_GORE_PW];
+	bool				m_bSavedPasswordEnabled = false;
 	bool				m_bDefaultPassword;
 	vgui2::Label*		m_pStatus;
 	vgui2::Button*		m_pOK;
