@@ -20,6 +20,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <climits>
+#include <vector>
 
 #ifndef _WIN32
 #include <strings.h>
@@ -249,11 +251,13 @@ CCareerDifficultyBox::CCareerDifficultyBox( const char* panelName, vgui2::Panel*
 	CCareerProfileData* profile = TheCareerGame->GetProfileForName( CCareerGame::GetSaveGamePlayerName( name ) );
 	if ( name )
 	{
-#ifdef _WIN32
-		m_pTextLabel->SetText( SharedWVarArgs( (wchar_t*)L"%hs", name ) );
-#else
-		m_pTextLabel->SetText( SharedWVarArgs( (wchar_t*)L"%s", name ) );
-#endif
+		size_t nameLength = strlen( name ) + 1;
+		if ( nameLength <= INT_MAX / sizeof( wchar_t ) )
+		{
+			std::vector<wchar_t> playerName( nameLength, L'\0' );
+			vgui2::localize()->ConvertANSIToUnicode( name, playerName.data(), (int)( nameLength * sizeof( wchar_t ) ) );
+			m_pTextLabel->SetText( playerName.data() );
+		}
 	}
 
 	m_pFocusButton = buttons[profile ? profile->lastDifficulty : CAREER_DIFFICULTY_EASY];

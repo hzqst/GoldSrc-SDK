@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <climits>
+#include <string>
 
 #define AUTOSAVE_CORNER_SIZE		20
 #define CAREER_BACKGROUND_WIDE	1024
@@ -392,20 +394,25 @@ void CCareerBaseFrame::Activate()
 		m_pMissionPackName->SetFgColor( career->GetTextColor() );
 	}
 
-	char name[32];
 	char nameCvar[] = "name";
-	strncpy( name, engine->pfnGetCvarString( nameCvar ), sizeof( name ) );
-	name[sizeof( name ) - 1] = 0;
+	const char* name = engine->pfnGetCvarString( nameCvar );
+	if ( !name )
+		name = "";
+	size_t nameLength = strlen( name ) + 1;
+	if ( nameLength > INT_MAX / sizeof( wchar_t ) )
+		return;
+	std::wstring playerName( nameLength, L'\0' );
+	vgui2::localize()->ConvertANSIToUnicode( name, &playerName[0], (int)( nameLength * sizeof( wchar_t ) ) );
+	playerName.resize( wcslen( playerName.c_str() ) );
 	char difficulty[32];
 	sprintf( difficulty, "#Cstrike_Bot_Difficulty%d", TheCareerGame->GetDifficulty() );
-	wchar_t playerName[128] = { 0 };
-	int length = sizeof( playerName ) / sizeof( playerName[0] );
-#ifdef _WIN32
-	BufWPrintf( playerName, length, L"%hs / %s", name, vgui2::localize()->Find( difficulty ) );
-#else
-	BufWPrintf( playerName, length, L"%s / %S", name, vgui2::localize()->Find( difficulty ) );
-#endif
-	m_pPlayerName->SetText( playerName );
+	const wchar_t* difficultyText = vgui2::localize()->Find( difficulty );
+	if ( difficultyText )
+	{
+		playerName += L" / ";
+		playerName += difficultyText;
+	}
+	m_pPlayerName->SetText( playerName.c_str() );
 	m_pMissionPackName->SetText( TheCareerDefinitions->GetActiveCareerDefinition()->GetTitle() );
 }
 
