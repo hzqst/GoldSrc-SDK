@@ -1129,6 +1129,13 @@ void SV_CopyEdictToPhysent( physent_t* physent, int index, edict_t* entity )
 			}
 			else
 			{
+				if ( entity->v.solid == SOLID_SLIDEBOX && entity->v.modelindex > 0 &&
+					(unsigned int)entity->v.modelindex < MAX_MODELS )
+				{
+					model_t* model = sv.models[entity->v.modelindex];
+					if ( model && model->type == mod_studio && ( model->flags & STUDIO_TRACE_HITBOX ) )
+						physent->studiomodel = model;
+				}
 				if ( entity->v.classname )
 					Q_strncpy( physent->name, pr_strings + entity->v.classname, sizeof( physent->name ) );
 				else
