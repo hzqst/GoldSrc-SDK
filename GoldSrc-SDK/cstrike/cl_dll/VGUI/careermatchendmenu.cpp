@@ -237,8 +237,23 @@ void CCSCareerMatchEndMenu::Update()
 	gViewPortInterface->CloseTutorTextWindow();
 }
 
+void CCSCareerMatchEndMenu::OnKeyCodePressed( vgui2::KeyCode code )
+{
+	if ( code != vgui2::KEY_ESCAPE )
+		CCSCareerBaseMenu::OnKeyCodePressed( code );
+}
+
+void CCSCareerMatchEndMenu::OnKeyCodeTyped( vgui2::KeyCode code )
+{
+	if ( code != vgui2::KEY_ESCAPE )
+		CCSCareerBaseMenu::OnKeyCodeTyped( code );
+}
+
 void CCSCareerMatchEndMenu::OnCommand( const char* command )
 {
+	if ( !_stricmp( command, "Close" ) || !_stricmp( command, "Cancel" ) )
+		return;
+
 	if ( !_stricmp( command, "Credits" ) )
 	{
 		ShowCreditsMenu( true );

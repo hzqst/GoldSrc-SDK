@@ -17,6 +17,8 @@ public:
 	void Update();
 
 private:
+	void OnKeyCodePressed( vgui2::KeyCode code ) override;
+	void OnKeyCodeTyped( vgui2::KeyCode code ) override;
 	void OnCommand( const char* command ) override;
 	void ShowMap( int index, const char* name );
 	vgui2::Label*				m_pWinsLabel;
