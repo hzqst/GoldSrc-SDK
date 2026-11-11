@@ -9,10 +9,168 @@
 #include "tutor.h"
 #include "hostage/hostage.h"
 #include "bot/bot_util.h"
+#include "bot/cs_bot_manager.h"
+#include <string>
+#include <vector>
 
 extern int gmsgCZCareer;
 
 CCareerTaskManager* TheCareerTasks = NULL;
+
+namespace
+{
+struct CareerTaskDefinition
+{
+	std::string name, weapon;
+	int count;
+	bool mustLive, crossRounds, initiallyComplete;
+};
+
+struct CareerBotDefinition
+{
+	std::string profile;
+	BotProfileTeamType team;
+};
+
+struct CareerSetting
+{
+	std::string name, value;
+};
+
+struct CareerRestartSession
+{
+	bool pending = false;
+	bool settingsRestored = false;
+	std::string map;
+	int wins = 0, difference = 0;
+	float botQuota = 0, botQuotaMatch = 0;
+	std::vector<CareerTaskDefinition> tasks;
+	std::vector<CareerBotDefinition> bots;
+	std::vector<CareerSetting> settings;
+};
+
+std::vector<CareerTaskDefinition> activeTaskDefinitions;
+CareerRestartSession restartSession;
+
+bool IsPlainCareerRestart()
+{
+	const char* command = CMD_ARGV( 0 );
+	return UTIL_IsGame( "czero" ) && g_engfuncs.pfnIsCareerMatch()
+		&& command && !stricmp( command, "restart" );
+}
+
+bool IsRestartSessionMap()
+{
+	return restartSession.pending && UTIL_IsGame( "czero" ) && g_engfuncs.pfnIsCareerMatch()
+		&& restartSession.map == STRING( gpGlobals->mapname );
+}
+}
+
+// ResetGlobalState runs before the engine drops fake clients and destroys the old rules.
+void CareerSessionPrepareForReset()
+{
+	restartSession = CareerRestartSession{};
+	if ( !IsPlainCareerRestart() || !g_pGameRules )
+		return;
+	CHalfLifeMultiplay* rules = static_cast<CHalfLifeMultiplay*>( g_pGameRules );
+	restartSession.pending = true;
+	restartSession.map = STRING( gpGlobals->mapname );
+	restartSession.wins = rules->m_iCareerMatchWins;
+	restartSession.difference = rules->m_iRoundWinDifference;
+	restartSession.tasks = activeTaskDefinitions;
+	restartSession.botQuota = CVAR_GET_FLOAT( "bot_quota" );
+	restartSession.botQuotaMatch = CVAR_GET_FLOAT( "bot_quota_match" );
+	const char* settingNames[] = {
+		"humans_join_team", "mp_startmoney", "mp_limitteams", "mp_autoteambalance",
+		"mp_roundtime", "mp_c4timer", "mp_freezetime", "mp_friendlyfire", "mp_windifference",
+		"bot_auto_vacate", "bot_join_after_player", "bot_defer_to_human", "bot_difficulty",
+		"bot_join_team", "bot_allow_rogues", "bot_allow_pistols", "bot_allow_shotguns",
+		"bot_allow_sub_machine_guns", "bot_allow_rifles", "bot_allow_machine_guns",
+		"bot_allow_grenades", "bot_allow_snipers", "bot_allow_shield"
+	};
+	for ( const char* name : settingNames )
+	{
+		cvar_t* setting = CVAR_GET_POINTER( name );
+		if ( setting )
+			restartSession.settings.push_back( { name, setting->string } );
+	}
+	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+	{
+		CBasePlayer* player = static_cast<CBasePlayer*>( UTIL_PlayerByIndex( i ) );
+		if ( !player || !player->IsBot() || ( player->m_iTeam != CT && player->m_iTeam != TERRORIST ) )
+			continue;
+		const BotProfile* profile = static_cast<CBot*>( player )->GetProfile();
+		if ( profile )
+			restartSession.bots.push_back( { profile->GetName(), player->m_iTeam == CT ? BOT_TEAM_CT : BOT_TEAM_T } );
+	}
+}
+
+void CareerSessionOnServerDeactivate()
+{
+	if ( !IsPlainCareerRestart() )
+		restartSession = CareerRestartSession{};
+}
+
+void CareerSessionRestoreSettings()
+{
+	if ( !IsRestartSessionMap() )
+	{
+		restartSession = CareerRestartSession{};
+		return;
+	}
+	for ( const CareerSetting& setting : restartSession.settings )
+		CVAR_SET_STRING( setting.name.c_str(), setting.value.c_str() );
+	// No random quota replacement may run before the named roster is rebuilt.
+	CVAR_SET_FLOAT( "bot_quota", 0 );
+	CVAR_SET_FLOAT( "bot_quota_match", 0 );
+	restartSession.settingsRestored = true;
+}
+
+void CareerSessionRestoreRules( CHalfLifeMultiplay* rules )
+{
+	if ( restartSession.settingsRestored && IsRestartSessionMap() )
+	{
+		rules->SetCareerMatchLimit( restartSession.wins, restartSession.difference );
+		CVAR_SET_FLOAT( "mp_windifference", restartSession.difference );
+	}
+}
+
+void CareerSessionRestoreTasks()
+{
+	if ( restartSession.settingsRestored && IsRestartSessionMap() )
+	{
+		for ( const CareerTaskDefinition& task : restartSession.tasks )
+			TheCareerTasks->AddTask( task.name.c_str(), task.weapon.c_str(), task.count,
+				task.mustLive, task.crossRounds, task.initiallyComplete );
+	}
+}
+
+void CareerSessionRestoreBots()
+{
+	if ( !restartSession.settingsRestored || !IsRestartSessionMap() )
+		return;
+	int restored = 0;
+	for ( const CareerBotDefinition& bot : restartSession.bots )
+	{
+		const BotProfile* profile = TheBotProfiles->GetProfile( bot.profile.c_str(), bot.team );
+		if ( profile && TheCSBots()->AddBot( profile, bot.team ) )
+			++restored;
+		else
+			ALERT( at_console, "Could not restore Career bot %s\n", bot.profile.c_str() );
+	}
+	if ( restored == static_cast<int>( restartSession.bots.size() ) )
+	{
+		CVAR_SET_FLOAT( "bot_quota", restartSession.botQuota );
+		CVAR_SET_FLOAT( "bot_quota_match", restartSession.botQuotaMatch );
+	}
+	else
+	{
+		// Keep missing named bots from being silently replaced with random profiles.
+		CVAR_SET_FLOAT( "bot_quota", restored );
+		CVAR_SET_FLOAT( "bot_quota_match", 0 );
+	}
+	restartSession = CareerRestartSession{};
+}
 
 class CPreventDefuseTask : public CCareerTask
 {
@@ -386,6 +544,7 @@ void CCareerTaskManager::Reset( bool deleteTasks )
 {
 	if ( deleteTasks )
 	{
+		activeTaskDefinitions.clear();
 		for ( CareerTaskList::iterator i = m_tasks.begin(); i != m_tasks.end(); ++i )
 			delete *i;
 		m_tasks.clear();
@@ -406,6 +565,7 @@ void CCareerTaskManager::Reset( bool deleteTasks )
 void CCareerTaskManager::AddTask( const char* taskName, const char* weaponName, int eventCount,
 	bool mustLive, bool crossRounds, bool isComplete )
 {
+	activeTaskDefinitions.push_back( { taskName, weaponName, eventCount, mustLive, crossRounds, isComplete } );
 	++m_nextId;
 	for ( const TaskInfo* pInfo = taskInfo; pInfo->taskName; ++pInfo )
 	{
@@ -427,6 +587,32 @@ void CCareerTaskManager::AddTask( const char* taskName, const char* weaponName, 
 		WRITE_STRING( "TASKDONE" );
 		WRITE_BYTE( m_nextId );
 	MESSAGE_END();
+}
+
+void CCareerTaskManager::SyncToPlayer( CBasePlayer* player ) const
+{
+	auto task = m_tasks.begin();
+	for ( int id = 1; id <= m_nextId; ++id )
+	{
+		// Unknown task types are intentionally auto-completed by AddTask.
+		bool complete = true;
+		int partial = 0;
+		if ( task != m_tasks.end() && ( *task )->m_id == id )
+		{
+			complete = ( *task )->m_isComplete;
+			partial = ( *task )->m_eventsSeen;
+			++task;
+		}
+		MESSAGE_BEGIN( MSG_ONE, gmsgCZCareer, NULL, player->edict() );
+			WRITE_STRING( complete ? "TASKDONE" : "TASKUNDONE" );
+			WRITE_BYTE( id );
+		MESSAGE_END();
+		MESSAGE_BEGIN( MSG_ONE, gmsgCZCareer, NULL, player->edict() );
+			WRITE_STRING( "TASKPART" );
+			WRITE_BYTE( id );
+			WRITE_SHORT( partial );
+		MESSAGE_END();
+	}
 }
 
 void CCareerTaskManager::HandleEvent( GameEventType event, CBasePlayer* pAttacker, CBasePlayer* pVictim )

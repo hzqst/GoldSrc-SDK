@@ -32,6 +32,7 @@
 #include "spectator.h"
 #include "soundent.h"
 #include "gamerules.h"
+#include "career_tasks.h"
 #include "game.h"
 #include "customentity.h"
 #include "entity_state.h"
@@ -2186,6 +2187,7 @@ void ServerActivate( edict_t* entities, int count, int maxClients )
 			ALERT( at_console, "Can't instance %s\n", STRING( entity->v.classname ) );
 	}
 	LinkUserMessages();
+	CareerSessionRestoreTasks();
 	WriteSigonMessages();
 	if ( g_pGameRules )
 		g_pGameRules->CheckMapConditions();
@@ -2201,6 +2203,7 @@ void ServerDeactivate()
 	if ( g_serveractive != 1 )
 		return;
 	g_serveractive = 0;
+	CareerSessionOnServerDeactivate();
 	g_pGameRules->ServerDeactivate();
 	CLocalNav::Reset();
 	TheBots->ServerDeactivate();

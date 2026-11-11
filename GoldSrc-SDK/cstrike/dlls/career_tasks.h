@@ -6,10 +6,19 @@
 
 class CBasePlayer;
 class CCareerTask;
+class CHalfLifeMultiplay;
+
+void CareerSessionPrepareForReset();
+void CareerSessionOnServerDeactivate();
+void CareerSessionRestoreSettings();
+void CareerSessionRestoreRules( CHalfLifeMultiplay* rules );
+void CareerSessionRestoreTasks();
+void CareerSessionRestoreBots();
 typedef std::list<CCareerTask*> CareerTaskList;
 
 class CCareerTask
 {
+	friend class CCareerTaskManager;
 public:
 	CCareerTask( const char* taskName, GameEventType event, const char* weaponName, int n,
 		bool mustLive, bool crossRounds, int id, bool isComplete );
@@ -56,6 +65,7 @@ public:
 	void Reset( bool deleteTasks );
 	void AddTask( const char* taskName, const char* weaponName, int eventCount,
 		bool mustLive, bool crossRounds, bool isComplete );
+	void SyncToPlayer( CBasePlayer* player ) const;
 
 	void HandleEvent( GameEventType event, CBasePlayer* pAttacker = NULL, CBasePlayer* pVictim = NULL );
 	void HandleEnemyKill( bool wasBlind, const char* weaponName, bool headshot, bool killerHasShield,
