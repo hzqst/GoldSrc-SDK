@@ -1339,6 +1339,38 @@ float RadiusFromBounds( vec_t* mins, vec_t* maxs )
 Mod_LoadBrushModel
 =================
 */
+static void Mod_SetupSubmodel( model_t* mod, int index )
+{
+	dmodel_t* sub = &mod->submodels[index];
+	mod->hulls[0].firstclipnode = sub->headnode[0];
+	for ( int j = 1; j < MAX_MAP_HULLS; j++ )
+	{
+		mod->hulls[j].firstclipnode = sub->headnode[j];
+		mod->hulls[j].lastclipnode = mod->numclipnodes - 1;
+	}
+	mod->firstmodelsurface = sub->firstface;
+	mod->nummodelsurfaces = sub->numfaces;
+	VectorCopy( sub->maxs, mod->maxs );
+	VectorCopy( sub->mins, mod->mins );
+	mod->radius = RadiusFromBounds( mod->mins, mod->maxs );
+	mod->numleafs = sub->visleafs;
+}
+
+// Only the current world owns the global inline model names.
+void Mod_CreateInlineModels( model_t* world )
+{
+	for ( int i = 1; i < world->numsubmodels; i++ )
+	{
+		char name[16];
+		_snprintf( name, sizeof( name ), "*%i", i );
+		model_t* submodel = Mod_FindName( FALSE, name );
+		*submodel = *world;
+		Q_strncpy( submodel->name, name, sizeof( submodel->name ) - 1 );
+		submodel->name[sizeof( submodel->name ) - 1] = '\0';
+		Mod_SetupSubmodel( submodel, i );
+	}
+}
+
 void Mod_LoadBrushModel( model_t* mod, void* buffer )
 {
 	dheader_t* header = (dheader_t*)buffer;
@@ -1409,36 +1441,8 @@ void Mod_LoadBrushModel( model_t* mod, void* buffer )
 	mod->numframes = 2;		// regular and alternate animation
 	mod->flags = 0;
 
-//
-// set up the submodels (FIXME: this is confusing)
-//
-	for ( int i = 0; i < mod->numsubmodels; i++ )
-	{
-		dmodel_t* sub = &mod->submodels[i];
-		mod->hulls[0].firstclipnode = sub->headnode[0];
-		for ( int j = 1; j < MAX_MAP_HULLS; j++ )
-		{
-			mod->hulls[j].firstclipnode = sub->headnode[j];
-			mod->hulls[j].lastclipnode = mod->numclipnodes - 1;
-		}
-		mod->firstmodelsurface = sub->firstface;
-		mod->nummodelsurfaces = sub->numfaces;
-		VectorCopy( sub->maxs, mod->maxs );
-		VectorCopy( sub->mins, mod->mins );
-		mod->radius = RadiusFromBounds( mod->mins, mod->maxs );
-		mod->numleafs = sub->visleafs;
-
-		if ( i < mod->numsubmodels - 1 )
-		{	// duplicate the basic information
-			char name[10];
-			_snprintf( name, sizeof( name ), "*%i", i + 1 );
-			loadmodel = Mod_FindName( FALSE, name );
-			*loadmodel = *mod;
-			Q_strncpy( loadmodel->name, name, sizeof( loadmodel->name ) - 1 );
-			loadmodel->name[sizeof( loadmodel->name ) - 1] = 0;
-			mod = loadmodel;
-		}
-	}
+	if ( mod->numsubmodels > 0 )
+		Mod_SetupSubmodel( mod, 0 );
 }
 
 /*

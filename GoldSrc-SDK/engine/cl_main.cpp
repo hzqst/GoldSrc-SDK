@@ -587,6 +587,7 @@ void CL_RegisterResources( sizebuf_t* msg )
 
 	cl_entities[0].model = cl.worldmodel;
 
+	Mod_CreateInlineModels( cl.worldmodel );
 	CL_PrecacheBSPModels( cl.model_precache[1]->name );
 	if ( cls.state == ca_disconnected )
 		return;
