@@ -132,21 +132,9 @@ void CCommandLine::CreateCmdLine( const char* commandLine )
 	char expanded[COMMAND_BUFFER_SIZE];
 	char fileName[PARAMETER_FILE_BUFFER_SIZE];
 
-	delete[] m_pszCmdLine;
-
-	char* copy;
-	if ( commandLine != NULL )
-	{
-		copy = new char[strlen( commandLine ) + 1];
-		strcpy( copy, commandLine );
-	}
-	else
-	{
-		copy = NULL;
-	}
-
+	const std::string input( commandLine ? commandLine : "" );
 	char* out = expanded;
-	const char* cursor = copy;
+	const char* cursor = input.c_str();
 	bool atTokenStart = true;
 
 #pragma warning( suppress : 6011 )
@@ -221,10 +209,10 @@ void CCommandLine::CreateCmdLine( const char* commandLine )
 	}
 
 	*out = '\0';
-	delete[] copy;
-
-	m_pszCmdLine = new char[strlen( expanded ) + 1];
-	strcpy( m_pszCmdLine, expanded );
+	char* replacement = new char[strlen( expanded ) + 1];
+	strcpy( replacement, expanded );
+	delete[] m_pszCmdLine;
+	m_pszCmdLine = replacement;
 }
 
 const char* CCommandLine::CheckParm( const char* parameter, char** value )
