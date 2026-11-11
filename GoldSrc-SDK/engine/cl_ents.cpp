@@ -835,6 +835,13 @@ int CL_InterpolateModel( cl_entity_t* e )
 	if ( !ph0 || !ph1 )
 		return 0;
 
+	if ( ph0 == ph1 && ph0->animtime != 0.0f )
+	{
+		VectorCopy( ph0->origin, e->origin );
+		VectorCopy( ph0->angles, e->angles );
+		return 1;
+	}
+
 	dt = targettime - ph1->animtime;
 	if ( dt < 0.0f )
 		return 0;

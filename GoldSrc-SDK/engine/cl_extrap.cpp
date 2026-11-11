@@ -47,16 +47,18 @@ qboolean CL_FindInterpolationUpdates(
 	imod = ent->current_position;
 	i0 = imod & HISTORY_MASK;
 	i1 = ( imod - 1 ) & HISTORY_MASK;
+	int oldest = i0;
 
 	extrapolate = TRUE;
 
 	if ( ent->ph[i0].animtime >= targettime )
 	{
-		for ( i = 1; i < HISTORY_MAX - 1; i++ )
+		for ( i = 1; i < HISTORY_MAX; i++ )
 		{
 			at = ent->ph[( imod - i ) & HISTORY_MASK].animtime;
 			if ( at == 0 )
 				break;
+			oldest = ( imod - i ) & HISTORY_MASK;
 
 			if ( !( at >= targettime ) )
 			{
@@ -66,6 +68,13 @@ qboolean CL_FindInterpolationUpdates(
 				break;
 			}
 		}
+	}
+
+	if ( extrapolate && ent->ph[oldest].animtime != 0.0f
+		 && ( targettime <= ent->ph[oldest].animtime || ent->ph[i1].animtime == 0.0f ) )
+	{
+		i0 = i1 = oldest;
+		extrapolate = FALSE;
 	}
 
 	if ( ph0 )
