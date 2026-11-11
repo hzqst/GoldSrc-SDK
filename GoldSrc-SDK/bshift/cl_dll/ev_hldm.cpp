@@ -1455,18 +1455,21 @@ void EV_EgonFire( event_args_t *args )
 
 			int iBeamModelIndex = gEngfuncs.pEventAPI->EV_FindModelIndex( EGON_BEAM_SPRITE );
 
-			// Beam RGB uses normalized components in both renderers.
-			const float r = 50.0f / 255.0f;
-			const float g = 50.0f / 255.0f;
+			// Encode the original renderer-specific color for compatibility decoding.
+			const float legacyRedGreen = IEngineStudio.IsHardware() ? 0.5f : 50.0f;
+			const float r = legacyRedGreen / 255.0f;
+			const float g = legacyRedGreen / 255.0f;
 			const float b = 125.0f / 255.0f;
 				
 		
 			pBeam = gEngfuncs.pEfxAPI->R_BeamEntPoint ( idx | 0x1000, tr.endpos, iBeamModelIndex, 99999, 3.5, 0.2, 0.7, 55, 0, 0, r, g, b );
 
 			if ( pBeam )
-				 pBeam->flags |= ( FBEAM_SINENOISE );
+				 pBeam->flags |= FBEAM_SINENOISE | FBEAM_LEGACY_COLOR255;
  
 			pBeam2 = gEngfuncs.pEfxAPI->R_BeamEntPoint ( idx | 0x1000, tr.endpos, iBeamModelIndex, 99999, 5.0, 0.08, 0.7, 25, 0, 0, r, g, b );
+			if ( pBeam2 )
+				pBeam2->flags |= FBEAM_LEGACY_COLOR255;
 		}
 	}
 }

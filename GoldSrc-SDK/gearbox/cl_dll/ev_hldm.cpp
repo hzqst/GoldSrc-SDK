@@ -1453,10 +1453,12 @@ void EV_EgonFire( event_args_t *args )
 				99999, 3.5, 0.2, 0.075, 5, 0, 0.15, 5.0f / 255.0f, 5.0f / 255.0f, 25.5f / 255.0f );
 
 			if ( pBeam )
-				 pBeam->flags |= ( FBEAM_SINENOISE );
+				 pBeam->flags |= FBEAM_SINENOISE | FBEAM_LEGACY_COLOR255;
  
 			pBeam2 = gEngfuncs.pEfxAPI->R_BeamEntPoint( idx | 0x1000, tr.endpos, iBeamModelIndex,
 				99999, 5, 0.08, 0.1, 2.5, 0, 0.15, 5.0f / 255.0f, 5.0f / 255.0f, 25.5f / 255.0f );
+			if ( pBeam2 )
+				pBeam2->flags |= FBEAM_LEGACY_COLOR255;
 			int sprite = gEngfuncs.pEventAPI->EV_FindModelIndex( EGON_FLARE_SPRITE );
 			pSprite = gEngfuncs.pEfxAPI->R_TempSprite( tr.endpos, Vector( 0, 0, 0 ), 1, sprite,
 				kRenderGlow, kRenderFxNoDissipation, 1, 1, FTENT_SPRANIMATE );

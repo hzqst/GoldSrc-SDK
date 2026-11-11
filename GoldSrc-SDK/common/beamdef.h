@@ -26,6 +26,10 @@
 #define FBEAM_SOLID				0x00000020
 #define FBEAM_SHADEIN			0x00000040
 #define FBEAM_SHADEOUT			0x00000080
+// RGB is a normalized encoding of legacy 0..255 components. Decode before
+// brightness, then apply the renderer's original vertex-color conversion.
+// Requires matching engine support; deploy the engine and client together.
+#define FBEAM_LEGACY_COLOR255	0x00000100
 #define FBEAM_STARTVISIBLE		0x10000000		// Has this client actually seen this beam's start entity yet?
 #define FBEAM_ENDVISIBLE		0x20000000		// Has this client actually seen this beam's end entity yet?
 #define FBEAM_ISACTIVE			0x40000000
