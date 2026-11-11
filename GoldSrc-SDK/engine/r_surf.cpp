@@ -1439,7 +1439,7 @@ int R_DecalUnProject( decal_t* decal, vec_t* position )
 		position[1] = DotProduct( right, temp );
 		position[2] = DotProduct( up, temp );
 	}
-	if ( model->firstmodelsurface )
+	if ( model != sv.worldmodel )
 	{
 		VectorAdd( position, model->hulls[0].clip_mins, position );
 		VectorAdd( position, ent->v.origin, position );
@@ -1735,7 +1735,7 @@ void R_DecalShoot_( texture_t* texture, int index, int entity, int modelIndex, v
 	mnode_t* node = gDecalModel->nodes;
 	if ( entity )
 	{
-		if ( gDecalModel->firstmodelsurface )
+		if ( gDecalModel != cl.worldmodel )
 		{
 			node += gDecalModel->hulls[0].firstclipnode;
 #if defined( _WIN32 )

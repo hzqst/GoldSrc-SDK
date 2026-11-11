@@ -1648,7 +1648,7 @@ int R_DecalUnProject( decal_t* decal, vec_t* position )
 		position[2] = DotProduct( temp, up );
 	}
 
-	if ( model->firstmodelsurface )
+	if ( model != sv.worldmodel )
 	{
 		VectorAdd( position, model->hulls[0].clip_mins, position );
 		VectorAdd( position, ent->v.origin, position );
