@@ -19,6 +19,8 @@ public:
 	vgui2::Panel* CreateControlByName( const char* controlName ) override;
 
 private:
+	void OnKeyCodePressed( vgui2::KeyCode code ) override;
+	void OnKeyCodeTyped( vgui2::KeyCode code ) override;
 	void OnCommand( const char* command ) override;
 	vgui2::Label*			m_pWinsLabel;
 	vgui2::Label*			m_pLossesLabel;
