@@ -98,17 +98,8 @@ void CCommandLine::CreateCmdLine( int argc, const char** argv )
 void CCommandLine::CreateCmdLine( const char* commandline )
 {
 	char szFull[COMMAND_LINE_SIZE];
-	char* pOrig = NULL;
-
-	delete[] m_pszCmdLine;
-
-	if ( commandline )
-	{
-		pOrig = new char[strlen( commandline ) + 1];
-		strcpy( pOrig, commandline );
-	}
-
-	char* pSrc = pOrig;
+	const std::string input( commandline ? commandline : "" );
+	const char* pSrc = input.c_str();
 	char* pDst = szFull;
 	bool allowAtSign = true;
 
@@ -169,9 +160,10 @@ void CCommandLine::CreateCmdLine( const char* commandline )
 	}
 
 	*pDst = '\0';
-	delete[] pOrig;
-	m_pszCmdLine = new char[strlen( szFull ) + 1];
-	strcpy( m_pszCmdLine, szFull );
+	char* replacement = new char[strlen( szFull ) + 1];
+	strcpy( replacement, szFull );
+	delete[] m_pszCmdLine;
+	m_pszCmdLine = replacement;
 }
 
 //-----------------------------------------------------------------------------
