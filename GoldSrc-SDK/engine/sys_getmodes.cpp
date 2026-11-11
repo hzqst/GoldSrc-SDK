@@ -626,6 +626,7 @@ void CVideoMode_Common::LoadStartupGraphic()
 			image.buffer = (byte*)malloc( STARTUP_IMAGE_BYTES );
 			if ( !LoadTGA( token, image.buffer, STARTUP_IMAGE_BYTES, &image.width, &image.height ) )
 			{
+				free( image.buffer );
 				m_ImageID.Remove( m_ImageID.Count() - 1 );
 				return;
 			}
@@ -1641,6 +1642,7 @@ void CVideoMode_Common::LoadStartupGraphic()
 			image.buffer = (byte*)malloc( STARTUP_IMAGE_BYTES );
 			if ( !LoadTGA( token, image.buffer, STARTUP_IMAGE_BYTES, &image.width, &image.height ) )
 			{
+				free( image.buffer );
 				m_ImageID.Remove( m_ImageID.Count() - 1 );
 				return;
 			}
