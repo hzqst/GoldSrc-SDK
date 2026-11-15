@@ -6,7 +6,7 @@ goldsrc_add_module(bshiftdll
 	LINUX_OUTPUT_NAME bshift
 	OUTPUT_DIR bshift/dlls
 	RUNTIME STATIC
-	DEF_FILE projects/vs2026/bshiftdll.def
+	DEF_FILE bshift/bshiftdll.def
 	NO_RTTI
 	WHOLE_PROGRAM
 	SOURCES

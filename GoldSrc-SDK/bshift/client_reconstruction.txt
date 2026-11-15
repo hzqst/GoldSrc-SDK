@@ -1,15 +1,16 @@
 Blue Shift client reconstruction
 ===============================
 
-Build bshift_cdll in projects.sln using Visual Studio 2026, v145, Win32,
-Debug or Release. The project compiles all 121 application translation units
+Build the bshift_cdll CMake target (for example `cmake --build --preset
+windows-x86-release --target bshift_cdll`), Win32, Debug or Release. The
+target compiles all 121 application translation units
 recovered from the loaded Blue Shift client.so. The ELF also records four
 compiler/runtime files; these are supplied by the Windows toolchain.
 
 Outputs, relative to the source root:
   bin/Win32/Debug/bshift/cl_dlls/client.dll
   bin/Win32/Release/bshift/cl_dlls/client.dll
-  bin/obj/bshift_cdll/Win32/<Configuration>/
+  bin/obj/cmake/<preset>/bshift/ (intermediate files)
 
 Source ownership:
   bshift/cl_dll: client callbacks, HUD, input/view, prediction, rendering and

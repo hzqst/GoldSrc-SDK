@@ -7,7 +7,7 @@ goldsrc_add_module(doddll
 	CXX_STANDARD 17
 	WARNING_LEVEL 4
 	RUNTIME STATIC
-	DEF_FILE projects/vs2026/doddll.def
+	DEF_FILE dod/doddll.def
 	WHOLE_PROGRAM
 	SOURCES
 		dod/dlls/alias.cpp

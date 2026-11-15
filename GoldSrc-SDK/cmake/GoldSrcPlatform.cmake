@@ -72,7 +72,7 @@ else()
 		-g
 		"SHELL:-include \"${GOLDSRC_ROOT}/common/posix_compat.h\""
 		-Werror=return-type
-		# Like MSVC (and the historical linux/Makefile), accept string literals
+		# Like MSVC (and Valve's original Linux makefiles), accept string literals
 		# passed through ternaries to the many char* engine and game APIs.
 		$<$<COMPILE_LANGUAGE:CXX>:-fpermissive>
 	)

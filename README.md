@@ -6,10 +6,10 @@
 
 <p align="center">
   <strong>Half-Life 25th Anniversary engine, games, and Hammer 3.4 source.</strong><br>
-  Visual Studio 2026 &middot; MSVC v145 &middot; Win32
+  CMake &middot; Windows (MSVC v145, Win32) &middot; Linux (GCC, i386)
 </p>
 
-GoldSrc-SDK brings together the Half-Life 25th Anniversary engine code, game client and server code, shared runtime libraries, SDK tools, and Hammer 3.4 source. The engine, games, and SDK utilities are organized into Visual Studio 2026 solutions using the MSVC v145 toolset.
+GoldSrc-SDK brings together the Half-Life 25th Anniversary engine code, game client and server code, shared runtime libraries, SDK tools, and Hammer 3.4 source. Everything is built with CMake: on Windows with Visual Studio 2026 and the MSVC v145 toolset, and on Linux with GCC as 32-bit binaries.
 
 ## What's included
 
@@ -38,45 +38,34 @@ GoldSrc-SDK brings together the Half-Life 25th Anniversary engine code, game cli
 
 ## Building
 
-### Requirements
+[`GoldSrc-SDK/CMakeLists.txt`](GoldSrc-SDK/CMakeLists.txt) builds every target, with presets in [`CMakePresets.json`](GoldSrc-SDK/CMakePresets.json). Both platforms build **32-bit x86** binaries, with **Debug** and **Release** configurations. Configure with `-DGOLDSRC_BUILD_UTILS=OFF` to skip the SDK utilities.
 
-- **Visual Studio 2026** with the **Desktop development with C++** workload.
-- **MSVC v145** C++ build tools.
+### Windows
+
+Requirements:
+
+- **CMake 4.2** or later, for the Visual Studio 2026 generator.
+- **Visual Studio 2026** with the **Desktop development with C++** workload and the **MSVC v145** C++ build tools.
 - **Windows SDK 10.0.26100.0**.
-- The dependency headers and libraries supplied under [`external/`](GoldSrc-SDK/external/) and [`lib/`](GoldSrc-SDK/lib/).
+- The dependency headers and libraries supplied under [`external/`](GoldSrc-SDK/external/) and [`lib/`](GoldSrc-SDK/lib/); no package manager is needed.
 
-The build targets **Win32 (x86)**, with **Debug** and **Release** configurations.
-
-### Visual Studio
-
-1. Open [`projects/vs2026/projects.sln`](GoldSrc-SDK/projects/vs2026/projects.sln).
-2. Select **Release** or **Debug**, and **Win32** as the platform.
-3. Build the desired projects or the solution.
-4. Open [`projects/vs2026/utils.sln`](GoldSrc-SDK/projects/vs2026/utils.sln) to build the SDK utilities.
-
-### Command line
-
-Run these commands from the repository root in the **Developer Command Prompt for VS 2026**:
-
-```bat
-cd GoldSrc-SDK
-msbuild projects\vs2026\projects.sln /m /p:Configuration=Release /p:Platform=Win32
-msbuild projects\vs2026\utils.sln /m /p:Configuration=Release /p:Platform=Win32
-```
-
-Use `/p:Configuration=Debug` for a debug build.
-
-### CMake
-
-[`CMakeLists.txt`](GoldSrc-SDK/CMakeLists.txt) builds the same targets with presets for both platforms. The Visual Studio 2026 generator needs CMake 4.2 or later.
+From the repository root:
 
 ```bat
 cd GoldSrc-SDK
 cmake --preset windows-x86
-cmake --build --preset windows-x86-release
+cmake --build --preset windows-x86-release      :: or windows-x86-debug
 ```
 
-On Linux, the build needs CMake, Ninja and a GCC with 32-bit multilib support (`g++-multilib` on Debian and Ubuntu). The engines also need [vcpkg](https://github.com/microsoft/vcpkg): set `VCPKG_ROOT`, and the configure step builds the libraries listed in [`vcpkg.json`](GoldSrc-SDK/vcpkg.json) with the [`x86-linux`](GoldSrc-SDK/cmake/triplets/x86-linux.cmake) triplet. Building them needs `autoconf`, `autoconf-archive`, `automake`, `libtool` and `nasm`, and the 32-bit X11, Xi, Xrandr, Xxf86vm, OpenGL and GLU development packages for freeglut (`libx11-dev:i386 libxi-dev:i386 libxrandr-dev:i386 libxxf86vm-dev:i386 libgl-dev:i386 libglu1-mesa-dev:i386` on Debian and Ubuntu). Without `VCPKG_ROOT`, everything except the engines and `mdlviewer` is built.
+The configure step generates a Visual Studio solution in `bin/obj/cmake/windows-x86/`, which can also be opened in the IDE. Add `--target <name>` to build a single target, for example `hw_engine` or `bshift_cdll`.
+
+### Linux
+
+Requirements:
+
+- CMake, Ninja and a GCC with 32-bit multilib support (`g++-multilib` on Debian and Ubuntu).
+- [vcpkg](https://github.com/microsoft/vcpkg) for the engines and `mdlviewer`: set `VCPKG_ROOT`, and the configure step builds the libraries listed in [`vcpkg.json`](GoldSrc-SDK/vcpkg.json) with the [`x86-linux`](GoldSrc-SDK/cmake/triplets/x86-linux.cmake) triplet. Without `VCPKG_ROOT`, everything except the engines and `mdlviewer` is built.
+- For the vcpkg libraries: `autoconf`, `autoconf-archive`, `automake`, `libtool` and `nasm`, and the 32-bit X11, Xi, Xrandr, Xxf86vm, OpenGL and GLU development packages for freeglut (`libx11-dev:i386 libxi-dev:i386 libxrandr-dev:i386 libxxf86vm-dev:i386 libgl-dev:i386 libglu1-mesa-dev:i386` on Debian and Ubuntu).
 
 ```bash
 cd GoldSrc-SDK
@@ -106,14 +95,18 @@ Configure with `-DGOLDSRC_BUILD_TESTS=ON` to register the regression tests under
 
 Runtime and game binaries are placed under `GoldSrc-SDK/`:
 
-Copy the contents of `GoldSrc-SDK/deploy/platform/` into the game's `platform/` directory to install the accompanying UI resources, including the Career error translations.
-
 ```text
 bin/Win32/Release/
 bin/Win32/Debug/
+bin/Linux32/Release/
+bin/Linux32/Debug/
 ```
 
-SDK utility executables are placed in the corresponding `utils/` subdirectory. Intermediate build files are kept under `bin/obj/`.
+SDK utility executables are placed in the `utils/` subdirectory of each. Intermediate build files are kept under `bin/obj/cmake/<preset>/`.
+
+Copy the contents of `GoldSrc-SDK/deploy/platform/` into the game's `platform/` directory to install the accompanying UI resources, including the Career error translations.
+
+The Windows outputs are:
 
 | Component | Output |
 | --- | --- |
@@ -146,13 +139,13 @@ The project files are in [`GoldSrc-SDK/`](GoldSrc-SDK/). Paths below are relativ
 | [`cl_dll/`](GoldSrc-SDK/cl_dll/), [`dlls/`](GoldSrc-SDK/dlls/) | Half-Life client and server code |
 | [`common/`](GoldSrc-SDK/common/), [`public/`](GoldSrc-SDK/public/), [`game_shared/`](GoldSrc-SDK/game_shared/), [`pm_shared/`](GoldSrc-SDK/pm_shared/) | Shared interfaces, game code, and movement code |
 | [`filesystem/`](GoldSrc-SDK/filesystem/), [`tier0/`](GoldSrc-SDK/tier0/), [`vgui2/`](GoldSrc-SDK/vgui2/), [`GameUI/`](GoldSrc-SDK/GameUI/) | Filesystem, runtime support, and UI components |
-| [`serverbrowser/`](GoldSrc-SDK/serverbrowser/) | Server browser (`ServerBrowser003`), built by `serverbrowser.vcxproj` or `linux/Makefile.serverbrowser` |
+| [`serverbrowser/`](GoldSrc-SDK/serverbrowser/) | Server browser (`ServerBrowser003`) |
 | [`worldcraft/`](GoldSrc-SDK/worldcraft/) | Hammer 3.4 editor source |
 | [`utils/`](GoldSrc-SDK/utils/) | SDK utilities and VGUI source |
-| [`projects/vs2026/`](GoldSrc-SDK/projects/vs2026/) | Visual Studio solutions, project files, and shared build settings |
+| [`cmake/`](GoldSrc-SDK/cmake/) | CMake helper modules, the Linux toolchain and the vcpkg triplet |
 | [`external/`](GoldSrc-SDK/external/), [`lib/`](GoldSrc-SDK/lib/) | Dependency headers and libraries |
 
-Counter-Strike and Condition Zero share source through the projects under `projects/vs2026/`; `czero` is a runtime output directory rather than a separate top-level source folder.
+Counter-Strike and Condition Zero are built from the same `cstrike/` source by [`cmake/GoldSrcCounterStrike.cmake`](GoldSrc-SDK/cmake/GoldSrcCounterStrike.cmake); `czero` is a runtime output directory rather than a separate top-level source folder.
 
 ## Credits
 

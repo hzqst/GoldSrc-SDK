@@ -12,5 +12,5 @@ goldsrc_add_engine(sw_engine
 	WINDOWS_ONLY
 	RENDERER SW
 	OUTPUT_NAME sw
-	DEF_FILE projects/vs2026/sw_engine.def
+	DEF_FILE engine/sw_engine.def
 )

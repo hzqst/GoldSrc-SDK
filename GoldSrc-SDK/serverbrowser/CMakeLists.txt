@@ -6,7 +6,7 @@ goldsrc_add_module(serverbrowser
 	LINUX_OUTPUT_NAME serverbrowser_linux
 	HIDDEN_VISIBILITY
 	CXX_STANDARD 17
-	DEF_FILE projects/vs2026/serverbrowser.def
+	DEF_FILE serverbrowser/serverbrowser.def
 	LINKER_WARNINGS_AS_ERRORS
 	KEEP_ASSERTS
 	LARGE_ADDRESS_AWARE

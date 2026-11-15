@@ -104,7 +104,7 @@ function(goldsrc_add_counterstrike_module target)
 		WARNINGS_AS_ERRORS
 		LINKER_WARNINGS_AS_ERRORS
 		KEEP_ASSERTS
-		DEF_FILE projects/vs2026/${target}.def
+		DEF_FILE ${arg_SOURCE_DIRECTORY}/${target}.def
 		SOURCES ${arg_SOURCES}
 		INCLUDES ${includes}
 		DEFINES ${defines}
