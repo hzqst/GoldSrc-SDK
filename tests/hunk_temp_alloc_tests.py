@@ -29,6 +29,7 @@ def function(source, signature):
 
 STUBS = r'''
 #include <climits>
+#include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -202,6 +203,7 @@ static BOOL StubUnmapViewOfFile(const void*) { return TRUE; }
 '''
 
 TESTS = r'''
+#if defined(_WIN32)
 // A minimal PE image whose only section is ".rdata" and whose export directory
 // lists two name strings; GetExportNamesLength must report 24 bytes for it.
 static void BuildSyntheticImage(std::vector<byte>& image)
@@ -240,6 +242,7 @@ static void BuildSyntheticImage(std::vector<byte>& image)
  std::memcpy(strings, names[0], nameBytes);
  std::memcpy(strings + nameBytes, names[1], nameBytes);
 }
+#endif
 
 int main(int argc, char** argv)
 {
