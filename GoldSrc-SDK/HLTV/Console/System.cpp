@@ -15,6 +15,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef _WIN32
+#define LIBRARY_SUFFIX ".dll"
+#else
+#include <time.h>
+#include <unistd.h>
+
+#define LIBRARY_SUFFIX ".so"
+
+static void Sleep( unsigned int milliseconds )
+{
+	usleep( milliseconds * 1000 );
+}
+#endif
+
+#define FILESYSTEM_LIBRARY "filesystem_stdio" LIBRARY_SUFFIX
+
 static System g_System;
 
 #ifdef _MSC_VER
@@ -23,12 +39,20 @@ static System g_System;
 System::System()
 {
 	m_State = MODULE_UNDEFINED;
+#ifdef _WIN32
 	InitializeCriticalSection( &m_ClockLock );
+#else
+	pthread_mutex_init( &m_ClockLock, NULL );
+#endif
 }
 
 System::~System()
 {
+#ifdef _WIN32
 	DeleteCriticalSection( &m_ClockLock );
+#else
+	pthread_mutex_destroy( &m_ClockLock );
+#endif
 }
 
 bool System::Init( IBaseSystem* system, int serial, char* name )
@@ -44,14 +68,19 @@ bool System::Init( IBaseSystem* system, int serial, char* name )
 
 	if ( !m_Console.Init( this ) )
 	{
+#ifdef _WIN32
 		char* message;
 		FormatMessageA( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 				NULL, GetLastError(), MAKELANGID( LANG_NEUTRAL, SUBLANG_DEFAULT ), (char*)&message, 0, NULL );
 		Errorf( "%s", message );
 		LocalFree( message );
+#else
+		Errorf( "Couldn't initialize the console.\n" );
+#endif
 		return false;
 	}
 
+#ifdef _WIN32
 	LARGE_INTEGER frequency;
 	if ( !QueryPerformanceFrequency( &frequency ) )
 	{
@@ -66,13 +95,14 @@ bool System::Init( IBaseSystem* system, int serial, char* name )
 		frequency.QuadPart = (unsigned __int64)frequency.QuadPart >> 1;
 	}
 	m_ClockFrequency = 1.0 / (double)frequency.LowPart;
+#endif
 	m_SystemTime = 0;
 	m_LastTime = 0;
 
-	m_FileSystemLibrary = Sys_LoadModule( "filesystem_stdio.dll" );
+	m_FileSystemLibrary = Sys_LoadModule( FILESYSTEM_LIBRARY );
 	if ( !m_FileSystemLibrary )
 	{
-		Errorf( "Couldn't load %s.\n", "filesystem_stdio.dll" );
+		Errorf( "Couldn't load %s.\n", FILESYSTEM_LIBRARY );
 		return false;
 	}
 
@@ -80,14 +110,14 @@ bool System::Init( IBaseSystem* system, int serial, char* name )
 	m_FileSystem = (IFileSystem*)factory( "VFileSystem009", NULL );
 	if ( !m_FileSystem )
 	{
-		Errorf( "Couldn't get IFileSystem from %s.\n", "filesystem_stdio.dll" );
+		Errorf( "Couldn't get IFileSystem from %s.\n", FILESYSTEM_LIBRARY );
 		return false;
 	}
 
 	m_FileSystem->Mount();
 	m_FileSystem->AddSearchPath( m_BaseDir, "ROOT" );
 	Printf( "FileSystem initialized" );
-	DPrintf( " (%s, %s)", "filesystem_stdio.dll", m_BaseDir );
+	DPrintf( " (%s, %s)", FILESYSTEM_LIBRARY, m_BaseDir );
 	Printf( ".\n" );
 
 	m_Commands.Init();
@@ -107,7 +137,9 @@ bool System::Init( IBaseSystem* system, int serial, char* name )
 	if ( CheckParam( "-highpriority" ) )
 	{
 		m_SleepTime = 0;
+#ifdef _WIN32
 		SetPriorityClass( GetCurrentProcess(), HIGH_PRIORITY_CLASS );
+#endif
 	}
 
 	if ( CheckParam( "-maxfps" ) )
@@ -166,13 +198,16 @@ bool System::Init( IBaseSystem* system, int serial, char* name )
 
 void System::RunFrame( double time )
 {
+#ifdef _WIN32
 	static int firstCount = 1;
 	static DWORD previousCount;
+#endif
 	float nextConsoleUpdate = 0;
 	BaseSystemModule::RunFrame( time );
 
 	while ( m_State == MODULE_RUNNING || m_State == MODULE_PAUSED )
 	{
+#ifdef _WIN32
 		EnterCriticalSection( &m_ClockLock );
 		LARGE_INTEGER counter;
 		QueryPerformanceCounter( &counter );
@@ -187,6 +222,17 @@ void System::RunFrame( double time )
 
 		previousCount = count;
 		LeaveCriticalSection( &m_ClockLock );
+#else
+		pthread_mutex_lock( &m_ClockLock );
+		static double startTime = -1.0;
+		struct timespec now;
+		clock_gettime( CLOCK_MONOTONIC, &now );
+		double seconds = (double)now.tv_sec + (double)now.tv_nsec * 1.0e-9;
+		if ( startTime < 0 )
+			startTime = seconds;
+		m_SystemTime = seconds - startTime;
+		pthread_mutex_unlock( &m_ClockLock );
+#endif
 
 		double difference = m_SystemTime - m_LastTime;
 		if ( difference == 0 )
@@ -211,8 +257,10 @@ void System::RunFrame( double time )
 				nextConsoleUpdate = (float)( m_SystemTime + 0.1f );
 			}
 
+#ifdef _WIN32
 			if ( m_VGUI )
 				vgui2::ivgui()->RunFrame();
+#endif
 
 			if ( m_State == MODULE_PAUSED )
 			{
@@ -261,6 +309,7 @@ void System::ShutDown()
 		m_FileSystem->Unmount();
 	Sys_UnloadModule( m_FileSystemLibrary );
 
+#ifdef _WIN32
 	if ( m_VGUI )
 	{
 		vgui2::surface()->Shutdown();
@@ -269,6 +318,7 @@ void System::ShutDown()
 		Sys_UnloadModule( m_VGuiLibrary );
 		Printf( "VGUI shutdown.\n" );
 	}
+#endif
 
 	if ( m_Developer )
 		Sleep( 3000 );
@@ -313,9 +363,17 @@ char* System::COM_GetBaseDir()
 {
 	static char baseDir[MAX_PATH];
 	baseDir[0] = 0;
+#ifdef _WIN32
 	if ( GetModuleFileNameA( NULL, baseDir, sizeof( baseDir ) ) )
 	{
 		char* separator = strrchr( baseDir, '\\' );
+#else
+	ssize_t length = readlink( "/proc/self/exe", baseDir, sizeof( baseDir ) - 1 );
+	if ( length > 0 )
+	{
+		baseDir[length] = 0;
+		char* separator = strrchr( baseDir, '/' );
+#endif
 		if ( separator && *separator )
 			separator[1] = 0;
 
@@ -563,11 +621,13 @@ ISystemModule* System::GetModule( char* interfaceName, char* libraryName, char* 
 	char filename[MAX_PATH];
 	strncpy( filename, libraryName, sizeof( filename ) - 1 );
 	filename[sizeof( filename ) - 1] = 0;
+#ifdef _WIN32
 	for ( char* character = filename; *character; character++ )
 	{
 		if ( *character == '/' )
 			*character = '\\';
 	}
+#endif
 
 	library_t* library = (library_t*)m_Libraries.GetFirst();
 	while ( library && _stricmp( libraryName, library->name ) )
@@ -582,7 +642,7 @@ ISystemModule* System::GetModule( char* interfaceName, char* libraryName, char* 
 			return NULL;
 		}
 
-		_snprintf( library->name, sizeof( library->name ), "%s.dll", filename );
+		_snprintf( library->name, sizeof( library->name ), "%s" LIBRARY_SUFFIX, filename );
 		library->module = Sys_LoadModule( library->name );
 		if ( !library->module )
 		{
@@ -893,6 +953,7 @@ void System::ExecuteCommand( int commandID, char* commandLine )
 	}
 }
 
+#ifdef _WIN32
 bool System::StartVGUI()
 {
 	if ( !m_FileSystemLibrary )
@@ -903,7 +964,7 @@ bool System::StartVGUI()
 	if ( CheckParam( "-novgui" ) )
 		return false;
 
-	m_VGuiLibrary = Sys_LoadModule( "vgui2.dll" );
+	m_VGuiLibrary = Sys_LoadModule( "vgui2" LIBRARY_SUFFIX );
 	m_Factories[0] = Sys_GetFactoryThis();
 	m_Factories[1] = Sys_GetFactory( m_VGuiLibrary );
 	m_Factories[2] = Sys_GetFactory( m_FileSystemLibrary );
@@ -946,6 +1007,13 @@ vgui2::Panel* System::GetPanel()
 		return m_MainPanel;
 	return NULL;
 }
+#else
+// VGUI2 is not available on Linux: modules use the text console.
+bool System::InitVGUI( IVGuiModule* )
+{
+	return false;
+}
+#endif
 
 void System_Printf( const char* format, ... )
 {
@@ -958,9 +1026,34 @@ void System_Printf( const char* format, ... )
 	g_System.Printf( "%s", text );
 }
 
+#ifdef _WIN32
 int WINAPI WinMain( _In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR commandLine, _In_ int )
 {
 	g_System.m_CommandLine.SetLine( commandLine );
+#else
+// Used by the shared text console (common/textconsole.cpp).
+void Sys_Printf( char* format, ... )
+{
+	static char text[8192];
+	va_list args;
+	va_start( args, format );
+	vsnprintf( text, sizeof( text ), format, args );
+	va_end( args );
+	g_System.Printf( "%s", text );
+}
+
+int main( int argc, char** argv )
+{
+	// Like the Windows command line, without the program name.
+	static char commandLine[2048];
+	for ( int i = 1; i < argc; ++i )
+	{
+		if ( i > 1 )
+			strncat( commandLine, " ", sizeof( commandLine ) - 1 - strlen( commandLine ) );
+		strncat( commandLine, argv[i], sizeof( commandLine ) - 1 - strlen( commandLine ) );
+	}
+	g_System.m_CommandLine.SetLine( commandLine );
+#endif
 	if ( g_System.Init( &g_System, 0, "Console" ) )
 	{
 		g_System.RunFrame( 0 );

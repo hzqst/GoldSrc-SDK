@@ -787,7 +787,7 @@ qboolean SV_RecursiveHullCheck( hull_t* hull, int num, float p1f, float p2f, flo
 		frac = 0;
 	if ( frac > 1 )
 		frac = 1;
-	if ( !isfinite( frac ) )
+	if ( !std::isfinite( frac ) )
 		return FALSE;
 
 	midf = p1f + ( p2f - p1f ) * frac;

@@ -3,7 +3,9 @@
 #include "vgui_EngineSurface.h"
 #include "const.h"
 #include "filesystem.h"
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 #include <cstdlib>
 
 void VGui_Startup()

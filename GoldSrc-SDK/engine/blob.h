@@ -2,7 +2,7 @@
 
 #ifdef _WIN32
 #include <Windows.h>
-#else
+#elif !defined( HMODULE ) // public/tier1/interface.h defines it as a macro
 typedef void* HMODULE;
 #endif
 

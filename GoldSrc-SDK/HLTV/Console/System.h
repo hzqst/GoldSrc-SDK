@@ -3,11 +3,25 @@
 #include "common/BaseSystemModule.h"
 #include "common/IBaseSystem.h"
 #include "common/TokenLine.h"
+#ifdef _WIN32
 #include "TextConsoleWin32.h"
+#else
+#include "../../common/TextConsoleUnix.h"
+#include "win32_types.h"
+
+#include <climits>
+#include <pthread.h>
+
+#ifndef MAX_PATH
+#define MAX_PATH PATH_MAX
+#endif
+#endif
 #include "FileSystem.h"
 
+#ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable : 4250 )
+#endif
 
 class System : public BaseSystemModule, public IBaseSystem
 {
@@ -36,7 +50,9 @@ public:
 	void ShowConsole( bool visible ) override;
 	void LogConsole( char* filename ) override;
 	bool InitVGUI( IVGuiModule* module ) override;
+#ifdef _WIN32
 	vgui2::Panel* GetPanel() override;
+#endif
 	bool RegisterCommand( char* name, ISystemModule* module, int commandID ) override;
 	void GetCommandMatches( char* string, ObjectList* matches ) override;
 	void ExecuteString( char* commands ) override;
@@ -50,8 +66,12 @@ public:
 	char* COM_GetBaseDir() override;
 
 private:
+#ifdef _WIN32
 	friend int WINAPI WinMain( _In_ HINSTANCE instance, _In_opt_ HINSTANCE previous,
 			_In_ LPSTR commandLine, _In_ int show );
+#else
+	friend int main( int argc, char** argv );
+#endif
 
 	enum SystemCommand
 	{
@@ -90,12 +110,19 @@ private:
 	ISystemModule* FindModule( char* interfaceName, char* instanceName );
 	void OpenLogFile( char* filename );
 	void CloseLogFile();
+#ifdef _WIN32
 	bool StartVGUI();
+#endif
 
 	double				m_LastTime;
+#ifdef _WIN32
 	CTextConsoleWin32	m_Console;
 	unsigned char		m_ReservedConsole[4];
 	CRITICAL_SECTION	m_ClockLock;
+#else
+	CTextConsoleUnix	m_Console;
+	pthread_mutex_t		m_ClockLock;
+#endif
 	int					m_ClockShift;
 	double				m_ClockFrequency;
 	unsigned char		m_ReservedClock[8];
@@ -119,9 +146,13 @@ private:
 	DWORD				m_SleepTime;
 	CreateInterfaceFn	m_Factories[3];
 	bool				m_VGUI;
+#ifdef _WIN32
 	vgui2::Panel*		m_MainPanel;
+#endif
 };
 
+#ifdef _MSC_VER
 #pragma warning( pop )
+#endif
 
 void System_Printf( const char* format, ... );

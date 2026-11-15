@@ -38,6 +38,12 @@
 #ifndef _snwprintf
 #define _snwprintf swprintf
 #endif
+#ifndef _atoi64
+#define _atoi64 atoll
+#endif
+#ifndef _unlink
+#define _unlink unlink
+#endif
 
 // A macro rather than a typedef, so that "unsigned __int64" still works.
 #ifndef __int64

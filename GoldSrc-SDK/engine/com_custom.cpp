@@ -98,6 +98,7 @@ qboolean COM_CreateCustomization( customization_t* pListHead, resource_t* pResou
 			if ( pResource->nDownloadSize < 1024 || pResource->nDownloadSize > 20480 )
 				goto CustomizationError;
 
+#ifdef _WIN32
 			__try
 			{
 				bError = !CustomDecal_Init( pWad, pCust->pBuffer, pResource->nDownloadSize, playernumber );
@@ -106,6 +107,9 @@ qboolean COM_CreateCustomization( customization_t* pListHead, resource_t* pResou
 			{
 				bError = TRUE;
 			}
+#else
+			bError = !CustomDecal_Init( pWad, pCust->pBuffer, pResource->nDownloadSize, playernumber );
+#endif
 
 			if ( bError || pWad->lumpCount <= 0 )
 				goto CustomizationError;

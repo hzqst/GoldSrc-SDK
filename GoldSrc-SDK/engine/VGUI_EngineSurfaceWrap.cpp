@@ -20,7 +20,7 @@
 #include "vgui2/imousecontrol.h"
 #include "vgui_intwrap2.h"
 #include "../vgui2/vgui_surfacelib/vgui_key_translation.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 
 #include <cctype>
 #include <cstddef>

@@ -70,7 +70,6 @@ set(ENGINE_COMMON_SOURCES
 	engine/snd_mem.cpp
 	engine/snd_mix.cpp
 	engine/snd_sdl.cpp
-	engine/snd_win.cpp
 	engine/steamid.cpp
 	engine/sv_log.cpp
 	engine/sv_main.cpp
@@ -106,9 +105,6 @@ set(ENGINE_COMMON_SOURCES
 	engine/view.cpp
 	engine/voice.cpp
 	engine/voice_gain.cpp
-	engine/voice_mixer_controls.cpp
-	engine/voice_record_dsound.cpp
-	engine/voice_record_wavein.cpp
 	engine/voice_sound_engine_interface.cpp
 	engine/voice_wavefile.cpp
 	engine/wad.cpp
@@ -159,6 +155,22 @@ set(ENGINE_COMMON_SOURCES
 	engine/controls.cpp
 	vgui2/controls/controls.cpp
 	engine/VGUI_EngineSurfaceWrap.cpp
+)
+
+# DirectSound, waveIn and mixer API sound and voice support.
+set(ENGINE_WINDOWS_SOURCES
+	engine/snd_win.cpp
+	engine/voice_mixer_controls.cpp
+	engine/voice_record_dsound.cpp
+	engine/voice_record_wavein.cpp
+)
+
+# SDL sound (snd_sdl.cpp, shared above), OpenAL voice support, and a stand-in
+# for the Miles library, which is not available for Linux (no MP3 music).
+set(ENGINE_LINUX_SOURCES
+	engine/miles_null.cpp
+	engine/voice_mixer_controls_openal.cpp
+	engine/voice_record_openal.cpp
 )
 
 # OpenGL renderer.

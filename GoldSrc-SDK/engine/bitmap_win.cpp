@@ -3,7 +3,9 @@
 #include "mem.h"
 #include "zone.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 #include <cstdlib>
 #include <cstring>
 

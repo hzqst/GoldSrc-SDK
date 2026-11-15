@@ -1,12 +1,14 @@
 // gl_vidnt.c -- NT GL vid component
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #include "cvar.h"
 #include "cmd.h"
 #include "common.h"
 #include "conprint.h"
 #include "sys.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #include "../external/SDL2/SDL_opengl.h"
 #include "../external/SDL2/SDL_syswm.h"
 #include "glquake.h"
@@ -838,6 +840,7 @@ int GL_SetMode( HWND mainwindow, HDC* pmaindc, HGLRC* pbaseRC, int, const char* 
 		}
 		else
 		{
+#ifdef _WIN32
 			DEVMODEA devMode = {};
 			devMode.dmSize = sizeof( devMode );
 			EnumDisplaySettingsA( NULL, ENUM_CURRENT_SETTINGS, &devMode );
@@ -849,6 +852,7 @@ int GL_SetMode( HWND mainwindow, HDC* pmaindc, HGLRC* pbaseRC, int, const char* 
 			{
 				Con_DPrintf( "Frequency %d is not supported by your monitor\n", devMode.dmDisplayFrequency );
 			}
+#endif
 		}
 	}
 

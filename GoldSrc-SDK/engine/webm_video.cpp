@@ -5,7 +5,7 @@
 #include "sound.h"
 #include "sys.h"
 
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #ifndef SW_RENDERER
 #include "../external/SDL2/SDL_opengl.h"
 #endif

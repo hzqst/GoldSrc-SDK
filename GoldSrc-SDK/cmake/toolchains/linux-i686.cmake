@@ -14,3 +14,15 @@ set(CMAKE_MODULE_LINKER_FLAGS_INIT "-m32")
 
 # Search the Debian/Ubuntu multiarch directories for i386 system libraries.
 set(CMAKE_LIBRARY_ARCHITECTURE i386-linux-gnu)
+
+# The Linux engine's third-party libraries come from vcpkg (see vcpkg.json and
+# cmake/triplets/x86-linux.cmake). Chain to the vcpkg toolchain when it is
+# available; without it, the engine targets are skipped.
+if(NOT DEFINED GOLDSRC_VCPKG_ROOT AND DEFINED ENV{VCPKG_ROOT})
+	set(GOLDSRC_VCPKG_ROOT "$ENV{VCPKG_ROOT}")
+endif()
+if(GOLDSRC_VCPKG_ROOT AND EXISTS "${GOLDSRC_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+	set(VCPKG_TARGET_TRIPLET x86-linux CACHE STRING "")
+	set(VCPKG_OVERLAY_TRIPLETS "${CMAKE_CURRENT_LIST_DIR}/../triplets" CACHE STRING "")
+	include("${GOLDSRC_VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+endif()

@@ -27,7 +27,7 @@
 #include "sys.h"
 #include "traceinit.h"
 
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 
 #include <cstdarg>
 #include <cstdio>
@@ -840,8 +840,12 @@ EXPOSE_SINGLE_INTERFACE( CGameUIFuncs, IGameUIFuncs, "VENGINE_GAMEUIFUNCS_VERSIO
 
 #else
 
+#ifdef _WIN32
 #include <winsock2.h>
 #include <Windows.h>
+#else
+#include <netdb.h>
+#endif
 
 #include "interface.h"
 #include "keys.h"
@@ -865,11 +869,15 @@ EXPOSE_SINGLE_INTERFACE( CGameUIFuncs, IGameUIFuncs, "VENGINE_GAMEUIFUNCS_VERSIO
 #include "sys.h"
 #include "traceinit.h"
 
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 
 #include <clocale>
+#ifdef _WIN32
 #include <eh.h>
 #include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
 #include <mmintrin.h>
 #include <cstdarg>
 #include <cstdint>
@@ -1096,7 +1104,12 @@ const char* szCommonPreloads = "multiplayer_preloads";
 static IDedicatedExports* dedicated;
 static double g_flLastSteamProgressUpdateTime;
 static qboolean g_PerfCounterInitialized;
+#if !defined( _WIN32 )
+extern "C" HINSTANCE QGL_InitNull();
+#endif
+#ifdef _WIN32
 static CRITICAL_SECTION g_PerfCounterMutex;
+#endif
 extern int gD3DMode;
 
 CGameUIFuncs::~CGameUIFuncs()
@@ -1163,6 +1176,7 @@ void Sys_InitLauncherInterface()
 {
 	int registers[4];
 	gHasMMXTechnology = false;
+#ifdef _WIN32
 	__try
 	{
 		__cpuid( registers, 1 );
@@ -1178,6 +1192,15 @@ void Sys_InitLauncherInterface()
 		gHasMMXTechnology = false;
 	}
 	g_hOpenGL = GetModuleHandleA( "opengl32.dll" );
+#else
+	unsigned int eax, ebx, ecx, edx;
+	if ( __get_cpuid( 1, &eax, &ebx, &ecx, &edx ) && ( edx & ( 1 << 23 ) ) )
+	{
+		_mm_empty();
+		gHasMMXTechnology = true;
+	}
+	static_cast<void>( registers );
+#endif
 	VID_FlipScreen = Sys_VID_FlipScreen;
 	D_SurfaceCacheForRes = Sys_GetSurfaceCacheSize;
 	Launcher_ConsolePrintf = Legacy_Sys_Printf;
@@ -1208,6 +1231,7 @@ qboolean Sys_IsWin98()
 
 void Sys_CheckOSVersion()
 {
+#ifdef _WIN32
 	OSVERSIONINFOA version = {};
 	version.dwOSVersionInfoSize = sizeof( version );
 #pragma warning( push )
@@ -1225,6 +1249,7 @@ void Sys_CheckOSVersion()
 		else if ( version.dwMinorVersion - 1 <= 88 )
 			g_bIsWin98 = true;
 	}
+#endif
 }
 
 void Sys_Shutdown()
@@ -1233,10 +1258,13 @@ void Sys_Shutdown()
 	Steam_ShutdownClient();
 	if ( g_PerfCounterInitialized )
 	{
+#ifdef _WIN32
 		DeleteCriticalSection( &g_PerfCounterMutex );
+#endif
 		g_PerfCounterInitialized = false;
 	}
-	GL_Shutdown( reinterpret_cast<HWND>( *pmainwindow ), maindc, baseRC );
+	if ( !g_bIsDedicatedServer )
+		GL_Shutdown( reinterpret_cast<HWND>( *pmainwindow ), maindc, baseRC );
 }
 
 void Sys_ShutdownArgv()
@@ -1531,8 +1559,17 @@ int Sys_InitGame( char* cmdline, [[maybe_unused]] char* basedir, void* windowAdd
 	Sys_InitMemory();
 	TraceInit( "Sys_InitLauncherInterface()", "Sys_ShutdownLauncherInterface()", 0 );
 	Sys_InitLauncherInterface();
-	if ( GL_SetMode( reinterpret_cast<HWND>( *pmainwindow ), &maindc, &baseRC, gD3DMode, "opengl32.dll", cmdline ) == 0 )
+	// A dedicated server (engine_i486.so on Linux) has no window to render to.
+	if ( g_bIsDedicatedServer )
+	{
+#if !defined( _WIN32 )
+		QGL_InitNull();
+#endif
+	}
+	else if ( GL_SetMode( reinterpret_cast<HWND>( *pmainwindow ), &maindc, &baseRC, gD3DMode, "opengl32.dll", cmdline ) == 0 )
+	{
 		return 0;
+	}
 
 	TraceInit( "Host_Init( &host_parms )", "Host_Shutdown()", 0 );
 	Host_Init( &host_parms );
@@ -1552,11 +1589,12 @@ int Sys_InitGame( char* cmdline, [[maybe_unused]] char* basedir, void* windowAdd
 	}
 
 #if !defined( _WIN32 )
+	// The client's fonts need the locale; a dedicated server has no window to warn in.
 	const char* localeName = "en_US.UTF-8";
 	char* currentLocale = std::setlocale( LC_ALL, nullptr );
 	if ( currentLocale == nullptr )
 		currentLocale = const_cast<char*>( "c" );
-	if ( Q_strcasecmp( currentLocale, localeName ) != 0 )
+	if ( !g_bIsDedicatedServer && Q_strcasecmp( currentLocale, localeName ) != 0 )
 	{
 		char message[kLocaleMessageBytes];
 		std::snprintf( message, sizeof( message ),
@@ -1638,6 +1676,7 @@ int RunListenServer( void* instance, char* basedir, char* cmdline, char* postRes
 	return result;
 }
 
+#ifdef _WIN32
 static void ExceptionHandler( unsigned int code, EXCEPTION_POINTERS* exception )
 {
 	char message[256];
@@ -1645,6 +1684,7 @@ static void ExceptionHandler( unsigned int code, EXCEPTION_POINTERS* exception )
 	SteamAPI_SetMiniDumpComment( message );
 	SteamAPI_WriteMiniDump( code, exception, build_number() );
 }
+#endif
 
 int CEngineAPI::Run( void* instance, char* basedir, char* cmdline, char* postRestartCmdLineArgs,
 	CreateInterfaceFn launcherFactory, CreateInterfaceFn filesystemFactory )
@@ -1654,7 +1694,9 @@ int CEngineAPI::Run( void* instance, char* basedir, char* cmdline, char* postRes
 		char* build = va( const_cast<char*>( "%d" ), build_number() );
 		SteamAPI_UseBreakpadCrashHandler( build, "Oct  7 2024", "19:06:44", 0, nullptr, nullptr );
 	}
+#ifdef _WIN32
 	_set_se_translator( ExceptionHandler );
+#endif
 	try
 	{
 		return RunListenServer( instance, basedir, cmdline, postRestartCmdLineArgs, launcherFactory, filesystemFactory );

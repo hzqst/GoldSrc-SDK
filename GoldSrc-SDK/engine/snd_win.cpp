@@ -4,7 +4,7 @@
 #include "common.h"
 #include "conprint.h"
 #include "filesystem.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #include "../external/SDL2/SDL_syswm.h"
 
 #include <windows.h>

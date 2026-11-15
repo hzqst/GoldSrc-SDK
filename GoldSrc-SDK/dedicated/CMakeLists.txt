@@ -93,3 +93,30 @@ goldsrc_add_module(hlds
 goldsrc_source_properties(engine/mem.c
 	LANGUAGE CXX
 )
+
+# Text console front end for Linux (no VGUI administration window).
+if(NOT WIN32)
+	goldsrc_add_module(hlds_linux
+		TYPE EXECUTABLE
+		CXX_STANDARD 17
+		KEEP_ASSERTS
+		SOURCES
+			dedicated/sys_ded_linux.cpp
+			common/textconsole.cpp
+			common/TextConsoleUnix.cpp
+			common/commandline.cpp
+			common/ObjectList.cpp
+			engine/interface.cpp
+			engine/mem.c
+		INCLUDES
+			dedicated
+			engine
+			common
+			public
+			.
+		DEFINES
+			HLDS_LAUNCHER
+		LINK
+			${CMAKE_DL_LIBS}
+	)
+endif()

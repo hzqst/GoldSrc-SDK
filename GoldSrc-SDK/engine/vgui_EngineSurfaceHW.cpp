@@ -11,8 +11,8 @@
 #include "ivideomode.h"
 #include "vgui_int.h"
 #include "view.h"
-#include "../external/sdl2/SDL.h"
-#include "../external/sdl2/SDL_opengl.h"
+#include "../external/SDL2/SDL.h"
+#include "../external/SDL2/SDL_opengl.h"
 #include "../external/SDL2/SDL_opengl_glext.h"
 #include <cstdio>
 #include <cstdlib>

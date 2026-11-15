@@ -3,7 +3,7 @@
 #if defined( SW_RENDERER )
 #include "igame.h"
 #include "const.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 
 class CGame : public IGame
 {
@@ -56,7 +56,7 @@ extern CGame g_Game;
 
 #include "igame.h"
 #include "const.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 
 class CGame : public IGame
 {

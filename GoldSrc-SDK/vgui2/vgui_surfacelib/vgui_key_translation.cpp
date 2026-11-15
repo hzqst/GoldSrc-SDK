@@ -1,6 +1,6 @@
 #include "vgui_key_translation.h"
 #include "vgui/MouseCode.h"
-#include "../../external/sdl2/SDL.h"
+#include "../../external/SDL2/SDL.h"
 
 #include <cstdint>
 #include <cstring>

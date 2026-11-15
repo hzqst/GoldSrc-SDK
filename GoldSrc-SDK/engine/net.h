@@ -19,12 +19,17 @@
 #define MAX_PATH 260
 #endif
 
+#ifdef _WIN32
 typedef enum
 {
 	NS_CLIENT,
 	NS_SERVER,
 	NS_MULTICAST
 } netsrc_t;
+#else
+// APIProxy.h declares netsrc_t from enums.h outside Windows.
+#include "enums.h"
+#endif
 
 extern netadr_t net_local_adr;
 extern netadr_t net_from; // address of who sent the packet

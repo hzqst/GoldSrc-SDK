@@ -13,9 +13,11 @@
 #include "../common/const.h"
 #include "../common/Sequence.h"
 
+#ifdef _WIN32
 #include <windows.h>
 #include <mmsystem.h>
 #include <dsound.h>
+#endif
 
 #include <algorithm>
 #include <cctype>
@@ -1610,8 +1612,10 @@ void S_MixChannelsToPaintbuffer( int end, int fPaintHiresSounds, int voiceOnly )
 	}
 }
 
+#ifdef _WIN32
 extern LPDIRECTSOUNDBUFFER pDSBuf;
 extern DWORD gSndBufSize;
+#endif
 extern cvar_t volume;
 
 static int s_careerAudioPaused;
@@ -1661,6 +1665,7 @@ void S_TransferStereo16( int end )
 	int position = paintedtime * STEREO_CHANNELS;
 	int endPosition = end * STEREO_CHANNELS;
 
+#ifdef _WIN32
 	if ( pDSBuf )
 	{
 		int retries = 0;
@@ -1684,6 +1689,7 @@ void S_TransferStereo16( int end )
 		}
 	}
 	else
+#endif
 	{
 		data = shm->buffer;
 	}
@@ -1703,8 +1709,10 @@ void S_TransferStereo16( int end )
 		position += snd_linear_count >> 1;
 	}
 
+#ifdef _WIN32
 	if ( pDSBuf )
 		pDSBuf->Unlock( data, dataSize, nullptr, 0 );
+#endif
 }
 #if defined( _MSC_VER )
 #pragma warning( pop )

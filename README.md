@@ -76,17 +76,26 @@ cmake --preset windows-x86
 cmake --build --preset windows-x86-release
 ```
 
-On Linux, the build needs CMake, Ninja and a GCC with 32-bit multilib support (`g++-multilib` on Debian and Ubuntu):
+On Linux, the build needs CMake, Ninja and a GCC with 32-bit multilib support (`g++-multilib` on Debian and Ubuntu). The engines also need [vcpkg](https://github.com/microsoft/vcpkg): set `VCPKG_ROOT`, and the configure step builds the libraries listed in [`vcpkg.json`](GoldSrc-SDK/vcpkg.json) with the [`x86-linux`](GoldSrc-SDK/cmake/triplets/x86-linux.cmake) triplet. Building them needs `autoconf`, `autoconf-archive`, `automake`, `libtool` and `nasm`. Without `VCPKG_ROOT`, everything except the engines is built.
 
 ```bash
 cd GoldSrc-SDK
+export VCPKG_ROOT=~/vcpkg
 cmake --preset linux-x86-release      # or linux-x86-debug
 cmake --build --preset linux-x86-release
 ```
 
-Linux binaries go to `bin/Linux32/<config>/`. The Linux build currently covers Tier0 (`libtier0.so`), the filesystem, the launcher (`hl_linux`), HLTV (`core.so`, `demoplayer.so`, `proxy.so`), the server browser (`platform/servers/serverbrowser_linux.so`), GameUI (`valve/cl_dlls/gameui.so`), particleman, and the client and server libraries of every included game. The Linux server libraries are `hl.so`, `opfor.so`, `bshift.so`, `cs.so` (`cstrike` and `czero`), `cz.so`, `tfc.so`, `dod.so`, `dmc.so` and `mp.so` (`ricochet`). The engines, launchers for the dedicated server and HLTV, VGUI2, and the SDK utilities are still Windows-only.
+Linux binaries go to `bin/Linux32/<config>/`. The Linux build covers:
 
-On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API modules link [`lib/public/linux32/libsteam_api.so`](GoldSrc-SDK/lib/public/linux32/), taken from the Linux Half-Life Dedicated Server (SteamCMD app 90); the build copies it next to the binaries.
+- The engine (`hw.so`), the dedicated server engine (`engine_i486.so`) and their launchers `hl_linux`, `hlds_linux` (text console) and `hltv`.
+- Tier0 (`libtier0.so`), the filesystem, HLTV (`core.so`, `demoplayer.so`, `proxy.so`), the server browser (`platform/servers/serverbrowser_linux.so`), GameUI (`valve/cl_dlls/gameui.so`) and particleman.
+- The client and server libraries of every included game. The server libraries are `hl.so`, `opfor.so`, `bshift.so`, `cs.so` (`cstrike` and `czero`), `cz.so`, `tfc.so`, `dod.so`, `dmc.so` and `mp.so` (`ricochet`).
+
+VGUI2, the software renderer, the A3D API, Hammer and the SDK utilities are still Windows-only. On Linux the engine has no MP3 music, because the Miles Sound System it uses is not available ([`engine/miles_null.cpp`](GoldSrc-SDK/engine/miles_null.cpp)).
+
+Like the Windows `swds.dll`, which is the full software engine, `engine_i486.so` is the full OpenGL engine run in dedicated mode. It therefore needs libGL, SDL2 and `vgui.so` to load, even on a server without a display. The HLTV console has no VGUI window on Linux.
+
+On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API modules link [`lib/public/linux32/libsteam_api.so`](GoldSrc-SDK/lib/public/linux32/), taken from the Linux Half-Life Dedicated Server (SteamCMD app 90). [`linux/libSDL2-2.0.so.0`](GoldSrc-SDK/linux/) is SDL 2.32.10 built with `vcpkg install --classic "sdl2[core,x11]" --triplet x86-linux --overlay-triplets=cmake/triplets` (X11, PulseAudio and PipeWire backends, loaded at run time). The build copies these libraries next to the binaries.
 
 Configure with `-DGOLDSRC_BUILD_TESTS=ON` to register the regression tests under [`tests/`](tests/) with CTest; run them with `ctest --test-dir bin/obj/cmake/<preset>`.
 

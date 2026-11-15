@@ -1,5 +1,9 @@
 // cl_main.c  -- client main loop
+#ifdef _WIN32
 #include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#endif
 
 #include "client.h"
 #include "pm_defs.h"

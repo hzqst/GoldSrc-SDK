@@ -4,7 +4,7 @@
 #include "../IEngineSurface.h"
 #include "imousecontrol.h"
 #include "../utlsymbol.h"
-#include "../UtlVector.h"
+#include "../utlvector.h"
 
 #include <cstddef>
 

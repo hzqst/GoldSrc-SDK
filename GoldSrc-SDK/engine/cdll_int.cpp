@@ -29,7 +29,7 @@
 #include "interface.h"
 #include "ivideomode.h"
 #include "enginecallbacks.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #include "../common/event_flags.h"
 #include "../common/entity_types.h"
 #include "../common/triangleapi.h"

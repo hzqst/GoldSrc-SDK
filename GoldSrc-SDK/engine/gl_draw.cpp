@@ -105,6 +105,7 @@ extern char szCustName[10];
 extern int glwidth, glheight;
 
 void GL_Upload16( byte* data, int width, int height, qboolean mipmap, int type, byte* pal, int filter );
+extern qboolean g_bIsDedicatedServer;
 void GL_Upload32( unsigned int* data, int width, int height, qboolean mipmap, int type, int filter );
 void BoxFilter3x3( byte* out, byte* in, int w, int h, int x, int y );
 void GL_ResampleAlphaTexture( byte* in, int inwidth, int inheight, byte* out, int outwidth, int outheight );
@@ -412,10 +413,14 @@ tryagain:
 	if ( g_modfuncs.m_pfnTextureLoad )
 		g_modfuncs.m_pfnTextureLoad( identifier, width, height, (char*)data );
 
-	if ( textureType == GLT_SPRITE && type == TEX_TYPE_RGBA )
-		GL_Upload32( (unsigned int*)data, width, height, mipmap, type, filter );
-	else
-		GL_Upload16( data, width, height, mipmap, type, pal, filter );
+	// A dedicated server keeps the texture list but has nothing to upload to.
+	if ( !g_bIsDedicatedServer )
+	{
+		if ( textureType == GLT_SPRITE && type == TEX_TYPE_RGBA )
+			GL_Upload32( (unsigned int*)data, width, height, mipmap, type, filter );
+		else
+			GL_Upload16( data, width, height, mipmap, type, pal, filter );
+	}
 
 	if ( glt->paletteIndex >= 0 )
 		return glt->texnum | ( ( glt->paletteIndex + 1 ) << 16 );
@@ -889,7 +894,7 @@ void GL_FreeGLTex( gltexture_t* glt )
 
 GLuint GL_GenTexture()
 {
-	GLuint texnum;
+	GLuint texnum = 0;
 
 	qglGenTextures( 1, &texnum );
 	return texnum;
