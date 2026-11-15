@@ -613,10 +613,15 @@ static int GetExportNames( const char* filename, char** names )
 {
 	OFSTRUCT openBuffer;
 
+	*names = NULL;
 	FS_GetLocalCopy( filename );
-	HANDLE file = reinterpret_cast<HANDLE>( static_cast<INT_PTR>( OpenFile( filename, &openBuffer, OF_READ ) ) );
-	if ( !file )
+
+	// OpenFile reports failure with HFILE_ERROR, not NULL
+	HFILE opened = OpenFile( filename, &openBuffer, OF_READ );
+	if ( opened == HFILE_ERROR )
 		return 0;
+
+	HANDLE file = reinterpret_cast<HANDLE>( static_cast<INT_PTR>( opened ) );
 
 	HANDLE mapping = CreateFileMappingA( file, NULL, PAGE_READONLY, 0, 0, NULL );
 	if ( !mapping )
@@ -638,7 +643,11 @@ static int GetExportNames( const char* filename, char** names )
 	if ( length )
 	{
 		buffer = static_cast<char*>( Hunk_TempAlloc( length ) );
-		CopyExportNames( image, buffer );
+		// a full hunk returns NULL, report no exports
+		if ( !buffer )
+			length = 0;
+		else
+			CopyExportNames( image, buffer );
 	}
 
 	UnmapViewOfFile( image );

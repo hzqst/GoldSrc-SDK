@@ -329,7 +329,9 @@ sfxcache_t* S_LoadSound( sfx_t* s, channel_t* ch )
 		{
 			len = FS_Size( hFile );
 			data = (byte*)Hunk_TempAlloc( len + 1 );
-			FS_Read( data, len, 1, hFile );
+			// a full hunk returns NULL, fall through to the load failure below
+			if ( data )
+				FS_Read( data, len, 1, hFile );
 			FS_Close( hFile );
 			hFile = NULL;
 		}
