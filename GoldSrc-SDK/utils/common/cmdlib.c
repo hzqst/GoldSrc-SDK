@@ -16,6 +16,8 @@
 
 #ifdef WIN32
 #include <direct.h>
+#else
+#include <unistd.h>
 #endif
 
 #ifdef NeXT
@@ -292,7 +294,9 @@ void Q_getwd (char *out)
 		Error( "getcwd failed: %s", strerror( errno ) );
    strcat (out, "\\");
 #else
-   getwd (out);
+	if ( !getcwd( out, 256 ) )
+		Error( "getcwd failed: %s", strerror( errno ) );
+	strcat (out, "/");
 #endif
 }
 

@@ -1,7 +1,14 @@
 // Model loading and command-line entry point.
 
 #include "mdldec.h"
+#ifdef _WIN32
 #include <direct.h>
+#define MDLDEC_PATH_SEPARATOR "\\"
+#else
+#include <sys/stat.h>
+#define _mkdir( path ) mkdir( path, 0777 )
+#define MDLDEC_PATH_SEPARATOR "/"
+#endif
 #include <errno.h>
 
 // LoadModel supplies the header views before success, WriteQC opens the QC file
@@ -92,7 +99,7 @@ bool CMDLDecompiler::LoadModel(const char *filename)
 		// guard: the native appends even when the 260-character path already fills the buffer.
 		if ((m_szOutputPath[strlen(m_szOutputPath) - 1] != '/' || m_szOutputPath[strlen(m_szOutputPath) - 1] != '\\')
 			&& strlen(m_szOutputPath) < sizeof(m_szOutputPath) - 1)
-			strcat(m_szOutputPath, "\\");
+			strcat(m_szOutputPath, MDLDEC_PATH_SEPARATOR);
 		for (char *separator = m_szOutputPath; *separator != 0; separator++)
 		{
 			char saved = *separator;
@@ -132,6 +139,16 @@ bool CMDLDecompiler::LoadModel(const char *filename)
 		strcpy(texturePath, filename);
 		strcpy(texturePath + strlen(texturePath) - 4, "T.mdl");
 		file = fopen(texturePath, "rb");
+#ifndef _WIN32
+		// Case-sensitive file systems: the game ships these as "<name>t.mdl".
+		if (file == NULL)
+		{
+			texturePath[strlen(texturePath) - 5] = 't';
+			file = fopen(texturePath, "rb");
+			if (file == NULL)
+				texturePath[strlen(texturePath) - 5] = 'T';
+		}
+#endif
 		if (file == NULL)
 		{
 			Log(2, "ERROR: Cannot find external textures file %s\r\n", texturePath);

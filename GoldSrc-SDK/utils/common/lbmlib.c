@@ -10,8 +10,12 @@
 
 // lbmlib.c
 
-#include <WINDOWS.H>
-#include <STDIO.H>
+#ifdef WIN32
+#include <windows.h>
+#else
+#include "../../engine/win32_types.h"
+#endif
+#include <stdio.h>
 #include <limits.h>
 
 #include "cmdlib.h"

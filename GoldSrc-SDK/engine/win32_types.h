@@ -1,11 +1,17 @@
 #pragma once
 
 // The subset of <windows.h> types and constants used by the engine, for
-// platforms that do not have it. Layouts match the Win32 definitions.
+// platforms that do not have it. Layouts match the Win32 definitions. Also
+// used by the C SDK utilities.
 
 #if !defined( _WIN32 )
 
-#include <cstdint>
+// Lets headers with their own copies of these typedefs skip them.
+#define GOLDSRC_WIN32_TYPES
+
+#ifndef __cplusplus
+#include <assert.h>	// static_assert
+#endif
 
 typedef int BOOL;
 typedef unsigned char BYTE;
@@ -25,6 +31,10 @@ typedef void* HGLRC;
 // Calling conventions only matter on Windows.
 #ifndef WINAPI
 #define WINAPI
+#endif
+
+#ifndef MAKEWORD
+#define MAKEWORD( a, b ) ( (WORD)( ( (BYTE)( a ) ) | ( (WORD)( (BYTE)( b ) ) ) << 8 ) )
 #endif
 
 #ifndef FALSE

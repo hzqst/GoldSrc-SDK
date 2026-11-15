@@ -14,14 +14,19 @@
 ////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <string.h>
+typedef unsigned char byte;	// from <windows.h>
+#endif
 
-#include <gl\gl.h>
-#include <gl\glu.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 #include "mathlib.h"
 #include "../../public/steam/steamtypes.h" // defines int32, required by studio.h
-#include "..\..\engine\studio.h"
+#include "../../engine/studio.h"
 #include "mdlviewer.h"
 
 #ifndef HAMMER_EDITOR
@@ -253,6 +258,14 @@ void StudioModel::Init( char *modelname )
 	{
 		strcpy( texturename, modelname );
 		strcpy( &texturename[strlen(texturename) - 4], "T.mdl" );
+#ifndef _WIN32
+		// Case-sensitive file systems: the game ships these as "<name>t.mdl".
+		FILE *fp = fopen( texturename, "rb" );
+		if ( fp )
+			fclose( fp );
+		else
+			texturename[strlen(texturename) - 5] = 't';
+#endif
 
 		m_ptexturehdr = LoadModel( texturename );
 	}

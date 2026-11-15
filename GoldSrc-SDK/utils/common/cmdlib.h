@@ -47,6 +47,16 @@ typedef int qboolean;
 typedef unsigned char byte;
 #endif
 
+#if !defined( WIN32 ) && !defined( __cplusplus )
+// MSVC's <stdlib.h> defines these for C sources.
+#ifndef max
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#endif
+#ifndef min
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+#endif
+#endif
+
 // the dec offsetof macro doesn't work very well...
 #define myoffsetof(type,identifier) ((size_t)&((type *)0)->identifier)
 

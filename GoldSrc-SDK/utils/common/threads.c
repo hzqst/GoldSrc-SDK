@@ -188,6 +188,117 @@ void RunThreadsOn (int workcnt, qboolean showpacifier, void(*func)(int))
 /*
 ===================================================================
 
+POSIX
+
+===================================================================
+*/
+#if !defined( WIN32 ) && defined( __linux__ )
+
+#define	USED
+
+#include <pthread.h>
+#include <unistd.h>
+
+int		numthreads = -1;
+pthread_mutex_t		crit = PTHREAD_MUTEX_INITIALIZER;
+static int enter;
+
+void ThreadSetDefault (void)
+{
+	if (numthreads == -1)	// not set manually
+	{
+		numthreads = (int)sysconf (_SC_NPROCESSORS_ONLN);
+		if (numthreads < 1 || numthreads > 32)
+			numthreads = 1;
+	}
+
+	qprintf ("%i threads\n", numthreads);
+}
+
+
+void ThreadLock (void)
+{
+	if (!threaded)
+		return;
+	pthread_mutex_lock (&crit);
+	if (enter)
+		Error ("Recursive ThreadLock\n");
+	enter = 1;
+}
+
+void ThreadUnlock (void)
+{
+	if (!threaded)
+		return;
+	if (!enter)
+		Error ("ThreadUnlock without lock\n");
+	enter = 0;
+	pthread_mutex_unlock (&crit);
+}
+
+typedef struct
+{
+	void	(*func)(int);
+	int		threadnum;
+} threadstart_t;
+
+static void *ThreadStart (void *param)
+{
+	threadstart_t	*start = (threadstart_t *)param;
+
+	start->func (start->threadnum);
+	return NULL;
+}
+
+/*
+=============
+RunThreadsOn
+=============
+*/
+void RunThreadsOn (int workcnt, qboolean showpacifier, void(*func)(int))
+{
+	pthread_t		threadhandle[MAX_THREADS];
+	threadstart_t	threadstart[MAX_THREADS];
+	int		i;
+	int		start, end;
+
+	if ( numthreads < 1 || numthreads > MAX_THREADS )
+		Error( "RunThreadsOn: invalid thread count %d", numthreads );
+	start = (int)I_FloatTime ();
+	dispatch = 0;
+	workcount = workcnt;
+	oldf = -1;
+	pacifier = showpacifier;
+	threaded = true;
+	//
+	// run threads in parallel
+	//
+	for (i=0 ; i<numthreads ; i++)
+	{
+		threadstart[i].func = func;
+		threadstart[i].threadnum = i;
+		if ( pthread_create( &threadhandle[i], NULL, ThreadStart, &threadstart[i] ) != 0 )
+			Error( "RunThreadsOn: pthread_create failed" );
+	}
+
+	for (i=0 ; i<numthreads ; i++)
+	{
+		if ( pthread_join( threadhandle[i], NULL ) != 0 )
+			Error( "RunThreadsOn: thread wait failed" );
+	}
+
+	threaded = false;
+	end = (int)I_FloatTime ();
+	if (pacifier)
+		printf (" (%i)\n", end-start);
+}
+
+
+#endif
+
+/*
+===================================================================
+
 OSF1
 
 ===================================================================

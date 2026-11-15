@@ -1,9 +1,7 @@
 # SDK utilities.
 
-# Not yet ported to Linux.
 goldsrc_add_module(bspinfo
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	WHOLE_PROGRAM
 	SOURCES
@@ -13,12 +11,12 @@ goldsrc_add_module(bspinfo
 		utils/common/scriplib.c
 	INCLUDES
 		utils/common
+	LINUX_LINK
+		m
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(light
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	WHOLE_PROGRAM
 	SOURCES
@@ -32,6 +30,9 @@ goldsrc_add_module(light
 		utils/light/trace.c
 	INCLUDES
 		utils/common
+	LINUX_LINK
+		m
+		Threads::Threads
 )
 
 # Windows-only: GDI font rasterizer.
@@ -63,10 +64,8 @@ goldsrc_add_module(makels
 		utils/makels/makels.cpp
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(mdldec
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	CXX_STANDARD 17
 	WARNING_LEVEL 4
@@ -84,32 +83,48 @@ goldsrc_add_module(mdldec
 		common
 	DEFINES
 		_USE_MATH_DEFINES
-	LINK
+	WINDOWS_LINK
 		legacy_stdio_float_rounding.obj
+	LINUX_LINK
+		m
 )
 
-# Not yet ported to Linux.
-goldsrc_add_module(mdlviewer
-	TYPE EXECUTABLE
-	WINDOWS_ONLY
-	OUTPUT_DIR utils
-	CHARSET MBCS
-	WHOLE_PROGRAM
-	SOURCES
-		utils/common/mathlib.c
-		utils/mdlviewer/mdlviewer.cpp
-		utils/mdlviewer/studio_render.cpp
-		utils/mdlviewer/studio_utils.cpp
-	INCLUDES
-		utils/common
-		common
-	LINK
-		opengl32
-		glu32
-		external/glut/lib/x86/glut32.lib
-	MSVC_OPTIONS
-		/external:I${GOLDSRC_ROOT}/external/glut/include
-)
+# Linux takes freeglut from the vcpkg manifest (vcpkg.json).
+if(NOT WIN32)
+	find_package(OpenGL QUIET COMPONENTS OpenGL)
+	find_package(GLUT QUIET)
+	if(NOT TARGET GLUT::GLUT OR NOT TARGET OpenGL::GLU)
+		message(STATUS "Skipping mdlviewer: freeglut or GLU not found. "
+			"Set VCPKG_ROOT to build freeglut from vcpkg.json.")
+	endif()
+endif()
+if(WIN32 OR (TARGET GLUT::GLUT AND TARGET OpenGL::GLU))
+	goldsrc_add_module(mdlviewer
+		TYPE EXECUTABLE
+		OUTPUT_DIR utils
+		CHARSET MBCS
+		WHOLE_PROGRAM
+		SOURCES
+			utils/common/mathlib.c
+			utils/mdlviewer/mdlviewer.cpp
+			utils/mdlviewer/studio_render.cpp
+			utils/mdlviewer/studio_utils.cpp
+		INCLUDES
+			utils/common
+			common
+		WINDOWS_LINK
+			opengl32
+			glu32
+			external/glut/lib/x86/glut32.lib
+		LINUX_LINK
+			GLUT::GLUT
+			OpenGL::GLU
+			OpenGL::GL
+			m
+		MSVC_OPTIONS
+			/external:I${GOLDSRC_ROOT}/external/glut/include
+	)
+endif()
 
 # Windows-only: Win32 file APIs.
 goldsrc_add_module(mkmovie
@@ -133,10 +148,8 @@ goldsrc_add_module(procinfo
 		utils/procinfo/procinfo.cpp
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(qbsp2
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	WHOLE_PROGRAM
 	SOURCES
@@ -145,7 +158,6 @@ goldsrc_add_module(qbsp2
 		utils/common/mathlib.c
 		utils/common/scriplib.c
 		utils/common/threads.c
-		utils/qbsp2/gldraw.c
 		utils/qbsp2/merge.c
 		utils/qbsp2/outside.c
 		utils/qbsp2/portals.c
@@ -154,23 +166,28 @@ goldsrc_add_module(qbsp2
 		utils/qbsp2/surfaces.c
 		utils/qbsp2/tjunc.c
 		utils/qbsp2/writebsp.c
+	WINDOWS_SOURCES
+		utils/qbsp2/gldraw.c
+	LINUX_SOURCES
+		utils/qbsp2/gldraw_null.c
 	INCLUDES
 		utils/common
 		external
 	DEFINES
 		DOUBLEVEC_T
 		$<$<CONFIG:Debug>:_NOENUMQBOOL>
-	LINK
+	WINDOWS_LINK
 		opengl32
 		glu32
 		external/glaux/lib/x86/glaux.lib
 		legacy_stdio_definitions
+	LINUX_LINK
+		m
+		Threads::Threads
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(qcsg
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	CHARSET MBCS
 	WHOLE_PROGRAM
@@ -182,27 +199,31 @@ goldsrc_add_module(qcsg
 		utils/common/scriplib.c
 		utils/common/threads.c
 		utils/qcsg/brush.c
-		utils/qcsg/gldraw.c
 		utils/qcsg/hullfile.c
 		utils/qcsg/map.c
 		utils/qcsg/qcsg.c
 		utils/qcsg/textures.c
+	WINDOWS_SOURCES
+		utils/qcsg/gldraw.c
+	LINUX_SOURCES
+		utils/qcsg/gldraw_null.c
 	INCLUDES
 		utils/common
 		external
 	DEFINES
 		DOUBLEVEC_T
-	LINK
+	WINDOWS_LINK
 		opengl32
 		glu32
 		external/glaux/lib/x86/glaux.lib
 		legacy_stdio_definitions
+	LINUX_LINK
+		m
+		Threads::Threads
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(qlumpy
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	WHOLE_PROGRAM
 	SOURCES
@@ -214,12 +235,12 @@ goldsrc_add_module(qlumpy
 		utils/qlumpy/quakegrb.c
 	INCLUDES
 		utils/common
+	LINUX_LINK
+		m
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(qrad
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	WHOLE_PROGRAM
 	SOURCES
@@ -235,6 +256,9 @@ goldsrc_add_module(qrad
 		utils/qrad/vismat.c
 	INCLUDES
 		utils/common
+	LINUX_LINK
+		m
+		Threads::Threads
 )
 
 # Windows-only: MFC application.
@@ -287,10 +311,8 @@ if(TARGET smdlexp)
 	set_target_properties(smdlexp PROPERTIES SUFFIX ".dle")
 endif()
 
-# Not yet ported to Linux.
 goldsrc_add_module(sprgen
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	WHOLE_PROGRAM
 	SOURCES
@@ -300,12 +322,12 @@ goldsrc_add_module(sprgen
 		utils/sprgen/sprgen.c
 	INCLUDES
 		utils/common
+	LINUX_LINK
+		m
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(studiomdl
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	WHOLE_PROGRAM
 	SOURCES
@@ -322,12 +344,15 @@ goldsrc_add_module(studiomdl
 		utils/common
 		common
 		public
+	LINUX_LINK
+		m
+	# Like MSVC, merge the tentative definitions in the shared headers.
+	GCC_OPTIONS
+		-fcommon
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(vis
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	WHOLE_PROGRAM
 	SOURCES
@@ -341,12 +366,16 @@ goldsrc_add_module(vis
 		utils/visx2/vis.c
 	INCLUDES
 		utils/common
+	LINUX_LINK
+		m
+		Threads::Threads
+	# Like MSVC, merge the tentative definitions in the shared headers.
+	GCC_OPTIONS
+		-fcommon
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(xwad
 	TYPE EXECUTABLE
-	WINDOWS_ONLY
 	OUTPUT_DIR utils
 	CHARSET MBCS
 	WHOLE_PROGRAM
@@ -359,4 +388,6 @@ goldsrc_add_module(xwad
 		utils/common
 	DEFINES
 		DOUBLEVEC_T
+	LINUX_LINK
+		m
 )

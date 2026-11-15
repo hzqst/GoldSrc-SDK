@@ -2,7 +2,11 @@
 
 #include "mdldec.h"
 
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include "../../engine/win32_types.h"
+#endif
 
 void CMDLDecompiler::WriteTextures()
 {

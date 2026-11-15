@@ -952,7 +952,9 @@ void CreateBrush (int brushnum)
 	int			contents;
 	int			h;
 
+#ifdef WIN32
 	SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_ABOVE_NORMAL);
+#endif
 
 	b = &mapbrushes[brushnum];
 

@@ -1588,12 +1588,12 @@ void ResizeTexture( s_texture_t *ptexture )
 
 	// TODO: process the texture and flag it if fullbright or transparent are used.
 	// TODO: only save as many palette entries as are actually used.
-	if (gamma != 1.8)
+	if (texgamma != 1.8)
 	{
 		// gamma correct the monster textures to a gamma of 1.8
 		float g;
 		byte *psrc = (byte *)ptexture->ppal;
-		g = gamma / 1.8;
+		g = texgamma / 1.8;
 		for (i = 0; i < 768; i++)
 		{
 			pdest[i] = pow( psrc[i] / 255.0, g ) * 255;
@@ -3016,7 +3016,7 @@ void Cmd_Mirror (void)
 void Cmd_Gamma (void)
 {
 	GetToken (false);
-	gamma = atof( token );
+	texgamma = atof( token );
 }
 
 
@@ -3415,7 +3415,7 @@ int main (int argc, char **argv)
 
 	normal_blend = cos( 2.0 * (Q_PI / 180.0));
 
-	gamma = 1.8;
+	texgamma = 1.8;
 
 	if (argc == 1)
 		Error ("usage: studiomdl [-t texture] -r(tag reversed) -n(tag bad normals) -f(flip all triangles) [-a normal_blend_angle] -h(dump hboxes) -i(ignore warnings) -p(force power of 2 textures) [-g max_sequencegroup_size(K)] file.qc");

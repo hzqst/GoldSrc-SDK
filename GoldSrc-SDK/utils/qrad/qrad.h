@@ -22,15 +22,48 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef WIN32
 #pragma warning(disable: 4142 4028)
 #define filelength IO_filelength
 #include <io.h>
 #undef filelength
 #pragma warning(default: 4142 4028)
+#endif
 
 #include <fcntl.h>
+#ifdef WIN32
 #include <direct.h>
+#endif
 #include <ctype.h>
+
+#ifndef WIN32
+// The MSVC CRT names used by qrad, mapped onto POSIX.
+#include <limits.h>
+#include <unistd.h>
+#include "../../engine/win32_types.h"
+
+#define MAX_PATH	PATH_MAX
+#define _MAX_PATH	PATH_MAX
+
+#define _int64		long long
+
+#define _stat		stat
+#define _open		open
+#define _read		read
+#define _write		write
+#define _close		close
+#define _lseek		lseek
+#define _access		access
+
+#define _O_RDONLY	O_RDONLY
+#define _O_WRONLY	O_WRONLY
+#define _O_RDWR		O_RDWR
+#define _O_CREAT	O_CREAT
+#define _O_TRUNC	O_TRUNC
+#define _O_BINARY	0
+#define _S_IREAD	S_IRUSR
+#define _S_IWRITE	S_IWUSR
+#endif
 
 typedef enum
 {
@@ -133,7 +166,7 @@ extern  float maxlight;
 extern	unsigned numbounce;
 extern	directlight_t	*directlights[MAX_MAP_LEAFS];
 extern	byte	nodehit[MAX_MAP_NODES];
-extern  float	gamma;
+extern  float	lightgamma;
 extern	float	indirect_sun;
 extern	float	smoothing_threshold;
 

@@ -34,8 +34,13 @@ void CMDLDecompiler::WriteQC()
 	fprintf( m_pQCFile, "==============================================================================\n" );
 	fprintf( m_pQCFile, "*/\n\n" );
 	fprintf( m_pQCFile, "$modelname \"%s.mdl\"\n", m_szModelName );
+#ifdef _WIN32
 	fprintf( m_pQCFile, "$cd \".\\\"\n" );
 	fprintf( m_pQCFile, "$cdtexture \".\\\"\n" );
+#else
+	fprintf( m_pQCFile, "$cd \"./\"\n" );
+	fprintf( m_pQCFile, "$cdtexture \"./\"\n" );
+#endif
 	fprintf( m_pQCFile, "$scale 1.0\n" );
 	fprintf( m_pQCFile, "$cliptotextures\n" );
 	fprintf( m_pQCFile, "\n" );

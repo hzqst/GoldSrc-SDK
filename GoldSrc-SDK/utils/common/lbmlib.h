@@ -12,12 +12,14 @@
 
 typedef unsigned char	UBYTE;
 
-#ifndef _WINDOWS_
+#if !defined( _WINDOWS_ ) && !defined( GOLDSRC_WIN32_TYPES )
 typedef short			WORD;
 #endif
 
 typedef unsigned short	UWORD;
+#ifndef GOLDSRC_WIN32_TYPES
 typedef long			LONG;
+#endif
 
 typedef enum
 {

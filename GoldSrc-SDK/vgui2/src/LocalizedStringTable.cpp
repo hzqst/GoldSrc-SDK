@@ -15,7 +15,7 @@
 #include "platform.h"
 #include "KeyValues.h"
 #include "UnicodeFileHelpers.h"
-#include "filesystem.h"
+#include "FileSystem.h"
 #include "vgui/ISurface.h"
 #include "vgui/ISystem.h"
 #include "vgui/IVGui.h"

@@ -149,6 +149,7 @@ triangulation_t	*AllocTriangulation (dplane_t *plane)
 	triangulation_t	*t = NULL;
 
 
+#ifdef WIN32
     HANDLE h;
 	if ( h = GlobalAlloc( GMEM_FIXED | GMEM_ZEROINIT, sizeof(triangulation_t) ) )
 	{
@@ -158,6 +159,10 @@ triangulation_t	*AllocTriangulation (dplane_t *plane)
 			GlobalFree( h );
 			Error( "Cannot lock triangulation memory!" );
 		}
+#else
+	if ( t = calloc( 1, sizeof(triangulation_t) ) )
+	{
+#endif
 
 		t->numpoints = 0;
 		t->numedges = 0;
@@ -178,6 +183,7 @@ FreeTriangulation
 */
 void FreeTriangulation (triangulation_t *tr)
 {
+#ifdef WIN32
     HANDLE h = GlobalHandle(tr);
     
 	if ( h )
@@ -187,6 +193,9 @@ void FreeTriangulation (triangulation_t *tr)
 	}
 	else
 		Error("Cannot free triangulation memory!");
+#else
+	free( tr );
+#endif
 }
 
 
@@ -1063,7 +1072,7 @@ GatherSampleLight
 */
 #define NUMVERTEXNORMALS	162
 float	r_avertexnormals[NUMVERTEXNORMALS][3] = {
-#include "..\..\engine\anorms.h"
+#include "../../engine/anorms.h"
 };
 
 #define VectorMaximum(a) ( max( (a)[0], max( (a)[1], (a)[2] ) ) )
@@ -1730,9 +1739,9 @@ void FinalLightFace (int facenum)
 			}
 
 			// gamma adjust
-			if (gamma != 1.0)
+			if (lightgamma != 1.0)
 				for( i=0; i<3; i++ )
-					lb[i] = (float)pow( lb[i] / 256.0f, gamma ) * 256.0f;
+					lb[i] = (float)pow( lb[i] / 256.0f, lightgamma ) * 256.0f;
 
 			dlightdata[f->lightofs + k*fl->numsamples*3 + j*3] = (unsigned char)lb[0];
 			dlightdata[f->lightofs + k*fl->numsamples*3 + j*3 + 1] = (unsigned char)lb[1];
