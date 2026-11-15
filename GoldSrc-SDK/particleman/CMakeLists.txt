@@ -5,7 +5,7 @@ goldsrc_add_module(particleman
 	OUTPUT_DIR valve/cl_dlls
 	CXX_STANDARD 17
 	WARNING_LEVEL 4
-	DEF_FILE projects/vs2026/particleman.def
+	DEF_FILE particleman/particleman.def
 	WARNINGS_AS_ERRORS
 	LINKER_WARNINGS_AS_ERRORS
 	SOURCES

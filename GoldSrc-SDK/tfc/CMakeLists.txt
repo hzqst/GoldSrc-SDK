@@ -6,7 +6,7 @@ goldsrc_add_module(tfcdll
 	OUTPUT_DIR tfc/dlls
 	CXX_STANDARD 17
 	WARNING_LEVEL 4
-	DEF_FILE projects/vs2026/tfcdll.def
+	DEF_FILE tfc/tfcdll.def
 	KEEP_ASSERTS
 	WHOLE_PROGRAM
 	SOURCES

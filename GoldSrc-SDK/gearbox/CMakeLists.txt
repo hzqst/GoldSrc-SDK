@@ -6,7 +6,7 @@ goldsrc_add_module(opfordll
 	OUTPUT_DIR gearbox/dlls
 	WARNING_LEVEL 4
 	RUNTIME STATIC
-	DEF_FILE projects/vs2026/opfordll.def
+	DEF_FILE gearbox/opfordll.def
 	NO_RTTI
 	WHOLE_PROGRAM
 	SOURCES

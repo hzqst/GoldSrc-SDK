@@ -1,5 +1,0 @@
-LIBRARY gunman
-EXPORTS
-	GiveFnptrsToDll=_GiveFnptrsToDll@8 @1
-	GetEntityAPI
-	GetEntityAPI2
