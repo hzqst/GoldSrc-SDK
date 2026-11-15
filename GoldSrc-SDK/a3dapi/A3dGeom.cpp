@@ -1,6 +1,8 @@
 #if defined( A3D_GEOMETRY_CORE )
 
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include "A3d3.h"
 #include "A3dGeom.h"

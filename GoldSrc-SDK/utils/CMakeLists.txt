@@ -83,7 +83,7 @@ goldsrc_add_module(mdldec
 		common
 	DEFINES
 		_USE_MATH_DEFINES
-	WINDOWS_LINK
+	MSVC_LINK_OPTIONS
 		legacy_stdio_float_rounding.obj
 	LINUX_LINK
 		m
@@ -115,7 +115,7 @@ if(WIN32 OR (TARGET GLUT::GLUT AND TARGET OpenGL::GLU))
 		WINDOWS_LINK
 			opengl32
 			glu32
-			external/glut/lib/x86/glut32.lib
+			"${GOLDSRC_ROOT}/external/glut/lib/x86/glut32.lib"
 		LINUX_LINK
 			GLUT::GLUT
 			OpenGL::GLU
@@ -168,6 +168,8 @@ goldsrc_add_module(qbsp2
 		utils/qbsp2/writebsp.c
 	WINDOWS_SOURCES
 		utils/qbsp2/gldraw.c
+	WINDOWS_INCLUDES
+		external/glaux/include
 	LINUX_SOURCES
 		utils/qbsp2/gldraw_null.c
 	INCLUDES
@@ -179,7 +181,7 @@ goldsrc_add_module(qbsp2
 	WINDOWS_LINK
 		opengl32
 		glu32
-		external/glaux/lib/x86/glaux.lib
+		"${GOLDSRC_ROOT}/external/glaux/lib/x86/glaux.lib"
 		legacy_stdio_definitions
 	LINUX_LINK
 		m
@@ -205,6 +207,8 @@ goldsrc_add_module(qcsg
 		utils/qcsg/textures.c
 	WINDOWS_SOURCES
 		utils/qcsg/gldraw.c
+	WINDOWS_INCLUDES
+		external/glaux/include
 	LINUX_SOURCES
 		utils/qcsg/gldraw_null.c
 	INCLUDES
@@ -215,7 +219,7 @@ goldsrc_add_module(qcsg
 	WINDOWS_LINK
 		opengl32
 		glu32
-		external/glaux/lib/x86/glaux.lib
+		"${GOLDSRC_ROOT}/external/glaux/lib/x86/glaux.lib"
 		legacy_stdio_definitions
 	LINUX_LINK
 		m

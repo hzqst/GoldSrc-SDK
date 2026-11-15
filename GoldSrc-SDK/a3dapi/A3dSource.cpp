@@ -1,4 +1,6 @@
+#ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include "A3dSource.h"
 #include "A3d3.h"

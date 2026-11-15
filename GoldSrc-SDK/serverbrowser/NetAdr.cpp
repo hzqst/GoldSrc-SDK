@@ -94,7 +94,7 @@ bool netadr_t::SetFromSockadr( const sockaddr *s )
 	{
 		type = NA_IP;
 
-		uint uAddress;
+		unsigned int uAddress;
 		memcpy( &uAddress, s->sa_data + 2, sizeof( uAddress ) );
 		ip = ntohl( uAddress );
 
@@ -128,7 +128,7 @@ void netadr_t::SetFromString( const char *pch, bool bUseDNS )
 		int nRes = sscanf( pch, "%d.%d.%d.%d:%d", &n1, &n2, &n3, &n4, &n5 );
 		if ( nRes > 3 )
 		{
-			ip = ( (uint)(uint8)n1 << 24 ) | ( (uint)(uint8)n2 << 16 ) | ( (uint)(uint8)n3 << 8 ) | (uint8)n4;
+			ip = ( (unsigned int)(uint8)n1 << 24 ) | ( (unsigned int)(uint8)n2 << 16 ) | ( (unsigned int)(uint8)n3 << 8 ) | (uint8)n4;
 			if ( nRes == 5 )
 				port = (unsigned short)n5;
 		}
@@ -184,7 +184,7 @@ void netmask_t::SetFromString( const char *pchCIDR )
 	if ( sscanf( pchCIDR, "%16[^/]/%u%n", szBaseIP, &nBits, &nConsumed ) == 2 )
 	{
 		sscanf( szBaseIP, "%d.%d.%d.%d", &n1, &n2, &n3, &n4 );
-		m_BaseIP = ( (uint)(uint8)n1 << 24 ) | ( (uint)(uint8)n2 << 16 ) | ( (uint)(uint8)n3 << 8 ) | (uint8)n4;
+		m_BaseIP = ( (unsigned int)(uint8)n1 << 24 ) | ( (unsigned int)(uint8)n2 << 16 ) | ( (unsigned int)(uint8)n3 << 8 ) | (uint8)n4;
 		m_Mask = 0xFFFFFFFF << ( 32 - nBits );
 	}
 }
@@ -201,14 +201,14 @@ void netmask_t::SetFromString( const char *pchBaseIP, const char *pchMask )
 	{
 		int n1 = 0, n2 = 0, n3 = 0, n4 = 0;
 		sscanf( pchBaseIP, "%d.%d.%d.%d", &n1, &n2, &n3, &n4 );
-		m_BaseIP = ( (uint)(uint8)n1 << 24 ) | ( (uint)(uint8)n2 << 16 ) | ( (uint)(uint8)n3 << 8 ) | (uint8)n4;
+		m_BaseIP = ( (unsigned int)(uint8)n1 << 24 ) | ( (unsigned int)(uint8)n2 << 16 ) | ( (unsigned int)(uint8)n3 << 8 ) | (uint8)n4;
 	}
 
 	if ( pchMask[0] >= '0' && pchMask[0] <= '9' && strchr( pchMask, '.' ) )
 	{
 		int n1 = 0, n2 = 0, n3 = 0, n4 = 0;
 		sscanf( pchMask, "%d.%d.%d.%d", &n1, &n2, &n3, &n4 );
-		m_Mask = ( (uint)(uint8)n1 << 24 ) | ( (uint)(uint8)n2 << 16 ) | ( (uint)(uint8)n3 << 8 ) | (uint8)n4;
+		m_Mask = ( (unsigned int)(uint8)n1 << 24 ) | ( (unsigned int)(uint8)n2 << 16 ) | ( (unsigned int)(uint8)n3 << 8 ) | (uint8)n4;
 	}
 }
 

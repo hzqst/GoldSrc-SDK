@@ -88,6 +88,8 @@ goldsrc_add_module(hlds
 	LINK
 		ws2_32
 		winmm
+	MSVC_LINK_OPTIONS
+		/MANIFEST:NO
 )
 
 goldsrc_source_properties(engine/mem.c
