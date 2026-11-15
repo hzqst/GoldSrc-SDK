@@ -8,15 +8,20 @@
 
 #include <stdio.h>
 
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <string.h>
+typedef unsigned char byte;	// from <windows.h>
+#endif
 
-#include <gl\gl.h>
-#include <gl\glu.h>
-#include <gl\glut.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/glut.h>
 
 #include "mathlib.h"
 #include "../../public/steam/steamtypes.h" // defines int32, required by studio.h
-#include "..\..\engine\studio.h"
+#include "../../engine/studio.h"
 #include "mdlviewer.h"
 
 
@@ -49,7 +54,11 @@ void mdlviewer_display( )
 	tempmodel.SetBlending( 1, 0.0 );
 
 	static float prev;
+#ifdef _WIN32
 	float curr = (float)( GetTickCount64() / 1000.0 );
+#else
+	float curr = (float)( glutGet( GLUT_ELAPSED_TIME ) / 1000.0 );
+#endif
 	tempmodel.AdvanceFrame( curr - prev );
 	prev = curr;
 

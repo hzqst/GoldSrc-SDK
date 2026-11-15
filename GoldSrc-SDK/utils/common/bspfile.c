@@ -87,9 +87,11 @@ FastChecksum
 int FastChecksum(void *buffer, int bytes)
 {
 	int	checksum = 0;
+	char	*data = (char *)buffer;
 
+	// Rotate left by 4, as MSVC's _rotl does.
 	while( bytes-- )  
-		checksum = _rotl(checksum, 4) ^ *((char *)buffer)++;
+		checksum = (int)( ( (unsigned int)checksum << 4 ) | ( (unsigned int)checksum >> 28 ) ) ^ *data++;
 
 	return checksum;
 }
@@ -465,7 +467,7 @@ void	WriteBSPFile (char *filename)
 #define ENTRIES(a)		(sizeof(a)/sizeof(*(a)))
 #define ENTRYSIZE(a)	(sizeof(*(a)))
 
-ArrayUsage( char *szItem, int items, int maxitems, int itemsize )
+int ArrayUsage( char *szItem, int items, int maxitems, int itemsize )
 {
 	float	percentage = (float)( maxitems ? items * 100.0 / maxitems : 0.0 );
 
@@ -482,7 +484,7 @@ ArrayUsage( char *szItem, int items, int maxitems, int itemsize )
 	return items * itemsize;
 }
 
-GlobUsage( char *szItem, int itemstorage, int maxstorage )
+int GlobUsage( char *szItem, int itemstorage, int maxstorage )
 {
 	float	percentage = (float)( maxstorage ? itemstorage * 100.0 / maxstorage : 0.0 );
     printf("%-12s     [variable]    %7i/%-7i  (%4.1f%%)", 

@@ -16,7 +16,11 @@
 #include "threads.h"
 #include "bspfile.h"
 
+#ifdef WIN32
 #include <windows.h>
+#else
+#include "../../engine/win32_types.h"
+#endif
 
 #ifndef DOUBLEVEC_T
 #error you must add -dDOUBLEVEC_T to the project!

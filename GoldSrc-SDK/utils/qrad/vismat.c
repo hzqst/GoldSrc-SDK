@@ -10,6 +10,10 @@
 
 #include "qrad.h"
 
+#ifndef WIN32
+#include <sys/statvfs.h>
+#endif
+
 #define	HALFBIT
 
 extern char		source[MAX_PATH];
@@ -329,6 +333,7 @@ _int64
 getfreespace(char *filename)
 {
 	_int64				freespace = 0;
+#ifdef WIN32
 	int					drive = 0;
 	struct _diskfree_t	df;
 
@@ -343,6 +348,21 @@ getfreespace(char *filename)
 		freespace *= df.sectors_per_cluster;
 		freespace *= df.bytes_per_sector;
 	}
+#else
+	char				dir[_MAX_PATH];
+	struct statvfs		df;
+
+	// The file may not exist yet, so query the directory that holds it.
+	ExtractFilePath( filename, dir );
+	if ( !dir[0] )
+		strcpy( dir, "." );
+
+	if ( statvfs(dir, &df) == 0 )
+	{
+		freespace = df.f_bavail;
+		freespace *= df.f_frsize;
+	}
+#endif
 
 	return freespace;
 }
@@ -477,7 +497,9 @@ BuildVisMatrix
 void BuildVisMatrix (void)
 {
 	int		c;
+#ifdef WIN32
     HANDLE h;
+#endif
 
 #ifdef HALFBIT
 	c = ((num_patches+1)*(((num_patches+1)+15)/16));
@@ -487,10 +509,15 @@ void BuildVisMatrix (void)
 
 	qprintf ("visibility matrix: %5.1f megs\n", c/(1024*1024.0));
 
+#ifdef WIN32
     if ( h = GlobalAlloc( GMEM_FIXED | GMEM_ZEROINIT, c ) )
 		vismatrix = GlobalLock( h );
 	else
 		Error ("vismatrix too big");
+#else
+	if ( !( vismatrix = calloc( 1, c ) ) )
+		Error ("vismatrix too big");
+#endif
 	
 	strcpy(vismatfile, source);
 	StripExtension (vismatfile);
@@ -512,11 +539,15 @@ void FreeVisMatrix (void)
 {
 	if ( vismatrix )
 	{
+#ifdef WIN32
 		HANDLE h = GlobalHandle(vismatrix);
 		if ( !h )
 			Error( "Cannot free visibility matrix memory!" );
 		GlobalUnlock(h);
 		GlobalFree(h);
+#else
+		free( vismatrix );
+#endif
 		vismatrix = NULL;
 	}
 }

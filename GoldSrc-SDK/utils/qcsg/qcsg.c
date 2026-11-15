@@ -382,7 +382,9 @@ void CSGBrush (int brushnum)
 	entity_t	*e;
 	vec_t		area;
 
+#ifdef WIN32
 	SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_ABOVE_NORMAL);
+#endif
 
 	b1 = &mapbrushes[brushnum];
 
@@ -794,7 +796,9 @@ int main (int argc, char **argv)
 	if (i != argc - 1)
 		Error ("usage: qcsg [-nowadtextures] [-wadinclude <name>] [-draw] [-glview] [-noclip] [-onlyents] [-proj <name>] [-threads #] [-v] [-hullfile <name>] mapfile");
 
+#ifdef WIN32
 	SetThreadPriority(GetCurrentThread(),THREAD_PRIORITY_ABOVE_NORMAL);
+#endif
 	start = I_FloatTime ();
 
 	CheckHullFile( hullfile, qhullfile );

@@ -57,7 +57,7 @@ char		transferfile[MAX_PATH] = "";
 char		vismatfile[_MAX_PATH] = "";
 char		incrementfile[_MAX_PATH] = "";
 qboolean	incremental = 0;
-float		gamma = 0.5;
+float		lightgamma = 0.5;
 float		indirect_sun = 1.0;
 qboolean	extra = false;
 float		smoothing_threshold = 0; // default: cos(45.0*(Q_PI/180)); 
@@ -1427,7 +1427,7 @@ int main (int argc, char **argv)
 		{
 			if ( ++i < argc )
 			{
-				gamma = (float)atof (argv[i]);
+				lightgamma = (float)atof (argv[i]);
 			}
 			else
 			{
@@ -1520,7 +1520,15 @@ int main (int argc, char **argv)
 		if ( _access( global_lights, 0x04) == -1 ) 
 		{
 			// try looking in the directory we were run from
+#ifdef WIN32
 			GetModuleFileName( NULL, global_lights, sizeof( global_lights ) );
+#else
+			{
+				ssize_t	len = readlink( "/proc/self/exe", global_lights, sizeof( global_lights ) - 1 );
+
+				global_lights[len > 0 ? len : 0] = 0;
+			}
+#endif
 			ExtractFilePath( global_lights, global_lights );
 			strcat( global_lights, "lights.rad" );
 		}

@@ -11,6 +11,22 @@
 
 #include "csg.h"
 #include <limits.h>
+#ifndef WIN32
+#include <time.h>
+#endif
+
+// Millisecond tick count for the timing messages in WriteMiptex.
+static DWORD TEX_TickCount( void )
+{
+#ifdef WIN32
+	return (DWORD)GetTickCount64();
+#else
+	struct timespec	ts;
+
+	clock_gettime( CLOCK_MONOTONIC, &ts );
+	return (DWORD)( ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000 );
+#endif
+}
 
 typedef struct
 {
@@ -312,15 +328,15 @@ void WriteMiptex(void)
 	
 	strcpy(fullpath, path);
 
-	start = (DWORD)GetTickCount64();
+	start = TEX_TickCount();
 	{
 		if (!TEX_InitFromWad (fullpath))
 			return;
 		AddAnimatingTextures ();
 	}
-	qprintf( "TEX_InitFromWad & AddAnimatingTextures elapsed time = %ldms\n", (DWORD)GetTickCount64() - start );
+	qprintf( "TEX_InitFromWad & AddAnimatingTextures elapsed time = %ldms\n", TEX_TickCount() - start );
 
-	start = (DWORD)GetTickCount64();
+	start = TEX_TickCount();
 	{
 		for (i=0; i<nummiptex; i++ )
 		{
@@ -333,9 +349,9 @@ void WriteMiptex(void)
 			}
 		}
 	}
-	qprintf( "FindTextures elapsed time = %ldms\n", (DWORD)GetTickCount64() - start );
+	qprintf( "FindTextures elapsed time = %ldms\n", TEX_TickCount() - start );
 
-	start = (DWORD)GetTickCount64();
+	start = TEX_TickCount();
 	{
 		int			i;
 		texinfo_t	*tx = texinfo;
@@ -353,9 +369,9 @@ void WriteMiptex(void)
 			free( miptex_name );
 		}
 	}
-	qprintf( "qsort(miptex) elapsed time = %ldms\n", (DWORD)GetTickCount64() - start );
+	qprintf( "qsort(miptex) elapsed time = %ldms\n", TEX_TickCount() - start );
 
-	start = (DWORD)GetTickCount64();
+	start = TEX_TickCount();
 	{
 		// Now setup to get the miptex data (or just the headers if using -wadtextures) from the wadfile
 		l = (dmiptexlump_t *)dtexdata;
@@ -379,7 +395,7 @@ void WriteMiptex(void)
 		}
 		texdatasize = data - dtexdata;
 	}
-	qprintf( "LoadLump() elapsed time = %ldms\n", (DWORD)GetTickCount64() - start );
+	qprintf( "LoadLump() elapsed time = %ldms\n", TEX_TickCount() - start );
 }
 
 //==========================================================================

@@ -9,8 +9,12 @@
 ****/
 
 
+#ifdef WIN32
 #include <windows.h>
-#include <STDIO.H>
+#else
+#include "../../engine/win32_types.h"
+#endif
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
