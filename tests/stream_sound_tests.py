@@ -24,6 +24,7 @@ STUBS = r'''
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <stdexcept>
 #include <string>
 using byte = unsigned char;
 using qboolean = int;
@@ -49,7 +50,7 @@ static sfxcache_t oldCache, movedCache;
 static sfx_t sound;
 static byte readBuffer[CHUNK_BYTES + 1];
 static int relocation, resamples, frees, closes, allocations;
-static bool allocationFails, readFails;
+static bool allocationFails, readFails, openFails, fileOpen;
 static FileHandle_t openFile = reinterpret_cast<void*>(1);
 #define Q_memset std::memset
 #define Q_strncpy std::strncpy
@@ -63,7 +64,9 @@ static void* Cache_Alloc(cache_user_t* user, int, const char*) {
  assert(nullptr == user->data); ++allocations;
  return user->data = allocationFails ? nullptr : &movedCache;
 }
-static void FS_Close(FileHandle_t file) { assert(openFile == file); ++closes; }
+static void FS_Close(FileHandle_t file) {
+ assert(openFile == file); assert(fileOpen); fileOpen = false; ++closes;
+}
 static void SND_CloseMouth(channel_t*) {}
 static void VoiceSE_NotifyFreeChannel(int) { assert(false); }
 static sfxcache_t* S_LoadSound(sfx_t*, channel_t*) { assert(false); return nullptr; }
@@ -71,8 +74,18 @@ static void VOX_TrimStartEndTimes(channel_t*, sfxcache_t*) { assert(false); }
 static qboolean GetWavinfo(char*, byte*, int, wavinfo_t* info) {
  *info = {1, 1, SAMPLE_RATE, CHUNK_BYTES * 3, DATA_OFFSET, -1}; return 1;
 }
-static byte* COM_LoadFileLimit(char*, int, int, int* bytes, FileHandle_t* file) {
- *file = openFile; *bytes = CHUNK_BYTES;
+constexpr int FILESYSTEM_SEEK_HEAD = 0;
+static FileHandle_t FS_Open(char*, const char*) {
+ if (openFails) return nullptr;
+ fileOpen = true; return openFile;
+}
+static int FS_Size(FileHandle_t) { return CHUNK_BYTES * 4; }
+static void FS_Seek(FileHandle_t, int, int) {}
+static void FS_Read(byte* buffer, int, int, FileHandle_t) {
+ assert(readBuffer == buffer); assert(fileOpen);
+}
+[[noreturn]] static void Sys_Error(const char*, ...) { throw std::runtime_error("Sys_Error"); }
+static void* Hunk_TempAlloc(int) {
  if (relocation) {
   movedCache = oldCache;
   sound.cache.data = relocation == 1 ? &movedCache : nullptr;
@@ -94,7 +107,7 @@ static void Reset() {
  channels[0] = {&sound, CHAN_STREAM, -1, 0, 99, 0};
  wavstreams[0] = {0, 0, openFile, {1, 1, SAMPLE_RATE, CHUNK_BYTES * 3, DATA_OFFSET, -1}, 0};
  relocation = resamples = frees = closes = allocations = 0;
- allocationFails = readFails = false;
+ allocationFails = readFails = openFails = false; fileOpen = true;
 }
 int main(int argc, char** argv) {
  assert(2 == argc); Reset(); std::string test = argv[1];
@@ -145,6 +158,36 @@ int main(int argc, char** argv) {
   auto* cache = &oldCache;
   assert(1 == S_CheckWavEnd(channels, &cache, MIX_TIME, 0));
   assert(1 == closes); assert(1 == frees); assert(0 == resamples);
+ } else if (test == "read-oom" || test == "open-fail" || test == "named-oom") {
+  readFails = test != "open-fail"; openFails = !readFails;
+  if (openFails) wavstreams[0].hFile = nullptr;
+  int bytes = OLD_LENGTH;
+  char path[] = "sound/test.wav";
+  if (test == "named-oom") {
+   bool fatal = false;
+   try { COM_LoadFileLimit(path, 0, CHUNK_BYTES, &bytes, &wavstreams[0].hFile); }
+   catch (const std::runtime_error&) { fatal = true; }
+   assert(fatal);
+  } else {
+   assert(nullptr == COM_LoadFileLimit(openFails ? path : nullptr, 0,
+    CHUNK_BYTES, &bytes, &wavstreams[0].hFile));
+   assert(0 == bytes); assert(nullptr == wavstreams[0].hFile);
+   Wavstream_Close(0); assert((openFails ? 0 : 1) == closes);
+  }
+ } else if (test == "stream-oom" || test == "stream-oom-move" || test == "stream-oom-evict") {
+  readFails = true;
+  relocation = test == "stream-oom-move" ? 1 : test == "stream-oom-evict" ? 2 : 0;
+  auto* cache = &oldCache;
+  assert(1 == S_CheckWavEnd(channels, &cache, MIX_TIME, 0));
+  assert(nullptr == cache); assert(nullptr == channels[0].sfx);
+  assert(nullptr == wavstreams[0].hFile); assert(1 == closes);
+  assert((relocation == 2 ? 0 : 1) == frees); assert(0 == resamples);
+  // A failed stream must not prevent opening and mixing it again in the same session.
+  readFails = false; relocation = 0; channels[0].sfx = &sound;
+  cache = S_LoadStreamSound(&sound, channels);
+  assert(nullptr != cache); assert(openFile == wavstreams[0].hFile);
+  assert(1 == resamples);
+  S_FreeChannel(channels); assert(2 == closes);
  } else { assert(false); }
  std::printf("PASS: %s\n", argv[1]);
 }
@@ -162,14 +205,17 @@ def main():
             return subprocess.check_output(['git', 'show', f'{args.revision}:{path}'], cwd=ROOT).decode()
         return (ROOT / path).read_text()
 
-    mix, mem = read('snd_mix.cpp'), read('snd_mem.cpp')
-    functions = [function(mix, signature) for signature in (
+    mix, mem, common = read('snd_mix.cpp'), read('snd_mem.cpp'), read('common.cpp')
+    functions = [function(common, 'byte* COM_LoadFileLimit(')]
+    functions += [function(mix, signature) for signature in (
         'extern "C" void Wavstream_Close(', 'extern "C" void S_FreeChannel(',
         'void Wavstream_GetNextChunk(', 'qboolean S_CheckWavEnd(')]
     functions.append(function(mem, 'sfxcache_t* S_LoadStreamSound('))
     scenarios = ['chunk-move', 'chunk-evict', 'mixer-move', 'mixer-evict',
                  'free-evicted', 'free-live', 'load-move', 'load-evict',
-                 'load-alloc-fail', 'normal', 'final-chunk', 'end']
+                 'load-alloc-fail', 'normal', 'final-chunk', 'end',
+                 'read-oom', 'open-fail', 'named-oom',
+                 'stream-oom', 'stream-oom-move', 'stream-oom-evict']
     with tempfile.TemporaryDirectory(prefix='goldsrc-stream-') as folder:
         source, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source.write_text(STUBS + '\n'.join(functions) + TESTS)

@@ -2002,6 +2002,7 @@ char* Q_strlwr( char* text )
 
 byte* COM_LoadFileLimit( char* path, int pos, int cbmax, int* pcbread, FileHandle_t* phFile )
 {
+	*pcbread = 0;
 	FileHandle_t file = *phFile;
 	if ( !file )
 	{
@@ -2017,18 +2018,19 @@ byte* COM_LoadFileLimit( char* path, int pos, int cbmax, int* pcbread, FileHandl
 
 	if ( size > cbmax )
 		size = cbmax;
-	*pcbread = size;
 	byte* buffer = static_cast<byte*>( Hunk_TempAlloc( size + 1 ) );
 	if ( !buffer )
 	{
 		if ( path )
 			Sys_Error( "COM_LoadFileLimit: not enough space for %s", path );
 		FS_Close( file );
+		*phFile = nullptr;
 		return nullptr;
 	}
 
 	buffer[size] = '\0';
 	FS_Read( buffer, size, 1, file );
+	*pcbread = size;
 	*phFile = file;
 	return buffer;
 }

@@ -1250,6 +1250,12 @@ void Wavstream_GetNextChunk( channel_t* channel, sfx_t* sound )
 	sfxcache_t* cache = static_cast<sfxcache_t*>( Cache_Check( &sound->cache ) );
 	if ( !cache )
 		return;
+	if ( !data )
+	{
+		// Discard the cache so S_CheckWavEnd ends the failed stream.
+		Cache_Free( &sound->cache );
+		return;
+	}
 	cache->length = stream.csamplesinmem;
 	ResampleSfx( sound, cache->speed, cache->width, data, bytesRead );
 }
