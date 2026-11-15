@@ -293,7 +293,8 @@ extern "C" void S_FreeChannel( channel_t* channel )
 	if ( channel->entchannel == CHAN_STREAM )
 	{
 		Wavstream_Close( static_cast<int>( channel - channels ) );
-		Cache_Free( &channel->sfx->cache );
+		if ( Cache_Check( &channel->sfx->cache ) )
+			Cache_Free( &channel->sfx->cache );
 	}
 	else if ( channel->entchannel >= CHAN_NETWORKVOICE_BASE && channel->entchannel <= CHAN_NETWORKVOICE_END )
 		VoiceSE_NotifyFreeChannel( channel->entchannel );
@@ -1238,7 +1239,6 @@ void Wavstream_GetNextChunk( channel_t* channel, sfx_t* sound )
 {
 	constexpr int STREAM_BUFFER_BYTES = 32768;
 	wavstream_t& stream = wavstreams[channel - channels];
-	sfxcache_t* cache = static_cast<sfxcache_t*>( Cache_Check( &sound->cache ) );
 	stream.lastposloaded = stream.info.dataofs + stream.csamplesplayed;
 	int bytesRead;
 	byte* data = COM_LoadFileLimit( nullptr, stream.lastposloaded, STREAM_BUFFER_BYTES, &bytesRead, &stream.hFile );
@@ -1246,6 +1246,10 @@ void Wavstream_GetNextChunk( channel_t* channel, sfx_t* sound )
 	int samplesLeft = stream.info.samples - stream.csamplesplayed;
 	if ( stream.csamplesinmem > samplesLeft )
 		stream.csamplesinmem = samplesLeft;
+	// The temporary read buffer can move or evict the sound cache.
+	sfxcache_t* cache = static_cast<sfxcache_t*>( Cache_Check( &sound->cache ) );
+	if ( !cache )
+		return;
 	cache->length = stream.csamplesinmem;
 	ResampleSfx( sound, cache->speed, cache->width, data, bytesRead );
 }
@@ -1269,9 +1273,13 @@ qboolean S_CheckWavEnd( channel_t* channel, sfxcache_t** soundCache, int time, i
 		if ( stream.csamplesplayed < stream.info.samples )
 		{
 			Wavstream_GetNextChunk( channel, channel->sfx );
-			channel->pos = 0;
-			channel->end = cache->length + time;
-			return 0;
+			*soundCache = cache = static_cast<sfxcache_t*>( Cache_Check( &channel->sfx->cache ) );
+			if ( cache )
+			{
+				channel->pos = 0;
+				channel->end = cache->length + time;
+				return 0;
+			}
 		}
 	}
 	else if ( channel->isentence >= 0 )
