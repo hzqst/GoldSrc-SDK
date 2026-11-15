@@ -1,6 +1,6 @@
 #include "highlightbutton.h"
 
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/IScheme.h"
 
 CHighlightButton::CHighlightButton( vgui2::Panel* parent, const char* panelName, const char* text )

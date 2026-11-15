@@ -28,7 +28,7 @@
 #include "vgui_controls/Controls.h"
 #include "vgui/ISurface.h"
 #include "vgui/IScheme.h"
-#include "IGameUIFuncs.h"
+#include "igameuifuncs.h"
 #include "keys.h"
 #include <stdio.h>
 #include <stdlib.h>

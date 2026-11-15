@@ -14,7 +14,7 @@
 #include "MenuItem.h"
 #include "ScrollBar.h"
 #include "TextImage.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "vgui/IInput.h"
 #include "vgui/IPanel.h"

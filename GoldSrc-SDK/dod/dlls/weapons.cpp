@@ -927,7 +927,7 @@ BOOL CBasePlayerWeapon::DefaultReload( int iClipSize, int iAnim, float fDelay )
 	if ( ii.iFlags & WEAPON_FLAG_OVERHEAT )
 		m_flWeaponHeat = 0;
 
-	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + max( 3, fDelay );
+	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + max( 3.0f, fDelay );
 	return TRUE;
 }
 

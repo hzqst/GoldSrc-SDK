@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "utlmemory.h"
+#include "UtlMemory.h"
 #include <new>
 
 template <class T> class CUtlStack

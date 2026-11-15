@@ -14,7 +14,7 @@
 #include "WizardSubPanel.h"
 #include "Button.h"
 #include "FocusNavGroup.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/IVGui.h"
 #include "vgui/KeyValues.h"
 #include <cstring>

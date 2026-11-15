@@ -16,7 +16,7 @@
 #include "Menu.h"
 #include "MenuButton.h"
 #include "TextImage.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "ILocalize.h"
 #include "utlsymbol.h"

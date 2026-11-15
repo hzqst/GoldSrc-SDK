@@ -10,11 +10,15 @@
 
 #include "vgui/KeyValues.h"
 #include "IKeyValues.h"
-#include "controls.h"
-#include "filesystem.h"
-#include "utlbuffer.h"
+#include "Controls.h"
+#include "FileSystem.h"
+#include "UtlBuffer.h"
 
+#ifdef _WIN32
 #include <direct.h>
+#else
+#include <sys/stat.h>
+#endif
 #include <malloc.h>
 
 #include <cctype>
@@ -30,9 +34,14 @@
 #include "buildslave_assert.h"
 #define ASSERT_FILE BUILDSLAVE_PATH( L"public\\KeyValues.cpp" )
 
-typedef unsigned long long uint64;
-
+#if !defined( _WIN32 )
+#define _wtoi( string ) static_cast<int>( std::wcstol( string, nullptr, 10 ) )
+#define _mkdir( directory ) mkdir( directory, 0777 )
+#else
 static_assert( sizeof( wchar_t ) == 2 );
+#endif
+
+typedef unsigned long long uint64;
 
 KeyValues::KeyValues( const char* name, const char* firstKey, const char* firstValue )
 {
@@ -897,7 +906,9 @@ void KeyValues::RecursiveSaveToFile( IFileSystem* fileSystem, CUtlBuffer& buffer
 bool KeyValues::LoadFromFile( IFileSystem* filesystem, const char* resourceName, const char* pathID )
 {
 	ASSERT_AT( filesystem, 283 );
+#ifdef _WIN32
 	ASSERT_AT( _heapchk() == _HEAPOK, 284 );
+#endif
 
 	FileHandle_t file = filesystem->Open( resourceName, "rb", pathID );
 	if ( !file )

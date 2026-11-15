@@ -10,7 +10,7 @@
 #include "Label.h"
 #include "controls.h"
 #include "VGUI/IViewPort.h"
-#include "IGameUIFuncs.h" // for key bindings
+#include "igameuifuncs.h" // for key bindings
 #include "../../../public/FileSystem.h"
 #include <stdio.h>
 #include <string.h>

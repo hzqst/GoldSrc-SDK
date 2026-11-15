@@ -1,6 +1,6 @@
 #include "common/common.h"
 
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "const.h"
 #include "../engine/utlbuffer.h"
 #include "vgui_controls/Controls.h"

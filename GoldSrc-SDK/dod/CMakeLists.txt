@@ -1,9 +1,7 @@
 # Day of Defeat game server and client.
 
-# Not yet ported to Linux.
 goldsrc_add_module(doddll
 	TYPE SHARED
-	WINDOWS_ONLY
 	OUTPUT_NAME dod
 	OUTPUT_DIR dod/dlls
 	CXX_STANDARD 17
@@ -135,10 +133,8 @@ goldsrc_add_module(doddll
 		$<$<CONFIG:Release>:/OPT:NOICF>
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(dod_cdll
 	TYPE SHARED
-	WINDOWS_ONLY
 	OUTPUT_NAME client
 	OUTPUT_DIR dod/cl_dlls
 	CXX_STANDARD 17
@@ -325,7 +321,16 @@ goldsrc_add_module(dod_cdll
 		CLIENT_DLL
 		CLIENT_WEAPONS
 	LINK
+		goldsrc::SDL2
+	LINUX_DEFINES
+		# The C++ client code defines these; unlike MSVC, GCC does not mangle
+		# C++ variable names, so the C definitions would clash.
+		DISABLE_JUMP_ORIGIN
+		DISABLE_VEC_ORIGIN
+	WINDOWS_LINK
 		opengl32
 		wsock32
-		goldsrc::SDL2
+	LINUX_LINK
+		GL
+		${CMAKE_DL_LIBS}
 )

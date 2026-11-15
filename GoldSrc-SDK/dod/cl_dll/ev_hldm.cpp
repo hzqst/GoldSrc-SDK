@@ -491,7 +491,7 @@ void CreateCorpse( Vector origin, Vector angles, const char* model, float animTi
 	ent->hitcallback = HitBody;
 	ent->bounceFactor = 0;
 	ent->die = ent->entity.curstate.fuser1 + stay + 5;
-	BOOL replaced = FALSE;
+	bool replaced = false;
 	for ( int i = 0; i < 64; i++ )
 	{
 		TEMPENTITY* old = g_DeadPlayerModels[i];
@@ -503,7 +503,7 @@ void CreateCorpse( Vector origin, Vector angles, const char* model, float animTi
 		if ( time > old->die )
 		{
 			old->die = 0;
-			replaced = TRUE;
+			replaced = true;
 			g_DeadPlayerModels[i] = ent;
 		}
 	}

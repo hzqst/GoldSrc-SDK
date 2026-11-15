@@ -13,7 +13,7 @@
 #include "RadioButton.h"
 
 #include "Image.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/IPanel.h"
 #include "vgui/IScheme.h"
 #include "vgui/IVGui.h"

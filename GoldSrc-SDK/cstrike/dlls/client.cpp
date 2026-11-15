@@ -1059,7 +1059,7 @@ void ListPlayers( CBasePlayer* current )
 		if ( entity->pev->flags & FL_DORMANT )
 			continue;
 		CBasePlayer* player = GetClassPtr( (CBasePlayer*)entity->pev );
-		_itoa( GETPLAYERUSERID( player->edict() ), number, 10 );
+		sprintf( number, "%d", GETPLAYERUSERID( player->edict() ) );
 		strcpy( message, "\n" );
 		strcat( message, number );
 		strcat( message, " : " );

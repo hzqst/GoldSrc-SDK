@@ -4680,17 +4680,17 @@ pt_end:
 
 				if ( gun && gun->UseDecrement() )
 				{
-					gun->m_flNextPrimaryAttack		= max( gun->m_flNextPrimaryAttack - gpGlobals->frametime, -1.0 );
-					gun->m_flNextSecondaryAttack	= max( gun->m_flNextSecondaryAttack - gpGlobals->frametime, -0.001 );
+					gun->m_flNextPrimaryAttack		= max( gun->m_flNextPrimaryAttack - gpGlobals->frametime, -1.0f );
+					gun->m_flNextSecondaryAttack	= max( gun->m_flNextSecondaryAttack - gpGlobals->frametime, -0.001f );
 
 					if ( gun->m_flTimeWeaponIdle != 1000 )
 					{
-						gun->m_flTimeWeaponIdle		= max( gun->m_flTimeWeaponIdle - gpGlobals->frametime, -0.001 );
+						gun->m_flTimeWeaponIdle		= max( gun->m_flTimeWeaponIdle - gpGlobals->frametime, -0.001f );
 					}
 
 					if ( gun->pev->fuser1 != 1000 )
 					{
-						gun->pev->fuser1	= max( gun->pev->fuser1 - gpGlobals->frametime, -0.001 );
+						gun->pev->fuser1	= max( gun->pev->fuser1 - gpGlobals->frametime, -0.001f );
 					}
 
 					// Only decrement if not flagged as NO_DECREMENT
@@ -5243,8 +5243,8 @@ void CBasePlayer::StudioEstimateGait( void )
 		return;
 
 	dt = gpGlobals->frametime;
-	dt = max( 0, dt );
-	dt = min( 1, dt );
+	dt = max( 0.0f, dt );
+	dt = min( 1.0f, dt );
 
 	if ( dt == 0 )
 	{
@@ -5373,8 +5373,8 @@ void CBasePlayer::CalculateYawBlend( void )
 	float dt = gpGlobals->frametime;
 	float flYaw;
 
-	dt = max( 0, dt );
-	dt = min( 1, dt );
+	dt = max( 0.0f, dt );
+	dt = min( 1.0f, dt );
 
 	StudioEstimateGait();
 
@@ -5406,8 +5406,8 @@ void CBasePlayer::CalculateYawBlend( void )
 	}
 
 	float blend_yaw = ( flYaw / 90.0 ) * 128.0 + 127.0;
-	blend_yaw = min( 255, blend_yaw );
-	blend_yaw = max( 0, blend_yaw );
+	blend_yaw = min( 255.0f, blend_yaw );
+	blend_yaw = max( 0.0f, blend_yaw );
 	blend_yaw = 255.0 - blend_yaw;
 
 	pev->blending[0] = (int)blend_yaw;
@@ -5419,8 +5419,8 @@ void CBasePlayer::StudioProcessGait( void )
 	mstudioseqdesc_t *pseqdesc;
 	float dt = gpGlobals->frametime;
 
-	dt = max( 0, dt );
-	dt = min( 1, dt );
+	dt = max( 0.0f, dt );
+	dt = min( 1.0f, dt );
 
 	if ( dt > 0.0 )
 	{

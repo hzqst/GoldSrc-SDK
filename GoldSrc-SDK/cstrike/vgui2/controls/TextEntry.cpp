@@ -14,7 +14,7 @@
 
 #include "Menu.h"
 #include "ScrollBar.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "ILocalize.h"
 #include "../../../engine/controls.h"
@@ -34,6 +34,10 @@
 
 #include "buildslave_assert.h"
 #define ASSERT_FILE BUILDSLAVE_PATH( L"vgui2\\controls\\TextEntry.cpp" )
+
+#if !defined( _WIN32 )
+#define _wtoi( string ) static_cast<int>( std::wcstol( string, nullptr, 10 ) )
+#endif
 
 #define DRAW_OFFSET_X 3
 #define DRAW_OFFSET_Y 1

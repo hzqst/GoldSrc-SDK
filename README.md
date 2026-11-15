@@ -84,7 +84,7 @@ cmake --preset linux-x86-release      # or linux-x86-debug
 cmake --build --preset linux-x86-release
 ```
 
-Linux binaries go to `bin/Linux32/<config>/`. The Linux build currently covers Tier0 (`libtier0.so`), the filesystem, the launcher (`hl_linux`), HLTV (`core.so`, `demoplayer.so`, `proxy.so`), the server browser (`platform/servers/serverbrowser_linux.so`), particleman, and the Half-Life, Deathmatch Classic and Ricochet client and server libraries. The other targets are still Windows-only.
+Linux binaries go to `bin/Linux32/<config>/`. The Linux build currently covers Tier0 (`libtier0.so`), the filesystem, the launcher (`hl_linux`), HLTV (`core.so`, `demoplayer.so`, `proxy.so`), the server browser (`platform/servers/serverbrowser_linux.so`), GameUI (`valve/cl_dlls/gameui.so`), particleman, and the client and server libraries of every included game. The Linux server libraries are `hl.so`, `opfor.so`, `bshift.so`, `cs.so` (`cstrike` and `czero`), `cz.so`, `tfc.so`, `dod.so`, `dmc.so` and `mp.so` (`ricochet`). The engines, launchers for the dedicated server and HLTV, VGUI2, and the SDK utilities are still Windows-only.
 
 On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API modules link [`lib/public/linux32/libsteam_api.so`](GoldSrc-SDK/lib/public/linux32/), taken from the Linux Half-Life Dedicated Server (SteamCMD app 90); the build copies it next to the binaries.
 

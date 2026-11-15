@@ -11,7 +11,7 @@
 //=============================================================================
 
 #include "ScrollBarSlider.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "vgui/IBorder.h"
 #include "vgui/IInput.h"

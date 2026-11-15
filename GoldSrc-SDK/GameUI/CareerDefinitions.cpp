@@ -2,7 +2,7 @@
 #include "CareerGameTasks.h"
 #include "GameUI_Interface.h"
 
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "vgui/KeyValues.h"
 #include "vgui_controls/Controls.h"
 

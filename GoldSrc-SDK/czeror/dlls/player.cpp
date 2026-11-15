@@ -1992,9 +1992,9 @@ void CBasePlayer::TraceAttack( entvars_t* attacker, float damage, Vector directi
 		}
 		else
 		{
-			pev->punchangle.x = max( -12, damage * -0.5 );
+			pev->punchangle.x = max( -12.0, damage * -0.5 );
 			pev->punchangle.z = RANDOM_FLOAT( -1, 1 ) * damage;
-			pev->punchangle.z = max( -9, min( pev->punchangle.z, 9 ) );
+			pev->punchangle.z = max( -9.0f, min( pev->punchangle.z, 9.0f ) );
 		}
 		break;
 	case HITGROUP_CHEST:
@@ -2002,7 +2002,7 @@ void CBasePlayer::TraceAttack( entvars_t* attacker, float damage, Vector directi
 		if ( m_iKevlar )
 			blood = false;
 		else
-			pev->punchangle.x = max( -4, damage * -0.1 );
+			pev->punchangle.x = max( -4.0, damage * -0.1 );
 		break;
 	case HITGROUP_LEFTARM:
 	case HITGROUP_RIGHTARM:
@@ -2016,7 +2016,7 @@ void CBasePlayer::TraceAttack( entvars_t* attacker, float damage, Vector directi
 		pev->punchangle.z = RANDOM_FLOAT( -0.15, 0.15 ) * damage;
 		if ( pev->punchangle.x < 4 )
 			pev->punchangle.x = -4;
-		pev->punchangle.z = max( -5, min( pev->punchangle.z, 5 ) );
+		pev->punchangle.z = max( -5.0f, min( pev->punchangle.z, 5.0f ) );
 		blood = false;
 		break;
 	}
@@ -2415,7 +2415,7 @@ void CBasePlayer::WaterMove()
 		}
 		else if ( gpGlobals->time > pev->pain_finished )
 		{
-			pev->dmg = min( pev->dmg + 1, 5 );
+			pev->dmg = min( pev->dmg + 1, 5.0f );
 			TakeDamage( VARS( ENT( 0 ) ), VARS( ENT( 0 ) ), pev->dmg, DMG_DROWN );
 			pev->pain_finished = gpGlobals->time + 1;
 			m_idrowndmg = (int)( m_idrowndmg + pev->dmg );

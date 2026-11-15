@@ -213,7 +213,7 @@ template <class T, class I> bool CUtlLinkedList<T, I>::IsValidIndex( I index ) c
 {
 	if ( index >= m_TotalElements )
 		return false;
-	if constexpr ( std::is_signed_v<I> )
+	if constexpr ( std::is_signed<I>::value )
 	{
 		if ( index < 0 )
 			return false;
@@ -225,7 +225,7 @@ template <class T, class I> bool CUtlLinkedList<T, I>::IsInList( I index ) const
 {
 	if ( index >= m_TotalElements )
 		return false;
-	if constexpr ( std::is_signed_v<I> )
+	if constexpr ( std::is_signed<I>::value )
 	{
 		if ( index < 0 )
 			return false;

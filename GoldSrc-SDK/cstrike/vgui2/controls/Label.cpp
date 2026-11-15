@@ -12,7 +12,7 @@
 
 #include "Label.h"
 #include "TextImage.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/ISurface.h"
 #include "vgui/IScheme.h"
 #include "vgui/KeyValues.h"

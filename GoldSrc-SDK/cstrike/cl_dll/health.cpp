@@ -28,7 +28,7 @@
 #include <string.h>
 #include "../public/game_controls/iviewport.h"
 #include "ev_hldm.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/ILocalize.h"
 #include "pm_shared.h"
 #include "../common/GameUI/ICareerUI.h"

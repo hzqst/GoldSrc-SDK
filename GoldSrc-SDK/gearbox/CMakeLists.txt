@@ -1,9 +1,7 @@
 # Half-Life: Opposing Force game server and client.
 
-# Not yet ported to Linux.
 goldsrc_add_module(opfordll
 	TYPE SHARED
-	WINDOWS_ONLY
 	OUTPUT_NAME opfor
 	OUTPUT_DIR gearbox/dlls
 	WARNING_LEVEL 4
@@ -187,10 +185,8 @@ goldsrc_add_module(opfordll
 		$<$<CONFIG:Release>:/OPT:NOICF>
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(opfor_cdll
 	TYPE SHARED
-	WINDOWS_ONLY
 	OUTPUT_NAME client
 	OUTPUT_DIR gearbox/cl_dlls
 	WARNING_LEVEL 4
@@ -309,7 +305,14 @@ goldsrc_add_module(opfor_cdll
 		CLIENT_WEAPONS
 		HL_DLL
 	LINK
-		wsock32
 		goldsrc::SDL2
 		goldsrc::vgui1
+	LINUX_DEFINES
+		# The C++ client code defines vec3_origin; unlike MSVC, GCC does not
+		# mangle C++ variable names, so the C definition would clash.
+		DISABLE_VEC_ORIGIN
+	WINDOWS_LINK
+		wsock32
+	LINUX_LINK
+		${CMAKE_DL_LIBS}
 )

@@ -13,7 +13,7 @@
 #include "MenuItem.h"
 #include "Menu.h"
 #include "TextImage.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "vgui/IVGui.h"
 #include "vgui/KeyValues.h"

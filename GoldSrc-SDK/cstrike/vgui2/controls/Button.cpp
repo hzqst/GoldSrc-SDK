@@ -11,7 +11,7 @@
 //=============================================================================
 
 #include "Button.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "utlsymbol.h"
 #include "vgui/IInput.h"

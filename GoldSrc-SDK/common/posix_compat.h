@@ -3,8 +3,8 @@
 //
 // Force-included into every translation unit on non-Windows platforms by the
 // CMake build (see cmake/GoldSrcPlatform.cmake). Keep this header limited to
-// macros for CRT function names: it is seen by every source file, so it must
-// not declare types or pull in project headers.
+// macros for MSVC CRT, keyword and Windows SDK names: it is seen by every
+// source file, so it must not declare types or pull in project headers.
 
 #ifndef POSIX_COMPAT_H
 #define POSIX_COMPAT_H
@@ -34,6 +34,23 @@
 #endif
 #ifndef _alloca
 #define _alloca alloca
+#endif
+#ifndef _snwprintf
+#define _snwprintf swprintf
+#endif
+
+// A macro rather than a typedef, so that "unsigned __int64" still works.
+#ifndef __int64
+#define __int64 long long
+#endif
+// cdecl is already the default calling convention on 32-bit x86.
+#ifndef __cdecl
+#define __cdecl
+#endif
+
+// Same definition as winnt.h and public/commonmacros.h.
+#ifndef ARRAYSIZE
+#define ARRAYSIZE(p) (sizeof(p)/sizeof(p[0]))
 #endif
 
 #endif // !_WIN32

@@ -16,7 +16,7 @@
 #include "Label.h"
 #include "ScrollBar.h"
 #include "TextImage.h"
-#include "controls.h"
+#include "Controls.h"
 #include "../../../engine/controls.h"
 #include "ILocalize.h"
 #include "vgui/IInput.h"

@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 extern void IN_AttackUp();
 extern void IN_ScoreUp();

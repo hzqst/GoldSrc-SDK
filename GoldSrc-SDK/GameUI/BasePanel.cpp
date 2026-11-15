@@ -10,7 +10,7 @@
 #include "ModInfo.h"
 #include "Taskbar.h"
 
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "vgui/ISurface.h"
 #include "vgui_controls/Controls.h"
 #include "wrect.h"

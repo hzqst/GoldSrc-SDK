@@ -1130,7 +1130,7 @@ void CCSTutor::ConstructRecentDeathsList( TeamName team, char* buffer, int bufle
 			strcat( buffer, "  " );
 			strcat( buffer, "%n" );
 			char scratch[32];
-			_itoa( i, scratch, 10 );
+			sprintf( scratch, "%d", i );
 			strcat( buffer, scratch );
 			strcat( buffer, "\n" );
 			m_playerDeathInfo[i - 1].m_event = event;

@@ -1,9 +1,8 @@
 # Game UI module.
 
-# Not yet ported to Linux.
 goldsrc_add_module(GameUI
 	TYPE SHARED
-	WINDOWS_ONLY
+	LINUX_OUTPUT_NAME gameui
 	OUTPUT_DIR valve/cl_dlls
 	CXX_STANDARD 17
 	WARNING_LEVEL 4
@@ -141,6 +140,9 @@ goldsrc_add_module(GameUI
 		engine/KeyValues.cpp
 		engine/MemPool.cpp
 		engine/controls.cpp
+	LINUX_SOURCES
+		# Used by the Linux CGameUI::RunVguiTestScript().
+		vgui2/controls/TestScriptController.cpp
 	INCLUDES
 		GameUI
 		cstrike/common
@@ -159,6 +161,7 @@ goldsrc_add_module(GameUI
 	DEFINES
 		GAMEUI_DLL
 		CLIENT_DLL
+	WINDOWS_DEFINES
 		UTL_ENGINE_ASSERTS
 		_ITERATOR_DEBUG_LEVEL=0
 	LINK

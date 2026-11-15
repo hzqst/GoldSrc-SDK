@@ -12,7 +12,7 @@
 
 #include "FocusNavGroup.h"
 #include "Panel.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "vgui/IPanel.h"
 #include "vgui/ISurface.h"

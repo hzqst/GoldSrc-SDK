@@ -21,9 +21,9 @@
 #include "QueryBox.h"
 #include "ScrollBar.h"
 #include "TextEntry.h"
-#include "controls.h"
+#include "Controls.h"
 
-#include "color.h"
+#include "Color.h"
 #include "vgui/IBorder.h"
 #include "vgui/IInput.h"
 #include "vgui/IPanel.h"

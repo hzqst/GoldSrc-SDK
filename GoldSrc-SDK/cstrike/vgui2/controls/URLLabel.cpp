@@ -11,7 +11,7 @@
 //=============================================================================
 
 #include "URLLabel.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/Cursor.h"
 #include "vgui/ILocalize.h"
 #include "vgui/IScheme.h"

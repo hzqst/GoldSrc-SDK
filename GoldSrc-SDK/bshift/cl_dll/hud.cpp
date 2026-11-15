@@ -29,7 +29,7 @@
 #include "demo.h"
 #include "demo_api.h"
 #include <vgui/IScheme.h>
-#include <Color.h>
+#include <color.h>
 
 const char* GetStringTeamColor( int team );
 extern cvar_t* sensitivity;

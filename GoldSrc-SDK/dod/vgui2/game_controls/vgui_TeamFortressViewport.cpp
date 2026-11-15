@@ -27,7 +27,7 @@
 #include "TutorWindowManager.h"
 #include "controls.h"
 #include "vgui/ISurface.h"
-#include "IGameUIFuncs.h"
+#include "igameuifuncs.h"
 #include "keys.h"
 #include <stdio.h>
 #include <stdlib.h>

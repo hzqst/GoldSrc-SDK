@@ -12,7 +12,7 @@
 
 #include "TextImage.h"
 #include "../../../engine/controls.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/ISurface.h"
 
 #include <cstring>

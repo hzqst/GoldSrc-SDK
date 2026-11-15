@@ -30,10 +30,10 @@
 #include "vguitextwindow.h"
 #include "CreateCommandMenu.h"
 #include "Menu.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/ISurface.h"
 #include "vgui/IScheme.h"
-#include "IGameUIFuncs.h"
+#include "igameuifuncs.h"
 #include "voice_status.h"
 #include "keys.h"
 #include <stdio.h>

@@ -22,7 +22,7 @@
 #include "MessageBox.h"
 #include "PanelListPanel.h"
 #include "TextEntry.h"
-#include "controls.h"
+#include "Controls.h"
 #include "ILocalize.h"
 
 #include "vgui/IInput.h"

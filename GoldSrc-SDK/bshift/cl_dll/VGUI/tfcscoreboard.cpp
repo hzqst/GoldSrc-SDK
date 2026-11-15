@@ -7,6 +7,7 @@
 #include "vgui/KeyValues.h"
 
 #include <stdio.h>
+#include <wchar.h>
 
 using namespace vgui2;
 

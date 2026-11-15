@@ -20,6 +20,8 @@
 #ifndef AMMOHISTORY_H
 #define AMMOHISTORY_H
 
+#include <string.h>
+
 #include "ammo.h"
 
 #define MAX_WEAPON_POSITIONS		21

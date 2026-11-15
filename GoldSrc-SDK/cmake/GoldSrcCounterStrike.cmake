@@ -53,6 +53,7 @@ function(goldsrc_add_counterstrike_module target)
 	)
 	set(defines CLIENT_WEAPONS)
 	set(windows_defines _ITERATOR_DEBUG_LEVEL=0)
+	set(linux_defines)
 	set(link)
 	set(windows_link)
 	set(linux_link)
@@ -61,6 +62,9 @@ function(goldsrc_add_counterstrike_module target)
 		list(APPEND defines VALVE_DLL)
 	else()
 		list(APPEND defines CLIENT_DLL HL_DLL)
+		# The C++ client code defines these; unlike MSVC, GCC does not mangle
+		# C++ variable names, so the C definitions would clash.
+		list(APPEND linux_defines DISABLE_JUMP_ORIGIN DISABLE_VEC_ORIGIN)
 		list(APPEND link goldsrc::SDL2)
 		list(APPEND linux_link ${CMAKE_DL_LIBS})
 		if(src STREQUAL "cstrike")
@@ -105,6 +109,7 @@ function(goldsrc_add_counterstrike_module target)
 		INCLUDES ${includes}
 		DEFINES ${defines}
 		WINDOWS_DEFINES ${windows_defines}
+		LINUX_DEFINES ${linux_defines}
 		LINK ${link}
 		WINDOWS_LINK ${windows_link}
 		LINUX_LINK ${linux_link}

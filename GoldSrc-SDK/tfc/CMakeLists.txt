@@ -1,9 +1,7 @@
 # Team Fortress Classic game server and client.
 
-# Not yet ported to Linux.
 goldsrc_add_module(tfcdll
 	TYPE SHARED
-	WINDOWS_ONLY
 	OUTPUT_NAME tfc
 	OUTPUT_DIR tfc/dlls
 	CXX_STANDARD 17
@@ -128,10 +126,8 @@ goldsrc_add_module(tfcdll
 		CLIENT_WEAPONS
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(tfc_cdll
 	TYPE SHARED
-	WINDOWS_ONLY
 	OUTPUT_NAME client
 	OUTPUT_DIR tfc/cl_dlls
 	CXX_STANDARD 17
@@ -243,7 +239,15 @@ goldsrc_add_module(tfc_cdll
 		CLIENT_DLL
 		CLIENT_WEAPONS
 	LINK
-		ws2_32
 		goldsrc::SDL2
 		goldsrc::vgui1
+	LINUX_DEFINES
+		# The C++ client code defines these; unlike MSVC, GCC does not mangle
+		# C++ variable names, so the C definitions would clash.
+		DISABLE_JUMP_ORIGIN
+		DISABLE_VEC_ORIGIN
+	WINDOWS_LINK
+		ws2_32
+	LINUX_LINK
+		${CMAKE_DL_LIBS}
 )

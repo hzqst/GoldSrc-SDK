@@ -369,7 +369,7 @@ void CHudMessage::MessageAdd( const char* name, float time, int hint, unsigned i
 			message->fadein = 0.01f;
 			message->fadeout = 0.7f;
 			message->fxtime = 0.07f;
-			message->holdtime = max( (float)(strlen( message->pMessage ) / 25), 1 );
+			message->holdtime = max( (float)(strlen( message->pMessage ) / 25), 1.0f );
 		}
 		m_pMessages[i].pMessage = message;
 		m_pMessages[i].font = font;

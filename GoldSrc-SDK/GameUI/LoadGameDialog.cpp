@@ -11,7 +11,7 @@
 #include "Taskbar.h"
 
 #include "Button.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "Label.h"
 #include "ListPanel.h"
 #include "vgui/KeyValues.h"

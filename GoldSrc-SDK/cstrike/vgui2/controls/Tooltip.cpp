@@ -13,7 +13,7 @@
 
 #include "Tooltip.h"
 #include "TextEntry.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/IInput.h"
 #include "vgui/ISystem.h"
 

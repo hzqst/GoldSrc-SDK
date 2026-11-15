@@ -8,7 +8,7 @@
 #pragma once
 
 #include "Panel.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 
 class CPanelListPanel;
 
