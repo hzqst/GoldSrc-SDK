@@ -338,7 +338,9 @@ model_t* Mod_LoadModel( model_t* mod, qboolean crash, qboolean trackCRC )
 
 			length = (int)FS_Size( file );
 			buf = (byte*)Hunk_TempAlloc( length + 1 );
-			FS_Read( buf, length, 1, file );
+			// a full hunk returns NULL, fall through to the load failure below
+			if ( buf )
+				FS_Read( buf, length, 1, file );
 			FS_Close( file );
 			file = NULL;
 		}
