@@ -205,6 +205,8 @@ sfxcache_t* S_LoadStreamSound( sfx_t* s, channel_t* ch )
 		stream->csamplesinmem = info.samples - stream->csamplesplayed;
 	stream->info = info;
 
+	// The temporary read buffer can move or evict the sound cache.
+	sc = (sfxcache_t*)Cache_Check( &s->cache );
 	if ( !sc )
 	{
 		sc = (sfxcache_t*)Cache_Alloc( &s->cache, ( cbread < 0x8000 ? cbread : 0x8000 ) + sizeof( sfxcache_t ), wavname );
