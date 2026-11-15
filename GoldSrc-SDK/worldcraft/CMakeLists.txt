@@ -160,8 +160,9 @@ goldsrc_add_module(worldcraft
 		VALVE
 		WINVER=0x0A00
 		_WIN32_WINNT=0x0A00
-	LINK
+	MSVC_LINK_OPTIONS
 		legacy_stdio_float_rounding.obj
+	LINK
 		opengl32
 		glu32
 		winmm
