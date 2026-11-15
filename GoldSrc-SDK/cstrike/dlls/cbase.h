@@ -71,7 +71,13 @@ CBaseEntity
 #define EXPORT CBASE_DLLEXPORT
 
 extern "C" CBASE_DLLEXPORT int GetEntityAPI( DLL_FUNCTIONS *pFunctionTable, int interfaceVersion );
+#ifdef _WIN32
 extern "C" int GetEntityAPI2( DLL_FUNCTIONS *pFunctionTable, int *interfaceVersion );
+#else
+// Not exported, as on Windows: the engine would call it instead of GetEntityAPI,
+// which also sets up the entity hash table.
+extern "C" __attribute__ ( ( visibility( "hidden" ) ) ) int GetEntityAPI2( DLL_FUNCTIONS *pFunctionTable, int *interfaceVersion );
+#endif
 extern "C" CBASE_DLLEXPORT int GetNewDLLFunctions( NEW_DLL_FUNCTIONS *pFunctionTable, int *interfaceVersion );
 
 extern int DispatchSpawn( edict_t *pent );
