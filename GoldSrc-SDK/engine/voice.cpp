@@ -25,8 +25,10 @@
 
 #include "../external/steamworks/isteamuser.h"
 
+#ifdef _WIN32
 #include <windows.h>
 #include <mmsystem.h>
+#endif
 
 #include <math.h>
 #include <stdio.h>

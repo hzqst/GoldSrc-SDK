@@ -36,12 +36,17 @@
 #include <csetjmp>
 #include <cstdlib>
 #include <ctime>
+#ifdef _WIN32
 #include <io.h>
+#endif
 #include <sys/stat.h>
 
 #if !defined( _WIN32 )
 #define _snprintf snprintf
 #define _vsnprintf vsnprintf
+#define _chmod chmod
+#define _S_IREAD S_IRUSR
+#define _S_IWRITE S_IWUSR
 #endif
 
 quakeparms_t host_parms;

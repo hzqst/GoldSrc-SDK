@@ -79,6 +79,51 @@ if(WIN32)
 		"${vcpkg_lib_dir}/libexpat${debug_suffix}MD.lib"
 		"${vcpkg_lib_dir}/libpng16${debug_suffix}.lib"
 		"${vcpkg_lib_dir}/zs${debug_suffix}.lib")
+else()
+	# Linux takes the same libraries from the vcpkg manifest (vcpkg.json), plus
+	# OpenAL for voice capture.
+	find_package(unofficial-brotli CONFIG QUIET)
+	find_package(BZip2 QUIET)
+	find_package(EXPAT QUIET)
+	find_package(Fontconfig QUIET)
+	find_package(Freetype QUIET)
+	find_package(PNG QUIET)
+	find_package(Ogg CONFIG QUIET)
+	find_package(Vorbis CONFIG QUIET)
+	find_package(unofficial-libvpx CONFIG QUIET)
+	find_package(unofficial-libwebm CONFIG QUIET)
+	find_package(OpenAL CONFIG QUIET)
+	find_package(ZLIB QUIET)
+	# Static libraries: each one must come before the libraries it uses.
+	set(engine_media_targets
+		Fontconfig::Fontconfig
+		Freetype::Freetype
+		PNG::PNG
+		unofficial::brotli::brotlidec
+		BZip2::BZip2
+		EXPAT::EXPAT
+		Vorbis::vorbisfile
+		Vorbis::vorbis
+		Ogg::ogg
+		unofficial::libvpx::libvpx
+		unofficial::libwebm::libwebm
+		OpenAL::OpenAL
+		ZLIB::ZLIB)
+	set(GOLDSRC_ENGINE_MEDIA_FOUND TRUE)
+	foreach(dependency IN LISTS engine_media_targets)
+		if(NOT TARGET ${dependency})
+			set(GOLDSRC_ENGINE_MEDIA_FOUND FALSE)
+			list(APPEND missing_engine_media ${dependency})
+		endif()
+	endforeach()
+	if(GOLDSRC_ENGINE_MEDIA_FOUND)
+		get_target_property(webm_includes unofficial::libwebm::libwebm INTERFACE_INCLUDE_DIRECTORIES)
+		target_include_directories(goldsrc_engine_media INTERFACE "${webm_includes}/webm")
+		target_link_libraries(goldsrc_engine_media INTERFACE ${engine_media_targets})
+	else()
+		message(STATUS "Skipping the Linux engine: missing ${missing_engine_media}. "
+			"Set VCPKG_ROOT to build its dependencies from vcpkg.json.")
+	endif()
 endif()
 
 # Copies the prebuilt Linux runtime libraries next to the engine binaries.

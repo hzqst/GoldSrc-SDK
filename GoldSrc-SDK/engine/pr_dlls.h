@@ -1,6 +1,8 @@
 #pragma once
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 #include <cstdint>
 
 #define MAX_EXT_DLLS 50

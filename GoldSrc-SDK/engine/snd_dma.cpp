@@ -11,13 +11,15 @@
 #include "cmd.h"
 #include "gl_model.h"
 #include "vgui_intwrap2.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #include "../common/const.h"
 #include "mem.h"
 
+#ifdef _WIN32
 #include <windows.h>
 #include <mmsystem.h>
 #include <dsound.h>
+#endif
 
 #include <climits>
 #include <cstdio>
@@ -32,8 +34,10 @@ extern "C" void SNDDMA_Shutdown();
 extern "C" qboolean SNDDMA_Init();
 extern "C" void S_FreeChannel( channel_t* channel );
 extern "C" qboolean Wavstream_Init();
+#ifdef _WIN32
 extern LPDIRECTSOUNDBUFFER pDSBuf;
 extern DWORD gSndBufSize;
+#endif
 
 constexpr int SOUND_UNSIGNED_SAMPLE_BITS = 8;
 constexpr int SOUND_UNSIGNED_SILENCE = 128;
@@ -137,10 +141,15 @@ extern "C" void S_Shutdown()
 
 extern "C" void S_ClearBuffer()
 {
+#ifdef _WIN32
 	if ( !sound_started || !shm || ( !shm->buffer && !pDSBuf ) )
+#else
+	if ( !sound_started || !shm || !shm->buffer )
+#endif
 		return;
 
 	int clear = shm->samplebits == SOUND_UNSIGNED_SAMPLE_BITS ? SOUND_UNSIGNED_SILENCE : 0;
+#ifdef _WIN32
 	if ( pDSBuf )
 	{
 		void* data;
@@ -168,6 +177,7 @@ extern "C" void S_ClearBuffer()
 		pDSBuf->Unlock( data, size, nullptr, 0 );
 	}
 	else
+#endif
 	{
 		Q_memset( shm->buffer, clear, shm->samplebits * shm->samples / SOUND_BITS_PER_BYTE );
 	}
@@ -1046,6 +1056,7 @@ void S_Update_()
 	if ( endtime - soundtime > bufferSamples )
 		endtime = soundtime + bufferSamples;
 
+#ifdef _WIN32
 	if ( pDSBuf )
 	{
 		DWORD status;
@@ -1056,6 +1067,7 @@ void S_Update_()
 		if ( !( status & DSBSTATUS_PLAYING ) )
 			pDSBuf->Play( 0, 0, DSBPLAY_LOOPING );
 	}
+#endif
 	S_PaintChannels( static_cast<int>( static_cast<unsigned int>( endtime ) >> 1 ) );
 	SNDDMA_Submit();
 }

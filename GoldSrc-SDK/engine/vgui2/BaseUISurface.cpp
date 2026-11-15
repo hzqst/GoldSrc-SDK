@@ -15,7 +15,7 @@
 #include "../vgui/Cursor.h"
 #include "../common.h"
 #include "../cvar.h"
-#include "../../external/sdl2/SDL.h"
+#include "../../external/SDL2/SDL.h"
 #include "../filesystem.h"
 #include "../ivideomode.h"
 #include "../vid.h"

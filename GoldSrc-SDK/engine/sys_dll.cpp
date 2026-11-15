@@ -12,7 +12,7 @@
 #include "keys.h"
 #include "steam_api.h"
 #include "ivideomode.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #include "mem.h"
 #include "zone.h"
 #include "conprint.h"

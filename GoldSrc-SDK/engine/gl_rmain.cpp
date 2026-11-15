@@ -16,7 +16,9 @@
 #include "../common/r_studioint.h"
 #include "../pm_shared/pm_movevars.h"
 
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 #include <GL/gl.h>
 #include <climits>
 #include <cmath>
@@ -2097,9 +2099,12 @@ void RotatePointAroundVector( vec_t* dst, const vec_t* dir, const vec_t* point, 
 		dst[i] = rot[i][0] * point[0] + rot[i][1] * point[1] + rot[i][2] * point[2];
 }
 
+extern qboolean g_bIsDedicatedServer;
+
 void R_ForceCVars( qboolean multiplayer )
 {
-	if ( !multiplayer )
+	// The renderer cvars are not registered on a dedicated server (see r_misc.cpp).
+	if ( !multiplayer || g_bIsDedicatedServer )
 		return;
 
 	if ( r_lightmap.value )

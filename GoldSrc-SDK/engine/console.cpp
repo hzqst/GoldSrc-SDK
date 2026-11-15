@@ -21,7 +21,18 @@
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
+#ifdef _WIN32
 #include <io.h>
+#else
+#include <fcntl.h>
+#include <unistd.h>
+#define _open open
+#define _write write
+#define _close close
+#define _O_WRONLY O_WRONLY
+#define _O_CREAT O_CREAT
+#define _O_APPEND O_APPEND
+#endif
 
 #if defined( _WIN32 ) && !defined( SWDS_DLL )
 #include <windows.h>

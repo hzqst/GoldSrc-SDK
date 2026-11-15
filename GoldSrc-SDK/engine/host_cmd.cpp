@@ -33,8 +33,10 @@
 #include "filesystem.h"
 #include "eiface.h"
 
+#ifdef _WIN32
 #include <Windows.h>
 #include <intrin.h>
+#endif
 #include <cctype>
 #include <cstddef>
 #include <cstdint>
@@ -44,11 +46,16 @@
 #include <cstdarg>
 #include <cmath>
 #include <climits>
+#ifdef _WIN32
 #include <io.h>
+#endif
 
 #if !defined( _WIN32 )
+#include <unistd.h>
+
 #define _snprintf snprintf
 #define _vsnprintf vsnprintf
+#define __fastfail( code ) __builtin_trap()
 #endif
 
 #define SAVEGAME_HEADER ( 'J' | ( 'S' << 8 ) | ( 'A' << 16 ) | ( 'V' << 24 ) )
@@ -462,6 +469,7 @@ void Host_Quit_Restart_f()
 	Cache_Force_Flush();
 }
 
+#ifdef _WIN32
 static uint64_t Host_FileTimeTicks( const FILETIME& time )
 {
 	ULARGE_INTEGER ticks;
@@ -470,8 +478,7 @@ static uint64_t Host_FileTimeTicks( const FILETIME& time )
 	ticks.HighPart = time.dwHighDateTime;
 	return ticks.QuadPart;
 }
-
-#ifndef _WIN32
+#else
 static bool Host_ReadProcCpuTicks( uint64_t& cpuTicks, uint64_t& runTicks )
 {
 	char path[64];
@@ -488,7 +495,7 @@ static bool Host_ReadProcCpuTicks( uint64_t& cpuTicks, uint64_t& runTicks )
 	int matched;
 	FILE* f;
 
-	snprintf( path, sizeof( path ) - 1, "/proc/%i/stat", (int)GetCurrentProcessId() );
+	snprintf( path, sizeof( path ) - 1, "/proc/%i/stat", (int)getpid() );
 	path[sizeof( path ) - 1] = '\0';
 
 	f = fopen( path, "r" );
@@ -547,28 +554,6 @@ static bool Host_ReadProcCpuTicks( uint64_t& cpuTicks, uint64_t& runTicks )
 	return true;
 }
 
-static bool Host_ReadProcessCpuTicks( uint64_t& cpuTicks, uint64_t& runTicks )
-{
-	FILETIME creationTime;
-	FILETIME exitTime;
-	FILETIME kernelTime;
-	FILETIME userTime;
-	FILETIME systemTime;
-
-	if ( !GetProcessTimes( GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime ) )
-		return false;
-	GetSystemTimeAsFileTime( &systemTime );
-
-	uint64_t now = Host_FileTimeTicks( systemTime );
-	uint64_t started = Host_FileTimeTicks( creationTime );
-	if ( now < started )
-		return false;
-
-	cpuTicks = Host_FileTimeTicks( userTime ) + Host_FileTimeTicks( kernelTime );
-	runTicks = now - started;
-	return true;
-}
-
 #endif
 
 void Host_UpdateStats()
@@ -612,7 +597,7 @@ void Host_UpdateStats()
 			lastAvg = last;
 		}
 #else
-		if ( Host_ReadProcCpuTicks( cputicks, runticks ) || Host_ReadProcessCpuTicks( cputicks, runticks ) )
+		if ( Host_ReadProcCpuTicks( cputicks, runticks ) )
 		{
 			if ( !lastcputicks )
 				lastcputicks = cputicks;

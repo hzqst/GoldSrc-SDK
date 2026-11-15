@@ -11,7 +11,7 @@
 //=============================================================================
 
 #include "keys.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #include "client.h"
 #include "common.h"
 #include "cmd.h"

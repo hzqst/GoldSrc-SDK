@@ -12,12 +12,18 @@ include_guard(GLOBAL)
 function(goldsrc_add_engine target)
 	cmake_parse_arguments(PARSE_ARGV 1 arg "WINDOWS_ONLY" "RENDERER;OUTPUT_NAME;DEF_FILE" "MSVC_LINK_OPTIONS")
 
+	# The Linux engine needs the vcpkg libraries (see GoldSrcThirdParty.cmake).
+	if(NOT WIN32 AND NOT GOLDSRC_ENGINE_MEDIA_FOUND)
+		return()
+	endif()
+
 	include("${GOLDSRC_ROOT}/engine/engine_sources.cmake")
 
 	if(arg_RENDERER STREQUAL "HW")
 		set(renderer_sources ${ENGINE_HW_SOURCES})
 		set(renderer_define HL25_HW_ENGINE)
 		set(renderer_windows_link opengl32)
+		set(renderer_linux_link GL)
 	elseif(arg_RENDERER STREQUAL "SW")
 		set(renderer_sources ${ENGINE_SW_SOURCES})
 		set(renderer_define SW_RENDERER)
@@ -49,7 +55,10 @@ function(goldsrc_add_engine target)
 			${ENGINE_COMMON_SOURCES}
 			${renderer_sources}
 		WINDOWS_SOURCES
+			${ENGINE_WINDOWS_SOURCES}
 			engine/engine.rc
+		LINUX_SOURCES
+			${ENGINE_LINUX_SOURCES}
 		INCLUDES
 			engine
 			common
@@ -71,6 +80,10 @@ function(goldsrc_add_engine target)
 			winmm
 			dxguid
 			dsound
+		LINUX_LINK
+			${renderer_linux_link}
+			${CMAKE_DL_LIBS}
+			Threads::Threads
 		MSVC_LINK_OPTIONS
 			$<$<CONFIG:Release>:/OPT:NOICF>
 			${arg_MSVC_LINK_OPTIONS}

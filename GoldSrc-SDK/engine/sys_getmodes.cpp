@@ -3,7 +3,7 @@
 #include "ivideomode.h"
 #include "registry.h"
 #include "snd_win.h"
-#include "UtlVector.h"
+#include "utlvector.h"
 #include "igame.h"
 #include "common.h"
 #include "conprint.h"
@@ -13,8 +13,8 @@
 #include "filesystem.h"
 #include "sys.h"
 
-#include "../external/sdl2/SDL.h"
-#include "../external/sdl2/SDL_syswm.h"
+#include "../external/SDL2/SDL.h"
+#include "../external/SDL2/SDL_syswm.h"
 
 #include <cassert>
 #include <cmath>
@@ -1244,21 +1244,28 @@ void CVideoMode_SoftwareFullScreen::FlipScreen()
 #include "ivideomode.h"
 #include "registry.h"
 #include "snd_win.h"
-#include "UtlVector.h"
+#include "utlvector.h"
 #include "igame.h"
 #include "common.h"
 #include "vid.h"
 #include "gl_model.h"
 #include "filesystem.h"
 #include "sys.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #include "../external/SDL2/SDL_opengl.h"
 
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <malloc.h>
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <cassert>
+
+// The reconstructed code calls the MSVC assertion handler directly.
+#define _wassert( expression, file, line ) __assert_fail( #expression, __FILE__, __LINE__, __func__ )
+#endif
 
 #define MAX_VIDEO_MODES 32
 

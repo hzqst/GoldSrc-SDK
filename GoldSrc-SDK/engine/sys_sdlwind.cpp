@@ -22,7 +22,7 @@
 #include "client.h"
 #include "../common/dll_state.h"
 
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -890,7 +890,7 @@ bool CGame::OnlyLegacyRender() const
 #include "cdll_int.h"
 #include "client.h"
 
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 #include "../external/SDL2/SDL_opengl.h"
 
 #include <cstdio>

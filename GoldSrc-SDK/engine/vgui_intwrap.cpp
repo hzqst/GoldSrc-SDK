@@ -5,7 +5,7 @@
 #include "ivideomode.h"
 #include "vgui_int.h"
 #include "vgui_intwrap2.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 
 #include <VGUI_App.h>
 #include <VGUI_Panel.h>

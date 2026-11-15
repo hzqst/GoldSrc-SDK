@@ -2,9 +2,7 @@
 
 include(GoldSrcEngine)
 
-# Not yet ported to Linux.
 goldsrc_add_engine(hw_engine
-	WINDOWS_ONLY
 	RENDERER HW
 	OUTPUT_NAME hw
 )

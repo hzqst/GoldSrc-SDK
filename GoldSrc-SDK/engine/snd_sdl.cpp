@@ -1,5 +1,5 @@
 #include "sound.h"
-#include "../external/sdl2/SDL.h"
+#include "../external/SDL2/SDL.h"
 
 #include <cstdio>
 #include <cstdlib>

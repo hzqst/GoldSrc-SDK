@@ -838,14 +838,14 @@ DWORD WINAPI NET_ThreadEntry( void* )
 	while ( !net_thread_stop_requested.load() )
 	{
 		fd_set readSockets;
-		readSockets.fd_count = 0;
+		FD_ZERO( &readSockets );
 		int maxSocket = 0;
 		for ( int source = 0; source < NET_SOCKET_SOURCES; ++source )
 		{
 			SOCKET socket = ip_sockets[source];
 			if ( socket )
 			{
-				readSockets.fd_array[readSockets.fd_count++] = socket;
+				FD_SET( socket, &readSockets );
 				if ( static_cast<int>( socket ) > maxSocket )
 					maxSocket = static_cast<int>( socket );
 			}
@@ -2169,14 +2169,14 @@ int NET_Sleep_Timeout()
 		lasttime = now;
 	}
 	fd_set readSockets;
-	readSockets.fd_count = 0;
+	FD_ZERO( &readSockets );
 	int maxSocket = 0;
 	for ( int source = 0; source < NET_SOCKET_SOURCES; ++source )
 	{
 		SOCKET socket = ip_sockets[source];
 		if ( socket )
 		{
-			readSockets.fd_array[readSockets.fd_count++] = socket;
+			FD_SET( socket, &readSockets );
 			if ( static_cast<int>( socket ) > maxSocket )
 				maxSocket = static_cast<int>( socket );
 		}
@@ -2199,14 +2199,14 @@ int NET_Sleep_Timeout()
 int NET_Sleep()
 {
 	fd_set readSockets;
-	readSockets.fd_count = 0;
+	FD_ZERO( &readSockets );
 	int maxSocket = 0;
 	for ( int source = 0; source < NET_SOCKET_SOURCES; ++source )
 	{
 		SOCKET socket = ip_sockets[source];
 		if ( socket )
 		{
-			readSockets.fd_array[readSockets.fd_count++] = socket;
+			FD_SET( socket, &readSockets );
 			if ( static_cast<int>( socket ) > maxSocket )
 				maxSocket = static_cast<int>( socket );
 		}

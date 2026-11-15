@@ -16,6 +16,8 @@
 #include "glquake.h"
 #include "../external/SDL2/SDL_video.h"
 
+#include <cwchar>
+
 #define MAX_TUTOR_MESSAGES 256
 
 class ICareerUI;

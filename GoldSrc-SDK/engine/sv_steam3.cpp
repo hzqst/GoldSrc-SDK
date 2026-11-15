@@ -1,4 +1,12 @@
+#ifdef _WIN32
 #include <winsock2.h>
+#else
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+typedef int SOCKET;
+#endif
 #include "isteamgameserver_c_api.h"
 #include "steam_api.h"
 #include "sv_steam3.h"
@@ -33,7 +41,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#ifdef _WIN32
 #include <io.h>
+#endif
 #include <mutex>
 #include <string>
 #include <vector>
@@ -491,7 +501,12 @@ void CSteam3Server::Activate()
 		serverPort = static_cast<int>( hostport.value );
 
 	const int appID = GetGameAppID();
+#if defined( _WIN32 )
 	if ( appID > 0 && cls.state != ca_dedicated )
+#else
+	// The Linux dedicated engine also needs it: SteamGameServer_Init() reads it.
+	if ( appID > 0 )
+#endif
 	{
 		FILE* file = std::fopen( "steam_appid.txt", "w+" );
 		if ( file )

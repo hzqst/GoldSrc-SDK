@@ -12,7 +12,11 @@ void* Mem_ZeroMalloc( size_t size )
 {
 	void* p = malloc( size );
 	if ( !p )
+#if defined( _WIN32 )
 		_wassert( L"p", L"c:\\buildslave\\goldsrc_win32\\build\\GoldSrc\\engine\\mem.c", 18 );
+#else
+		assert( p );
+#endif
 #pragma warning( suppress: 6387 )
 	memset( p, 0, size );
 	return p;
