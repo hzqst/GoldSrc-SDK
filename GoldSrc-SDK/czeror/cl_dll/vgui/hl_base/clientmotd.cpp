@@ -10,7 +10,7 @@
 #include "HTML.h"
 #include "Button.h"
 #include "Label.h"
-#include "controls.h"
+#include "Controls.h"
 #include "FileSystem.h"
 #include "port.h"
 #include "../../../../engine/controls.h"

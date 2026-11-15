@@ -35,7 +35,7 @@
 #include "vgui/KeyValues.h"
 #include "vgui/MessageMap.h"
 #include "vgui/ISystem.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include <cstring>
 

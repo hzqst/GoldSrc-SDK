@@ -6,7 +6,7 @@
 //=============================================================================
 
 #include "BitmapImagePanel.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/IBorder.h"
 #include "vgui/IImage.h"
 #include "vgui/IScheme.h"

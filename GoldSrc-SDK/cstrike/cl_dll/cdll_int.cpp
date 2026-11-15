@@ -137,7 +137,13 @@ extern "C" int EXPORT Initialize( cl_enginefunc_t* pEnginefuncs, int iVersion )
 	EV_HookEvents();
 	CL_LoadParticleMan();
 
+#ifdef _WIN32
 	const char* szFsModule = "filesystem_stdio.dll";
+	const char* szGameUIModule = "cl_dlls\\GameUI.dll";
+#else
+	const char* szFsModule = "filesystem_stdio.so";
+	const char* szGameUIModule = "cl_dlls/gameui.so";
+#endif
 	char szFSDir[MAX_PATH];
 	szFSDir[0] = 0;
 	if ( gEngfuncs.COM_ExpandFilename( szFsModule, szFSDir, sizeof( szFSDir ) ) == FALSE )
@@ -158,7 +164,7 @@ extern "C" int EXPORT Initialize( cl_enginefunc_t* pEnginefuncs, int iVersion )
 		return false;
 
 	char szDir[512];
-	if ( gEngfuncs.COM_ExpandFilename( "cl_dlls\\GameUI.dll", szDir, sizeof( szDir ) ) )
+	if ( gEngfuncs.COM_ExpandFilename( szGameUIModule, szDir, sizeof( szDir ) ) )
 	{
 		g_hGameUIModule = Sys_LoadModule( szDir );
 		if ( !g_hGameUIModule )

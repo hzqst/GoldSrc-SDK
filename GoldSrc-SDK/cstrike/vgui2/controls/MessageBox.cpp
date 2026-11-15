@@ -11,7 +11,7 @@
 //=============================================================================
 
 #include "MessageBox.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/IInput.h"
 #include "vgui/KeyValues.h"
 #include "Button.h"

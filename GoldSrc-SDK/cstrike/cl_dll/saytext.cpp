@@ -22,7 +22,7 @@
 #include "cl_util.h"
 #include "parsemsg.h"
 #include "../public/game_controls/iviewport.h"
-#include "../public/UtlVector.h"
+#include "../public/utlvector.h"
 #include "../../engine/controls.h"
 #include "../../external/steamworks/isteamfriends.h"
 #include <wchar.h>

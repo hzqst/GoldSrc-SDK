@@ -72,7 +72,13 @@ void SV_StudioSetupBones( model_t *pModel, float frame, int sequence,
 
 sv_blending_interface_t svBlending = { SV_BLENDING_INTERFACE_VERSION, SV_StudioSetupBones };
 
-extern "C" __declspec(dllexport) int Server_GetBlendingInterface( int version,
+#ifdef _WIN32
+#define BLENDING_DLLEXPORT __declspec( dllexport )
+#else
+#define BLENDING_DLLEXPORT __attribute__ ((visibility("default")))
+#endif
+
+extern "C" BLENDING_DLLEXPORT int Server_GetBlendingInterface( int version,
 	sv_blending_interface_t **ppinterface, server_studio_api_t *pstudio,
 	float (*rotationmatrix)[3][4], float (*bonetransform)[128][3][4] )
 {

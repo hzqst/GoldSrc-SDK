@@ -1326,9 +1326,9 @@ void CCounterTerrorist::StartTask(Task_t* task)
 			if (yaw < -180)
 				yaw += 360;
 			if (yaw < 0)
-				pev->ideal_yaw = pev->angles.y + min(yaw + 45, 0);
+				pev->ideal_yaw = pev->angles.y + min(yaw + 45, 0.0f);
 			else
-				pev->ideal_yaw = pev->angles.y + max(yaw - 45, 0);
+				pev->ideal_yaw = pev->angles.y + max(yaw - 45, 0.0f);
 		}
 		TaskComplete();
 		break;

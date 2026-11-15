@@ -8,7 +8,7 @@
 #include "GameUI_Interface.h"
 
 #include "vgui/KeyValues.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "controls.h"
 #include "wrect.h"
 #include "cl_dll.h"

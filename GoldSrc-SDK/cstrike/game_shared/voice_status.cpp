@@ -52,7 +52,9 @@ void ForEachBannedPlayer( char playerID[16] )
 		(unsigned int)(int)playerID[10], (unsigned int)(int)playerID[11],
 		(unsigned int)(int)playerID[12], (unsigned int)(int)playerID[13],
 		(unsigned int)(int)playerID[14], (unsigned int)(int)playerID[15] );
+#ifdef _WIN32
 	strupr( text );
+#endif
 	gEngfuncs.pfnConsolePrint( text );
 }
 

@@ -72,6 +72,9 @@ else()
 		-g
 		"SHELL:-include \"${GOLDSRC_ROOT}/common/posix_compat.h\""
 		-Werror=return-type
+		# Like MSVC (and the historical linux/Makefile), accept string literals
+		# passed through ternaries to the many char* engine and game APIs.
+		$<$<COMPILE_LANGUAGE:CXX>:-fpermissive>
 	)
 	set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 endif()

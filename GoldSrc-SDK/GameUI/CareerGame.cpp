@@ -20,7 +20,7 @@
 #include <algorithm>
 
 #include "../cstrike/game_shared/bot/bot_profile.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "vgui_controls/Controls.h"
 #include "vgui/IScheme.h"
 

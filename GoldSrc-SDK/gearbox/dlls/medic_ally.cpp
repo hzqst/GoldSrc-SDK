@@ -1169,7 +1169,7 @@ void COFMedicAlly::RunTask( Task_t* task )
 			if ( m_hTargetEnt != NULL )
 			{
 				CBaseEntity* target = m_hTargetEnt;
-				float amount = min( target->pev->max_health - target->pev->health, 5 );
+				float amount = min( target->pev->max_health - target->pev->health, 5.0f );
 				if ( amount == 0 || !target->TakeHealth( amount, DMG_GENERIC ) )
 					m_Activity = ACT_RESET;
 				else

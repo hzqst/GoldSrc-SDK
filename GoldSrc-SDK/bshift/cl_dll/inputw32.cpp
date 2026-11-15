@@ -113,8 +113,10 @@ void CL_DLLEXPORT IN_ActivateMouse()
 {
 	if ( mouseinitialized )
 	{
+#ifdef _WIN32
 		if ( mouseparmsvalid )
 			restore_spi = SystemParametersInfo( SPI_SETMOUSE, 0, newmouseparms, 0 );
+#endif
 		mouseactive = 1;
 	}
 }
@@ -129,8 +131,10 @@ void CL_DLLEXPORT IN_DeactivateMouse()
 {
 	if ( mouseinitialized )
 	{
+#ifdef _WIN32
 		if ( restore_spi )
 			SystemParametersInfo( SPI_SETMOUSE, 0, originalmouseparms, 0 );
+#endif
 		mouseactive = 0;
 	}
 }
@@ -145,7 +149,9 @@ void IN_StartupMouse()
 	if ( gEngfuncs.CheckParm( "-nomouse", NULL ) )
 		return;
 	mouseinitialized = 1;
+#ifdef _WIN32
 	mouseparmsvalid = SystemParametersInfo( SPI_GETMOUSE, 0, originalmouseparms, 0 );
+#endif
 	if ( mouseparmsvalid )
 	{
 		if ( gEngfuncs.CheckParm( "-noforcemspd", NULL ) )

@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "parsemsg.h"
+#include "commonmacros.h"
 #include "vgui/IScheme.h"
 #include "vgui/ISurface.h"
 #include "../../engine/controls.h"

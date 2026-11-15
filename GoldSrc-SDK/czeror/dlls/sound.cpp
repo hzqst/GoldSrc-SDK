@@ -23,7 +23,7 @@
 #include "player.h"
 #include "talkmonster.h"
 #include "gamerules.h"
-#include "sequence.h"
+#include "Sequence.h"
 #include "pm_materials.h"
 
 #include <ctype.h>

@@ -1,10 +1,9 @@
 # Half-Life: Blue Shift game server and client.
 
-# Not yet ported to Linux.
 goldsrc_add_module(bshiftdll
 	TYPE SHARED
-	WINDOWS_ONLY
 	OUTPUT_NAME hl
+	LINUX_OUTPUT_NAME bshift
 	OUTPUT_DIR bshift/dlls
 	RUNTIME STATIC
 	DEF_FILE projects/vs2026/bshiftdll.def
@@ -135,10 +134,8 @@ goldsrc_add_module(bshiftdll
 		$<$<CONFIG:Release>:/OPT:NOICF>
 )
 
-# Not yet ported to Linux.
 goldsrc_add_module(bshift_cdll
 	TYPE SHARED
-	WINDOWS_ONLY
 	OUTPUT_NAME client
 	OUTPUT_DIR bshift/cl_dlls
 	CXX_STANDARD 17
@@ -288,6 +285,14 @@ goldsrc_add_module(bshift_cdll
 		CLIENT_WEAPONS
 		HL_DLL
 	LINK
-		wsock32
 		goldsrc::SDL2
+	LINUX_DEFINES
+		# The C++ client code defines these; unlike MSVC, GCC does not mangle
+		# C++ variable names, so the C definitions would clash.
+		DISABLE_JUMP_ORIGIN
+		DISABLE_VEC_ORIGIN
+	WINDOWS_LINK
+		wsock32
+	LINUX_LINK
+		${CMAKE_DL_LIBS}
 )

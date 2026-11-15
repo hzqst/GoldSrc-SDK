@@ -12,7 +12,7 @@
 #include "controls.h"
 #include "vgui/KeyValues.h"
 #include "VGUI/IViewPort.h"
-#include "IGameUIFuncs.h" // for key bindings
+#include "igameuifuncs.h" // for key bindings
 #include "../../../public/FileSystem.h"
 #include <stdio.h>
 #include <stdlib.h> // MAX_PATH define

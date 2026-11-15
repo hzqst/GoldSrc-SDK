@@ -18,7 +18,7 @@
 
 #include "Button.h"
 #include "ComboBox.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "ImagePanel.h"
 #include "Label.h"
 #include "../engine/utlbuffer.h"

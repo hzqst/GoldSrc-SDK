@@ -10,7 +10,7 @@
 
 #include "Button.h"
 #include "QueryBox.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "IKeyValues.h"
 #include "../engine/utlbuffer.h"
 #include "igameuifuncs.h"

@@ -11,7 +11,7 @@
 //=============================================================================
 
 #include "CheckButton.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/IScheme.h"
 #include "vgui/KeyValues.h"
 

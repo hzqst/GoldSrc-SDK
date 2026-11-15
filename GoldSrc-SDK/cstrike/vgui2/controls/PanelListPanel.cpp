@@ -11,7 +11,7 @@
 #include "ScrollBar.h"
 #include "vgui/IScheme.h"
 #include "vgui/MessageMap.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "buildslave_assert.h"
 #define ASSERT_FILE BUILDSLAVE_PATH( L"vgui2\\controls\\PanelListPanel.cpp" )

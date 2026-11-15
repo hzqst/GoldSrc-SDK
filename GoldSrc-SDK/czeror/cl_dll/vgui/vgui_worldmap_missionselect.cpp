@@ -4,7 +4,7 @@
 #include "missionradiobutton.h"
 #include "ImagePanel.h"
 #include "Label.h"
-#include "controls.h"
+#include "Controls.h"
 #include "wrect.h"
 #include "cl_dll.h"
 #include "FileSystem.h"

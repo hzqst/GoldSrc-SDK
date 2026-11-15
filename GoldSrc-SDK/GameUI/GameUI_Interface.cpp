@@ -27,7 +27,7 @@
 #include "../engine/controls.h"
 #include "wrect.h"
 #include "cl_dll.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 
 #include <ctype.h>
 #include <stdio.h>

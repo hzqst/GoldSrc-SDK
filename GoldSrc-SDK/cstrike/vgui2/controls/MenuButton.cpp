@@ -12,7 +12,7 @@
 
 #include "MenuButton.h"
 #include "Menu.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "vgui/IInput.h"
 #include "vgui/IVGui.h"

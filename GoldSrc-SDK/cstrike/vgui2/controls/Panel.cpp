@@ -336,9 +336,13 @@ void Panel::InvalidateLayout( bool layoutNow, bool reloadScheme )
 
 void Panel::OnDelete()
 {
+#ifdef _WIN32
 	ASSERT_AT( _heapchk() == _HEAPOK, 2721 );
+#endif
 	delete this;
+#ifdef _WIN32
 	ASSERT_AT( _heapchk() == _HEAPOK, 2723 );
+#endif
 }
 
 void Panel::ApplySchemeSettings( IScheme* scheme )

@@ -193,16 +193,16 @@ CSchemeManager::CSchemeManager( int xRes, int )
 	int currentScheme = -1;
 	CScheme *pScheme = NULL;
 
+	// record what has been entered so we can create defaults from the different values
+	bool hasFgColor = false, hasBgColor = false;
+	bool hasArmedFgColor = false, hasArmedBgColor = false;
+	bool hasMouseDownFgColor = false, hasMouseDownBgColor = false;
+
 	if ( !pFile )
 	{
 		gEngfuncs.Con_DPrintf( "Unable to find *_textscheme.txt\n");
 		goto buildDefaultFont;
 	}
-
-	// record what has been entered so we can create defaults from the different values
-	bool hasFgColor = false, hasBgColor = false;
-	bool hasArmedFgColor = false, hasArmedBgColor = false;
-	bool hasMouseDownFgColor = false, hasMouseDownBgColor = false;
 
 	pFile = gEngfuncs.COM_ParseFile( pFile, token );
 	while ( strlen(token) > 0 && (currentScheme < numTmpSchemes) )

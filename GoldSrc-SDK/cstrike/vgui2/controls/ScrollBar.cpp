@@ -13,7 +13,7 @@
 #include "ScrollBar.h"
 #include "Button.h"
 #include "ScrollBarSlider.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "vgui/IInput.h"
 #include "vgui/IScheme.h"

@@ -8,6 +8,7 @@
 #include "cs_bot_manager.h"
 #include "nav_area.h"
 #include <algorithm>
+#include <ctype.h>
 
 extern char *MP_COM_Parse( char *data );
 extern char *MP_COM_GetToken( void );

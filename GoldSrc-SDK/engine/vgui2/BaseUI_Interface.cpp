@@ -224,7 +224,11 @@ void CBaseUI::Initialize( CreateInterfaceFn* factories, int )
 	CreateInterfaceFn engineFactory = factories[0];
 	CreateInterfaceFn fileSystemFactory = factories[1];
 	fileSystemFactory( "VFileSystem009", nullptr );
+#ifdef _WIN32
 	m_hVGuiModule = Sys_LoadModule( "vgui2.dll" );
+#else
+	m_hVGuiModule = Sys_LoadModule( "vgui2.so" );
+#endif
 	CreateInterfaceFn vguiFactory = Sys_GetFactory( m_hVGuiModule );
 	m_hChromeModule = Sys_LoadModule( "chromehtml.dll" );
 	m_FactoryList[3] = Sys_GetFactory( m_hChromeModule );
@@ -234,7 +238,11 @@ void CBaseUI::Initialize( CreateInterfaceFn* factories, int )
 	m_iNumFactories = 4;
 
 	char filename[512];
+#ifdef _WIN32
 	_snprintf( filename, sizeof( filename ), "cl_dlls\\GameUI.dll" );
+#else
+	_snprintf( filename, sizeof( filename ), "cl_dlls/gameui.so" );
+#endif
 	COM_ExpandFilename( filename );
 	COM_FixSlashes( filename );
 	FS_GetLocalCopy( filename );

@@ -3,7 +3,7 @@
 
 #include "Button.h"
 #include "ListPanel.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "utlrbtree.h"
 #include "utlsymbol.h"
 #include "vgui/ISurface.h"

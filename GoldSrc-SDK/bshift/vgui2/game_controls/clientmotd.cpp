@@ -12,7 +12,7 @@
 #include "../../../engine/controls.h"
 #include "../../../public/FileSystem.h"
 #include "VGUI/IViewPort.h"
-#include "IGameUIFuncs.h" // for key bindings
+#include "igameuifuncs.h" // for key bindings
 #include <string.h>
 #include <wchar.h>
 

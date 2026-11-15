@@ -10,6 +10,8 @@ int g_nActiveAreas;
 
 #ifndef _WIN32
 
+#include "cbase.h"
+#include "player.h"
 #include <errno.h>
 #include <unistd.h>
 
@@ -119,7 +121,7 @@ void DB_OnStartFrame()
 
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
 	{
-		CBaseEntity* pPlayer = UTIL_PlayerByIndex( i );
+		CBasePlayer* pPlayer = UTIL_PlayerByIndex( i );
 		if ( pPlayer && pPlayer->pev && (unsigned int)pPlayer->pev->playerclass < DB_CLASS_COUNT )
 		{
 			++g_ClassPlayerCounts[pPlayer->pev->playerclass];

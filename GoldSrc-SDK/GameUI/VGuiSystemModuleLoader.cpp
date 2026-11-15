@@ -9,7 +9,7 @@
 #include "Taskbar.h"
 
 #include "common/IVGuiModule.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "vgui/ILocalize.h"
 #include "vgui/IVGui.h"
 #include "vgui/KeyValues.h"

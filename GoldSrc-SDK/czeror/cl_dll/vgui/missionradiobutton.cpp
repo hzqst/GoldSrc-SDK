@@ -1,7 +1,7 @@
 #include "missionradiobutton.h"
 
 #include "TextImage.h"
-#include "controls.h"
+#include "Controls.h"
 #include "vgui/IScheme.h"
 #include "vgui/ISurface.h"
 

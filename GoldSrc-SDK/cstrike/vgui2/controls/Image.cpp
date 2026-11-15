@@ -11,7 +11,7 @@
 //=============================================================================
 
 #include "Image.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "vgui/ISurface.h"
 

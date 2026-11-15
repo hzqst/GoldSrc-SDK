@@ -10,7 +10,7 @@
 #include "Button.h"
 #include "Label.h"
 #include "RichText.h"
-#include "controls.h"
+#include "Controls.h"
 #include "../../../../vgui2/src/public/vgui/IScheme.h"
 #include "vgui/KeyValues.h"
 #include "FileSystem.h"

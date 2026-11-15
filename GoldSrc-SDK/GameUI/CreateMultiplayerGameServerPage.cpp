@@ -14,7 +14,7 @@
 #include "cl_dll.h"
 #include "CheckButton.h"
 #include "ComboBox.h"
-#include "FileSystem.h"
+#include "filesystem.h"
 #include "Random.h"
 #include "TextEntry.h"
 #include "vgui/KeyValues.h"

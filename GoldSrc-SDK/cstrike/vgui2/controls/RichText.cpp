@@ -13,7 +13,7 @@
 #include "RichText.h"
 #include "Menu.h"
 #include "ScrollBar.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "../../../engine/controls.h"
 #include "ILocalize.h"

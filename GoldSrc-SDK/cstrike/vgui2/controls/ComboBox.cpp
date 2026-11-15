@@ -13,7 +13,7 @@
 #include "vgui_controls/ComboBox.h"
 #include "Menu.h"
 #include "MenuItem.h"
-#include "controls.h"
+#include "Controls.h"
 
 #include "vgui/Cursor.h"
 #include "vgui/IInput.h"

@@ -9,7 +9,7 @@
 
 #include "mouseoverpanelbutton.h"
 #include "Label.h"
-#include "controls.h"
+#include "Controls.h"
 #include "FileSystem.h"
 #include "game_controls/iviewport.h"
 #include "hud.h"
