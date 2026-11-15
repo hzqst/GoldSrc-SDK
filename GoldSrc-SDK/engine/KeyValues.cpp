@@ -4,7 +4,11 @@
 #include "filesystem.h"
 #include "utlbuffer.h"
 
+#if defined( _WIN32 )
 #include <direct.h>			// for _mkdir
+#else
+#include <sys/stat.h>
+#endif
 
 #include <cassert>
 #include <cctype>
@@ -25,9 +29,11 @@
 #define _snprintf snprintf
 #define _snwprintf swprintf
 #define _vsnprintf vsnprintf
-#endif
-
+#define _wtoi( string ) static_cast<int>( std::wcstol( string, nullptr, 10 ) )
+#define _mkdir( directory ) mkdir( directory, 0777 )
+#else
 static_assert( sizeof( wchar_t ) == 2 );
+#endif
 
 #if defined( _WIN32 )
 #define KEYVALUES_SOURCE_PATH L"c:\\buildslave\\goldsrc_win32\\build\\GoldSrc\\public\\KeyValues.cpp"
@@ -555,7 +561,7 @@ const char* KeyValues::GetString( const char* name, const char* defaultValue )
 	{
 		std::int64_t value;
 		std::memcpy( &value, key->m_pValue, sizeof( value ) );
-		_snprintf( formatted, FORMAT_VALUE_CHARACTERS, "%I64i", static_cast<long long>( value ) );
+		_snprintf( formatted, FORMAT_VALUE_CHARACTERS, "%lld", static_cast<long long>( value ) );
 		break;
 	}
 	default:
@@ -597,7 +603,7 @@ const wchar_t* KeyValues::GetWString( const char* name, const wchar_t* defaultVa
 	{
 		std::int64_t value;
 		std::memcpy( &value, key->m_pValue, sizeof( value ) );
-		_snwprintf( formatted, FORMAT_VALUE_CHARACTERS, L"%I64i", static_cast<long long>( value ) );
+		_snwprintf( formatted, FORMAT_VALUE_CHARACTERS, L"%lld", static_cast<long long>( value ) );
 		break;
 	}
 	default:

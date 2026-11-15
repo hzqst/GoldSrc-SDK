@@ -75,6 +75,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "swds", "..\..\swds\swds.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "a3dapi", "a3dapi.vcxproj", "{6B2F2566-A369-4F90-92C2-8F509E494F0F}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "serverbrowser", "serverbrowser.vcxproj", "{5670F1E8-2452-4976-8403-537834144304}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -249,6 +251,10 @@ Global
 		{AB29F993-01FE-4971-A63B-307060C36069}.Debug|Win32.Build.0 = Debug|Win32
 		{AB29F993-01FE-4971-A63B-307060C36069}.Release|Win32.ActiveCfg = Release|Win32
 		{AB29F993-01FE-4971-A63B-307060C36069}.Release|Win32.Build.0 = Release|Win32
+		{5670F1E8-2452-4976-8403-537834144304}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5670F1E8-2452-4976-8403-537834144304}.Debug|Win32.Build.0 = Debug|Win32
+		{5670F1E8-2452-4976-8403-537834144304}.Release|Win32.ActiveCfg = Release|Win32
+		{5670F1E8-2452-4976-8403-537834144304}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -207,6 +207,8 @@ public:
 	virtual void name( type p1 )
 
 #define MESSAGE_FUNC_INT( name, scriptname, p1 ) _MessageFuncOneParam( name, scriptname, int, vgui2::DATATYPE_INT, p1 )
+#define MESSAGE_FUNC_UINT64( name, scriptname, p1 )                                                                    \
+	_MessageFuncOneParam( name, scriptname, uint64, vgui2::DATATYPE_UINT64, p1 )
 #define MESSAGE_FUNC_FLOAT( name, scriptname, p1 )                                                                     \
 	_MessageFuncOneParam( name, scriptname, float, vgui2::DATATYPE_FLOAT, p1 )
 #define MESSAGE_FUNC_PTR( name, scriptname, p1 )                                                                       \
@@ -225,3 +227,13 @@ public:
 	_MessageFuncCommon( name, scriptname, (void ( vgui2::Panel::* )( int, int ))&ThisClass::name, 2,                   \
 		vgui2::DATATYPE_INT, #p1, vgui2::DATATYPE_INT, #p2 );                                                          \
 	virtual void name( int p1, int p2 )
+
+#define MESSAGE_FUNC_PTR_INT( name, scriptname, p1, p2 )                                                               \
+	_MessageFuncCommon( name, scriptname, (void ( vgui2::Panel::* )( vgui2::Panel*, int ))&ThisClass::name, 2,         \
+		vgui2::DATATYPE_PTR, #p1, vgui2::DATATYPE_INT, #p2 );                                                          \
+	virtual void name( vgui2::Panel* p1, int p2 )
+
+#define MESSAGE_FUNC_PTR_CHARPTR( name, scriptname, p1, p2 )                                                           \
+	_MessageFuncCommon( name, scriptname, (void ( vgui2::Panel::* )( vgui2::Panel*, const char* ))&ThisClass::name,    \
+		2, vgui2::DATATYPE_PTR, #p1, vgui2::DATATYPE_CONSTCHARPTR, #p2 );                                              \
+	virtual void name( vgui2::Panel* p1, const char* p2 )

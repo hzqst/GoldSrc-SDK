@@ -32,7 +32,7 @@ public:
 	unsigned int GetPlayerUserID( int playerIndex ) override;
 };
 
-EXPOSE_SINGLE_INTERFACE( CRunGameEngine, IRunGameEngine, "RunGameEngine006" );
+EXPOSE_SINGLE_INTERFACE( CRunGameEngine, IRunGameEngine, RUNGAMEENGINE_INTERFACE_VERSION );
 
 bool CRunGameEngine::IsRunning()
 {
