@@ -66,17 +66,29 @@ msbuild projects\vs2026\utils.sln /m /p:Configuration=Release /p:Platform=Win32
 
 Use `/p:Configuration=Debug` for a debug build.
 
-### Linux server browser
+### CMake
 
-The server browser also builds as `serverbrowser_linux.so` with a 32-bit capable g++:
+[`CMakeLists.txt`](GoldSrc-SDK/CMakeLists.txt) builds the same targets with presets for both platforms. The Visual Studio 2026 generator needs CMake 4.2 or later.
 
-```bash
-cd GoldSrc-SDK/linux
-make -f Makefile.serverbrowser          # release/serverbrowser_linux.so
-make -f Makefile.serverbrowser CFG=debug
+```bat
+cd GoldSrc-SDK
+cmake --preset windows-x86
+cmake --build --preset windows-x86-release
 ```
 
-Tier0 (`Plat_FloatTime`, `Error`) and Steam API symbols are left for the game's runtime libraries to resolve.
+On Linux, the build needs CMake, Ninja and a GCC with 32-bit multilib support (`g++-multilib` on Debian and Ubuntu):
+
+```bash
+cd GoldSrc-SDK
+cmake --preset linux-x86-release      # or linux-x86-debug
+cmake --build --preset linux-x86-release
+```
+
+Linux binaries go to `bin/Linux32/<config>/`. The Linux build currently covers Tier0 (`libtier0.so`), the filesystem, the launcher (`hl_linux`), HLTV (`core.so`, `demoplayer.so`, `proxy.so`), the server browser (`platform/servers/serverbrowser_linux.so`), particleman, and the Half-Life, Deathmatch Classic and Ricochet client and server libraries. The other targets are still Windows-only.
+
+On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API modules link [`lib/public/linux32/libsteam_api.so`](GoldSrc-SDK/lib/public/linux32/), taken from the Linux Half-Life Dedicated Server (SteamCMD app 90); the build copies it next to the binaries.
+
+Configure with `-DGOLDSRC_BUILD_TESTS=ON` to register the regression tests under [`tests/`](tests/) with CTest; run them with `ctest --test-dir bin/obj/cmake/<preset>`.
 
 ## Build output
 

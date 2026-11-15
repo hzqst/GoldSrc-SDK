@@ -248,7 +248,10 @@ void Proxy::DisconnectClients( char* reason )
 
 void Proxy::StopBroadcast( char* message )
 {
-	DisconnectClients( message ? COM_VarArgs( "%s\n", message ) : "HLTV stopped.\n" );
+	if ( message )
+		DisconnectClients( COM_VarArgs( "%s\n", message ) );
+	else
+		DisconnectClients( "HLTV stopped.\n" );
 	m_Server->Disconnect();
 	m_Server->StopRetry();
 	m_World->StopGame();
@@ -757,7 +760,7 @@ void Proxy::ReplyRules( NetAddress* to )
 		m_Socket->SendPacket( to, m_InfoRules.data, m_InfoRules.CurrentSize() );
 }
 
-void Proxy::RejectConnection( NetAddress* to, bool badPassword, char* format, ... )
+void Proxy::RejectConnection( NetAddress* to, bool badPassword, const char* format, ... )
 {
 	char text[1024];
 	va_list args;
@@ -1519,7 +1522,10 @@ void Proxy::CMD_StopRecording( char* )
 void Proxy::CMD_Stop( char* cmdLine )
 {
 	TokenLine params( cmdLine );
-	StopBroadcast( params.CountToken() <= 1 ? "HLTV stopped." : params.GetRestOfLine( 1 ) );
+	if ( params.CountToken() <= 1 )
+		StopBroadcast( "HLTV stopped." );
+	else
+		StopBroadcast( params.GetRestOfLine( 1 ) );
 	m_System->DPrintf( "Disconnected and stoppted.\n" );
 }
 

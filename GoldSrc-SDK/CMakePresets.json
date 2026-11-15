@@ -1,0 +1,41 @@
+{
+	"version": 6,
+	"cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+	"configurePresets": [
+		{
+			"name": "windows-x86",
+			"displayName": "Windows x86 (Visual Studio 2026)",
+			"generator": "Visual Studio 18 2026",
+			"architecture": "Win32",
+			"binaryDir": "${sourceDir}/bin/obj/cmake/${presetName}",
+			"condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+		},
+		{
+			"name": "linux-x86",
+			"hidden": true,
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/bin/obj/cmake/${presetName}",
+			"toolchainFile": "${sourceDir}/cmake/toolchains/linux-i686.cmake",
+			"cacheVariables": { "CMAKE_EXPORT_COMPILE_COMMANDS": "ON" },
+			"condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" }
+		},
+		{
+			"name": "linux-x86-release",
+			"displayName": "Linux x86 Release",
+			"inherits": "linux-x86",
+			"cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+		},
+		{
+			"name": "linux-x86-debug",
+			"displayName": "Linux x86 Debug",
+			"inherits": "linux-x86",
+			"cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+		}
+	],
+	"buildPresets": [
+		{ "name": "windows-x86-release", "configurePreset": "windows-x86", "configuration": "Release" },
+		{ "name": "windows-x86-debug", "configurePreset": "windows-x86", "configuration": "Debug" },
+		{ "name": "linux-x86-release", "configurePreset": "linux-x86-release" },
+		{ "name": "linux-x86-debug", "configurePreset": "linux-x86-debug" }
+	]
+}

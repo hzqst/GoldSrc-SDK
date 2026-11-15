@@ -1,0 +1,173 @@
+# Ricochet game server and client.
+
+goldsrc_add_module(ricochetdll
+	TYPE SHARED
+	OUTPUT_NAME mp
+	OUTPUT_DIR ricochet/dlls
+	RUNTIME STATIC
+	DEF_FILE ricochet/dlls/mp.def
+	WHOLE_PROGRAM
+	SOURCES
+		game_shared/voice_gamemgr.cpp
+		ricochet/dlls/airtank.cpp
+		ricochet/dlls/animating.cpp
+		ricochet/dlls/animation.cpp
+		ricochet/dlls/bmodels.cpp
+		ricochet/dlls/buttons.cpp
+		ricochet/dlls/cbase.cpp
+		ricochet/dlls/client.cpp
+		ricochet/dlls/combat.cpp
+		ricochet/dlls/disc_arena.cpp
+		ricochet/dlls/disc_powerups.cpp
+		ricochet/dlls/doors.cpp
+		ricochet/dlls/effects.cpp
+		ricochet/dlls/explode.cpp
+		ricochet/dlls/func_break.cpp
+		ricochet/dlls/func_tank.cpp
+		ricochet/dlls/game.cpp
+		ricochet/dlls/gamerules.cpp
+		ricochet/dlls/ggrenade.cpp
+		ricochet/dlls/globals.cpp
+		ricochet/dlls/healthkit.cpp
+		ricochet/dlls/h_ai.cpp
+		ricochet/dlls/h_battery.cpp
+		ricochet/dlls/h_cycler.cpp
+		ricochet/dlls/h_export.cpp
+		ricochet/dlls/items.cpp
+		ricochet/dlls/lights.cpp
+		ricochet/dlls/maprules.cpp
+		ricochet/dlls/mortar.cpp
+		ricochet/dlls/mpstubb.cpp
+		ricochet/dlls/multiplay_gamerules.cpp
+		ricochet/dlls/observer.cpp
+		ricochet/dlls/pathcorner.cpp
+		ricochet/dlls/plane.cpp
+		ricochet/dlls/plats.cpp
+		ricochet/dlls/player.cpp
+		ricochet/dlls/singleplay_gamerules.cpp
+		ricochet/dlls/skill.cpp
+		ricochet/dlls/sound.cpp
+		ricochet/dlls/soundent.cpp
+		ricochet/dlls/spectator.cpp
+		ricochet/dlls/subs.cpp
+		ricochet/dlls/teamplay_gamerules.cpp
+		ricochet/dlls/triggers.cpp
+		ricochet/dlls/util.cpp
+		ricochet/dlls/weapons.cpp
+		ricochet/dlls/world.cpp
+		ricochet/dlls/wpn_shared/disc_weapon_disc.cpp
+		ricochet/dlls/xen.cpp
+		ricochet/pm_shared/pm_debug.c
+		ricochet/pm_shared/pm_math.c
+		ricochet/pm_shared/pm_shared.c
+	INCLUDES
+		ricochet/dlls
+		common
+		public
+		game_shared
+		ricochet/pm_shared
+		ricochet
+		engine
+	DEFINES
+		VALVE_DLL
+)
+
+goldsrc_add_module(ricochet_cdll
+	TYPE SHARED
+	OUTPUT_NAME client
+	OUTPUT_DIR ricochet/cl_dlls
+	RUNTIME STATIC
+	WHOLE_PROGRAM
+	SOURCES
+		common/parsemsg.cpp
+		game_shared/vgui_checkbutton2.cpp
+		game_shared/vgui_grid.cpp
+		game_shared/vgui_helpers.cpp
+		game_shared/vgui_listbox.cpp
+		game_shared/vgui_loadtga.cpp
+		game_shared/vgui_scrollbar2.cpp
+		game_shared/vgui_slider2.cpp
+		game_shared/voice_banmgr.cpp
+		public/interface.cpp
+		ricochet/cl_dll/ammo.cpp
+		ricochet/cl_dll/ammohistory.cpp
+		ricochet/cl_dll/ammo_secondary.cpp
+		ricochet/cl_dll/battery.cpp
+		ricochet/cl_dll/cdll_int.cpp
+		ricochet/cl_dll/com_weapons.cpp
+		ricochet/cl_dll/death.cpp
+		ricochet/cl_dll/demo.cpp
+		ricochet/cl_dll/entity.cpp
+		ricochet/cl_dll/events.cpp
+		ricochet/cl_dll/ev_common.cpp
+		ricochet/cl_dll/ev_hldm.cpp
+		ricochet/cl_dll/flashlight.cpp
+		ricochet/cl_dll/GameStudioModelRenderer.cpp
+		ricochet/cl_dll/geiger.cpp
+		ricochet/cl_dll/health.cpp
+		ricochet/cl_dll/hl/hl_baseentity.cpp
+		ricochet/cl_dll/hl/hl_events.cpp
+		ricochet/cl_dll/hl/hl_objects.cpp
+		ricochet/cl_dll/hl/hl_weapons.cpp
+		ricochet/cl_dll/hud.cpp
+		ricochet/cl_dll/hud_msg.cpp
+		ricochet/cl_dll/hud_redraw.cpp
+		ricochet/cl_dll/hud_servers.cpp
+		ricochet/cl_dll/hud_update.cpp
+		ricochet/cl_dll/input.cpp
+		ricochet/cl_dll/inputw32.cpp
+		ricochet/cl_dll/in_camera.cpp
+		ricochet/cl_dll/menu.cpp
+		ricochet/cl_dll/message.cpp
+		ricochet/cl_dll/Ricochet_JumpPads.cpp
+		ricochet/cl_dll/saytext.cpp
+		ricochet/cl_dll/statusbar.cpp
+		ricochet/cl_dll/status_icons.cpp
+		ricochet/cl_dll/StudioModelRenderer.cpp
+		ricochet/cl_dll/studio_util.cpp
+		ricochet/cl_dll/text_message.cpp
+		ricochet/cl_dll/train.cpp
+		ricochet/cl_dll/tri.cpp
+		ricochet/cl_dll/util.cpp
+		ricochet/cl_dll/vgui_ConsolePanel.cpp
+		ricochet/cl_dll/vgui_ControlConfigPanel.cpp
+		ricochet/cl_dll/vgui_CustomObjects.cpp
+		ricochet/cl_dll/vgui_discobjects.cpp
+		ricochet/cl_dll/vgui_int.cpp
+		ricochet/cl_dll/vgui_MOTDWindow.cpp
+		ricochet/cl_dll/vgui_SchemeManager.cpp
+		ricochet/cl_dll/vgui_ScorePanel.cpp
+		ricochet/cl_dll/vgui_ServerBrowser.cpp
+		ricochet/cl_dll/vgui_TeamFortressViewport.cpp
+		ricochet/cl_dll/view.cpp
+		ricochet/cl_dll/voice_status.cpp
+		ricochet/dlls/wpn_shared/disc_weapon_disc.cpp
+		ricochet/pm_shared/pm_debug.c
+		ricochet/pm_shared/pm_math.c
+		ricochet/pm_shared/pm_shared.c
+	INCLUDES
+		ricochet
+		ricochet/dlls
+		ricochet/cl_dll
+		game_shared
+		public
+		common
+		ricochet/pm_shared
+		utils/vgui/include
+		external
+		engine
+	DEFINES
+		CLIENT_DLL
+	LINK
+		goldsrc::SDL2
+		goldsrc::vgui1
+	LINUX_DEFINES
+		# The C++ client code defines these; unlike MSVC, GCC does not mangle
+		# C++ variable names, so the C definitions would clash.
+		DISABLE_JUMP_ORIGIN
+		DISABLE_VEC_ORIGIN
+	WINDOWS_LINK
+		wsock32
+	LINUX_LINK
+		${CMAKE_DL_LIBS}
+)

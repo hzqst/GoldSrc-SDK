@@ -1,0 +1,193 @@
+# Game UI module.
+
+# Not yet ported to Linux.
+goldsrc_add_module(GameUI
+	TYPE SHARED
+	WINDOWS_ONLY
+	OUTPUT_DIR valve/cl_dlls
+	CXX_STANDARD 17
+	WARNING_LEVEL 4
+	DEF_FILE projects/vs2026/GameUI.def
+	WARNINGS_AS_ERRORS
+	LINKER_WARNINGS_AS_ERRORS
+	KEEP_ASSERTS
+	LARGE_ADDRESS_AWARE
+	SOURCES
+		GameUI/BackgroundMenuButton.cpp
+		GameUI/BasePanel.cpp
+		GameUI/BitmapButton.cpp
+		GameUI/BitmapImagePanel.cpp
+		GameUI/CareerBaseFrame.cpp
+		GameUI/CareerBotFrame.cpp
+		GameUI/CareerBox.cpp
+		GameUI/CareerDefinitions.cpp
+		GameUI/CareerGame.cpp
+		GameUI/CareerGameTasks.cpp
+		GameUI/CareerMapFrame.cpp
+		GameUI/CareerProfile.cpp
+		GameUI/CareerProfileButton.cpp
+		GameUI/CareerProfileFrame.cpp
+		GameUI/ChangeGameDialog.cpp
+		GameUI/CDKeyEntryDialog.cpp
+		GameUI/CommandCheckButton.cpp
+		GameUI/ContentControlDialog.cpp
+		GameUI/CreateMultiplayerGameBotPage.cpp
+		GameUI/CreateMultiplayerGameDialog.cpp
+		GameUI/CreateMultiplayerGameGameplayPage.cpp
+		GameUI/CreateMultiplayerGameServerPage.cpp
+		GameUI/CvarLatch.cpp
+		GameUI/CvarNegateCheckButton.cpp
+		GameUI/CvarSlider.cpp
+		GameUI/CvarTextEntry.cpp
+		GameUI/CvarToggleCheckButton.cpp
+		GameUI/DemoEditDialog.cpp
+		GameUI/DemoEventsDialog.cpp
+		GameUI/DemoPlayerDialog.cpp
+		GameUI/DemoPlayerFileDialog.cpp
+		GameUI/DottedLabel.cpp
+		GameUI/GameConsole.cpp
+		GameUI/GameConsoleDialog.cpp
+		GameUI/GameUI_Interface.cpp
+		GameUI/HelpDialog.cpp
+		GameUI/ImageButton.cpp
+		GameUI/KeyToggleCheckButton.cpp
+		GameUI/LabeledCommandComboBox.cpp
+		GameUI/labelslidercombo.cpp
+		GameUI/LoadGameDialog.cpp
+		GameUI/LoadingDialog.cpp
+		GameUI/LogoFile.cpp
+		GameUI/ModInfo.cpp
+		GameUI/MultiplayerAdvancedDialog.cpp
+		GameUI/MusicManager.cpp
+		GameUI/NewGameDialog.cpp
+		GameUI/OptionsDialog.cpp
+		GameUI/OptionsSubAdvanced.cpp
+		GameUI/OptionsSubAudio.cpp
+		GameUI/OptionsSubKeyboard.cpp
+		GameUI/OptionsSubMouse.cpp
+		GameUI/OptionsSubMultiplayer.cpp
+		GameUI/OptionsSubVideo.cpp
+		GameUI/OptionsSubVoice.cpp
+		GameUI/PanelListPanel.cpp
+		GameUI/PlayerListDialog.cpp
+		GameUI/RefreshSteamLogin.cpp
+		GameUI/RunGameEngine.cpp
+		GameUI/SaveGameDialog.cpp
+		GameUI/ScriptObject.cpp
+		GameUI/Sys_Utils.cpp
+		GameUI/Taskbar.cpp
+		GameUI/TaskButton.cpp
+		GameUI/TextEntryBox.cpp
+		GameUI/vcontrolslistpanel.cpp
+		GameUI/VGuiSystemModuleLoader.cpp
+		vgui2/controls/AnimatingImagePanel.cpp
+		vgui2/controls/BitmapImagePanel.cpp
+		vgui2/controls/BuildGroup.cpp
+		vgui2/controls/BuildModeDialog.cpp
+		vgui2/controls/Button.cpp
+		vgui2/controls/CheckButton.cpp
+		vgui2/controls/ComboBox.cpp
+		vgui2/controls/controls.cpp
+		vgui2/controls/Divider.cpp
+		vgui2/controls/EditablePanel.cpp
+		vgui2/controls/FocusNavGroup.cpp
+		vgui2/controls/Frame.cpp
+		vgui2/controls/HTML.cpp
+		vgui2/controls/Image.cpp
+		vgui2/controls/ImageList.cpp
+		vgui2/controls/ImagePanel.cpp
+		vgui2/controls/Label.cpp
+		vgui2/controls/ListPanel.cpp
+		vgui2/controls/Menu.cpp
+		vgui2/controls/MenuButton.cpp
+		vgui2/controls/MenuItem.cpp
+		vgui2/controls/MessageBox.cpp
+		vgui2/controls/Panel.cpp
+		vgui2/controls/PanelHorizListPanel.cpp
+		vgui2/controls/PanelListPanel.cpp
+		vgui2/controls/ProgressBar.cpp
+		vgui2/controls/PropertyDialog.cpp
+		vgui2/controls/PropertyPage.cpp
+		vgui2/controls/PropertySheet.cpp
+		vgui2/controls/QueryBox.cpp
+		vgui2/controls/RadioButton.cpp
+		vgui2/controls/RichText.cpp
+		vgui2/controls/ScrollBar.cpp
+		vgui2/controls/ScrollBarSlider.cpp
+		vgui2/controls/SectionedListPanel.cpp
+		vgui2/controls/Slider.cpp
+		vgui2/controls/TextEntry.cpp
+		vgui2/controls/TextImage.cpp
+		vgui2/controls/ToggleButton.cpp
+		vgui2/controls/Tooltip.cpp
+		vgui2/controls/URLLabel.cpp
+		engine/interface.cpp
+		public/checksum_md5.cpp
+		engine/utlbuffer.cpp
+		engine/utlsymbol.cpp
+		engine/BaseSystemModule.cpp
+		common/ObjectList.cpp
+		cstrike/common/parsemsg.cpp
+		cstrike/common/Random.cpp
+		cstrike/game_shared/shared_util.cpp
+		cstrike/game_shared/bot/bot_profile.cpp
+		cstrike/dlls/weapontype.cpp
+		HLTV/DemoPlayer/private/HLTV/common/DirectorCmd.cpp
+		HLTV/common/byteorder.cpp
+		HLTV/DemoPlayer/private/HLTV/common/BitBuffer.cpp
+		HLTV/DemoPlayer/private/HLTV/common/common.cpp
+		public/characterset.cpp
+		vgui2/src/public/filesystem_helpers.cpp
+		engine/KeyValues.cpp
+		engine/MemPool.cpp
+		engine/controls.cpp
+	INCLUDES
+		GameUI
+		cstrike/common
+		cstrike/public
+		vgui2/controls
+		cl_dll
+		engine
+		vgui2/src/public
+		common
+		public
+		pm_shared
+		game_shared
+		external
+		external/SDL2
+		.
+	DEFINES
+		GAMEUI_DLL
+		CLIENT_DLL
+		UTL_ENGINE_ASSERTS
+		_ITERATOR_DEBUG_LEVEL=0
+	LINK
+		goldsrc::SDL2
+		goldsrc::steam_api
+		tier0
+)
+
+goldsrc_source_properties(GameUI/LogoFile.cpp
+	MSVC_OPTIONS $<$<CONFIG:Debug>:/Ob1>
+)
+goldsrc_source_properties(GameUI/OptionsSubKeyboard.cpp
+	MSVC_OPTIONS $<$<CONFIG:Debug>:/Ob1>
+)
+goldsrc_source_properties(GameUI/OptionsSubMultiplayer.cpp
+	MSVC_OPTIONS $<$<CONFIG:Debug>:/Ob1>
+)
+goldsrc_source_properties(common/ObjectList.cpp
+	INCLUDES HLTV/DemoPlayer/private/HLTV/common
+)
+goldsrc_source_properties(cstrike/game_shared/bot/bot_profile.cpp
+	INCLUDES cstrike/game_shared cstrike/game_shared/bot
+)
+goldsrc_source_properties(HLTV/DemoPlayer/private/HLTV/common/DirectorCmd.cpp
+	INCLUDES HLTV/DemoPlayer/private
+)
+goldsrc_source_properties(HLTV/DemoPlayer/private/HLTV/common/BitBuffer.cpp
+	INCLUDES HLTV/DemoPlayer/private
+)
+goldsrc_source_properties(HLTV/DemoPlayer/private/HLTV/common/common.cpp
+	INCLUDES HLTV/DemoPlayer/private
+)

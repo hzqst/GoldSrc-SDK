@@ -1,0 +1,30 @@
+# Registers the standalone regression tests under ../tests with CTest.
+#
+# The Python tests extract production functions from the engine sources and
+# compile them with the host compiler ($CXX); they do not use the build tree.
+
+include_guard(GLOBAL)
+
+set(GOLDSRC_TESTS_DIR "${GOLDSRC_ROOT}/../tests")
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound)
+	add_test(NAME ${name}
+		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/${name}_tests.py")
+endforeach()
+
+add_executable(cd_thread_tests "${GOLDSRC_TESTS_DIR}/cd_thread_tests.cpp")
+set_target_properties(cd_thread_tests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+if(MSVC)
+	target_compile_options(cd_thread_tests PRIVATE /EHsc /W4 /WX)
+else()
+	target_link_libraries(cd_thread_tests PRIVATE Threads::Threads)
+endif()
+
+set(cd_thread_scenarios lifecycle callback creation-failure join-failure)
+if(WIN32)
+	list(APPEND cd_thread_scenarios wake)
+endif()
+foreach(scenario IN LISTS cd_thread_scenarios)
+	add_test(NAME cd_thread_${scenario} COMMAND cd_thread_tests ${scenario})
+endforeach()
