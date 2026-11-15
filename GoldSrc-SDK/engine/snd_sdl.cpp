@@ -138,7 +138,7 @@ extern "C" qboolean SNDDMA_Init()
 	setenv( "PULSE_PROP_application.name", "Half-Life 1", 1 );
 	setenv( "PULSE_PROP_media.role", "game", 1 );
 
-	if ( SDL_WasInit( SDL_INIT_AUDIO ) || SDL_InitSubSystem( SDL_INIT_AUDIO ) )
+	if ( SDL_WasInit( SDL_INIT_AUDIO ) || SDL_InitSubSystem( SDL_INIT_AUDIO ) == 0 )
 	{
 		memset( &desired, 0, sizeof( desired ) );
 		desired.freq = shm->dmaspeed;
