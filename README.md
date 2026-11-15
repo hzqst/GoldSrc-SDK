@@ -16,7 +16,7 @@ GoldSrc-SDK brings together the Half-Life 25th Anniversary engine code, game cli
 - **GoldSrc engine:** hardware and software rendering, the game launcher, and shared engine systems.
 - **Game code:** client and server projects for the games listed below.
 - **Servers and broadcasting:** Half-Life Dedicated Server, the dedicated engine, HLTV, and demo playback components.
-- **Runtime libraries:** the filesystem, Tier0, VGUI, VGUI2, GameUI, and particle manager.
+- **Runtime libraries:** the filesystem, Tier0, VGUI, VGUI2, GameUI, the server browser, and particle manager.
 - **A3D audio API:** 3D audio interfaces and implementation, built as `a3dapi.dll`.
 - **Hammer 3.4:** editor source.
 - **SDK utilities:** map compilation, model compilation and viewing, sprite generation, WAD tools, and other development utilities.
@@ -66,6 +66,18 @@ msbuild projects\vs2026\utils.sln /m /p:Configuration=Release /p:Platform=Win32
 
 Use `/p:Configuration=Debug` for a debug build.
 
+### Linux server browser
+
+The server browser also builds as `serverbrowser_linux.so` with a 32-bit capable g++:
+
+```bash
+cd GoldSrc-SDK/linux
+make -f Makefile.serverbrowser          # release/serverbrowser_linux.so
+make -f Makefile.serverbrowser CFG=debug
+```
+
+Tier0 (`Plat_FloatTime`, `Error`) and Steam API symbols are left for the game's runtime libraries to resolve.
+
 ## Build output
 
 Runtime and game binaries are placed under `GoldSrc-SDK/`:
@@ -92,6 +104,7 @@ SDK utility executables are placed in the corresponding `utils/` subdirectory. I
 | Filesystem | `filesystem_stdio.dll` |
 | Shared runtime and UI | `tier0.dll`, `vgui.dll`, `vgui2.dll` |
 | Game UI and effects | `valve/cl_dlls/GameUI.dll`, `valve/cl_dlls/particleman.dll` |
+| Server browser | `platform/servers/serverbrowser.dll` |
 | Game client/server DLLs | The game directories listed above, under `cl_dlls/` and `dlls/` |
 
 ## Source layout
@@ -109,6 +122,7 @@ The project files are in [`GoldSrc-SDK/`](GoldSrc-SDK/). Paths below are relativ
 | [`cl_dll/`](GoldSrc-SDK/cl_dll/), [`dlls/`](GoldSrc-SDK/dlls/) | Half-Life client and server code |
 | [`common/`](GoldSrc-SDK/common/), [`public/`](GoldSrc-SDK/public/), [`game_shared/`](GoldSrc-SDK/game_shared/), [`pm_shared/`](GoldSrc-SDK/pm_shared/) | Shared interfaces, game code, and movement code |
 | [`filesystem/`](GoldSrc-SDK/filesystem/), [`tier0/`](GoldSrc-SDK/tier0/), [`vgui2/`](GoldSrc-SDK/vgui2/), [`GameUI/`](GoldSrc-SDK/GameUI/) | Filesystem, runtime support, and UI components |
+| [`serverbrowser/`](GoldSrc-SDK/serverbrowser/) | Server browser (`ServerBrowser003`), built by `serverbrowser.vcxproj` or `linux/Makefile.serverbrowser` |
 | [`worldcraft/`](GoldSrc-SDK/worldcraft/) | Hammer 3.4 editor source |
 | [`utils/`](GoldSrc-SDK/utils/) | SDK utilities and VGUI source |
 | [`projects/vs2026/`](GoldSrc-SDK/projects/vs2026/) | Visual Studio solutions, project files, and shared build settings |

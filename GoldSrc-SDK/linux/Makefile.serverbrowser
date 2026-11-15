@@ -1,0 +1,141 @@
+#
+# ServerBrowser Makefile for x86 Linux
+#
+# Builds serverbrowser_linux.so from the serverbrowser sources, the VGUI2
+# controls and the engine support files shared with GameUI.
+#
+# Run from this directory: make -f Makefile.serverbrowser [CFG=debug]
+#
+
+ifeq "$(CFG)" ""
+CFG=release
+endif
+
+SOURCE_DIR?=..
+BUILD_DIR?=$(CFG)
+BUILD_OBJ_DIR?=$(BUILD_DIR)/obj
+ENGINE_SRC_DIR?=$(SOURCE_DIR)/engine
+COMMON_SRC_DIR?=$(SOURCE_DIR)/common
+PUBLIC_SRC_DIR?=$(SOURCE_DIR)/public
+SHLIBEXT?=so
+
+CPLUS?=g++ -m32
+CPP_LIB?=-lstdc++ -ldl -lpthread
+
+ifeq "$(CFG)" "release"
+ARCH_CFLAGS?=-O2 -gdwarf-2 -g2
+else
+ARCH_CFLAGS?=-gdwarf-2 -g2
+endif
+
+SERVERBROWSER_SRC_DIR=$(SOURCE_DIR)/serverbrowser
+VGUI2_SRC_DIR=$(SOURCE_DIR)/vgui2
+CONTROLS_SRC_DIR=$(VGUI2_SRC_DIR)/controls
+
+SERVERBROWSER_OBJ_DIR=$(BUILD_OBJ_DIR)/serverbrowser
+CONTROLS_OBJ_DIR=$(SERVERBROWSER_OBJ_DIR)/controls
+SUPPORT_OBJ_DIR=$(SERVERBROWSER_OBJ_DIR)/support
+
+SERVERBROWSER_CFLAGS=-std=gnu++17 -fPIC -fvisibility=hidden -fno-strict-aliasing -DNDEBUG -DPOSIX -D_POSIX -DLINUX -D_LINUX -DGNUC \
+	-Dstricmp=strcasecmp -D_stricmp=strcasecmp -D_strnicmp=strncasecmp -Dstrnicmp=strncasecmp -D_snprintf=snprintf -D_strdup=strdup \
+	-D_vsnprintf=vsnprintf -D_alloca=alloca -Werror=return-type
+
+INCLUDEDIRS=-I$(SERVERBROWSER_SRC_DIR) -I$(SOURCE_DIR)/cstrike/public -I$(CONTROLS_SRC_DIR) -I$(ENGINE_SRC_DIR) \
+	-I$(VGUI2_SRC_DIR)/src/public -I$(COMMON_SRC_DIR) -I$(PUBLIC_SRC_DIR) -I$(SOURCE_DIR)/external -I$(SOURCE_DIR)
+
+CFLAGS=$(ARCH_CFLAGS) $(SERVERBROWSER_CFLAGS) $(INCLUDEDIRS)
+LDFLAGS=-shared -gdwarf-2 -g2 -Wl,-Map,$(BUILD_DIR)/serverbrowser_linux.$(SHLIBEXT)_map.txt
+
+SERVERBROWSER_OBJS=\
+	$(SERVERBROWSER_OBJ_DIR)/BaseGamesPage.o \
+	$(SERVERBROWSER_OBJ_DIR)/DialogAddServer.o \
+	$(SERVERBROWSER_OBJ_DIR)/DialogGameInfo.o \
+	$(SERVERBROWSER_OBJ_DIR)/DialogServerPassword.o \
+	$(SERVERBROWSER_OBJ_DIR)/FavoriteGames.o \
+	$(SERVERBROWSER_OBJ_DIR)/FriendsGames.o \
+	$(SERVERBROWSER_OBJ_DIR)/GameListPanel.o \
+	$(SERVERBROWSER_OBJ_DIR)/HistoryGames.o \
+	$(SERVERBROWSER_OBJ_DIR)/InternetGames.o \
+	$(SERVERBROWSER_OBJ_DIR)/LanGames.o \
+	$(SERVERBROWSER_OBJ_DIR)/ModList.o \
+	$(SERVERBROWSER_OBJ_DIR)/NetAdr.o \
+	$(SERVERBROWSER_OBJ_DIR)/ServerBrowser.o \
+	$(SERVERBROWSER_OBJ_DIR)/ServerBrowserDialog.o \
+	$(SERVERBROWSER_OBJ_DIR)/ServerContextMenu.o \
+	$(SERVERBROWSER_OBJ_DIR)/SpectateGames.o \
+	$(SERVERBROWSER_OBJ_DIR)/VACBannedConnRefusedDialog.o \
+
+CONTROLS_OBJS=\
+	$(CONTROLS_OBJ_DIR)/AnimatingImagePanel.o \
+	$(CONTROLS_OBJ_DIR)/BitmapImagePanel.o \
+	$(CONTROLS_OBJ_DIR)/BuildGroup.o \
+	$(CONTROLS_OBJ_DIR)/BuildModeDialog.o \
+	$(CONTROLS_OBJ_DIR)/Button.o \
+	$(CONTROLS_OBJ_DIR)/CheckButton.o \
+	$(CONTROLS_OBJ_DIR)/ComboBox.o \
+	$(CONTROLS_OBJ_DIR)/controls.o \
+	$(CONTROLS_OBJ_DIR)/Divider.o \
+	$(CONTROLS_OBJ_DIR)/EditablePanel.o \
+	$(CONTROLS_OBJ_DIR)/FocusNavGroup.o \
+	$(CONTROLS_OBJ_DIR)/Frame.o \
+	$(CONTROLS_OBJ_DIR)/HTML.o \
+	$(CONTROLS_OBJ_DIR)/Image.o \
+	$(CONTROLS_OBJ_DIR)/ImageList.o \
+	$(CONTROLS_OBJ_DIR)/ImagePanel.o \
+	$(CONTROLS_OBJ_DIR)/Label.o \
+	$(CONTROLS_OBJ_DIR)/ListPanel.o \
+	$(CONTROLS_OBJ_DIR)/Menu.o \
+	$(CONTROLS_OBJ_DIR)/MenuButton.o \
+	$(CONTROLS_OBJ_DIR)/MenuItem.o \
+	$(CONTROLS_OBJ_DIR)/MessageBox.o \
+	$(CONTROLS_OBJ_DIR)/Panel.o \
+	$(CONTROLS_OBJ_DIR)/PanelHorizListPanel.o \
+	$(CONTROLS_OBJ_DIR)/PanelListPanel.o \
+	$(CONTROLS_OBJ_DIR)/ProgressBar.o \
+	$(CONTROLS_OBJ_DIR)/PropertyDialog.o \
+	$(CONTROLS_OBJ_DIR)/PropertyPage.o \
+	$(CONTROLS_OBJ_DIR)/PropertySheet.o \
+	$(CONTROLS_OBJ_DIR)/QueryBox.o \
+	$(CONTROLS_OBJ_DIR)/RadioButton.o \
+	$(CONTROLS_OBJ_DIR)/RichText.o \
+	$(CONTROLS_OBJ_DIR)/ScrollBar.o \
+	$(CONTROLS_OBJ_DIR)/ScrollBarSlider.o \
+	$(CONTROLS_OBJ_DIR)/SectionedListPanel.o \
+	$(CONTROLS_OBJ_DIR)/Slider.o \
+	$(CONTROLS_OBJ_DIR)/TextEntry.o \
+	$(CONTROLS_OBJ_DIR)/TextImage.o \
+	$(CONTROLS_OBJ_DIR)/ToggleButton.o \
+	$(CONTROLS_OBJ_DIR)/Tooltip.o \
+	$(CONTROLS_OBJ_DIR)/URLLabel.o \
+
+SUPPORT_OBJS=\
+	$(SUPPORT_OBJ_DIR)/interface.o \
+	$(SUPPORT_OBJ_DIR)/utlbuffer.o \
+	$(SUPPORT_OBJ_DIR)/utlsymbol.o \
+	$(SUPPORT_OBJ_DIR)/KeyValues.o \
+	$(SUPPORT_OBJ_DIR)/MemPool.o \
+	$(SUPPORT_OBJ_DIR)/controls.o \
+
+all: dirs serverbrowser_linux.$(SHLIBEXT)
+
+dirs:
+	-mkdir -p $(BUILD_DIR)
+	-mkdir -p $(SERVERBROWSER_OBJ_DIR)
+	-mkdir -p $(CONTROLS_OBJ_DIR)
+	-mkdir -p $(SUPPORT_OBJ_DIR)
+
+serverbrowser_linux.$(SHLIBEXT): $(SERVERBROWSER_OBJS) $(CONTROLS_OBJS) $(SUPPORT_OBJS)
+	$(CPLUS) $(LDFLAGS) -o $(BUILD_DIR)/$@ $(SERVERBROWSER_OBJS) $(CONTROLS_OBJS) $(SUPPORT_OBJS) $(CPP_LIB)
+
+$(SERVERBROWSER_OBJ_DIR)/%.o: $(SERVERBROWSER_SRC_DIR)/%.cpp
+	$(CPLUS) $(CFLAGS) -o $@ -c $<
+
+$(CONTROLS_OBJ_DIR)/%.o: $(CONTROLS_SRC_DIR)/%.cpp
+	$(CPLUS) $(CFLAGS) -o $@ -c $<
+
+$(SUPPORT_OBJ_DIR)/%.o: $(ENGINE_SRC_DIR)/%.cpp
+	$(CPLUS) $(CFLAGS) -o $@ -c $<
+
+clean:
+	-rm -rf $(SERVERBROWSER_OBJ_DIR)
+	-rm -f $(BUILD_DIR)/serverbrowser_linux.$(SHLIBEXT) $(BUILD_DIR)/serverbrowser_linux.$(SHLIBEXT)_map.txt

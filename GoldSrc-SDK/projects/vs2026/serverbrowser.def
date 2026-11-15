@@ -1,0 +1,5 @@
+LIBRARY serverbrowser
+
+EXPORTS
+	CreateInterface @1
+	JoiningSecureServerCall @2
