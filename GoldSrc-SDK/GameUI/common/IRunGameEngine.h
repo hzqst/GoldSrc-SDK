@@ -47,3 +47,5 @@ public:
 	virtual const char* GetProductVersionString() = 0;
 	virtual unsigned int GetPlayerUserID( int playerIndex ) = 0;
 };
+
+#define RUNGAMEENGINE_INTERFACE_VERSION "RunGameEngine006"

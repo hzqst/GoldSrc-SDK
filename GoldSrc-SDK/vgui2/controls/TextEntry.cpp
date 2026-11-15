@@ -43,6 +43,7 @@
 
 #if !defined( _WIN32 )
 #define _snprintf snprintf
+#define _wtoi( string ) static_cast<int>( std::wcstol( string, nullptr, 10 ) )
 #endif
 
 #define DRAW_OFFSET_X 3

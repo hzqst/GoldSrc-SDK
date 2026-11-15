@@ -48,7 +48,9 @@
 #define ASSERT_AT( expression, line )	assert( expression )
 #endif
 
+#if defined( _WIN32 )
 static_assert( sizeof( wchar_t ) == 2 );
+#endif
 
 namespace vgui2
 {
