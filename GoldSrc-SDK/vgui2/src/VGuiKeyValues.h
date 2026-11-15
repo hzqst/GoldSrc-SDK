@@ -7,7 +7,7 @@
 
 #include "IKeyValues.h"
 #include "MemPool.h"
-#include "UtlVector.h"
+#include "utlvector.h"
 #include "utlrbtree.h"
 
 class CVGuiKeyValues : public IKeyValues

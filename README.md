@@ -88,12 +88,14 @@ cmake --build --preset linux-x86-release
 Linux binaries go to `bin/Linux32/<config>/`. The Linux build covers:
 
 - The engine (`hw.so`), the dedicated server engine (`engine_i486.so`) and their launchers `hl_linux`, `hlds_linux` (text console) and `hltv`.
-- Tier0 (`libtier0.so`), the filesystem, HLTV (`core.so`, `demoplayer.so`, `proxy.so`), the server browser (`platform/servers/serverbrowser_linux.so`), GameUI (`valve/cl_dlls/gameui.so`) and particleman.
+- Tier0 (`libtier0.so`), VGUI2 (`vgui2.so`), the filesystem, HLTV (`core.so`, `demoplayer.so`, `proxy.so`), the server browser (`platform/servers/serverbrowser_linux.so`), GameUI (`valve/cl_dlls/gameui.so`) and particleman.
 - The client and server libraries of every included game. The server libraries are `hl.so`, `opfor.so`, `bshift.so`, `cs.so` (`cstrike` and `czero`), `cz.so`, `tfc.so`, `dod.so`, `dmc.so` and `mp.so` (`ricochet`).
 
-VGUI2, the software renderer, the A3D API, Hammer and the SDK utilities are still Windows-only. On Linux the engine has no MP3 music, because the Miles Sound System it uses is not available ([`engine/miles_null.cpp`](GoldSrc-SDK/engine/miles_null.cpp)).
+The software renderer, the A3D API, Hammer and the SDK utilities are still Windows-only. On Linux the engine has no MP3 music, because the Miles Sound System it uses is not available ([`engine/miles_null.cpp`](GoldSrc-SDK/engine/miles_null.cpp)).
 
 Like the Windows `swds.dll`, which is the full software engine, `engine_i486.so` is the full OpenGL engine run in dedicated mode. It therefore needs libGL, SDL2 and `vgui.so` to load, even on a server without a display. The HLTV console has no VGUI window on Linux.
+
+Like Valve's Linux `vgui2.so`, the Linux VGUI2 has no surface or fonts of its own: the engine supplies the surface, and the clipboard goes through SDL2.
 
 On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API modules link [`lib/public/linux32/libsteam_api.so`](GoldSrc-SDK/lib/public/linux32/), taken from the Linux Half-Life Dedicated Server (SteamCMD app 90). [`linux/libSDL2-2.0.so.0`](GoldSrc-SDK/linux/) is SDL 2.32.10 built with `vcpkg install --classic "sdl2[core,x11]" --triplet x86-linux --overlay-triplets=cmake/triplets` (X11, PulseAudio and PipeWire backends, loaded at run time). The build copies these libraries next to the binaries.
 

@@ -17,7 +17,7 @@
 #include "vgui_messages.h"
 #include "interface.h"
 #include "utllinkedlist.h"
-#include "UtlVector.h"
+#include "utlvector.h"
 #include "utlpriorityqueue.h"
 #include "vgui/ISurface.h"
 #include "vgui/IVGui.h"
