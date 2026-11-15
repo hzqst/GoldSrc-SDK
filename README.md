@@ -86,7 +86,7 @@ cmake --build --preset linux-x86-release
 
 Linux binaries go to `bin/Linux32/<config>/`. The Linux build currently covers Tier0 (`libtier0.so`), the filesystem, the launcher (`hl_linux`), HLTV (`core.so`, `demoplayer.so`, `proxy.so`), the server browser (`platform/servers/serverbrowser_linux.so`), particleman, and the Half-Life, Deathmatch Classic and Ricochet client and server libraries. The other targets are still Windows-only.
 
-On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API symbols are resolved the same way unless a Linux `libsteam_api.so` is placed at `GoldSrc-SDK/lib/public/linux32/`.
+On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API modules link [`lib/public/linux32/libsteam_api.so`](GoldSrc-SDK/lib/public/linux32/), taken from the Linux Half-Life Dedicated Server (SteamCMD app 90); the build copies it next to the binaries.
 
 Configure with `-DGOLDSRC_BUILD_TESTS=ON` to register the regression tests under [`tests/`](tests/) with CTest; run them with `ctest --test-dir bin/obj/cmake/<preset>`.
 
