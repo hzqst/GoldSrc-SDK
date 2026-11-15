@@ -3,7 +3,7 @@
 #include "HLTV/common/common.h"
 #include "HLTV/common/mem.h"
 #include "common/IBaseSystem.h"
-#include "filesystem.h"
+#include "public/FileSystem.h"
 
 #include <cctype>
 #include <cstddef>

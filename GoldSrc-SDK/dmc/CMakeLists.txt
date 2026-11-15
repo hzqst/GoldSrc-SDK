@@ -1,0 +1,175 @@
+# Deathmatch Classic game server and client.
+
+goldsrc_add_module(dmcdll
+	TYPE SHARED
+	OUTPUT_NAME dmc
+	OUTPUT_DIR dmc/dlls
+	RUNTIME STATIC
+	DEF_FILE dmc/dlls/dmc.def
+	WHOLE_PROGRAM
+	SOURCES
+		dmc/dlls/animating.cpp
+		dmc/dlls/animation.cpp
+		dmc/dlls/bmodels.cpp
+		dmc/dlls/buttons.cpp
+		dmc/dlls/cbase.cpp
+		dmc/dlls/client.cpp
+		dmc/dlls/combat.cpp
+		dmc/dlls/doors.cpp
+		dmc/dlls/effects.cpp
+		dmc/dlls/explode.cpp
+		dmc/dlls/func_break.cpp
+		dmc/dlls/func_tank.cpp
+		dmc/dlls/game.cpp
+		dmc/dlls/gamerules.cpp
+		dmc/dlls/globals.cpp
+		dmc/dlls/h_ai.cpp
+		dmc/dlls/h_export.cpp
+		dmc/dlls/lights.cpp
+		dmc/dlls/maprules.cpp
+		dmc/dlls/monsters.cpp
+		dmc/dlls/monsterstate.cpp
+		dmc/dlls/multiplay_gamerules.cpp
+		dmc/dlls/nodes.cpp
+		dmc/dlls/observer.cpp
+		dmc/dlls/pathcorner.cpp
+		dmc/dlls/plane.cpp
+		dmc/dlls/plats.cpp
+		dmc/dlls/player.cpp
+		dmc/dlls/quake_gun.cpp
+		dmc/dlls/quake_items.cpp
+		dmc/dlls/quake_nail.cpp
+		dmc/dlls/quake_player.cpp
+		dmc/dlls/quake_rocket.cpp
+		dmc/dlls/quake_weapons_all.cpp
+		dmc/dlls/schedule.cpp
+		dmc/dlls/singleplay_gamerules.cpp
+		dmc/dlls/skill.cpp
+		dmc/dlls/sound.cpp
+		dmc/dlls/spectator.cpp
+		dmc/dlls/subs.cpp
+		dmc/dlls/teamplay_gamerules.cpp
+		dmc/dlls/threewave_gamerules.cpp
+		dmc/dlls/triggers.cpp
+		dmc/dlls/util.cpp
+		dmc/dlls/weapons.cpp
+		dmc/dlls/world.cpp
+		dmc/pm_shared/pm_debug.c
+		dmc/pm_shared/pm_math.c
+		dmc/pm_shared/pm_shared.c
+		game_shared/voice_gamemgr.cpp
+	INCLUDES
+		public
+		game_shared
+		dmc/dlls
+		common
+		dmc/pm_shared
+		dmc
+		engine
+	DEFINES
+		QUIVER
+		VOXEL
+		QUAKE2
+		VALVE_DLL
+)
+
+goldsrc_add_module(dmc_cdll
+	TYPE SHARED
+	OUTPUT_NAME client
+	OUTPUT_DIR dmc/cl_dlls
+	RUNTIME STATIC
+	WHOLE_PROGRAM
+	SOURCES
+		common/parsemsg.cpp
+		dmc/cl_dll/ammo.cpp
+		dmc/cl_dll/ammohistory.cpp
+		game_shared/ammo_secondary.cpp
+		dmc/cl_dll/battery.cpp
+		dmc/cl_dll/cdll_int.cpp
+		dmc/cl_dll/com_weapons.cpp
+		dmc/cl_dll/CTF_FlagStatus.cpp
+		dmc/cl_dll/CTF_HudMessage.cpp
+		dmc/cl_dll/death.cpp
+		dmc/cl_dll/demo.cpp
+		dmc/cl_dll/DMC_Teleporters.cpp
+		dmc/cl_dll/entity.cpp
+		dmc/cl_dll/events.cpp
+		dmc/cl_dll/ev_common.cpp
+		dmc/cl_dll/ev_hldm.cpp
+		dmc/cl_dll/GameStudioModelRenderer.cpp
+		game_shared/geiger.cpp
+		dmc/cl_dll/health.cpp
+		dmc/cl_dll/hud.cpp
+		dmc/cl_dll/hud_msg.cpp
+		dmc/cl_dll/hud_redraw.cpp
+		dmc/cl_dll/hud_servers.cpp
+		dmc/cl_dll/hud_spectator.cpp
+		dmc/cl_dll/hud_update.cpp
+		dmc/cl_dll/input.cpp
+		dmc/cl_dll/inputw32.cpp
+		dmc/cl_dll/in_camera.cpp
+		dmc/cl_dll/menu.cpp
+		dmc/cl_dll/message.cpp
+		dmc/cl_dll/quake/quake_baseentity.cpp
+		dmc/cl_dll/quake/quake_events.cpp
+		dmc/cl_dll/quake/quake_objects.cpp
+		dmc/cl_dll/quake/quake_weapons.cpp
+		dmc/cl_dll/saytext.cpp
+		dmc/cl_dll/statusbar.cpp
+		dmc/cl_dll/status_icons.cpp
+		dmc/cl_dll/StudioModelRenderer.cpp
+		game_shared/studio_util.cpp
+		dmc/cl_dll/text_message.cpp
+		game_shared/train.cpp
+		dmc/cl_dll/tri.cpp
+		dmc/cl_dll/util.cpp
+		dmc/cl_dll/vgui_CustomObjects.cpp
+		dmc/cl_dll/vgui_int.cpp
+		dmc/cl_dll/vgui_MOTDWindow.cpp
+		game_shared/vgui_SchemeManager.cpp
+		dmc/cl_dll/vgui_ScorePanel.cpp
+		dmc/cl_dll/vgui_ServerBrowser.cpp
+		dmc/cl_dll/vgui_SpectatorPanel.cpp
+		dmc/cl_dll/vgui_viewport.cpp
+		dmc/cl_dll/view.cpp
+		dmc/cl_dll/voice_status.cpp
+		dmc/dlls/quake_gun.cpp
+		dmc/dlls/quake_weapons_all.cpp
+		dmc/pm_shared/pm_debug.c
+		dmc/pm_shared/pm_math.c
+		dmc/pm_shared/pm_shared.c
+		game_shared/vgui_checkbutton2.cpp
+		game_shared/vgui_grid.cpp
+		game_shared/vgui_helpers.cpp
+		game_shared/vgui_listbox.cpp
+		game_shared/vgui_loadtga.cpp
+		game_shared/vgui_scrollbar2.cpp
+		game_shared/vgui_slider2.cpp
+		game_shared/voice_banmgr.cpp
+		public/interface.cpp
+	INCLUDES
+		public
+		dmc/dlls
+		common
+		dmc/pm_shared
+		utils/vgui/include
+		dmc/cl_dll
+		game_shared
+		external
+		engine
+	DEFINES
+		CLIENT_DLL
+		DMC_BUILD
+	LINK
+		goldsrc::SDL2
+		goldsrc::vgui1
+	LINUX_DEFINES
+		# The C++ client code defines these; unlike MSVC, GCC does not mangle
+		# C++ variable names, so the C definitions would clash.
+		DISABLE_JUMP_ORIGIN
+		DISABLE_VEC_ORIGIN
+	WINDOWS_LINK
+		wsock32
+	LINUX_LINK
+		${CMAKE_DL_LIBS}
+)

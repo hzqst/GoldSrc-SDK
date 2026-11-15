@@ -159,7 +159,7 @@ protected:
 	void SendRcon( NetAddress* to, unsigned int challenge );
 	void ReplyServiceChallenge( NetAddress* from, char* type );
 	void ReplyListen( NetAddress* to );
-	void RejectConnection( NetAddress* to, bool badPassword, char* format, ... );
+	void RejectConnection( NetAddress* to, bool badPassword, const char* format, ... );
 	void ReplyConnect( NetAddress* from, int protocol, int challenge, char* protinfo, char* userinfo );
 	void ReplyRules( NetAddress* to );
 	void ReplyPlayers( NetAddress* to );
