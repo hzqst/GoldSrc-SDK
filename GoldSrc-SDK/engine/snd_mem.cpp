@@ -24,6 +24,49 @@ qboolean GetWavinfo( char* name, byte* wav, int length, wavinfo_t* info );
 void ResampleSfx( sfx_t* sound, int inputRate, int inputWidth, byte* data, int dataBytes );
 extern "C" void Wavstream_Close( int index );
 
+// S_LoadSound sizes the cache and ResampleSfx fills it, so both must use these.
+static bool S_KeepHighRateSounds()
+{
+	return hisound.value > 0;
+}
+
+static float S_GetResampleStep( int inrate )
+{
+	if ( !shm || shm->speed <= 0 || inrate == shm->speed ||
+		( inrate == shm->speed * 2 && S_KeepHighRateSounds() ) )
+		return 1.0f;
+
+	return (float)inrate / (float)shm->speed; // this is usually 0.5 or 2
+}
+
+// Returns -1 when the resampled length does not fit in an int.
+static int S_GetResampledLength( int samples, float stepscale )
+{
+	if ( stepscale == 1.0f )
+		return samples; // float loses whole samples above 2^24
+
+	const float outcount = samples / stepscale;
+	// INT_MAX rounds up to 2^31 as a float, so every smaller value converts safely.
+	if ( !( outcount < (float)INT_MAX ) )
+		return -1;
+
+	return (int)outcount;
+}
+
+// Returns -1 when the resampled cache does not fit in an int allocation.
+static int S_GetResampledBytes( int samples, int width, float stepscale )
+{
+	const int outcount = S_GetResampledLength( samples, stepscale );
+	if ( outcount < 0 )
+		return -1;
+
+	const std::int64_t bytes = (std::int64_t)outcount * width;
+	if ( bytes > INT_MAX - (std::int64_t)sizeof( sfxcache_t ) )
+		return -1;
+
+	return (int)bytes;
+}
+
 byte* iff_data;
 byte* iff_end;
 byte* last_chunk;
@@ -245,7 +288,7 @@ sfxcache_t* S_LoadSound( sfx_t* s, channel_t* ch )
 	byte* data;
 	wavinfo_t info;
 	int len;
-	int samples, size;
+	int size;
 	float stepscale;
 	sfxcache_t* sc;
 	FileHandle_t hFile;
@@ -261,8 +304,10 @@ sfxcache_t* S_LoadSound( sfx_t* s, channel_t* ch )
 	sc = (sfxcache_t*)Cache_Check( &s->cache );
 	if ( sc )
 	{
-		if ( hisound.value || !shm || sc->speed <= shm->speed )
+		if ( S_KeepHighRateSounds() || !shm || sc->speed <= shm->speed )
 			return sc;
+
+		// cached at a higher rate than hisound <= 0 allows, reload it resampled
 		Cache_Free( &s->cache );
 	}
 
@@ -339,37 +384,19 @@ sfxcache_t* S_LoadSound( sfx_t* s, channel_t* ch )
 		return NULL;
 	}
 
-	stepscale = 1.0f;
-	if ( shm && info.rate != shm->speed && !( info.rate == shm->speed * 2 && hisound.value > 0.0f ) )
+	stepscale = S_GetResampleStep( info.rate );
+	if ( !( stepscale > 0.0f ) )
 	{
-		stepscale = (float)info.rate / (float)shm->speed;
-		if ( stepscale == 0.0f )
-		{
-			Con_DPrintf( "Invalid stepscale: %s\n", s->name );
-			return NULL;
-		}
+		Con_DPrintf( "Invalid stepscale: %s\n", s->name );
+		return NULL;
 	}
 
-	samples = (int)( (float)info.samples / stepscale );
-	if ( samples )
+	size = S_GetResampledBytes( info.samples, info.width, stepscale );
+	if ( size < 0 )
 	{
-		if ( INT_MAX / samples < 1 )
-		{
-			Con_DPrintf( "Invalid length (s/c): %s\n", s->name );
-			return NULL;
-		}
-
-		if ( INT_MAX / samples < info.width )
-		{
-			Con_DPrintf( "Invalid length (s/c/w): %s\n", s->name );
-			return NULL;
-		}
+		Con_DPrintf( "S_LoadSound: %s is too long to resample\n", s->name );
+		return NULL;
 	}
-
-	size = samples * info.width;
-
-	if ( (unsigned int)( INT_MAX - size ) < sizeof( sfxcache_t ) )
-		Con_DPrintf( "Invalid length (s/c/w/sfx): %s\n", s->name );
 
 	sc = (sfxcache_t*)Cache_Alloc( &s->cache, size + sizeof( sfxcache_t ), s->name );
 	if ( !sc )
@@ -533,34 +560,39 @@ ResampleSfx
 void ResampleSfx( sfx_t* sfx, int inrate, int inwidth, byte* data, int datasize )
 {
 	int outcount;
+	int insamples;
 	int srcsample;
 	float stepscale;
 	int i;
-	int sample, fracstep;
-	std::uint64_t samplefrac, lastsample;
+	int sample;
+	std::uint64_t fracstep;
+	std::uint64_t samplefrac;
 	sfxcache_t* sc;
 
 	sc = (sfxcache_t*)Cache_Check( &sfx->cache );
 	if ( !sc )
 		return;
 
-	stepscale = shm ? (float)inrate / (float)shm->speed : 1.0f; // this is usually 0.5, 1, or 2
-
-	if ( shm && stepscale == 2.0f && hisound.value )
+	// Callers set the length to the input samples present in data.
+	insamples = sc->length;
+	stepscale = S_GetResampleStep( inrate );
+	outcount = S_GetResampledLength( insamples, stepscale );
+	if ( outcount < 0 )
 	{
-		outcount = sc->length;
-		stepscale = 1.0f;
+		Con_DPrintf( "ResampleSfx: %s has invalid resample length: %d\n", sfx->name, insamples );
+		sc->length = 0;
+		return;
 	}
-	else
-	{
-		outcount = (int)( (float)sc->length / stepscale );
-		sc->length = outcount;
-		if ( sc->loopstart != -1 )
-			sc->loopstart = (int)( (float)sc->loopstart / stepscale );
 
-		if ( shm )
-			sc->speed = shm->speed;
+	sc->length = outcount;
+	if ( sc->loopstart != -1 )
+	{
+		// Float rounding can move the loop point past the resampled length.
+		const int loopstart = S_GetResampledLength( sc->loopstart, stepscale );
+		sc->loopstart = loopstart < 0 || loopstart >= outcount ? outcount - 1 : loopstart;
 	}
+	if ( stepscale != 1.0f && shm )
+		sc->speed = shm->speed;
 
 	sc->width = loadas8bit.value ? 1 : inwidth;
 	sc->stereo = 0;
@@ -585,21 +617,22 @@ void ResampleSfx( sfx_t* sfx, int inrate, int inwidth, byte* data, int datasize 
 	if ( stepscale != 1.0f && stepscale != 2.0f )
 		Con_DPrintf( "WARNING! %s is causing runtime sample conversion!\n", sfx->name );
 
-	fracstep = (int)( stepscale * 256 );
+	fracstep = (std::uint64_t)( stepscale * 256 );
 
-	if ( outcount > 0 )
+	// Source positions index complete samples, not bytes. Float rounding of the
+	// output length can ask for a sample past the last one, so stay on the last
+	// input sample instead of discarding the whole sound.
+	int lastsample = datasize >= inwidth ? datasize / inwidth : 0;
+	if ( lastsample > insamples )
+		lastsample = insamples;
+	--lastsample;
+
+	if ( outcount > 0 && lastsample < 0 )
 	{
-		lastsample = (std::uint64_t)( outcount - 1 ) * (unsigned int)fracstep;
-		// Source positions index complete samples, not bytes. Keep the product
-		// wide so a wrapped count cannot bypass this check.
-		if ( datasize < inwidth || lastsample > INT_MAX ||
-			( lastsample >> 8 ) >= (unsigned int)( datasize / inwidth ) )
-		{
-			Con_DPrintf( "ResampleSfx: %s has invalid resample count: %d step: %d datasize: %d\n", sfx->name, outcount,
-				fracstep, datasize );
-			memset( sc->data, 0, (size_t)outcount * sc->width );
-			return;
-		}
+		Con_DPrintf( "ResampleSfx: %s has invalid resample count: %d step: %d datasize: %d\n", sfx->name, outcount,
+			(int)fracstep, datasize );
+		memset( sc->data, 0, (size_t)outcount * sc->width );
+		return;
 	}
 
 	samplefrac = 0;
@@ -607,7 +640,8 @@ void ResampleSfx( sfx_t* sfx, int inrate, int inwidth, byte* data, int datasize 
 
 	for ( i = 0; i < outcount; i++ )
 	{
-		srcsample = (int)( samplefrac >> 8 );
+		const std::uint64_t sourcesample = samplefrac >> 8;
+		srcsample = (int)( sourcesample < (std::uint64_t)lastsample ? sourcesample : (std::uint64_t)lastsample );
 		samplefrac += fracstep;
 
 		if ( inwidth == 2 )
