@@ -430,6 +430,50 @@ static void SetServerLastPlayed( KeyValues *kv, uint32 ulTimeLastPlayed )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Copies a server reported string without ASCII control characters
+//			or surrounding spaces; UTF-8 sequences are kept intact
+//-----------------------------------------------------------------------------
+static void SanitizeServerString( char *pchDest, int cchDest, const char *pchSource )
+{
+	int iLength = 0;
+	for ( const char *pch = pchSource; *pch && iLength < cchDest - 1; pch++ )
+	{
+		unsigned char ch = (unsigned char)*pch;
+		if ( ch < ' ' || ch == 0x7F )
+			continue;
+
+		// skip leading spaces
+		if ( ch == ' ' && !iLength )
+			continue;
+
+		pchDest[iLength++] = ch;
+	}
+
+	while ( iLength > 0 && pchDest[iLength - 1] == ' ' )
+	{
+		iLength--;
+	}
+
+	pchDest[iLength] = 0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Stores the sanitized server strings used for display and sorting
+//-----------------------------------------------------------------------------
+static void UpdateServerStrings( serverdisplay_t &server, const gameserveritem_t &serverItem )
+{
+	SanitizeServerString( server.m_szName, sizeof( server.m_szName ), serverItem.GetName() );
+	if ( !server.m_szName[0] )
+	{
+		// the name held only control characters, so use the address like GetName() does for an empty name
+		SanitizeServerString( server.m_szName, sizeof( server.m_szName ), serverItem.m_NetAdr.GetConnectionAddressString() );
+	}
+
+	SanitizeServerString( server.m_szMap, sizeof( server.m_szMap ), serverItem.m_szMap );
+	SanitizeServerString( server.m_szGameDescription, sizeof( server.m_szGameDescription ), serverItem.m_szGameDescription );
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Adds or updates a server in the list
 //-----------------------------------------------------------------------------
 void CBaseGamesPage::ServerResponded( int iServer, gameserveritem_t *pServerItem )
@@ -466,6 +510,7 @@ void CBaseGamesPage::ServerResponded( int iServer, gameserveritem_t *pServerItem
 	serverdisplay_t *pServer = &m_mapServers[ iServerMap ];
 	pServer->m_iServerID = iServer;
 	pServer->m_netAdr = pServerItem->m_NetAdr;
+	UpdateServerStrings( *pServer, *pServerItem );
 
 	bool bRemove = false;
 	if ( !CheckPrimaryFilters( *pServerItem ) )
@@ -504,10 +549,10 @@ void CBaseGamesPage::ServerResponded( int iServer, gameserveritem_t *pServerItem
 		kv = new KeyValues( "Server" );
 	}
 
-	kv->SetString( "name", pServerItem->GetName() );
-	kv->SetString( "map", pServerItem->m_szMap );
+	kv->SetString( "name", pServer->m_szName );
+	kv->SetString( "map", pServer->m_szMap );
 	kv->SetString( "GameDir", pServerItem->m_szGameDir );
-	kv->SetString( "GameDesc", pServerItem->m_szGameDescription );
+	kv->SetString( "GameDesc", pServer->m_szGameDescription );
 	kv->SetString( "GameTags", pServerItem->m_szGameTags );
 	kv->SetInt( "password", pServerItem->m_bPassword );
 
@@ -696,18 +741,19 @@ void CBaseGamesPage::ApplyGameFilters()
 			// server passed filters, so it can be refreshed again
 			server.m_bDoNotRefresh = false;
 			gameserveritem_t *pServerItem = SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, server.m_iServerID );
+			UpdateServerStrings( server, *pServerItem );
 
 			// re-add item to list
 			if ( !m_pGameList->IsValidItemID( server.m_iListID ) )
 			{
 				KeyValues *kv = new KeyValues( "Server" );
-				kv->SetString( "name", pServerItem->GetName() );
-				kv->SetString( "map", pServerItem->m_szMap );
+				kv->SetString( "name", server.m_szName );
+				kv->SetString( "map", server.m_szMap );
 				kv->SetString( "GameDir", pServerItem->m_szGameDir );
 				kv->SetString( "GameTags", pServerItem->m_szGameTags );
-				if ( pServerItem->m_szGameDescription[0] )
+				if ( server.m_szGameDescription[0] )
 				{
-					kv->SetString( "GameDesc", pServerItem->m_szGameDescription );
+					kv->SetString( "GameDesc", server.m_szGameDescription );
 				}
 				else
 				{
@@ -1611,6 +1657,17 @@ int CBaseGamesPage::PingCompare( vgui2::ListPanel *pPanel, const vgui2::ListPane
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Compares sanitized server strings; empty strings sort after any text
+//-----------------------------------------------------------------------------
+static int ServerStringCompare( const char *psz1, const char *psz2 )
+{
+	if ( !psz1[0] || !psz2[0] )
+		return ( !psz1[0] ) - ( !psz2[0] );
+
+	return stricmp( psz1, psz2 );
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: List map column sort function
 //-----------------------------------------------------------------------------
 int CBaseGamesPage::MapCompare( vgui2::ListPanel *pPanel, const vgui2::ListPanelItem &p1, const vgui2::ListPanelItem &p2 )
@@ -1618,8 +1675,8 @@ int CBaseGamesPage::MapCompare( vgui2::ListPanel *pPanel, const vgui2::ListPanel
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	serverdisplay_t *s1 = g_CurrentGamesPage->GetServer( p1.userData );
+	serverdisplay_t *s2 = g_CurrentGamesPage->GetServer( p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1628,7 +1685,7 @@ int CBaseGamesPage::MapCompare( vgui2::ListPanel *pPanel, const vgui2::ListPanel
 	if ( !s1 && !s2 )
 		return 0;
 
-	return stricmp( s1->m_szMap, s2->m_szMap );
+	return ServerStringCompare( s1->m_szMap, s2->m_szMap );
 }
 
 //-----------------------------------------------------------------------------
@@ -1639,8 +1696,8 @@ int CBaseGamesPage::GameCompare( vgui2::ListPanel *pPanel, const vgui2::ListPane
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	serverdisplay_t *s1 = g_CurrentGamesPage->GetServer( p1.userData );
+	serverdisplay_t *s2 = g_CurrentGamesPage->GetServer( p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1649,7 +1706,7 @@ int CBaseGamesPage::GameCompare( vgui2::ListPanel *pPanel, const vgui2::ListPane
 	if ( !s1 && !s2 )
 		return 0;
 
-	return stricmp( s1->m_szGameDescription, s2->m_szGameDescription );
+	return ServerStringCompare( s1->m_szGameDescription, s2->m_szGameDescription );
 }
 
 //-----------------------------------------------------------------------------
@@ -1660,8 +1717,8 @@ int CBaseGamesPage::ServerNameCompare( vgui2::ListPanel *pPanel, const vgui2::Li
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	serverdisplay_t *s1 = g_CurrentGamesPage->GetServer( p1.userData );
+	serverdisplay_t *s2 = g_CurrentGamesPage->GetServer( p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1670,10 +1727,7 @@ int CBaseGamesPage::ServerNameCompare( vgui2::ListPanel *pPanel, const vgui2::Li
 	if ( !s1 && !s2 )
 		return 0;
 
-	// GetName() may return a shared static buffer, so fetch the second name first
-	const char *pszName2 = s2->GetName();
-	const char *pszName1 = s1->GetName();
-	return stricmp( pszName1, pszName2 );
+	return ServerStringCompare( s1->m_szName, s2->m_szName );
 }
 
 //-----------------------------------------------------------------------------
