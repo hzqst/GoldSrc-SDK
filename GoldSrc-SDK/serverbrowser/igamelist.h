@@ -24,6 +24,11 @@ struct serverdisplay_t
 	int m_iServerID;			// the matchmaking interface index for this server
 	bool m_bDoNotRefresh;
 	servernetadr_t m_netAdr;
+
+	// server strings with control characters removed, shared by the list and its sort functions
+	char m_szName[k_cbMaxGameServerName];
+	char m_szMap[k_cbMaxGameServerMapName];
+	char m_szGameDescription[k_cbMaxGameServerGameDescription];
 };
 
 //-----------------------------------------------------------------------------
@@ -75,4 +80,5 @@ inline serverdisplay_t::serverdisplay_t()
 	m_iServerID = -1;
 	m_bDoNotRefresh = true;
 	m_netAdr.Init( 0, 0, 0 );
+	m_szName[0] = m_szMap[0] = m_szGameDescription[0] = 0;
 }
