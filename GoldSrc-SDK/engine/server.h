@@ -289,6 +289,7 @@ void			SV_StartSound( int recipients, edict_t* entity, int channel, const char* 
 					float attenuation, int flags, int pitch );
 
 int				SV_ModelIndex( const char* name );
+struct model_s* SV_ModelForIndex( int modelindex );
 unsigned short	EV_Precache( int type, const char* name );
 
 int				SV_CheckUserInfo( netadr_t* address, char* userinfo, qboolean reconnecting, int reconnectSlot,
