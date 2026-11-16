@@ -706,9 +706,7 @@ namespace
 #if !defined( _WIN32 )
 bool SurfaceRectEmpty( const RECT* rect )
 {
-	if ( rect->left == rect->right )
-		return rect->top == rect->bottom;
-	return false;
+	return rect->right <= rect->left || rect->bottom <= rect->top;
 }
 #endif
 
