@@ -16,6 +16,8 @@ def function(source, signature):
 STUBS = r'''
 #include <cassert>
 #include <cstdint>
+#include <cstring>
+#define Q_memset std::memset
 using byte = unsigned char;
 constexpr int SOUND_CALLBACK_CACHE_LENGTH = 1 << 30, CHAN_VOICE = 2, CHAN_STREAM = 5;
 struct sfx_t { bool fails; };
@@ -40,6 +42,18 @@ static int VOX_FPaintPitchChannelFrom8Offs(portable_samplepair_t*, channel_t*, s
 static void SND_PaintChannelFrom8Offs(portable_samplepair_t*, channel_t*, sfxcache_t*, int, int) { assert(false); }
 static void SND_PaintChannelFrom8(channel_t* ch, sfxcache_t*, int count) { ++mixes; ch->pos += count; }
 static int S_CheckWavEnd(channel_t*, sfxcache_t**, int, int) { return 1; }
+constexpr int MAX_RAW_SAMPLES = 1024;
+static portable_samplepair_t s_rawsamples[MAX_RAW_SAMPLES];
+static int s_rawend = -1;
+static struct { bool paused; } cl;
+static bool s_careerAudioPaused, deviceFails;
+static struct { float value; } hisound;
+static int transfers;
+static void SX_RoomFX(int, int, int) {}
+static void S_TransferPaintBuffer(int) {
+ assert(nullptr != shm); ++transfers;
+ if(deviceFails) shm = nullptr;
+}
 '''
 
 TESTS = r'''
@@ -54,21 +68,29 @@ int main() {
  failing.fails = false;
  S_MixChannelsToPaintbuffer(32, 0, 0);
  assert(4 == loads); assert(3 == mixes); assert(32 == channels[0].pos);
+ // Multiple paint chunks must stop immediately if device restart fails.
+ channels[0].sfx = channels[1].sfx = nullptr;
+ deviceFails = true; paintedtime = transfers = 0;
+ S_PaintChannels(1200); assert(1 == transfers); assert(nullptr == shm);
+ // Healthy transfers must still process the full update.
+ deviceFails = false; shm = &dma; paintedtime = transfers = 0;
+ S_PaintChannels(1200); assert(3 == transfers); assert(1200 == paintedtime);
 }
 '''
 
 
 def main():
     mix = (ROOT / 'GoldSrc-SDK/engine/snd_mix.cpp').read_text()
-    code = STUBS + function(mix, 'void S_MixChannelsToPaintbuffer(') + TESTS
+    code = (STUBS + function(mix, 'void S_MixChannelsToPaintbuffer(')
+            + function(mix, 'void S_PaintChannels(') + TESTS)
     with tempfile.TemporaryDirectory(prefix='goldsrc-mixer-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code)
         compiler = shlex.split(os.environ.get('CXX', 'c++'))
-        subprocess.run(compiler + ['-std=c++17', '-fsanitize=address,undefined',
+        subprocess.run(compiler + ['-std=c++17', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
                                   str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
         subprocess.run([str(path / 'test')], check=True)
-    print('PASS: cache reload failure, subsequent channel and retry')
+    print('PASS: cache reload failure, subsequent channel, retry and device loss during paint')
 
 
 if __name__ == '__main__':
