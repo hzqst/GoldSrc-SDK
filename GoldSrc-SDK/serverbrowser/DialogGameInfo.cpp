@@ -35,7 +35,7 @@ static const long CHALLENGE_ENTRIES = 1024;
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CDialogGameInfo::CDialogGameInfo( vgui2::Panel *parent, int serverIP, int queryPort, unsigned short connectionPort )
+CDialogGameInfo::CDialogGameInfo( vgui2::Panel *parent, int serverIP, int queryPort, unsigned short connectionPort, bool hltvOnly )
 	: vgui2::Frame( parent, "DialogGameInfo", true, true ),
 	m_CallbackPersonaStateChange( this, &CDialogGameInfo::OnPersonaStateChange )
 {
@@ -45,6 +45,7 @@ CDialogGameInfo::CDialogGameInfo( vgui2::Panel *parent, int serverIP, int queryP
 	SetDeleteSelfOnClose( true );
 
 	m_bConnecting = false;
+	m_bHLTVOnly = hltvOnly;
 	m_bServerFull = false;
 	m_bShowAutoRetryToggle = false;
 	m_bServerNotResponding = false;
@@ -540,7 +541,7 @@ void CDialogGameInfo::ApplyConnectCommand( const gameserveritem_t &server )
 	}
 
 	// send engine command to change servers
-	snprintf( command, sizeof( command ), "connect %s\n", server.m_NetAdr.GetConnectionAddressString() );
+	snprintf( command, sizeof( command ), "%s %s\n", m_bHLTVOnly ? "connect_hltv" : "connect", server.m_NetAdr.GetConnectionAddressString() );
 	g_pRunGameEngine->AddTextCommand( command );
 }
 
@@ -549,7 +550,7 @@ void CDialogGameInfo::ApplyConnectCommand( const gameserveritem_t &server )
 //-----------------------------------------------------------------------------
 void CDialogGameInfo::ConstructConnectArgs( char *pchOptions, int cchOptions, const gameserveritem_t &server )
 {
-	snprintf( pchOptions, cchOptions, " +connect %s", server.m_NetAdr.GetConnectionAddressString() );
+	snprintf( pchOptions, cchOptions, " +%s %s", m_bHLTVOnly ? "connect_hltv" : "connect", server.m_NetAdr.GetConnectionAddressString() );
 	if ( m_szPassword[0] )
 	{
 		int iLength = strlen( pchOptions );

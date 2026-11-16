@@ -44,7 +44,7 @@ class CDialogGameInfo : public vgui2::Frame, public ISteamMatchmakingPlayersResp
 public:
 	DECLARE_CLASS_SIMPLE_NAMED( CDialogGameInfo, vgui2::Frame, "vgui::Frame" );
 
-	CDialogGameInfo( vgui2::Panel *parent, int serverIP, int queryPort, unsigned short connectionPort );
+	CDialogGameInfo( vgui2::Panel *parent, int serverIP, int queryPort, unsigned short connectionPort, bool hltvOnly = false );
 	virtual ~CDialogGameInfo();
 
 	void Run( const char *titleName );
@@ -112,6 +112,8 @@ private:
 
 	// true if we should try connect to the server when it refreshes
 	bool m_bConnecting;
+	// Preserve the originating page's restriction through password prompts and retries.
+	bool m_bHLTVOnly;
 
 	// password, if entered
 	char m_szPassword[64];
