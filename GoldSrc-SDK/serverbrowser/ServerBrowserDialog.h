@@ -74,13 +74,13 @@ public:
 
 	// begins the process of joining a server from a game list
 	// the game info dialog it opens will also update the game list
-	CDialogGameInfo *JoinGame( IGameList *gameList, unsigned int serverIndex );
+	CDialogGameInfo *JoinGame( IGameList *gameList, unsigned int serverIndex, bool hltvOnly = false );
 
 	// joins a game by a specified IP, not attached to any game list
 	CDialogGameInfo *JoinGame( int serverIP, int serverPort );
 
 	// opens a game info dialog from a game list
-	CDialogGameInfo *OpenGameInfoDialog( IGameList *gameList, unsigned int serverIndex );
+	CDialogGameInfo *OpenGameInfoDialog( IGameList *gameList, unsigned int serverIndex, bool hltvOnly = false );
 
 	// opens a game info dialog by a specified IP, not attached to any game list
 	CDialogGameInfo *OpenGameInfoDialog( int serverIP, uint16 connPort, uint16 queryPort );

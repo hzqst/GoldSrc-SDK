@@ -146,6 +146,9 @@ client_state_t cl;
 lightstyle_t cl_lightstyle[MAX_LIGHTSTYLES];
 
 int g_bRedirectedToProxy;
+static qboolean g_bConnectingToHLTV;
+// Unlike the attempt intent, this follows cls.servername so retries keep the restriction.
+static qboolean g_bRetryHLTV;
 qboolean cl_inmovie;
 
 cvar_t cl_shownet = { "cl_shownet", "0" };
@@ -221,6 +224,12 @@ void CL_DeallocateDynamicData()
 	R_DestroyObjects();
 }
 
+static void CL_ClearConnectionIntent()
+{
+	g_bConnectingToHLTV = FALSE;
+	g_bRedirectedToProxy = FALSE;
+}
+
 /*
 =====================
 CL_Disconnect
@@ -233,6 +242,8 @@ void CL_Disconnect()
 {
 	byte final[13];
 	int i;
+
+	CL_ClearConnectionIntent();
 
 	cls.connect_time = -99999;
 	cls.connect_retry = 0;
@@ -864,16 +875,17 @@ CL_Connect_f
 User command to connect to server
 =====================
 */
-void CL_Connect_f()
+static void CL_Connect( qboolean hltvOnly )
 {
 	const char* server;
 	char name[MAX_PATH];
 	CareerStateType careerState;
+	qboolean redirected;
 	int num;
 
 	if ( Cmd_Argc() < 2 )
 	{
-		Con_Printf( "usage: connect <server>\n" );
+		Con_Printf( "usage: %s <server>\n", hltvOnly ? "connect_hltv" : "connect" );
 		return;
 	}
 
@@ -895,7 +907,11 @@ void CL_Connect_f()
 		CL_StopPlayback();
 
 	careerState = g_careerState;
+	// A queued HLTV redirect must survive the disconnect that starts its attempt.
+	redirected = hltvOnly && g_bRedirectedToProxy;
 	CL_Disconnect();
+	g_bConnectingToHLTV = hltvOnly;
+	g_bRedirectedToProxy = redirected;
 	if ( careerState == CAREER_LOADING )
 		g_careerState = CAREER_LOADING;
 
@@ -914,6 +930,7 @@ void CL_Connect_f()
 
 	Q_strncpy( cls.servername, name, sizeof( cls.servername ) - 1 );
 	cls.servername[sizeof( cls.servername ) - 1] = 0;
+	g_bRetryHLTV = hltvOnly;
 
 	cls.connect_time = -99999;
 	cls.state = ca_connecting;
@@ -930,6 +947,16 @@ void CL_Connect_f()
 
 	if ( Q_strnicmp( cls.servername, "local", 5 ) )
 		NET_Config( TRUE ); // allow remote
+}
+
+void CL_Connect_f()
+{
+	CL_Connect( FALSE );
+}
+
+static void CL_ConnectHLTV_f()
+{
+	CL_Connect( TRUE );
 }
 
 static void CL_ServiceChallenge()
@@ -962,10 +989,12 @@ void CL_CheckForResend()
 
 	if ( cls.state == ca_disconnected && Host_IsServerActive() )
 	{
+		CL_ClearConnectionIntent();
 		cls.state = ca_connecting;
 		gfExtendedError = FALSE;
 		Q_strncpy( cls.servername, "localhost", sizeof( cls.servername ) - 1 );
 		cls.servername[sizeof( cls.servername ) - 1] = 0;
+		g_bRetryHLTV = FALSE;
 		cls.authprotocol = PROTOCOL_STEAM;
 		CL_SendConnectPacket();
 		return;
@@ -990,6 +1019,7 @@ void CL_CheckForResend()
 			else
 			{
 				COM_ExplainDisconnection( TRUE, "Joining multicast group failed after %.0f seconds.", 30.0 );
+				CL_ClearConnectionIntent();
 				cls.connect_time = -99999;
 				cls.connect_retry = 0;
 				cls.state = ca_disconnected;
@@ -1020,6 +1050,7 @@ void CL_CheckForResend()
 	if ( !NET_StringToAdr( szServerName, &adr ) )
 	{
 		Con_Printf( "Bad server address\n" );
+		CL_ClearConnectionIntent();
 		cls.state = ca_disconnected;
 		Q_memset( &g_GameServerAddress, 0, sizeof( g_GameServerAddress ) );
 		return;
@@ -1104,6 +1135,7 @@ void CL_SendConnectPacket()
 	if ( !NET_StringToAdr( szServerName, &adr ) )
 	{
 		Con_Printf( "Unable to resolve %s\n", szServerName );
+		CL_ClearConnectionIntent();
 		cls.connect_time = -99999;
 		cls.connect_retry = 0;
 		cls.state = ca_disconnected;
@@ -1560,7 +1592,7 @@ static void CL_ConnectionlessPacket()
 			break;
 		}
 
-		snprintf( redirect, sizeof( redirect ), "connect %s\n", server );
+		snprintf( redirect, sizeof( redirect ), "connect_hltv %s\n", server );
 		Cbuf_AddText( redirect );
 		Con_Printf( "Redirecting connection to %s.\n", server );
 		g_bRedirectedToProxy = TRUE;
@@ -1938,6 +1970,7 @@ void CL_Init()
 
 	Cmd_AddCommand( "gamedir", CL_GameDir_f );
 	Cmd_AddCommandWithFlags( "connect", CL_Connect_f, CMD_FLAG_PRIVILEGED );
+	Cmd_AddCommandWithFlags( "connect_hltv", CL_ConnectHLTV_f, CMD_FLAG_PRIVILEGED );
 	Cmd_AddCommand( "fullserverinfo", CL_FullServerinfo_f );
 	Cmd_AddCommandWithFlags( "retry", CL_Retry_f, CMD_FLAG_PRIVILEGED );
 	Cmd_AddCommand( "disconnect", CL_Disconnect_f );
@@ -3207,16 +3240,16 @@ void CL_SignonReply()
 	FS_LogLevelLoadFinished( mapname );
 	VGuiWrap2_LoadingFinished( "level", mapname );
 
-	if ( g_bRedirectedToProxy && !cls.spectator )
+	if ( ( g_bConnectingToHLTV || g_bRedirectedToProxy ) && !cls.spectator )
 	{
-		Con_Printf( "Redirected to invalid server\n" );
+		Con_Printf( g_bRedirectedToProxy ? "Redirected to invalid server\n" : "Connected to invalid spectator server\n" );
 		CL_Disconnect();
 
 		if ( Host_IsServerActive() )
 			Host_ShutdownServer( FALSE );
 	}
 
-	g_bRedirectedToProxy = 0;
+	CL_ClearConnectionIntent();
 
 	if ( cls.demoplayback )
 		Sequence_OnLevelLoad( mapname );
@@ -3462,7 +3495,10 @@ void CL_Retry_f_0()
 {
 	char szCommand[MAX_PATH];
 
-	snprintf( szCommand, sizeof( szCommand ), cls.passive ? "listen %s\n" : "connect %s\n", cls.servername );
+	if ( cls.passive )
+		snprintf( szCommand, sizeof( szCommand ), "listen %s\n", cls.servername );
+	else
+		snprintf( szCommand, sizeof( szCommand ), "%s %s\n", g_bRetryHLTV ? "connect_hltv" : "connect", cls.servername );
 	Cbuf_AddText( szCommand );
 	Con_Printf( "Commencing connection retry to %s\n", cls.servername );
 }

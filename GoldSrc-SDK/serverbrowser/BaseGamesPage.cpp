@@ -1378,7 +1378,7 @@ void CBaseGamesPage::OnBeginConnect()
 	StopRefresh();
 
 	// join the game
-	ServerBrowserDialog().JoinGame( this, serverID );
+	ServerBrowserDialog().JoinGame( this, serverID, m_eMatchMakingType == eSpectatorServer );
 }
 
 //-----------------------------------------------------------------------------
@@ -1396,7 +1396,7 @@ void CBaseGamesPage::OnViewGameInfo()
 	StopRefresh();
 
 	// join the game
-	ServerBrowserDialog().OpenGameInfoDialog( this, serverID );
+	ServerBrowserDialog().OpenGameInfoDialog( this, serverID, m_eMatchMakingType == eSpectatorServer );
 }
 
 //-----------------------------------------------------------------------------

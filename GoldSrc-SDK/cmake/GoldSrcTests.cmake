@@ -8,7 +8,7 @@ include_guard(GLOBAL)
 set(GOLDSRC_TESTS_DIR "${GOLDSRC_ROOT}/../tests")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
-foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound)
+foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound spectate_connection)
 	add_test(NAME ${name}
 		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/${name}_tests.py")
 endforeach()

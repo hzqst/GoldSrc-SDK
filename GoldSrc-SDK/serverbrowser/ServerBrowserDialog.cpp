@@ -406,7 +406,7 @@ CDialogGameInfo *CServerBrowserDialog::JoinGame( int serverIP, int serverPort )
 //-----------------------------------------------------------------------------
 // Purpose: Joins a game from one of the game lists
 //-----------------------------------------------------------------------------
-CDialogGameInfo *CServerBrowserDialog::JoinGame( IGameList *gameList, unsigned int serverIndex )
+CDialogGameInfo *CServerBrowserDialog::JoinGame( IGameList *gameList, unsigned int serverIndex, bool hltvOnly )
 {
 	// open the game info dialog, then mark it to attempt to connect right away
 	CDialogGameInfo *gameDialog = NULL;
@@ -414,7 +414,7 @@ CDialogGameInfo *CServerBrowserDialog::JoinGame( IGameList *gameList, unsigned i
 	serverdisplay_t *pServer = gameList->GetServer( serverIndex );
 	if ( pServer )
 	{
-		gameDialog = new CDialogGameInfo( NULL, pServer->m_netAdr.GetIP(), pServer->m_netAdr.GetQueryPort(), pServer->m_netAdr.GetConnectionPort() );
+		gameDialog = new CDialogGameInfo( NULL, pServer->m_netAdr.GetIP(), pServer->m_netAdr.GetQueryPort(), pServer->m_netAdr.GetConnectionPort(), hltvOnly );
 		gameDialog->SetParent( GetVParent() );
 		gameDialog->AddActionSignalTarget( this );
 		gameDialog->Run( NULL );
@@ -431,13 +431,13 @@ CDialogGameInfo *CServerBrowserDialog::JoinGame( IGameList *gameList, unsigned i
 //-----------------------------------------------------------------------------
 // Purpose: Opens a game info dialog for a server in one of the game lists
 //-----------------------------------------------------------------------------
-CDialogGameInfo *CServerBrowserDialog::OpenGameInfoDialog( IGameList *gameList, unsigned int serverIndex )
+CDialogGameInfo *CServerBrowserDialog::OpenGameInfoDialog( IGameList *gameList, unsigned int serverIndex, bool hltvOnly )
 {
 	serverdisplay_t *pServer = gameList->GetServer( serverIndex );
 	if ( !pServer )
 		return NULL;
 
-	CDialogGameInfo *gameDialog = new CDialogGameInfo( NULL, pServer->m_netAdr.GetIP(), pServer->m_netAdr.GetQueryPort(), pServer->m_netAdr.GetConnectionPort() );
+	CDialogGameInfo *gameDialog = new CDialogGameInfo( NULL, pServer->m_netAdr.GetIP(), pServer->m_netAdr.GetQueryPort(), pServer->m_netAdr.GetConnectionPort(), hltvOnly );
 	gameDialog->SetParent( GetVParent() );
 	gameDialog->AddActionSignalTarget( this );
 	gameDialog->Run( NULL );
