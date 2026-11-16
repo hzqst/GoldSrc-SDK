@@ -398,6 +398,11 @@ extern "C" char* VOX_LookupString( char* pszin, int* psentencenum )
 
 extern "C" char* VOX_GetDirectory( char* path, char* sentence, int size )
 {
+	if ( !*sentence )
+	{
+		Q_strcpy( path, "vox/" );
+		return sentence;
+	}
 	int skipped = 0;
 	char* slash = sentence + Q_strlen( sentence ) - 1;
 	while ( *slash != '/' && slash > sentence )
@@ -485,6 +490,8 @@ extern "C" int VOX_ParseWordParams( char* word, voxword_t* parameters, int first
 		defaults.timecompress = 0;
 	}
 	*parameters = defaults;
+	if ( !*word )
+		return 0;
 	if ( word[Q_strlen( word ) - 1] != ')' )
 		return 1;
 	char* cursor = word;
