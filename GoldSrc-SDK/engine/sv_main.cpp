@@ -4422,6 +4422,14 @@ SERVER SPAWNING
 ==============================================================================
 */
 
+// Invalid entity model indices are treated as missing models.
+model_t* SV_ModelForIndex( int modelindex )
+{
+	if ( modelindex <= 0 || modelindex >= MAX_MODELS )
+		return nullptr;
+	return sv.models[modelindex];
+}
+
 /*
 ================
 SV_ModelIndex

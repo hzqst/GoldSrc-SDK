@@ -1101,12 +1101,22 @@ void SV_CopyEdictToPhysent( physent_t* physent, int index, edict_t* entity )
 		physent->angles[axis] = entity->v.angles[axis];
 	physent->studiomodel = nullptr;
 	physent->rendermode = entity->v.rendermode;
+	model_t* model = SV_ModelForIndex( entity->v.modelindex );
 	if ( entity->v.solid == SOLID_BSP || ( entity->v.solid == SOLID_NOT && entity->v.modelindex ) )
 	{
-		model_t* model = sv.models[entity->v.modelindex];
 		physent->model = model;
-		Q_strncpy( physent->name, model->name, sizeof( physent->name ) );
-		physent->name[sizeof( physent->name ) - 1] = '\0';
+		if ( model )
+		{
+			Q_strncpy( physent->name, model->name, sizeof( physent->name ) );
+			physent->name[sizeof( physent->name ) - 1] = '\0';
+		}
+		else if ( entity->v.solid == SOLID_BSP )
+		{
+			// A reused visent must not retain an old model's bounds.
+			VectorCopy( entity->v.mins, physent->mins );
+			VectorCopy( entity->v.maxs, physent->maxs );
+			Q_strcpy( physent->name, "?" );
+		}
 	}
 	else
 	{
@@ -1115,25 +1125,19 @@ void SV_CopyEdictToPhysent( physent_t* physent, int index, edict_t* entity )
 		{
 			if ( entity->v.solid == SOLID_BBOX )
 			{
-				if ( entity->v.modelindex )
+				if ( model )
 				{
-					model_t* model = sv.models[entity->v.modelindex];
-					if ( model )
-					{
-						if ( model->flags & STUDIO_TRACE_HITBOX )
-							physent->studiomodel = model;
-						Q_strncpy( physent->name, model->name, sizeof( physent->name ) );
-						physent->name[sizeof( physent->name ) - 1] = '\0';
-					}
+					if ( model->flags & STUDIO_TRACE_HITBOX )
+						physent->studiomodel = model;
+					Q_strncpy( physent->name, model->name, sizeof( physent->name ) );
+					physent->name[sizeof( physent->name ) - 1] = '\0';
 				}
 			}
 			else
 			{
-				if ( entity->v.solid == SOLID_SLIDEBOX && entity->v.modelindex > 0 &&
-					(unsigned int)entity->v.modelindex < MAX_MODELS )
+				if ( entity->v.solid == SOLID_SLIDEBOX && model )
 				{
-					model_t* model = sv.models[entity->v.modelindex];
-					if ( model && model->type == mod_studio && ( model->flags & STUDIO_TRACE_HITBOX ) )
+					if ( model->type == mod_studio && ( model->flags & STUDIO_TRACE_HITBOX ) )
 						physent->studiomodel = model;
 				}
 				if ( entity->v.classname )
