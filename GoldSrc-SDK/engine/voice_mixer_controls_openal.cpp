@@ -17,6 +17,7 @@ CMixerControls::~CMixerControls()
 
 void CMixerControls::Release()
 {
+	delete this;
 }
 
 bool CMixerControls::GetValue_Float( Control, float& )
