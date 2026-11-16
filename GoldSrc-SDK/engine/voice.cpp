@@ -518,9 +518,25 @@ qboolean Voice_RecordStart( const char* pUncompressedFile, const char* pDecompre
 
 	if ( pMicInputFile )
 	{
-		int wBitsPerSample, nChannels, nSamplesPerSec;
-		ReadWaveFile(
-			pMicInputFile, g_pMicInputFileData, g_nMicInputFileBytes, wBitsPerSample, nChannels, nSamplesPerSec );
+		int wBitsPerSample = 0, nChannels = 0, nSamplesPerSec = 0;
+		if ( !ReadWaveFile(
+			pMicInputFile, g_pMicInputFileData, g_nMicInputFileBytes, wBitsPerSample, nChannels, nSamplesPerSec ) )
+		{
+			Con_Printf( "Voice - couldn't read %s as a PCM wave file\n", pMicInputFile );
+			return FALSE;
+		}
+		if ( wBitsPerSample != g_VoiceSampleFormat.wBitsPerSample
+			 || nChannels != g_VoiceSampleFormat.nChannels
+			 || nSamplesPerSec != (int)g_VoiceSampleFormat.nSamplesPerSec )
+		{
+			Con_Printf( "Voice - %s must be %d-bit, %d channel(s), %d Hz\n", pMicInputFile,
+				(int)g_VoiceSampleFormat.wBitsPerSample, (int)g_VoiceSampleFormat.nChannels,
+			(int)g_VoiceSampleFormat.nSamplesPerSec );
+			delete[] g_pMicInputFileData;
+			g_pMicInputFileData = NULL;
+			g_nMicInputFileBytes = 0;
+			return FALSE;
+		}
 		g_CurMicInputFileByte = 0;
 		g_MicStartTime = Sys_FloatTime();
 	}

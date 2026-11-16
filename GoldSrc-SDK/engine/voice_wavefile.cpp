@@ -7,22 +7,38 @@
 
 #include "voice_wavefile.h"
 #include "filesystem.h"
+#include <stdint.h>
+#include <limits.h>
+#include <string.h>
+#include <new>
 
-static unsigned long ReadDWord( FileHandle_t fp )
+constexpr int WAVE_TAG_BYTES = 4;
+constexpr int WAVE_FORMAT_BYTES = 16;
+constexpr int WAVE_HEADER_BYTES = 44;
+constexpr int WAVE_FORMAT_PCM = 1;
+
+static bool ReadDWord( FileHandle_t fp, uint32_t& value )
 {
-	unsigned long ret;
-	FS_Read( &ret, sizeof( ret ), 1, fp );
-	return ret;
+	return FS_Read( &value, sizeof( value ), 1, fp ) == sizeof( value );
 }
 
-static unsigned short ReadWord( FileHandle_t fp )
+static bool ReadTag( FileHandle_t fp, char ( &tag )[WAVE_TAG_BYTES] )
 {
-	unsigned short ret;
-	FS_Read( &ret, sizeof( ret ), 1, fp );
-	return ret;
+	return FS_Read( tag, sizeof( tag ), 1, fp ) == sizeof( tag );
 }
 
-static void WriteDWord( FileHandle_t fp, unsigned long val )
+struct WaveFormatChunk
+{
+	uint16_t formatTag;
+	uint16_t channels;
+	uint32_t samplesPerSec;
+	uint32_t avgBytesPerSec;
+	uint16_t blockAlign;
+	uint16_t bitsPerSample;
+};
+static_assert( sizeof( WaveFormatChunk ) == WAVE_FORMAT_BYTES, "PCM format chunk layout" );
+
+static void WriteDWord( FileHandle_t fp, uint32_t val )
 {
 	FS_Write( &val, sizeof( val ), 1, fp );
 }
@@ -32,34 +48,78 @@ static void WriteWord( FileHandle_t fp, unsigned short val )
 	FS_Write( &val, sizeof( val ), 1, fp );
 }
 
+static bool ReadWaveChunks( FileHandle_t fp, unsigned int end,
+	char*& pData, int& nDataBytes, int& wBitsPerSample, int& nChannels, int& nSamplesPerSec )
+{
+	bool formatRead = false;
+	WaveFormatChunk format = {};
+	while ( FS_Tell( fp ) <= end && end - FS_Tell( fp ) >= WAVE_TAG_BYTES + sizeof( uint32_t ) )
+	{
+		char tag[WAVE_TAG_BYTES];
+		uint32_t bytes;
+		if ( !ReadTag( fp, tag ) || !ReadDWord( fp, bytes ) )
+			return false;
+		unsigned int start = FS_Tell( fp );
+		unsigned int remaining = end - start;
+		if ( bytes > remaining )
+			return false;
+		if ( memcmp( tag, "fmt ", WAVE_TAG_BYTES ) == 0 )
+		{
+			if ( bytes < sizeof( format ) || FS_Read( &format, sizeof( format ), 1, fp ) != sizeof( format ) )
+				return false;
+			formatRead = true;
+		}
+		else if ( memcmp( tag, "data", WAVE_TAG_BYTES ) == 0 )
+		{
+			if ( !formatRead || format.formatTag != WAVE_FORMAT_PCM || !format.channels
+				 || !format.samplesPerSec || format.samplesPerSec > INT_MAX
+				 || !format.bitsPerSample || format.bitsPerSample % 8 != 0 || !bytes )
+				return false;
+			char* buffer = new ( std::nothrow ) char[bytes];
+			if ( !buffer )
+				return false;
+			if ( FS_Read( buffer, (int)bytes, 1, fp ) != (int)bytes )
+			{
+				delete[] buffer;
+				return false;
+			}
+			pData = buffer;
+			nDataBytes = (int)bytes;
+			wBitsPerSample = format.bitsPerSample;
+			nChannels = format.channels;
+			nSamplesPerSec = (int)format.samplesPerSec;
+			return true;
+		}
+		// RIFF chunks have an even size; the final chunk can omit its pad byte.
+		if ( ( bytes & 1 ) && bytes < remaining )
+			++bytes;
+		FS_Seek( fp, (int)( start + bytes ), FILESYSTEM_SEEK_HEAD );
+	}
+	return false;
+}
+
 bool ReadWaveFile(
 	const char* pFilename, char*& pData, int& nDataBytes, int& wBitsPerSample, int& nChannels, int& nSamplesPerSec )
 {
 	FileHandle_t fp = FS_Open( pFilename, "rb" );
 	if ( !fp )
 		return false;
-
-	FS_Seek( fp, 22, FILESYSTEM_SEEK_HEAD );
-	nChannels = ReadWord( fp );
-	nSamplesPerSec = ReadDWord( fp );
-
-	FS_Seek( fp, 34, FILESYSTEM_SEEK_HEAD );
-	wBitsPerSample = ReadWord( fp );
-
-	FS_Seek( fp, 40, FILESYSTEM_SEEK_HEAD );
-	nDataBytes = ReadDWord( fp );
-	ReadDWord( fp );
-
-	pData = new char[nDataBytes];
-	if ( !pData )
+	unsigned int fileBytes = FS_Size( fp );
+	bool read = false;
+	if ( fileBytes >= WAVE_HEADER_BYTES && fileBytes <= INT_MAX )
 	{
-		FS_Close( fp );
-		return false;
+		char riff[WAVE_TAG_BYTES], wave[WAVE_TAG_BYTES];
+		uint32_t riffBytes;
+		if ( ReadTag( fp, riff ) && ReadDWord( fp, riffBytes ) && ReadTag( fp, wave )
+			 && memcmp( riff, "RIFF", WAVE_TAG_BYTES ) == 0 && memcmp( wave, "WAVE", WAVE_TAG_BYTES ) == 0
+			 && riffBytes >= WAVE_TAG_BYTES && riffBytes <= fileBytes - 2 * WAVE_TAG_BYTES )
+		{
+			read = ReadWaveChunks( fp, riffBytes + 2 * WAVE_TAG_BYTES,
+				pData, nDataBytes, wBitsPerSample, nChannels, nSamplesPerSec );
+		}
 	}
-
-	FS_Read( pData, nDataBytes, 1, fp );
 	FS_Close( fp );
-	return true;
+	return read;
 }
 
 bool WriteWaveFile(
@@ -90,7 +150,7 @@ bool WriteWaveFile(
 	FS_Write( pData, nDataBytes, 1, fp );
 
 	// Go back and write the length of the riff file.
-	unsigned long dwVal = FS_Tell( fp ) - 8;
+	uint32_t dwVal = FS_Tell( fp ) - 8;
 	FS_Seek( fp, 4, FILESYSTEM_SEEK_HEAD );
 	WriteDWord( fp, dwVal );
 
