@@ -193,7 +193,7 @@ bool VoiceSE_Init()
 	{
 		sfxcache_t* pCache = &g_VoiceSE_SFX[i].m_SFXCache;
 		pCache->length = SOUND_CALLBACK_CACHE_LENGTH;
-		pCache->loopstart = (int)VoiceSE_GetSoundDataCallback;
+		pCache->loopstart = reinterpret_cast<intptr_t>( VoiceSE_GetSoundDataCallback );
 		pCache->speed = 22050;
 		pCache->width = 2;
 	}
