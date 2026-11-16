@@ -611,7 +611,8 @@ extern "C" void SNDDMA_Submit()
 		if ( waveOutWrite( hWaveOut, h, sizeof( WAVEHDR ) ) != MMSYSERR_NOERROR )
 		{
 			Con_SafePrintf( "Failed to write block to device\n" );
-			FreeSound();
+			S_Shutdown();
+			S_Startup();
 			return;
 		}
 	}
