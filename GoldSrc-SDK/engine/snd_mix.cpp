@@ -600,6 +600,11 @@ extern "C" sfxcache_t* VOX_LoadSound( channel_t* channel, char* name )
 		}
 		++index;
 	}
+	if ( !words[0].sfx )
+	{
+		Con_DPrintf( "VOX_LoadSound: no words in sentence %s\n", name );
+		return nullptr;
+	}
 	int slot = VOX_IFindEmptySentence();
 	if ( slot < 0 )
 		return nullptr;
