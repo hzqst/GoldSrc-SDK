@@ -1541,6 +1541,8 @@ void S_MixChannelsToPaintbuffer( int end, int fPaintHiresSounds, int voiceOnly )
 		if ( !channel->sfx )
 			continue;
 		sfxcache_t* cache = S_LoadSound( channel->sfx, channel );
+		if ( !cache )
+			continue;
 		int soundLength = cache->length;
 		bool callbackSound = soundLength == SOUND_CALLBACK_CACHE_LENGTH;
 		if ( callbackSound ? !voiceOnly : voiceOnly != 0 )
