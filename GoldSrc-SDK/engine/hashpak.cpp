@@ -685,7 +685,7 @@ void HPAK_RemoveLump( const char* pakname, resource_t* pResource )
 
 	HPAK_FlushHostQueue();
 
-	snprintf( name, 256, "%s", Cmd_Argv( 1 ) );
+	snprintf( name, 256, "%s", pakname );
 	COM_DefaultExtension( name, ".hpk" );
 
 	Q_strncpy( szOriginalName, name, sizeof( szOriginalName ) - 1 );
