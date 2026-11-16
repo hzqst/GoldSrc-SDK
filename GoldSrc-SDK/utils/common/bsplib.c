@@ -224,8 +224,12 @@ void SwapBSPFile (qboolean todisk)
 //	
 	for (i=0 ; i<numtexinfo ; i++)
 	{
-		for (j=0 ; j<8 ; j++)
-			texinfo[i].vecs[0][j] = LittleFloat (texinfo[i].vecs[0][j]);
+		for (j=0 ; j<2 ; j++)
+		{
+			int k;
+			for (k=0 ; k<4 ; k++)
+				texinfo[i].vecs[j][k] = LittleFloat (texinfo[i].vecs[j][k]);
+		}
 		texinfo[i].miptex = LittleLong (texinfo[i].miptex);
 		texinfo[i].flags = LittleLong (texinfo[i].flags);
 	}
