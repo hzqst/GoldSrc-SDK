@@ -179,6 +179,36 @@ static void SortUsesSanitizedData() {
  puts("PASS: sort functions use sanitized strings, put empty fields last and resolve friends servers");
 }
 
+static bool Listed(EMatchMakingType type, int players, int bots, int maxPlayers) {
+ CBaseGamesPage page; page.m_eMatchMakingType=type;
+ gameserveritem_t server=Server(1, "Server", "map", "desc");
+ server.m_nPlayers=players; server.m_nBotPlayers=bots; server.m_nMaxPlayers=maxPlayers;
+ page.ServerResponded(1, &server);
+ bool listed=page.list.IsValidItemID(page.GetServer(1)->m_iListID);
+ assert(listed!=page.GetServer(1)->m_bDoNotRefresh);
+ return listed;
+}
+
+static void CountValidation() {
+ for (EMatchMakingType type : {eInternetServer, eLANServer, eFriendsServer}) {
+  assert(Listed(type, 4, 2, 16) && Listed(type, 32, 32, 32) && Listed(type, 0, 0, 0));
+  // sv_visiblemaxplayers reports fewer slots than connected players
+  assert(Listed(type, 32, 0, 30));
+  assert(!Listed(type, 4, 5, 16) && !Listed(type, -1, 0, 16) && !Listed(type, 4, -1, 16));
+  assert(!Listed(type, 4, 0, -1) && !Listed(type, 4, 0, 33) && !Listed(type, 33, 0, 32));
+ }
+ for (EMatchMakingType type : {eSpectatorServer, eFavoritesServer, eHistoryServer}) {
+  assert(Listed(type, 120, 0, 255) && Listed(type, 255, 0, 255) && Listed(type, 4, 2, 16));
+  assert(!Listed(type, 4, 0, 256) && !Listed(type, 256, 0, 255) && !Listed(type, 4, 5, 16));
+ }
+ // Re-applying filters hides a listed server whose refreshed counts became invalid.
+ CBaseGamesPage page; gameserveritem_t server=Server(1, "Server", "map", "desc");
+ page.ServerResponded(1, &server); steamServers[1]=server; steamServers[1].m_nBotPlayers=9;
+ page.ApplyGameFilters();
+ assert(!page.list.visible[page.GetServer(1)->m_iListID] && page.GetServer(1)->m_bDoNotRefresh);
+ steamServers.clear();
+ puts("PASS: inconsistent counts are rejected; HLTV pages allow proxy capacity, game pages MAX_CLIENTS");
+}
 '''
 
 
@@ -199,7 +229,7 @@ def main():
                       'int CBaseGamesPage::ServerNameCompare(']:
         code += function(source, signature)
     code += TESTS
-    code += '\nint main() { SanitizedStrings(); DisplayUsesSanitizedData(); SortUsesSanitizedData(); }\n'
+    code += '\nint main() { SanitizedStrings(); DisplayUsesSanitizedData(); SortUsesSanitizedData(); CountValidation(); }\n'
     with tempfile.TemporaryDirectory(prefix='goldsrc-serverbrowser-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code)

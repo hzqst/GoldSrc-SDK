@@ -36,6 +36,11 @@
 // page currently being shown; the static sort functions read from it
 CBaseGamesPage *g_CurrentGamesPage;
 
+// GoldSrc game servers have at most MAX_CLIENTS player slots
+static const int MAX_GAME_SERVER_PLAYERS = 32;
+// server queries report counts in a single byte, which also bounds HLTV proxies
+static const int MAX_PROXY_PLAYERS = 255;
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -1185,6 +1190,19 @@ bool CBaseGamesPage::CheckPrimaryFilters( gameserveritem_t &server )
 		if ( server.m_nAppID != 1002 )
 			return false;
 	}
+
+	// reject player counts no real server reports; HLTV proxies can only be identified
+	// by the pages that may list them, as server reported details are not trusted
+	int maxPlayers = MAX_GAME_SERVER_PLAYERS;
+	if ( m_eMatchMakingType == eSpectatorServer || m_eMatchMakingType == eFavoritesServer || m_eMatchMakingType == eHistoryServer )
+		maxPlayers = MAX_PROXY_PLAYERS;
+
+	// players above max players are allowed, as sv_visiblemaxplayers hides reserved slots
+	if ( server.m_nBotPlayers < 0 || server.m_nBotPlayers > server.m_nPlayers || server.m_nPlayers > maxPlayers )
+		return false;
+
+	if ( server.m_nMaxPlayers < 0 || server.m_nMaxPlayers > maxPlayers )
+		return false;
 
 	// only list servers with an app ID below 200
 	return server.m_nAppID < 200;
