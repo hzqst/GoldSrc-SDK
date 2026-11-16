@@ -133,7 +133,7 @@ struct {
 struct { const char* levelname="maps/crossfire.bsp"; } cl;
 struct Cvar { float value=0; } scr_downloading,sys_timescale,sv_allow_autoaim,sv_allow_shaders,cl_resend{2},fs_startup_timings;
 int g_bRedirectedToProxy=0;
-static qboolean g_bConnectingToHLTV;
+static qboolean g_bConnectingToHLTV, g_bRetryHLTV;
 int g_careerState=0,src_command=0,cmd_source=0,num_servers=0,msg_buckets[1],total_data[1];
 bool g_bIsCStrike=false,g_bIsCZero=false,gfExtendedError=false,serverActive=false,addressValid=true;
 bool senderValid=true;
@@ -170,7 +170,7 @@ void Info_SetValueForStarKey(char*,const char*,const char*,int){}
 unsigned int NET_NetAdr_GetIPNetworkByteOrder(netadr_t*){return 0;}
 unsigned int htonl(unsigned int n){return n;}
 int Steam_GSInitiateGameConnection(char*,int,int,unsigned int,int,bool){return 0;}
-void CL_Disconnect_f(); void CL_SendConnectPacket();
+void CL_Disconnect_f(); void CL_SendConnectPacket(); void CL_Retry_f_0();
 bool IsFromConnectedServer(netadr_t){return senderValid;} void Cbuf_AddText(const char* text){queued+=text;}
 int MSG_ReadByte(){return HLTV_ACTIVE;} void MSG_ReadLong(){} void MSG_ReadShort(){} void MSG_ReadWord(){} void CL_ParseListen(){}
 '''
@@ -282,6 +282,34 @@ static void EngineConnections() {
  serverActive=false; CL_Disconnect();
  puts("PASS: ignored commands and connection retries preserve intent; a new local connection clears it");
 }
+static void RetryCommand(const char* expected) {
+ Execute("retry"); assert(queued==expected); Execute(queued); queued.clear();
+}
+static void RetryConnections() {
+ // HTTP downloads disconnect before signon and reconnect through retry.
+ Execute("connect_hltv 127.0.0.1:27015"); CL_Disconnect(); assert(!g_bConnectingToHLTV);
+ RetryCommand("connect_hltv 127.0.0.1:27015\n"); assert(g_bConnectingToHLTV);
+ int notifications=disconnectNotifications; Finish(false);
+ assert(disconnectNotifications==notifications+1);
+ // A later map download must not turn an accepted HLTV session into a game connection.
+ Execute("connect_hltv 127.0.0.1:27015"); CL_ParseHLTV(); Finish(true);
+ CL_Disconnect(); RetryCommand("connect_hltv 127.0.0.1:27015\n");
+ assert(!cls.spectator && g_bConnectingToHLTV);
+ notifications=disconnectNotifications; Finish(false);
+ assert(disconnectNotifications==notifications+1);
+ Execute("connect_hltv 127.0.0.1:27015"); CL_ParseHLTV(); CL_Disconnect();
+ RetryCommand("connect_hltv 127.0.0.1:27015\n"); CL_ParseHLTV();
+ notifications=disconnectNotifications; Finish(true); assert(disconnectNotifications==notifications);
+ // Ordinary, local and passive connections keep their original retry commands.
+ Execute("connect 127.0.0.1:27015"); CL_Disconnect(); RetryCommand("connect 127.0.0.1:27015\n");
+ assert(!g_bConnectingToHLTV); notifications=disconnectNotifications; Finish(false);
+ assert(disconnectNotifications==notifications);
+ Execute("connect_hltv 127.0.0.1:27015"); CL_Disconnect();
+ serverActive=true; CL_CheckForResend(); serverActive=false; CL_Disconnect();
+ Execute("retry"); assert(queued=="connect localhost\n"); queued.clear();
+ cls.passive=true; Execute("retry"); assert(queued=="listen localhost\n"); queued.clear(); cls.passive=false;
+ puts("PASS: retry after download disconnects keeps HLTV intent; other retries are unchanged");
+}
 '''
 
 
@@ -301,9 +329,10 @@ def main():
     for signature in ['static void CL_ClearConnectionIntent()', 'void CL_Disconnect()',
                       'static void CL_Connect(', 'void CL_Connect_f()',
                       'static void CL_ConnectHLTV_f()', 'void CL_SendConnectPacket()',
+                      'void CL_Retry_f()', 'void CL_Retry_f_0()',
                       'void CL_CheckForResend()', 'void CL_SignonReply()']:
         code += function(source, signature)
-    registrations = re.findall(r'\tCmd_AddCommandWithFlags\( "(?:connect|connect_hltv)",[^\n]+', source)
+    registrations = re.findall(r'\tCmd_AddCommandWithFlags\( "(?:connect|connect_hltv|retry)",[^\n]+', source)
     code += '\nvoid RegisterConnectionCommands() {\n' + '\n'.join(registrations) + '\n}\n'
     code += function((ROOT / 'engine/cl_parse.cpp').read_text(), 'void CL_ParseHLTV()')
     # Compile the real packet case, retaining its early-break validation paths.
@@ -312,7 +341,7 @@ def main():
     code += '\nvoid ReceiveRedirect(const char* s) { const char* server; char redirect[1024]; switch(0) {\n'
     code += redirect.replace('case S2C_REDIRECT:', 'case 0:') + '\n}}\n'
     code += ENGINE_TESTS
-    code += '\nint main() { RegisterConnectionCommands(); assert(registeredCommands.size()==2); BrowserCommands(); BrowserToEngine(); EngineConnections(); }\n'
+    code += '\nint main() { RegisterConnectionCommands(); assert(registeredCommands.size()==3); BrowserCommands(); BrowserToEngine(); EngineConnections(); RetryConnections(); }\n'
     with tempfile.TemporaryDirectory(prefix='goldsrc-spectate-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code)

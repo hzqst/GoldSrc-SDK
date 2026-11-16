@@ -147,6 +147,8 @@ lightstyle_t cl_lightstyle[MAX_LIGHTSTYLES];
 
 int g_bRedirectedToProxy;
 static qboolean g_bConnectingToHLTV;
+// Unlike the attempt intent, this follows cls.servername so retries keep the restriction.
+static qboolean g_bRetryHLTV;
 qboolean cl_inmovie;
 
 cvar_t cl_shownet = { "cl_shownet", "0" };
@@ -928,6 +930,7 @@ static void CL_Connect( qboolean hltvOnly )
 
 	Q_strncpy( cls.servername, name, sizeof( cls.servername ) - 1 );
 	cls.servername[sizeof( cls.servername ) - 1] = 0;
+	g_bRetryHLTV = hltvOnly;
 
 	cls.connect_time = -99999;
 	cls.state = ca_connecting;
@@ -991,6 +994,7 @@ void CL_CheckForResend()
 		gfExtendedError = FALSE;
 		Q_strncpy( cls.servername, "localhost", sizeof( cls.servername ) - 1 );
 		cls.servername[sizeof( cls.servername ) - 1] = 0;
+		g_bRetryHLTV = FALSE;
 		cls.authprotocol = PROTOCOL_STEAM;
 		CL_SendConnectPacket();
 		return;
@@ -3491,7 +3495,10 @@ void CL_Retry_f_0()
 {
 	char szCommand[MAX_PATH];
 
-	snprintf( szCommand, sizeof( szCommand ), cls.passive ? "listen %s\n" : "connect %s\n", cls.servername );
+	if ( cls.passive )
+		snprintf( szCommand, sizeof( szCommand ), "listen %s\n", cls.servername );
+	else
+		snprintf( szCommand, sizeof( szCommand ), "%s %s\n", g_bRetryHLTV ? "connect_hltv" : "connect", cls.servername );
 	Cbuf_AddText( szCommand );
 	Con_Printf( "Commencing connection retry to %s\n", cls.servername );
 }
