@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <stdint.h>
+
 #include "mathlib.h"
 #include "quakedef.h"
 #include "filesystem.h"
@@ -43,7 +45,7 @@ typedef struct sfx_s
 typedef struct sfxcache_s
 {
 	int length;
-	int loopstart;
+	intptr_t loopstart; // Callback sounds store a function pointer here.
 	int speed;
 	int width;
 	int stereo;
