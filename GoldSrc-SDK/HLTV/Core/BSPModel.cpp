@@ -1246,8 +1246,11 @@ void BSPModel::LoadTexinfo( lump_t* l )
 	model.numtexinfo = count;
 	for ( i = 0; i < count; i++, in++, out++ )
 	{
-		for ( j = 0; j < 8; j++ )
-			out->vecs[0][j] = LittleFloat( ( (float*)in->vecs )[j] );
+		for ( j = 0; j < 2; j++ )
+		{
+			for ( int k = 0; k < 4; k++ )
+				out->vecs[j][k] = LittleFloat( in->vecs[j][k] );
+		}
 
 		len1 = (float)sqrt(
 			out->vecs[0][0] * out->vecs[0][0]
