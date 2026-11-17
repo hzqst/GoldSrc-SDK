@@ -242,18 +242,15 @@ void Font::init( const char* name, void* data, int length, int tall, int wide, f
 {
 	_name = _strdup( name );
 	_id = -1;
+	_plat = NULL;
 	if ( data != NULL )
 	{
 		FileImageStream_Memory stream( data, length );
 		_plat = FontPlat_Bitmap::Create( name, &stream );
-		if ( _plat == NULL )
-		{
-			return;
-		}
 	}
-	else
+	// Invalid bitmap data falls back to the system font, as VGUI_Font.h documents.
+	if ( _plat == NULL )
 	{
-		_plat = NULL;
 		for ( int i = 0; i < fontPlatforms.getCount(); ++i )
 		{
 			if ( fontPlatforms[i]->equals( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol ) )

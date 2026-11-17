@@ -21,6 +21,10 @@ bool LoadVFontDataFrom32BitTGA( FileImageStream* stream, VFontData* data )
 	if ( !Load32BitTGA( stream, &image ) )
 		return false;
 
+	// An image narrower than one pixel per glyph would load as a font of empty glyphs.
+	if ( image.m_Width < VFONT_GLYPH_COUNT || image.m_Height <= 0 )
+		return false;
+
 	data->m_pBitmap = new unsigned char[image.m_Width * image.m_Height];
 	if ( data->m_pBitmap == NULL )
 		return false;
