@@ -403,9 +403,6 @@ int V_ScreenFade( const char*, int, void* pbuf )
 	cl.sf.fadeSpeed = 0.0f;
 	cl.sf.fadeFlags = pFade->fadeFlags;
 
-	if ( !pFade->duration )
-		return 1;
-
 	// Calc fade speed
 	if ( pFade->fadeFlags & FFADE_OUT )
 	{
@@ -451,10 +448,18 @@ int V_FadeAlpha()
 		fadeEnd = cl.sf.fadeEnd;
 	}
 
-	fade = ( (double)fadeEnd - cl.time ) * cl.sf.fadeSpeed;
-	if ( cl.sf.fadeFlags & FFADE_OUT )
-		fade += cl.sf.fadealpha;
-	alpha = (int)fade;
+	// A zero-duration fade in has no ramp: hold the full alpha until the reset time, then clear
+	if ( !( cl.sf.fadeFlags & FFADE_OUT ) && cl.sf.fadeSpeed == 0.0f && cl.sf.fadeEnd <= cl.sf.fadeReset )
+	{
+		alpha = cl.sf.fadealpha;
+	}
+	else
+	{
+		fade = ( (double)fadeEnd - cl.time ) * cl.sf.fadeSpeed;
+		if ( cl.sf.fadeFlags & FFADE_OUT )
+			fade += cl.sf.fadealpha;
+		alpha = (int)fade;
+	}
 
 	if ( alpha > cl.sf.fadealpha )
 		return cl.sf.fadealpha;
