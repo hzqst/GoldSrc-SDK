@@ -73,7 +73,7 @@ void CDoDClientScoreBoardDialog::UpdatePlayerInfo()
 	m_iSectionId = 0;
 	for ( int player = 1; player <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); player++ )
 	{
-		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
+		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 		if ( info.name )
 		{
 			KeyValues* data = new KeyValues( "data" );
@@ -197,7 +197,7 @@ void CDoDClientScoreBoardDialog::UpdateTeamInfo()
 	}
 	for ( int player = 1; player <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); player++ )
 	{
-		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
+		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 		if ( info.name && info.teamnumber >= 1 && info.teamnumber <= 3 )
 		{
 			ScoreBoardTeamInfo& team = m_TeamInfo[info.teamnumber];

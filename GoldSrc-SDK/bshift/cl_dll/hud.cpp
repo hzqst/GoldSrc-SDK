@@ -23,8 +23,8 @@
 #include <string.h>
 #include <stdio.h>
 #include "parsemsg.h"
-#include "VGUI/IViewPort.h"
-#include "VGUI/IViewPortMsgs.h"
+#include "game_controls/iviewport.h"
+#include "game_controls/iviewportmsgs.h"
 
 #include "demo.h"
 #include "demo_api.h"

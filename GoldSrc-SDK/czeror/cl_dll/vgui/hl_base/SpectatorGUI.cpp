@@ -8,7 +8,7 @@
 #include "hud.h"
 #include "cl_util.h"
 #include "SpectatorGUI.h"
-#include "game_controls/iviewport.h"
+#include "game_controls/legacy_iviewport.h"
 #include "CreateCommandMenu.h"
 #include "igameuifuncs.h"
 #include "ComboBox.h"

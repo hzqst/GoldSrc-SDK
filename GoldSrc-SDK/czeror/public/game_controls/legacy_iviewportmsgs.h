@@ -5,8 +5,8 @@
 // $NoKeywords: $
 //=============================================================================
 
-#ifndef IVIEWPORTMSGS_H
-#define IVIEWPORTMSGS_H
+#ifndef LEGACY_IVIEWPORTMSGS_H
+#define LEGACY_IVIEWPORTMSGS_H
 
 class IViewPortMsgs
 {
@@ -31,4 +31,4 @@ public:
 
 extern IViewPortMsgs* gViewPortMsgs;
 
-#endif // IVIEWPORTMSGS_H
+#endif // LEGACY_IVIEWPORTMSGS_H

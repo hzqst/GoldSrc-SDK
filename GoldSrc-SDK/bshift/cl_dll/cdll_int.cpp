@@ -24,7 +24,7 @@
 #include "interface.h"
 #include "Exports.h"
 #include "particleman.h"
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "cl_dll/IGameClientExports.h"
 //#include "vgui_schememanager.h"
 

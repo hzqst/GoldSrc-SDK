@@ -8,8 +8,8 @@
 #ifndef TEAMFORTRESSVIEWPORT_H
 #define TEAMFORTRESSVIEWPORT_H
 
-#include "game_controls/iviewport.h"
-#include "game_controls/iviewportmsgs.h"
+#include "game_controls/legacy_iviewport.h"
+#include "game_controls/legacy_iviewportmsgs.h"
 #include "game_controls/iclientvgui.h"
 #include "utlqueue.h"
 #include "vguitextwindow.h"

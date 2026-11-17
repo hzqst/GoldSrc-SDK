@@ -125,7 +125,7 @@ bool CClientScoreBoardDialog::StaticPlayerSortFunc( vgui2::SectionedListPanel* l
 //-----------------------------------------------------------------------------
 bool CClientScoreBoardDialog::GetPlayerScoreInfo( int playerIndex, KeyValues* kv )
 {
-	VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( playerIndex );
+	VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( playerIndex );
 	kv->SetInt( "deaths", playerInfo.deaths );
 	kv->SetInt( "frags", playerInfo.frags );
 	kv->SetInt( "ping", playerInfo.ping );
@@ -300,7 +300,7 @@ void CClientScoreBoardDialog::UpdateTeamInfo()
 	// recalc the team scores, then draw them
 	for ( int player = 1; player <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); player++ )
 	{
-		VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
+		VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 		if ( !playerInfo.name || !playerInfo.teamname )
 			continue;
 
@@ -407,7 +407,7 @@ void CClientScoreBoardDialog::UpdatePlayerInfo()
 	m_iSectionId = 0;
 	for ( int player = 1; player <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); player++ )
 	{
-		VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
+		VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 		if ( playerInfo.name )
 		{
 			KeyValues* data = new KeyValues( "data" );

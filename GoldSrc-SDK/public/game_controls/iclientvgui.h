@@ -2,9 +2,11 @@
 
 #include "interface.h"
 
+#define CLIENTVGUI_INTERFACE_VERSION "VClientVGUI001"
+
 namespace vgui2
 {
-typedef unsigned int VPANEL;
+	typedef unsigned int VPANEL;
 }
 
 class IClientVGUI : public IBaseInterface
@@ -20,5 +22,3 @@ public:
 	virtual void HideClientUI() = 0;
 	virtual void Shutdown() = 0;
 };
-
-#define CLIENTVGUI_INTERFACE_VERSION "VClientVGUI001"

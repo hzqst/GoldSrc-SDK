@@ -111,7 +111,7 @@ void CClassMenu::Update( int* validClasses, int )
 void CClassMenu::OnCommand( const char* command )
 {
 	if ( stricmp( command, "vguicancel" ) )
-		gViewPortInterface->GetClientDllInterface()->ClientCmd( command );
+		gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( command );
 	Close();
 	gViewPortInterface->HideBackGround();
 	vgui2::Frame::OnCommand( command );

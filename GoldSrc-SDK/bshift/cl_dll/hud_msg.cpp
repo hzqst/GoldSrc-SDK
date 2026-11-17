@@ -21,7 +21,7 @@
 #include "parsemsg.h"
 #include "r_efx.h"
 #include "particleman.h"
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 
 extern IParticleMan* g_pParticleMan;
 extern BEAM* pBeam;

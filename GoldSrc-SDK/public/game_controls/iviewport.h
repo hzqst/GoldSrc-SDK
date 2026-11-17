@@ -5,7 +5,7 @@
 // Valve, L.L.C., or in accordance with the terms and conditions stipulated in
 // the agreement/contract under which the contents have been supplied.
 //
-// Purpose: 
+// Purpose:
 //
 // $Workfile:     $
 // $Date:         $
@@ -15,74 +15,17 @@
 //
 // $NoKeywords: $
 //=============================================================================
-#pragma once
 
+#ifndef IVIEWPORT_H
+#define IVIEWPORT_H
+
+#include "cl_dll/IVGuiClientDll.h"
 #include "vgui/IScheme.h"
 
 namespace vgui2
 {
 typedef unsigned int VPANEL;
 }
-
-struct VGuiLibraryPlayer_t
-{
-	const char*		name;
-	int				ping;
-	int				packetloss;
-	bool			thisplayer;
-	const char*		teamname;
-	int				teamnumber;
-	int				frags;
-	int				deaths;
-	int				playerclass;
-	int				health;
-	bool			dead;
-	unsigned __int64	m_nSteamID;
-};
-
-struct VGuiLibraryTeamInfo_t
-{
-	const char*	name;
-	int			frags;
-	int			deaths;
-	int			ping;
-	int			players;
-	int			packetloss;
-	int			teamnumber;
-};
-
-struct VGuiLibraryInterface_t
-{
-	int ( *InIntermission )();
-	void ( *FindNextPlayer )( bool reverse );
-	void ( *FindPlayer )( const char* name );
-	bool ( *PipInsetOff )();
-	void ( *InsetValues )( int& x, int& y, int& wide, int& tall );
-	void ( *CheckSettings )();
-	int ( *SpectatorNumber )();
-	bool ( *IsSpectator )();
-	int ( *SpectatorMode )();
-	int ( *SpectatorTarget )();
-	bool ( *IsSpectateOnly )();
-	float ( *HudTime )();
-	void ( *MessageAdd )( void* message );
-	void ( *MessageHud )( const char* name, int size, void* buffer );
-	int ( *TeamPlay )();
-	void ( *ClientCmd )( const char* command );
-	int ( *TeamNumber )();
-	const char* ( *GetLevelName )();
-	int ( *GetLocalPlayerIndex )();
-	char* ( *COM_ParseFile )( char* data, char* token );
-	void* ( *COM_LoadFile )( char* path, int usehunk, int* length );
-	void ( *COM_FreeFile )( void* buffer );
-	void ( *COM_FileBase )( char* path, char* name );
-	void ( *Con_DPrintf )( char* format, ... );
-	VGuiLibraryPlayer_t ( *GetPlayerInfo )( int index );
-	int ( *GetMaxPlayers )();
-	void ( *GameVoice_StopSquelchMode )();
-	bool ( *IsDemoPlayingBack )();
-	float ( *CvarGetFloat )( const char* name );
-};
 
 class IViewPort
 {
@@ -150,3 +93,5 @@ public:
 };
 
 extern IViewPort* gViewPortInterface;
+
+#endif // IVIEWPORT_H

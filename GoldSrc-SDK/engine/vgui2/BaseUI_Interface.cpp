@@ -269,7 +269,7 @@ void CBaseUI::Initialize( CreateInterfaceFn* factories, int )
 		{
 			++m_iNumFactories;
 			m_FactoryList[m_iNumFactories - 1] = clientFactory;
-			staticClient = static_cast<IClientVGUI*>( clientFactory( "VClientVGUI001", nullptr ) );
+			staticClient = static_cast<IClientVGUI*>( clientFactory( CLIENTVGUI_INTERFACE_VERSION, nullptr ) );
 		}
 	}
 	else

@@ -22,7 +22,7 @@ extern "C"
 #include <ctype.h>
 #include "Exports.h"
 
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 
 
 extern int g_iAlive;

@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <malloc.h> // _alloca
 
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "player_info.h"
 
 extern float *GetClientColor( int clientIndex );

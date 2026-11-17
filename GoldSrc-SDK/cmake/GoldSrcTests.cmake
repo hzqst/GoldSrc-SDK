@@ -8,6 +8,11 @@ include_guard(GLOBAL)
 set(GOLDSRC_TESTS_DIR "${GOLDSRC_ROOT}/../tests")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_executable(vgui_game_controls_tests "${GOLDSRC_TESTS_DIR}/vgui_game_controls_tests.cpp")
+target_include_directories(vgui_game_controls_tests PRIVATE "${GOLDSRC_ROOT}/engine" "${GOLDSRC_ROOT}/public")
+set_target_properties(vgui_game_controls_tests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+add_test(NAME vgui_game_controls COMMAND vgui_game_controls_tests)
+
 foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound spectate_connection serverbrowser_sort)
 	add_test(NAME ${name}
 		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/${name}_tests.py")

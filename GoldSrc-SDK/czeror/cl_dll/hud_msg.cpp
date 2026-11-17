@@ -23,7 +23,7 @@
 #include "triangleapi.h"
 #include "../../engine/interface.h"
 #include "../../public/particleman.h"
-#include "../public/game_controls/iviewport.h"
+#include "../public/game_controls/legacy_iviewport.h"
 #include "z_weather.h"
 #include "effects/e_effectclasses.h"
 

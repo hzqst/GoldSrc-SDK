@@ -23,7 +23,7 @@
 #include "hud.h"
 #include "cl_util.h"
 #include "parsemsg.h"
-#include "../public/game_controls/iviewport.h"
+#include "../public/game_controls/legacy_iviewport.h"
 
 DECLARE_MESSAGE( m_TextMessage, TextMsg );
 

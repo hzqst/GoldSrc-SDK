@@ -268,6 +268,7 @@ goldsrc_add_module(bshift_cdll
 		bshift/dlls
 		bshift/cl_dll
 		bshift/cl_dll/VGUI
+		public/game_controls
 		bshift/game_shared
 		bshift/vgui2/game_controls
 		vgui2/controls

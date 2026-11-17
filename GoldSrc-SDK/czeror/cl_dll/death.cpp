@@ -22,7 +22,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "../public/game_controls/iviewport.h"
+#include "../public/game_controls/legacy_iviewport.h"
 
 DECLARE_MESSAGE( m_DeathNotice, DeathMsg );
 

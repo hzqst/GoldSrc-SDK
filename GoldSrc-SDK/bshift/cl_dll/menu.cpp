@@ -24,7 +24,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 
 #define MAX_MENU_STRING	512
 char g_szMenuString[MAX_MENU_STRING];

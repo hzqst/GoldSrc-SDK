@@ -273,7 +273,7 @@ const char* TeamFortressViewport::GetServerName()
 	return m_szServerName;
 }
 
-int TeamFortressViewport::GetViewPortScheme()
+vgui2::HScheme TeamFortressViewport::GetViewPortScheme()
 {
 	return m_pBackGround->GetScheme();
 }

@@ -5,7 +5,7 @@
 #include "vgui_worldmap.h"
 
 ICzeroViewPort* gCzeroViewPortInterface;
-EXPOSE_SINGLE_INTERFACE( CZEROViewPort, IClientVGUI, "VClientVGUI001" );
+EXPOSE_SINGLE_INTERFACE( CZEROViewPort, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION );
 
 #ifdef _MSC_VER
 #pragma warning( suppress : 26495 )

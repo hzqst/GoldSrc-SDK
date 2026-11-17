@@ -15,7 +15,7 @@
 #include "vgui/KeyValues.h"
 #include "FileSystem.h"
 #include "igameuifuncs.h"
-#include "game_controls/iviewport.h"
+#include "game_controls/legacy_iviewport.h"
 #include "hud.h"
 
 #include <stdio.h>

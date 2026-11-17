@@ -403,7 +403,7 @@ void TeamFortressViewport::InputPlayerSpecial()
 	if ( m_bInitialized )
 
 		// if it's any other class, just send the command down to the server
-		m_pClientDllInterface->ClientCmd( "_special" );
+		m_pClientDllInterface->CallEnghudClientCmd( "_special" );
 }
 
 void TeamFortressViewport::ChatInputPosition( int*, int* y )
@@ -493,7 +493,7 @@ void TeamFortressViewport::UpdateSpectatorPanel()
 		target = m_pClientDllInterface->SpectatorTarget();
 	if ( ( m_pClientDllInterface->SpectatorMode() != 5 || m_pClientDllInterface->PipInsetOff() ) && target != -1 )
 	{
-		VGuiLibraryPlayer_t info = m_pClientDllInterface->GetPlayerInfo( target );
+		VGuiLibraryPlayer_t info = m_pClientDllInterface->CallEnghudGetPlayerInfo( target );
 		if ( target > 0 && info.name )
 		{
 			strncpy( text, info.name, sizeof( text ) );
