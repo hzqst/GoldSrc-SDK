@@ -45,6 +45,7 @@ public:
 
 	// Pops the stack
 	void Pop();
+	void Pop( T& value );
 
 	// Clears the stack, no deallocation
 	void Clear();
@@ -120,6 +121,12 @@ template <class T> void CUtlStack<T>::Pop()
 #endif
 	Element( m_Size - 1 ).~T();
 	--m_Size;
+}
+
+template <class T> void CUtlStack<T>::Pop( T& value )
+{
+	value = Top();
+	Pop();
 }
 
 template <class T> void CUtlStack<T>::Clear()

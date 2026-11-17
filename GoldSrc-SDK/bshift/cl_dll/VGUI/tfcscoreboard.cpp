@@ -1,5 +1,5 @@
 #include "tfcscoreboard.h"
-#include "IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "vgui/IScheme.h"
 #include "controls.h"
 #include "../../../engine/controls.h"
@@ -26,7 +26,7 @@ void TFCCClientScoreBoardDialog::InitScoreboardSections()
 
 bool TFCCClientScoreBoardDialog::GetPlayerScoreInfo( int playerIndex, KeyValues* data )
 {
-	VGuiLibraryPlayer_t player = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( playerIndex );
+	VGuiLibraryPlayer_t player = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( playerIndex );
 	data->SetInt( "deaths", player.deaths );
 	data->SetInt( "frags", player.frags );
 	data->SetInt( "ping", player.ping );

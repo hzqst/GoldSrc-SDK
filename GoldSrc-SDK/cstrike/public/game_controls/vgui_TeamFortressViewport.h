@@ -124,7 +124,7 @@ public:
 	const char* GetServerName() override;
 	void InputPlayerSpecial() override;
 	void OnTick() override;
-	int GetViewPortScheme() override;
+	vgui2::HScheme GetViewPortScheme() override;
 	vgui2::VPANEL GetViewPortPanel() override;
 	int GetAllowSpectators() override;
 	void OnLevelChange() override;

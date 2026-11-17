@@ -526,4 +526,4 @@ int DoDViewport::MsgFunc_PClass( const char*, int size, void* buffer )
 	return 1;
 }
 
-EXPOSE_SINGLE_INTERFACE( DoDViewport, IClientVGUI, "VClientVGUI001" );
+EXPOSE_SINGLE_INTERFACE( DoDViewport, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION );

@@ -9,7 +9,7 @@
 
 #include "TextEntry.h"
 #include "Button.h"
-#include "game_controls/iviewport.h"
+#include "game_controls/legacy_iviewport.h"
 
 #include <string.h>
 

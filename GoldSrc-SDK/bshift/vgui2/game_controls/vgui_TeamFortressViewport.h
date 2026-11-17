@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "VGUI/IViewPort.h"
-#include "VGUI/IClientVGUI.h"
-#include "VGUI/IViewPortMsgs.h"
+#include "game_controls/iviewport.h"
+#include "game_controls/iclientvgui.h"
+#include "game_controls/iviewportmsgs.h"
 #include "utlvector.h"
 
 #define MENU_TEAM			2

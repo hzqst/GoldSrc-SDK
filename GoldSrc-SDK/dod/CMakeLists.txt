@@ -114,6 +114,7 @@ goldsrc_add_module(doddll
 		dod/public
 		dod/public/vgui
 		dod/public/game_controls
+		public/game_controls
 		vgui2/controls
 		dod/vgui2/game_controls
 		dlls
@@ -307,6 +308,7 @@ goldsrc_add_module(dod_cdll
 		dod/public/vgui
 		dod/public/game_controls
 		vgui2/controls
+		public/game_controls
 		dod/vgui2/game_controls
 		dlls
 		cl_dll

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "Frame.h"
 
 class KeyValues;

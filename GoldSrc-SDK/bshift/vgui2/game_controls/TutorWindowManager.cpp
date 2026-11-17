@@ -1,7 +1,7 @@
 #include "TutorWindowManager.h"
 #include "TutorStateWindow.h"
 #include "TutorTextWindow.h"
-#include "../../cl_dll/VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "../../../engine/controls.h"
 #include "../../../vgui2/controls/controls.h"
 #include <vgui/ISurface.h>
@@ -137,7 +137,7 @@ void TutorWindowManager::InsertPlayerNames( wchar_t* string, int stringLength )
 		wchar_t* match = wcsstr( string, searchString );
 		if ( match )
 		{
-			VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( i );
+			VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( i );
 			if ( !playerInfo.name )
 				continue;
 			vgui2::localize()->ConvertANSIToUnicode( playerInfo.name, playerName, sizeof( playerName ) );

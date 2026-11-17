@@ -19,7 +19,7 @@
 #include "hud.h"
 #include "cl_util.h"
 #include "../../cl_dll/bench.h"
-#include "../public/game_controls/iviewport.h"
+#include "../public/game_controls/legacy_iviewport.h"
 #include "z_weather.h"
 
 extern cvar_t* sensitivity;

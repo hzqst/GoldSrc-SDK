@@ -11,7 +11,7 @@
 #include "controls.h"
 #include "../../../engine/controls.h"
 #include "../../../public/FileSystem.h"
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "igameuifuncs.h" // for key bindings
 #include <string.h>
 #include <wchar.h>

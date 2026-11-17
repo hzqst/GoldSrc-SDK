@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include "parsemsg.h"
 
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 
 DECLARE_MESSAGE( m_TextMessage, TextMsg );
 

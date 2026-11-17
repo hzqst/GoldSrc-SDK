@@ -54,7 +54,7 @@ ICSViewPort* gCSViewPortInterface;
 ICSViewPortMsgs* gCSViewPortMsgs;
 static CCreateCommandComboMenu g_CreateCommandMenu;
 
-EXPOSE_SINGLE_INTERFACE( CounterStrikeViewport, IClientVGUI, "VClientVGUI001" );
+EXPOSE_SINGLE_INTERFACE( CounterStrikeViewport, IClientVGUI, CLIENTVGUI_INTERFACE_VERSION );
 
 CCreateCommandComboMenu* CreateCommandCombo()
 {

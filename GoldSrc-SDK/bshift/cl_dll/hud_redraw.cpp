@@ -20,7 +20,7 @@
 #include "cl_util.h"
 #include "bench.h"
 
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 
 #define MAX_LOGO_FRAMES 56
 

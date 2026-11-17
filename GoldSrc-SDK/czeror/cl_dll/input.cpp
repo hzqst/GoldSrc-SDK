@@ -17,7 +17,7 @@ extern "C"
 #include "../../cl_dll/in_defs.h"
 #include <string.h>
 #include <ctype.h>
-#include "game_controls/iviewport.h"
+#include "game_controls/legacy_iviewport.h"
 #include "voice_status.h"
 #include "../../cl_dll/bench.h"
 

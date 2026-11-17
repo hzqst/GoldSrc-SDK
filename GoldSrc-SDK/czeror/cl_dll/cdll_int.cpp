@@ -24,7 +24,7 @@
 #include "../../engine/interface.h"
 #include "../../public/particleman.h"
 #include "../game_shared/voice_status.h"
-#include "../public/game_controls/iviewport.h"
+#include "../public/game_controls/legacy_iviewport.h"
 //#include "vgui_schememanager.h"
 
 extern "C"

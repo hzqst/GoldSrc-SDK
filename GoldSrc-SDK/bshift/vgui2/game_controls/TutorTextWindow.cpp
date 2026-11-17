@@ -3,7 +3,7 @@
 #include "../../../vgui2/controls/Label.h"
 #include "../../../vgui2/controls/BitmapImagePanel.h"
 #include "../../../vgui2/controls/controls.h"
-#include "../../cl_dll/VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include <vgui/ISurface.h>
 #include <vgui/IScheme.h>
 #include <stdio.h>

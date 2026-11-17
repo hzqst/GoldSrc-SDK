@@ -9,7 +9,7 @@
 #include "Button.h"
 #include "Label.h"
 #include "controls.h"
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "igameuifuncs.h" // for key bindings
 #include "../../../public/FileSystem.h"
 #include <stdio.h>
@@ -129,7 +129,7 @@ void CClassMenu::Update( int* validClasses, int )
 void CClassMenu::OnCommand( const char* command )
 {
 	if ( stricmp( command, "vguicancel" ) )
-		gViewPortInterface->GetClientDllInterface()->ClientCmd( command );
+		gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( command );
 	Close();
 	gViewPortInterface->HideBackGround();
 	vgui2::Frame::OnCommand( command );

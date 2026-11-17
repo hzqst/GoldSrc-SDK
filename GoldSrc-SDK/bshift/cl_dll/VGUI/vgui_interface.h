@@ -1,7 +1,7 @@
 #pragma once
 
-#include "IViewPort.h"
-#include "IViewPortMsgs.h"
+#include "game_controls/iviewport.h"
+#include "game_controls/iviewportmsgs.h"
 
 class CCreateCommandComboMenu;
 

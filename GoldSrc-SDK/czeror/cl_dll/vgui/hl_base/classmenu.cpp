@@ -11,7 +11,7 @@
 #include "Label.h"
 #include "Controls.h"
 #include "FileSystem.h"
-#include "game_controls/iviewport.h"
+#include "game_controls/legacy_iviewport.h"
 #include "hud.h"
 
 #include <stdio.h>

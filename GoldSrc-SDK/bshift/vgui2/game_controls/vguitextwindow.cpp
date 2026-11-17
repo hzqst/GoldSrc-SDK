@@ -8,7 +8,7 @@
 #include "vguitextwindow.h"
 #include "RichText.h"
 #include "Button.h"
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include <string.h>
 
 CVGUITextWindow::CVGUITextWindow( vgui2::Panel* parent ) : vgui2::Frame( parent, "VGUITextWindow", true, false )

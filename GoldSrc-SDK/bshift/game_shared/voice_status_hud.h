@@ -17,7 +17,7 @@
 #include <vgui/IScheme.h>
 #include "../../vgui2/controls/controls.h"
 
-#include "../cl_dll/VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 
 #include "voice_common.h"
 #include "cl_entity.h"

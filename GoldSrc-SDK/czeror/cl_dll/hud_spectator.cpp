@@ -10,7 +10,7 @@
 #include "cl_util.h"
 #include "cl_entity.h"
 #include "triangleapi.h"
-#include <game_controls/iviewport.h>
+#include <game_controls/legacy_iviewport.h>
 #include "hltv.h"
 
 #include "pm_shared.h"

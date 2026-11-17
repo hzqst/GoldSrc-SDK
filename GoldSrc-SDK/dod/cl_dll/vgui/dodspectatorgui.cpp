@@ -41,7 +41,7 @@ void CDoDSpectatorGUI::GetPlayerLabelText( int player, wchar_t* text, int textLe
 		player = g_iUser3;
 	if ( player > 0 )
 	{
-		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
+		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 		if ( !info.name )
 			return;
 		const int bufferSize = 2 * (int)strlen( info.name ) + 1;

@@ -35,7 +35,7 @@ int InIntermission()
 	return gHUD.m_iIntermission;
 }
 
-bool PipInsetOff()
+int PipInsetOff()
 {
 	return gHUD.m_Spectator.m_pip->value == 0;
 }

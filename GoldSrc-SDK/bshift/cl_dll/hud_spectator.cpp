@@ -10,7 +10,7 @@
 #include "cl_util.h"
 #include "cl_entity.h"
 #include "triangleapi.h"
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "player_info.h"
 #include "hltv.h"
 

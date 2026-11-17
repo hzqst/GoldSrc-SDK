@@ -46,7 +46,7 @@ void CCommandMenu::OnCommand( const char* command )
 	else if ( !strcmp( command, "SERVERINFO" ) )
 		gViewPortInterface->ShowVGUIMenu( 5 );
 	else
-		gViewPortInterface->GetClientDllInterface()->ClientCmd( command );
+		gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( command );
 	SetVisible( false );
 	m_pMenu->SetVisible( false );
 }

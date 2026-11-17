@@ -6,7 +6,7 @@
 //=============================================================================
 
 #include "SpectatorGUI.h"
-#include "../../cl_dll/VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include "../../cl_dll/VGUI/vgui_interface.h"
 #include "CreateCommandMenu.h"
 #include "../../../engine/igameuifuncs.h"
@@ -92,7 +92,7 @@ public:
 	void OnMousePressed( MouseCode code ) override
 	{
 		if ( code == MOUSE_LEFT )
-			gViewPortInterface->GetClientDllInterface()->ClientCmd( "spec_toggleinset\n" );
+			gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( "spec_toggleinset\n" );
 		else
 			Label::OnMousePressed( code );
 	}
@@ -184,7 +184,7 @@ void CBottomBar::CommandComboBox::OnCommand( const char* command )
 	if ( !_stricmp( command, "ButtonClicked" ) )
 		ComboBox::OnCommand( command );
 	else
-		gViewPortInterface->GetClientDllInterface()->ClientCmd( command );
+		gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( command );
 }
 
 void CBottomBar::CommandComboBox::SetMenuCvarChecks( Menu* menu )
@@ -260,7 +260,7 @@ void CBottomBar::OnKeyCodePressed( KeyCode code )
 	if ( m_iChooseTeamKey != KEY_NONE && m_iChooseTeamKey == code )
 	{
 		gViewPortInterface->HideSpectatorGUI();
-		gViewPortInterface->GetClientDllInterface()->ClientCmd(
+		gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd(
 			m_bChooseTeamCommand ? "chooseteam\n" : "changeteam\n" );
 	}
 	else
@@ -614,7 +614,7 @@ void CSpectatorGUI::GetPlayerLabelText( int player, wchar_t* text, int textLengt
 {
 	wcscpy( text, L"Unable to find #Spec_PlayerItem*" );
 	wchar_t playerName[64] = L"";
-	VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
+	VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 	if ( info.name )
 	{
 		int bufsize = 2 * (int)strlen( info.name );
@@ -669,7 +669,7 @@ void CSpectatorGUI::UpdateSpectatorPlayerList()
 	int itemID = 0;
 	for ( int player = 1; player <= gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); ++player )
 	{
-		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( player );
+		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 		if ( !info.name || info.thisplayer || info.dead || !CanSpectateTeam( info.teamnumber ) )
 			continue;
 

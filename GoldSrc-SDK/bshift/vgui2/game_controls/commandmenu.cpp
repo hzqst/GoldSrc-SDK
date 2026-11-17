@@ -10,7 +10,7 @@
 #include "Menu.h"
 #include "controls.h"
 #include "vgui/ISurface.h"
-#include "VGUI/IViewPort.h"
+#include "game_controls/iviewport.h"
 #include <string.h>
 
 CCommandMenu::CCommandMenu( vgui2::Panel* parent, const char* filename ) : vgui2::Panel( parent, filename )
@@ -46,7 +46,7 @@ void CCommandMenu::OnCommand( const char* command )
 	else if ( !strcmp( command, "SERVERINFO" ) )
 		gViewPortInterface->ShowVGUIMenu( 5 );
 	else
-		gViewPortInterface->GetClientDllInterface()->ClientCmd( command );
+		gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( command );
 	SetMenuVisible( false );
 }
 

@@ -82,7 +82,7 @@ void CTeamMenu::OnTeamButton( int team )
 		DuckMessage( "#Spec_Duck" );
 		gViewPortInterface->HideBackGround();
 	}
-	gViewPortInterface->GetClientDllInterface()->ClientCmd( command );
+	gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( command );
 	SetVisible( false );
 	OnClose();
 }

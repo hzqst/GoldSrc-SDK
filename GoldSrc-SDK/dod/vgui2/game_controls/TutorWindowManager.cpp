@@ -146,7 +146,7 @@ void TutorWindowManager::InsertPlayerNames( wchar_t* string, int stringLength )
 		wchar_t* match = wcsstr( string, searchString );
 		if ( match )
 		{
-			VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->GetPlayerInfo( i );
+			VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( i );
 			vgui2::localize()->ConvertANSIToUnicode( playerInfo.name, playerName, sizeof( playerName ) );
 			playerName[63] = 0;
 			size_t prefix = match - string;
