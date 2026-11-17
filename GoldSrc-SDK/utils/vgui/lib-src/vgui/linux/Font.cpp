@@ -164,15 +164,7 @@ void FontPlat_Bitmap::getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, i
 	int destRow;
 	unsigned char* pSrcPos;
 
-	chIndex = 256;
-	if ( ch <= 255 )
-	{
-		chIndex = 0;
-		if ( ch >= 0 )
-		{
-			chIndex = ch;
-		}
-	}
+	chIndex = VFont_NormalizeGlyphIndex( ch );
 
 	if ( m_FontData.m_BitmapCharHeight <= 0 )
 	{
@@ -220,16 +212,9 @@ void FontPlat_Bitmap::getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, i
 
 void FontPlat_Bitmap::getCharABCwide( int ch, int& a, int& b, int& c )
 {
-	if ( ch < 0 )
-	{
-		ch = 0;
-	}
+	ch = VFont_NormalizeGlyphIndex( ch );
 	c = 0;
 	a = 0;
-	if ( ch > 255 )
-	{
-		ch = 255;
-	}
 	b = m_FontData.m_CharWidths[ch] + 1;
 }
 

@@ -5,7 +5,6 @@
 #include "vfontdata.h"
 #include "vgui_win32.h"
 
-#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,25 +19,6 @@ Dar<BaseFontPlat*> fontPlatforms;
 int nextFontId = VGUI_FIRST_FONT_ID;
 
 static_assert( GLYPH_COUNT == VFONT_GLYPH_COUNT, "System and bitmap fonts share one glyph range" );
-
-// Glyph lookups are single-byte: map sign-extended chars (-128..-1) back to 0x80..0xFF,
-// then clamp anything else into the valid 0..GLYPH_COUNT-1 range.
-int NormalizeGlyphIndex( int ch )
-{
-	if ( ch < 0 && ch >= CHAR_MIN )
-	{
-		ch = (unsigned char)ch;
-	}
-	if ( ch < 0 )
-	{
-		return 0;
-	}
-	if ( ch >= GLYPH_COUNT )
-	{
-		return GLYPH_COUNT - 1;
-	}
-	return ch;
-}
 
 }
 
@@ -98,7 +78,7 @@ public:
 
 	virtual void getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, uchar* rgba ) override
 	{
-		ch = NormalizeGlyphIndex( ch );
+		ch = VFont_NormalizeGlyphIndex( ch );
 		SelectObject( _dc, _font );
 		SetBkColor( _dc, RGB( 0, 0, 0 ) );
 		SetTextColor( _dc, RGB( 255, 255, 255 ) );
@@ -136,7 +116,7 @@ public:
 
 	virtual void getCharABCwide( int ch, int& a, int& b, int& c ) override
 	{
-		ch = NormalizeGlyphIndex( ch );
+		ch = VFont_NormalizeGlyphIndex( ch );
 		a = _abc[ch].abcA < 0 ? 0 : _abc[ch].abcA;
 		b = (int)_abc[ch].abcB;
 		c = _abc[ch].abcC;
@@ -204,7 +184,7 @@ public:
 
 	virtual void getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, uchar* rgba ) override
 	{
-		ch = NormalizeGlyphIndex( ch );
+		ch = VFont_NormalizeGlyphIndex( ch );
 		for ( int y = 0; y < _data.m_BitmapCharHeight; ++y )
 		{
 			for ( int x = 0; x < _data.m_BitmapCharWidth; ++x )
@@ -225,7 +205,7 @@ public:
 
 	virtual void getCharABCwide( int ch, int& a, int& b, int& c ) override
 	{
-		ch = NormalizeGlyphIndex( ch );
+		ch = VFont_NormalizeGlyphIndex( ch );
 		a = c = 0;
 		b = _data.m_CharWidths[ch] + 1;
 	}

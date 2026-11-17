@@ -6,7 +6,25 @@
 #include "../../vgui2/controls/controls.h"
 #include "../../vgui2/vgui_surfacelib/FontManager.h"
 
+#include <climits>
 #include <cstring>
+
+static const int BITMAP_GLYPH_COUNT = 256;
+static_assert( sizeof( VFontData::m_CharWidths ) / sizeof( int ) == BITMAP_GLYPH_COUNT, "One width per bitmap glyph" );
+
+// Glyph lookups are single-byte: map sign-extended chars (-128..-1) back to 0x80..0xFF,
+// then clamp anything else into the valid 0..BITMAP_GLYPH_COUNT-1 range.
+static int NormalizeGlyphIndex( int ch )
+{
+	if ( ch < 0 && ch >= CHAR_MIN )
+		ch = (unsigned char)ch;
+
+	if ( ch < 0 )
+		return 0;
+	if ( ch >= BITMAP_GLYPH_COUNT )
+		return BITMAP_GLYPH_COUNT - 1;
+	return ch;
+}
 
 #pragma pack( push, 1 )
 struct TGAFileHeader
@@ -181,13 +199,7 @@ bool FontPlat_Bitmap::equals( const char* name, int, int, float, int, bool, bool
 
 void FontPlat_Bitmap::getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char* rgba )
 {
-	int chIndex;
-	if ( ch > 255 )
-		chIndex = 256;
-	else if ( ch < 0 )
-		chIndex = 0;
-	else
-		chIndex = ch;
+	const int chIndex = NormalizeGlyphIndex( ch );
 
 	for ( int y = 0; y < m_FontData.m_BitmapCharHeight; y++ )
 	{
@@ -210,10 +222,7 @@ void FontPlat_Bitmap::getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, i
 
 void FontPlat_Bitmap::GetCharABCwide( int ch, int& a, int& b, int& c )
 {
-	if ( ch < 0 )
-		ch = 0;
-	else if ( ch > 255 )
-		ch = 255;
+	ch = NormalizeGlyphIndex( ch );
 
 	c = 0;
 	a = 0;
