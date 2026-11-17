@@ -292,12 +292,12 @@ goldsrc_add_module(dod_cdll
 		dod/vgui2/game_controls/CreateCommandMenu.cpp
 		dod/vgui2/game_controls/SpectatorGUI.cpp
 		dod/vgui2/game_controls/teammenu.cpp
-		dod/vgui2/game_controls/TutorStateWindow.cpp
-		dod/vgui2/game_controls/TutorTextWindow.cpp
+		vgui2/game_controls/TutorStateWindow.cpp
+		vgui2/game_controls/TutorTextWindow.cpp
 		dod/vgui2/game_controls/TutorWindowManager.cpp
 		dod/vgui2/game_controls/vgui_TeamFortressViewport.cpp
 		dod/vgui2/game_controls/vgui_TeamFortressViewport_msgs.cpp
-		dod/vgui2/game_controls/vguitextwindow.cpp
+		vgui2/game_controls/vguitextwindow.cpp
 	INCLUDES
 		dod/dlls
 		dod/cl_dll

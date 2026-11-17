@@ -1,14 +1,14 @@
 //========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================
 
 #include "vguitextwindow.h"
-#include "RichText.h"
-#include "Button.h"
-#include "game_controls/iviewport.h"
+#include "../controls/RichText.h"
+#include "../controls/Button.h"
+#include "iviewport.h"
 #include <string.h>
 
 CVGUITextWindow::CVGUITextWindow( vgui2::Panel* parent ) : vgui2::Frame( parent, "VGUITextWindow", true, false )
@@ -33,7 +33,7 @@ CVGUITextWindow::CVGUITextWindow( vgui2::Panel* parent ) : vgui2::Frame( parent,
 
 void CVGUITextWindow::OnCommand( const char* command )
 {
-	if ( !stricmp( command, "okay" ) )
+	if ( !_stricmp( command, "okay" ) )
 	{
 		Close();
 		gViewPortInterface->HideBackGround();
@@ -44,20 +44,20 @@ void CVGUITextWindow::OnCommand( const char* command )
 //-----------------------------------------------------------------------------
 // Purpose: shows the MOTD
 //-----------------------------------------------------------------------------
-void CVGUITextWindow::Activate( const char* title, const char* msg )
+void CVGUITextWindow::Activate( const char* title, const char* message )
 {
 	vgui2::Frame::Activate();
 	SetTitle( title, false );
-	m_pMessage->SetText( msg );
+	m_pMessage->SetText( message );
 	m_pMessage->GotoTextStart();
 	SetVisible( true );
 }
 
-void CVGUITextWindow::Activate( const wchar_t* title, const wchar_t* msg )
+void CVGUITextWindow::Activate( const wchar_t* title, const wchar_t* message )
 {
 	vgui2::Frame::Activate();
 	SetTitle( title, false );
-	m_pMessage->SetText( msg );
+	m_pMessage->SetText( message );
 	m_pMessage->GotoTextStart();
 	SetVisible( true );
 }

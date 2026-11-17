@@ -1,7 +1,8 @@
 #include "TutorStateWindow.h"
-#include "MessageBox.h"
-#include "controls.h"
-#include <vgui/ISurface.h>
+#include "../controls/MessageBox.h"
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
+#include "vgui/ISurface.h"
 
 using namespace vgui2;
 
@@ -17,7 +18,6 @@ CTutorStateWindow::~CTutorStateWindow()
 		int wide = 0, tall = 0;
 		m_messageBox->GetSize( wide, tall );
 		delete m_messageBox;
-		m_messageBox = NULL;
 	}
 }
 
@@ -74,6 +74,7 @@ void CTutorStateWindow::UpdatePosition()
 	ComputeWindowPos( screenwidth, screenheight, xpos, ypos );
 	int wide = 0, tall = 0;
 	m_messageBox->GetSize( wide, tall );
+	x = y = 0;
 	m_messageBox->GetPos( x, y );
 	if ( x != xpos || y != ypos )
 		m_messageBox->SetPos( xpos, ypos );

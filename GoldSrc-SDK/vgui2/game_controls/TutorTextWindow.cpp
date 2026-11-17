@@ -1,14 +1,27 @@
 #include "TutorTextWindow.h"
-#include "../../../vgui2/controls/Frame.h"
-#include "../../../vgui2/controls/Label.h"
-#include "../../../vgui2/controls/BitmapImagePanel.h"
-#include "../../../vgui2/controls/controls.h"
-#include "game_controls/iviewport.h"
+#include "Frame.h"
+#include "Label.h"
+#include "BitmapImagePanel.h"
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
+#include "iviewport.h"
 #include <vgui/ISurface.h>
 #include <vgui/IScheme.h>
+#include <vgui/IVGui.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 using namespace vgui2;
+
+void DebugLog( const char* format, ... )
+{
+	char message[512];
+	va_list arguments;
+	va_start( arguments, format );
+	vsnprintf( message, sizeof( message ), format, arguments );
+	va_end( arguments );
+	ivgui()->DPrintf( "%s", message );
+}
 
 class CTutorMessageBox : public Frame
 {
