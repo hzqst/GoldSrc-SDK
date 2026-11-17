@@ -70,6 +70,11 @@ static void CountedFree(void* memory)
 #define _strdup CountedStrdup
 #define free CountedFree
 
+// VGUI_Dar.h forward-declares vgui::Panel / vgui::SurfaceBase on Windows, so the
+// stubs live in namespace vgui like the production classes.
+namespace vgui
+{
+
 class App
 {
 public:
@@ -88,6 +93,8 @@ public:
 private:
  Dar<char*> _modeInfoDar;
 };
+
+}
 '''
 
 TESTS = r'''
@@ -195,7 +202,8 @@ def main():
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)
         compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        flags = ['-std=c++17', '-g', f'-I{VGUI / "include"}']
+        # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
+        flags = ['-std=c++17', '-g', '-DVGUI_EXPORTS', f'-I{VGUI / "include"}']
         if supports_asan(compiler, folder):
             flags.append('-fsanitize=address')
         subprocess.run(compiler + flags + [str(source_file), '-o', str(executable)], check=True)
