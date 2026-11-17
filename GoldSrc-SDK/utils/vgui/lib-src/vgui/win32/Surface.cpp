@@ -204,6 +204,7 @@ bool Surface::createPlat()
 	_plat->clip = CreateRectRgn( 0, 0, initialClipSize, initialClipSize );
 	_plat->drawDC = CreateCompatibleDC( NULL );
 	_plat->windowDC = GetDC( _plat->window );
+	_plat->textureDC = NULL;
 	_plat->bitmap = NULL;
 	_plat->bitmapSize[0] = 0;
 	_plat->bitmapSize[1] = 0;
@@ -222,18 +223,34 @@ bool Surface::recreateContext()
 		|| wide < _plat->bitmapSize[0] - 2 * BITMAP_SPARE_PIXELS
 		|| tall < _plat->bitmapSize[1] - 2 * BITMAP_SPARE_PIXELS )
 	{
+		const int bitmapWide = wide + BITMAP_SPARE_PIXELS;
+		const int bitmapTall = tall + BITMAP_SPARE_PIXELS;
+		HBITMAP bitmap = CreateCompatibleBitmap( _plat->windowDC, bitmapWide, bitmapTall );
+		if ( bitmap == NULL )
+		{
+			// Keep the old backing bitmap and size; the next resize retries.
+			return false;
+		}
+		const HGDIOBJ previous = SelectObject( _plat->drawDC, bitmap );
+		if ( previous == NULL || previous == HGDI_ERROR )
+		{
+			DeleteObject( bitmap );
+			return false;
+		}
+		// Selecting the new bitmap deselected the old one, so it can be deleted now.
 		if ( _plat->bitmap != NULL )
 		{
 			DeleteObject( _plat->bitmap );
 		}
-		_plat->bitmap = CreateCompatibleBitmap( _plat->windowDC,
-			wide + BITMAP_SPARE_PIXELS, tall + BITMAP_SPARE_PIXELS );
-		_plat->bitmapSize[0] = wide + BITMAP_SPARE_PIXELS;
-		_plat->bitmapSize[1] = tall + BITMAP_SPARE_PIXELS;
-		SelectObject( _plat->drawDC, _plat->bitmap );
+		_plat->bitmap = bitmap;
+		_plat->bitmapSize[0] = bitmapWide;
+		_plat->bitmapSize[1] = bitmapTall;
+	}
+	if ( _plat->textureDC == NULL )
+	{
 		_plat->textureDC = CreateCompatibleDC( _plat->drawDC );
 	}
-	return true;
+	return _plat->textureDC != NULL;
 }
 
 void Surface::applyChanges()
