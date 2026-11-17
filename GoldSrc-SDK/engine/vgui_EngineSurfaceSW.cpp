@@ -149,7 +149,7 @@ void EngineSurfaceTextures::FreeTextures()
 		while ( texture )
 		{
 			vgui_texture_t* next = texture->next;
-			delete texture->prgba;
+			delete[] texture->prgba;
 			delete texture;
 			texture = next;
 		}
@@ -186,7 +186,7 @@ void EngineSurfaceTextures::Remove( int id )
 		if ( texture->id == id )
 		{
 			*link = texture->next;
-			delete texture->prgba;
+			delete[] texture->prgba;
 			delete texture;
 			return;
 		}
