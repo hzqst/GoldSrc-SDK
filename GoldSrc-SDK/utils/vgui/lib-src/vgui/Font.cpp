@@ -24,7 +24,7 @@ void Font::getTextSize( const char* text, int& wide, int& tall )
 			int a;
 			int b;
 			int c;
-			getCharABCwide( *text, a, b, c );
+			getCharABCwide( (unsigned char)*text, a, b, c );
 			lineWide += a + b + c;
 			if ( lineWide > wide )
 			{
