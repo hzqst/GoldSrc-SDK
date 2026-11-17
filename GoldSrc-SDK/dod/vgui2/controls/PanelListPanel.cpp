@@ -191,6 +191,12 @@ void PanelListPanel::MoveScrollBarToTop()
 //-----------------------------------------------------------------------------
 void PanelListPanel::RemoveAll()
 {
+	// the caller owns the item panels, only free the item records
+	for ( int i = m_DataItems.Head(); i != m_DataItems.InvalidIndex(); i = m_DataItems.Next( i ) )
+	{
+		delete m_DataItems[i];
+	}
+
 	m_DataItems.RemoveAll();
 	m_SortedItems.RemoveAll();
 
