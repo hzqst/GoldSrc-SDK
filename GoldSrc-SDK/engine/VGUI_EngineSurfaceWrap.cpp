@@ -44,6 +44,9 @@ constexpr int FONT_TEXTURE_SIZE = 512;
 constexpr int FONT_TEXTURE_BYTES = FONT_TEXTURE_SIZE * FONT_TEXTURE_SIZE * 4;
 constexpr float FONT_TEXTURE_COORD_SCALE = 0.001953125f;
 constexpr int FONT_PAGE_LIMIT = 8;
+constexpr int FONT_GLYPH_COUNT = 256;
+// pageForChar value for glyphs that were never packed into a page; drawPrintText skips them.
+constexpr int FONT_PAGE_UNPACKED = -1;
 constexpr int CURSOR_SLOT_COUNT = 20;
 
 static_assert( sizeof( FontInfoVGUI ) == 0x242C, "FontInfoVGUI" );
@@ -78,6 +81,15 @@ static FontInfoVGUI* staticFontInfoVGUI = nullptr;
 static vgui::Dar<FontInfoVGUI*> staticFontInfoVGUIDar;
 static int staticContextCount = 0;
 static unsigned char staticRGBA[FONT_TEXTURE_BYTES];
+
+static void FreeFontInfos()
+{
+	for ( int index = 0; index < staticFontInfoVGUIDar.getCount(); ++index )
+		delete staticFontInfoVGUIDar[index];
+	staticFontInfoVGUIDar.setCount( 0 );
+	staticFontInfoVGUI = nullptr;
+}
+
 static SDL_Cursor* staticDefaultCursor[CURSOR_SLOT_COUNT];
 static SDL_Cursor* staticCurrentCursor = nullptr;
 
@@ -149,8 +161,7 @@ EngineSurfaceWrap::EngineSurfaceWrap( vgui::Panel* embeddedPanel, IEngineSurface
 	  _cursorLocked( false )
 {
 	staticFont = nullptr;
-	staticFontInfoVGUI = nullptr;
-	staticFontInfoVGUIDar.setCount( 0 );
+	FreeFontInfos();
 	++staticContextCount;
 
 	vgui::FileInputStream* stream = new vgui::FileInputStream( "valve/gfx/vgui/mouse.tga", false );
@@ -186,6 +197,7 @@ EngineSurfaceWrap::EngineSurfaceWrap( vgui::Panel* embeddedPanel, IEngineSurface
 EngineSurfaceWrap::~EngineSurfaceWrap()
 {
 	::operator delete( _mouseBitmap );
+	FreeFontInfos();
 	for ( int index = 0; index < CURSOR_SLOT_COUNT; ++index )
 	{
 		if ( staticDefaultCursor[index] != nullptr )
@@ -289,14 +301,8 @@ void EngineSurfaceWrap::drawSetTextFont( vgui::Font* font )
 	}
 	else
 	{
-		FontInfoVGUI* created = static_cast<FontInfoVGUI*>( ::operator new( sizeof( FontInfoVGUI ) ) );
-		created->id = 0;
-		created->pageCount = 0;
-		created->bindIndex[0] = 0;
-		created->bindIndex[1] = 0;
-		created->bindIndex[2] = 0;
-		created->bindIndex[3] = 0;
-		std::memset( created->pageForChar, 0, sizeof( created->pageForChar ) );
+		// Value-initialize so every bindIndex slot starts as "no texture yet".
+		FontInfoVGUI* created = new FontInfoVGUI();
 		created->contextCount = -1;
 		staticFontInfoVGUI = created;
 		created->id = staticFont->getId();
@@ -304,12 +310,15 @@ void EngineSurfaceWrap::drawSetTextFont( vgui::Font* font )
 	}
 
 	staticFontInfoVGUI->contextCount = staticContextCount;
+	for ( int character = 0; character < FONT_GLYPH_COUNT; ++character )
+		staticFontInfoVGUI->pageForChar[character] = FONT_PAGE_UNPACKED;
+	std::memset( staticFontInfoVGUI->texCoord, 0, sizeof( staticFontInfoVGUI->texCoord ) );
 	std::memset( staticRGBA, 0, sizeof( staticRGBA ) );
 
 	int page = 0;
 	int penX = 0;
 	int penY = 0;
-	for ( int character = 0; character < 256; )
+	for ( int character = 0; character < FONT_GLYPH_COUNT; )
 	{
 		int abcA = 0;
 		int abcB = 0;
@@ -367,13 +376,18 @@ void EngineSurfaceWrap::drawSetTextFont( vgui::Font* font )
 		++character;
 	}
 
-	int* textureSlot = reinterpret_cast<int*>(
-		reinterpret_cast<unsigned char*>( staticFontInfoVGUI ) + offsetof( FontInfoVGUI, bindIndex ) + page * sizeof( int ) );
-	int texture = *textureSlot;
+	// Every page is already uploaded when the limit stopped packing; the glyphs left over stay unpacked.
+	if ( page == FONT_PAGE_LIMIT )
+	{
+		staticFontInfoVGUI->pageCount = FONT_PAGE_LIMIT;
+		return;
+	}
+
+	int texture = staticFontInfoVGUI->bindIndex[page];
 	if ( texture == 0 )
 	{
 		texture = createNewTextureID();
-		*textureSlot = texture;
+		staticFontInfoVGUI->bindIndex[page] = texture;
 	}
 	drawSetTextureRGBA( texture, reinterpret_cast<const char*>( staticRGBA ), FONT_TEXTURE_SIZE, FONT_TEXTURE_SIZE );
 	staticFontInfoVGUI->pageCount = page + 1;
@@ -416,9 +430,13 @@ void EngineSurfaceWrap::drawPrintText( const char* text, int textLen )
 #else
 			const int wide = staticFont->getWide();
 #endif
-			drawSetTexture( staticFontInfoVGUI->bindIndex[staticFontInfoVGUI->pageForChar[character]] );
-			const float* coord = staticFontInfoVGUI->texCoord[character];
-			drawPrintChar( x, y, wide, tall, coord[0], coord[1], coord[2], coord[3] );
+			const int page = staticFontInfoVGUI->pageForChar[character];
+			if ( page != FONT_PAGE_UNPACKED )
+			{
+				drawSetTexture( staticFontInfoVGUI->bindIndex[page] );
+				const float* coord = staticFontInfoVGUI->texCoord[character];
+				drawPrintChar( x, y, wide, tall, coord[0], coord[1], coord[2], coord[3] );
+			}
 			++cursor;
 			penX = abcC + x + wide;
 			x = penX;
