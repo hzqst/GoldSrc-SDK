@@ -144,11 +144,15 @@ void ProgressBar::ApplySettings( KeyValues* inResourceData )
 	_progress = inResourceData->GetFloat( "progress", 0.0f );
 
 	const char* dialogVar = inResourceData->GetString( "variable", "" );
+	char* newDialogVar = NULL;
 	if ( dialogVar && dialogVar[0] )
 	{
-		m_pszDialogVar = new char[strlen( dialogVar ) + 1];
-		strcpy( m_pszDialogVar, dialogVar );
+		newDialogVar = new char[strlen( dialogVar ) + 1];
+		strcpy( newDialogVar, dialogVar );
 	}
+
+	delete[] m_pszDialogVar;
+	m_pszDialogVar = newDialogVar;
 
 	Panel::ApplySettings( inResourceData );
 }
