@@ -108,6 +108,11 @@ void InitializeInputTables()
 LRESULT CALLBACK SurfaceWindowProc( HWND window, UINT message, WPARAM wParam, LPARAM lParam )
 {
 	Surface* surface = (Surface*)GetWindowLongPtrA( window, GWLP_USERDATA );
+	if ( surface == NULL )
+	{
+		// Not attached yet, or the Surface is being destroyed.
+		return DefWindowProcA( window, message, wParam, lParam );
+	}
 	switch ( message )
 	{
 	case WM_SETFOCUS:
@@ -184,6 +189,27 @@ LRESULT CALLBACK SurfaceWindowProc( HWND window, UINT message, WPARAM wParam, LP
 
 Surface::~Surface()
 {
+	if ( _plat->isFullscreen )
+	{
+		ChangeDisplaySettingsA( NULL, 0 );
+	}
+	// Messages sent while the window is destroyed must not reach this Surface.
+	SetWindowLongPtrA( _plat->window, GWLP_USERDATA, 0 );
+	// Deleting the DCs deselects the backing bitmap and fonts, so the bitmap can be deleted after.
+	if ( _plat->textureDC != NULL )
+	{
+		DeleteDC( _plat->textureDC );
+	}
+	DeleteDC( _plat->drawDC );
+	if ( _plat->bitmap != NULL )
+	{
+		DeleteObject( _plat->bitmap );
+	}
+	DeleteObject( _plat->clip );
+	ReleaseDC( _plat->window, _plat->windowDC );
+	DestroyWindow( _plat->window );
+	delete _plat;
+	_plat = NULL;
 }
 
 bool Surface::createPlat()
