@@ -97,18 +97,12 @@ void CounterStrikeViewport::Initialize( CreateInterfaceFn* factories, int count 
 
 void CounterStrikeViewport::Start()
 {
+	if ( m_bInitialized )
+		return;
 	// construct our panels
-	m_pClassMenu = NULL;
-	m_pTeamMenu = new CCSTeamMenu( NULL );
+	m_pCSClassMenu = NULL;
 	m_pBuyMenu = NULL; // buy menu needs money info, so create it at the last possible moment
 	SetClientDllInterface( &clientInterface );
-	TeamFortressViewport::Start();
-	m_pCSBackGround = new CCSBackGroundPanel( NULL );
-	m_pBackGround = m_pCSBackGround;
-	m_pPrivateSpectatorGUI = new CCSSpectatorGUI( NULL );
-	m_pSpectatorGUI = m_pPrivateSpectatorGUI; // override spectator interface so the viewport uses our spectatorUI
-	m_pPrivateCSClientScoreBoard = new CCSClientScoreBoardDialog( NULL );
-	m_pClientScoreBoard = m_pPrivateCSClientScoreBoard;
 	m_pCareerRoundEndMenu = NULL;
 	m_pCareerMatchEndMenu = NULL;
 	m_pCreditsMenu = NULL;
@@ -116,15 +110,45 @@ void CounterStrikeViewport::Start()
 	m_pBuyPresetEditMenu = NULL;
 	m_pProgressBar = NULL;
 	m_bCenteredPersistentWindows = false;
+	TeamFortressViewport::Start();
 	if ( IEngineStudio.IsHardware )
 	{
-		m_pTutorWindowManager->m_hardwareMode = IEngineStudio.IsHardware();
+		m_pTutorWindowManager->SetHardwareMode( IEngineStudio.IsHardware() );
 	}
 	if ( !SteamAPI_Init() )
 	{
 		gEngfuncs.Con_DPrintf( "Unable to load steam library.\n" );
 		exit( -1 );
 	}
+}
+
+TeamFortressViewport::CBackGroundPanel* CounterStrikeViewport::CreateBackgroundPanel()
+{
+	m_pCSBackGround = new CCSBackGroundPanel( NULL );
+	return m_pCSBackGround;
+}
+
+CClientScoreBoardDialog* CounterStrikeViewport::CreateScoreBoard()
+{
+	m_pPrivateCSClientScoreBoard = new CCSClientScoreBoardDialog( NULL );
+	return m_pPrivateCSClientScoreBoard;
+}
+
+CSpectatorGUI* CounterStrikeViewport::CreateSpectatorGUI()
+{
+	m_pCSSpectatorGUI = new CCSSpectatorGUI( NULL );
+	return m_pCSSpectatorGUI;
+}
+
+CTeamMenu* CounterStrikeViewport::CreateTeamMenu()
+{
+	m_pCSTeamMenu = new CCSTeamMenu( NULL );
+	return m_pCSTeamMenu;
+}
+
+CClassMenu* CounterStrikeViewport::CreateClassMenu()
+{
+	return NULL; // CS creates its class menu lazily.
 }
 
 void CounterStrikeViewport::Shutdown()
@@ -135,11 +159,11 @@ void CounterStrikeViewport::SetParent( vgui2::VPANEL parent )
 {
 	TeamFortressViewport::SetParent( parent );
 
-	if ( m_pTeamMenu )
-		m_pTeamMenu->SetParent( parent );
+	if ( m_pCSTeamMenu )
+		m_pCSTeamMenu->SetParent( parent );
 	m_pCSBackGround->SetParent( parent );
-	if ( m_pClassMenu )
-		m_pClassMenu->SetParent( parent );
+	if ( m_pCSClassMenu )
+		m_pCSClassMenu->SetParent( parent );
 	if ( m_pPrivateCSClientScoreBoard )
 		m_pPrivateCSClientScoreBoard->SetParent( parent );
 	if ( m_pCareerRoundEndMenu )
@@ -169,7 +193,7 @@ void CounterStrikeViewport::OnLevelChange()
 	CCareerBaseBox::CloseOpenBoxes( true );
 	if ( IEngineStudio.IsHardware )
 	{
-		m_pTutorWindowManager->m_hardwareMode = IEngineStudio.IsHardware();
+		m_pTutorWindowManager->SetHardwareMode( IEngineStudio.IsHardware() );
 	}
 	UpdateScheme();
 	GetAllPlayersInfo();
@@ -182,9 +206,9 @@ void CounterStrikeViewport::HideAllVGUIMenu()
 {
 	TeamFortressViewport::HideAllVGUIMenu();
 
-	if ( m_pClassMenu )
-		m_pClassMenu->SetVisible( false );
-	m_pTeamMenu->SetVisible( false );
+	if ( m_pCSClassMenu )
+		m_pCSClassMenu->SetVisible( false );
+	m_pCSTeamMenu->SetVisible( false );
 	if ( m_pBuyMenu )
 		m_pBuyMenu->SetVisible( false );
 	if ( m_pCareerRoundEndMenu )
@@ -206,13 +230,13 @@ void CounterStrikeViewport::HideVGUIMenu( int menu )
 	switch ( menu )
 	{
 	case MENU_TEAM:
-		if ( m_pTeamMenu )
-			m_pTeamMenu->SetVisible( false );
+		if ( m_pCSTeamMenu )
+			m_pCSTeamMenu->SetVisible( false );
 		break;
 	case 26:
 	case 27:
-		if ( m_pClassMenu )
-			m_pClassMenu->SetVisible( false );
+		if ( m_pCSClassMenu )
+			m_pCSClassMenu->SetVisible( false );
 		break;
 	case 28:
 	case 34:
@@ -252,10 +276,10 @@ bool CounterStrikeViewport::IsVGUIMenuActive( int menu )
 	switch ( menu )
 	{
 	case MENU_TEAM:
-		return m_pTeamMenu && ( m_pTeamMenu->IsVisible() || m_pClientScoreBoard->IsVisible() );
+		return m_pCSTeamMenu && ( m_pCSTeamMenu->IsVisible() || m_pClientScoreBoard->IsVisible() );
 	case 26:
 	case 27:
-		return m_pClassMenu && ( m_pClassMenu->IsVisible() || m_pClientScoreBoard->IsVisible() );
+		return m_pCSClassMenu && ( m_pCSClassMenu->IsVisible() || m_pClientScoreBoard->IsVisible() );
 	case 28:
 	case 34: panel = m_pBuyMenu; break;
 	case 35: panel = m_pCareerRoundEndMenu; break;
@@ -280,14 +304,14 @@ void CounterStrikeViewport::UpdateScheme()
 	m_pCSBackGround->SetScheme( scheme );
 	m_pCSBackGround->InvalidateLayout( false, true );
 
-	if ( m_pClassMenu )
+	if ( m_pCSClassMenu )
 	{
-		m_pClassMenu->SetScheme( scheme );
-		m_pClassMenu->InvalidateLayout( false, true );
+		m_pCSClassMenu->SetScheme( scheme );
+		m_pCSClassMenu->InvalidateLayout( false, true );
 	}
 
-	m_pTeamMenu->SetScheme( scheme );
-	m_pTeamMenu->InvalidateLayout( false, true );
+	m_pCSTeamMenu->SetScheme( scheme );
+	m_pCSTeamMenu->InvalidateLayout( false, true );
 
 	if ( m_pBuyMenu )
 	{
@@ -379,9 +403,9 @@ int CounterStrikeViewport::MsgFunc_ScoreInfo( const char*, int size, void* buffe
 		if ( g_PlayerExtraInfo[player].teamnumber < 0 )
 			g_PlayerExtraInfo[player].teamnumber = 0;
 
-		if ( m_pTeamMenu )
+		if ( m_pCSTeamMenu )
 		{
-			m_pTeamMenu->Update( GetMapName(), m_iAllowSpectators != 0,
+			m_pCSTeamMenu->Update( GetMapName(), m_iAllowSpectators != 0,
 				(const char**)m_sTeamNames, m_iNumTeams );
 		}
 		GetAllPlayersInfo();
@@ -556,9 +580,9 @@ void CounterStrikeViewport::DisplayVGUIMenu( int menu )
 	switch ( menu )
 	{
 	case MENU_TEAM:
-		m_pTeamMenu->Update( GetMapName(), m_iAllowSpectators != 0,
+		m_pCSTeamMenu->Update( GetMapName(), m_iAllowSpectators != 0,
 			(const char**)m_sTeamNames, m_iNumTeams );
-		m_pTeamMenu->Activate();
+		m_pCSTeamMenu->Activate();
 		break;
 	case MENU_INTRO:
 		m_pCSBackGround->SetTitleText( "" );
@@ -567,16 +591,16 @@ void CounterStrikeViewport::DisplayVGUIMenu( int menu )
 		break;
 	case 26:
 	case 27:
-		if ( m_pClassMenu )
+		if ( m_pCSClassMenu )
 		{
-			m_pClassMenu->MarkForDeletion();
+			m_pCSClassMenu->MarkForDeletion();
 		}
 		g_lastPanel = NULL;
-		m_pClassMenu = new CCSClassMenu( NULL );
-		m_pClassMenu->SetParent( GetViewPortPanel() );
-		m_pClassMenu->Update( NULL, menu == 26 ? 1 : 2 );
-		m_pClassMenu->Activate();
-		CenterWindow( m_pClassMenu );
+		m_pCSClassMenu = new CCSClassMenu( NULL );
+		m_pCSClassMenu->SetParent( GetViewPortPanel() );
+		m_pCSClassMenu->Update( NULL, menu == 26 ? 1 : 2 );
+		m_pCSClassMenu->Activate();
+		CenterWindow( m_pCSClassMenu );
 		break;
 	case 28:
 	case 34:
@@ -664,7 +688,7 @@ void CounterStrikeViewport::DisplayVGUIMenu( int menu )
 	if ( !m_bCenteredPersistentWindows )
 	{
 		CenterWindow( m_pMOTD );
-		CenterWindow( m_pTeamMenu );
+		CenterWindow( m_pCSTeamMenu );
 		CenterWindow( m_pSpecHelp );
 		CenterWindow( m_pClassHelp );
 		CenterWindow( m_pMapBriefing );

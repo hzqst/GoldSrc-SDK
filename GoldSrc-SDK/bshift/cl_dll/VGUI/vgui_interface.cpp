@@ -1,4 +1,5 @@
 #include "vgui_interface.h"
+#include "game_controls/viewport_player_info.h"
 #include "hud.h"
 #include "cl_util.h"
 #include "demo_api.h"
@@ -206,7 +207,15 @@ VGuiLibraryInterface_t clientInterface =
 	GetMaxPlayers,
 	StopSquelch,
 	IsDemoPlayingBack,
-	Cvar_GetFloat
+	Cvar_GetFloat,
+	[]( int player, int frags, int deaths, int playerClass, int team )
+	{
+		UpdateViewportPlayerScore( g_PlayerExtraInfo, player, frags, deaths, playerClass, team );
+	},
+	[]( int player, const char* team )
+	{
+		UpdateViewportPlayerTeam( g_PlayerExtraInfo, player, team );
+	}
 };
 
 class TFViewPort : public TeamFortressViewport
@@ -220,7 +229,8 @@ public:
 	void DisplayVGUIMenu( int menu ) override;
 
 private:
-	TFCCClientScoreBoardDialog* m_pPrivateClientScoreBoard;
+	CClientScoreBoardDialog* CreateScoreBoard() override;
+	TFCCClientScoreBoardDialog* m_pTFCClientScoreBoard;
 
 #ifdef _MSC_VER
 #pragma warning( suppress : 26495 )
@@ -231,9 +241,12 @@ void TFViewPort::Start()
 {
 	SetClientDllInterface( &clientInterface );
 	TeamFortressViewport::Start();
-	m_pPrivateClientScoreBoard = new TFCCClientScoreBoardDialog( NULL );
-	m_pClientScoreBoard = m_pPrivateClientScoreBoard;
-	m_pClientScoreBoard->Reset();
+}
+
+CClientScoreBoardDialog* TFViewPort::CreateScoreBoard()
+{
+	m_pTFCClientScoreBoard = new TFCCClientScoreBoardDialog( NULL );
+	return m_pTFCClientScoreBoard;
 }
 
 int TFViewPort::MsgFunc_TeamNames( const char* name, int size, void* buffer )

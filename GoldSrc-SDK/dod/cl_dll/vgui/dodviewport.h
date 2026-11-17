@@ -64,12 +64,18 @@ public:
 	void OnTick() override;
 
 private:
-	CDoDTeamMenu* m_pTeamMenu;
-	CDoDClassMenu* m_pClassMenu;
+	CClientScoreBoardDialog* CreateScoreBoard() override;
+	CClientMOTD* CreateMOTD() override;
+	CSpectatorGUI* CreateSpectatorGUI() override;
+	CTeamMenu* CreateTeamMenu() override;
+	CClassMenu* CreateClassMenu() override;
+
+	CDoDTeamMenu* m_pDoDTeamMenu;
+	CDoDClassMenu* m_pDoDClassMenu;
 	CWidescreenPanel* m_pWidescreenPanel;
 	CHintPanel* m_pHintPanel;
-	CDoDClientScoreBoardDialog* m_pPrivateClientScoreBoard;
-	CDoDSpectatorGUI* m_pPrivateSpectatorGUI;
+	CDoDClientScoreBoardDialog* m_pDoDClientScoreBoard;
+	CDoDSpectatorGUI* m_pDoDSpectatorGUI;
 	CMortarPanel* m_pMortarPanel;
 	int m_iForceCamera;
 	int m_iForceChaseCam;

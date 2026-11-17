@@ -295,18 +295,6 @@ set(CSTRIKE_CLIENT_SOURCES
 	vgui2/controls/Image.cpp
 	vgui2/controls/PanelListPanel.cpp
 	vgui2/controls/QueryBox.cpp
-	vgui2/game_controls/classmenu.cpp
-	vgui2/game_controls/ClientScoreBoardDialog.cpp
-	cstrike/vgui2/game_controls/CreateCommandMenu.cpp
-	vgui2/game_controls/SpectatorGUI.cpp
-	vgui2/game_controls/teammenu.cpp
+	${GOLDSRC_GAME_CONTROLS_SOURCES}
 	cstrike/vgui2/game_controls/vgui_avatarimage.cpp
-	cstrike/vgui2/game_controls/vgui_TeamFortressViewport.cpp
-	cstrike/vgui2/game_controls/vgui_TeamFortressViewport_msgs.cpp
-	vgui2/game_controls/vguitextwindow.cpp
-	vgui2/game_controls/clientmotd.cpp
-	vgui2/game_controls/commandmenu.cpp
-	cstrike/vgui2/game_controls/TutorWindowManager.cpp
-	vgui2/game_controls/TutorStateWindow.cpp
-	vgui2/game_controls/TutorTextWindow.cpp
 )
