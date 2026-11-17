@@ -1,13 +1,14 @@
-"""Compile the production VGUI1 Win32 Surface GDI resource handling (#242).
+"""Compile the production VGUI1 Win32 Surface GDI resource handling (#242, #295).
 
 Run: python tests/vgui1_surface_gdi_tests.py
 Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
-Surface::recreateContext is extracted as-is and run against stub GDI calls that
-track live objects and DC selections. As in GDI, deleting an object that is
-still selected into a DC fails and leaves it alive.
+Surface::recreateContext and the texture methods are extracted as-is and run
+against stub GDI calls that track live objects and DC selections. As in GDI,
+deleting an object that is still selected into a DC fails and leaves it alive,
+and a bitmap cannot be selected into a second DC.
 
 - resize-cycle: alternately growing and shrinking the surface keeps one backing
   bitmap and one texture DC alive, and every delete succeeds.
@@ -19,6 +20,13 @@ still selected into a DC fails and leaves it alive.
   size, and the next resize retries.
 - select-fails: a refused selection deletes the new bitmap and keeps the old.
 - texture-dc-fails: a refused texture DC returns false and is retried.
+- texture-reupload: re-uploading a drawn texture deletes the old bitmap, keeps
+  one texture bitmap alive, and converts RGBA to BGRA.
+- texture-selection-restored: drawing leaves the texture DC's previous
+  bitmap selected.
+- texture-two-surfaces: a texture drawn on one surface can be drawn on another.
+- texture-create-fails: a refused re-upload keeps the old texture drawable, and
+  a refused first upload draws nothing.
 """
 import os
 from pathlib import Path
@@ -40,6 +48,7 @@ PRELUDE = r'''
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -50,10 +59,32 @@ static void Check(bool condition, const char* message)
 }
 
 typedef int BOOL;
+typedef unsigned int UINT;
+typedef unsigned long DWORD;
+typedef unsigned char uchar;
+typedef void* HANDLE;
 typedef struct HDC__* HDC;
 typedef struct HBITMAP__* HBITMAP;
 typedef void* HGDIOBJ;
 static HGDIOBJ const HGDI_ERROR = reinterpret_cast<HGDIOBJ>(static_cast<std::intptr_t>(-1));
+static const DWORD BI_RGB = 0;
+static const UINT DIB_RGB_COLORS = 0;
+static const DWORD SRCCOPY = 0x00CC0020;
+
+struct BITMAPINFOHEADER
+{
+ DWORD biSize;
+ long biWidth;
+ long biHeight;
+ unsigned short biPlanes;
+ unsigned short biBitCount;
+ DWORD biCompression;
+};
+
+struct BITMAPINFO
+{
+ BITMAPINFOHEADER bmiHeader;
+};
 
 enum GdiKind { GDI_DC, GDI_BITMAP };
 
@@ -65,6 +96,7 @@ struct GdiObject
  int wide;
  int tall;
  std::size_t selected;
+ uchar* bits;
 };
 
 static std::vector<GdiObject> objects;
@@ -72,10 +104,13 @@ static int failedDeletes = 0;
 static bool failCreateBitmap = false;
 static bool failCreateDC = false;
 static bool failSelect = false;
+static bool failCreateDIB = false;
+static int blits = 0;
+static std::size_t lastBlitSource = 0;
 
 static std::size_t Add(GdiKind kind, bool stock, int wide, int tall)
 {
- GdiObject object = { kind, true, stock, wide, tall, 0 };
+ GdiObject object = { kind, true, stock, wide, tall, 0, NULL };
  objects.push_back(object);
  return objects.size();
 }
@@ -88,11 +123,11 @@ static GdiObject* Find(const void* handle, GdiKind kind)
  return object.alive && object.kind == kind ? &object : NULL;
 }
 
-static bool IsSelected(std::size_t bitmap)
+static bool IsSelected(std::size_t bitmap, const GdiObject* except = NULL)
 {
  for (const GdiObject& object : objects)
  {
-  if (object.alive && object.kind == GDI_DC && object.selected == bitmap) return true;
+  if (&object != except && object.alive && object.kind == GDI_DC && object.selected == bitmap) return true;
  }
  return false;
 }
@@ -123,10 +158,27 @@ static HBITMAP CreateCompatibleBitmap(HDC dc, int wide, int tall)
  return reinterpret_cast<HBITMAP>(Add(GDI_BITMAP, false, wide, tall));
 }
 
+static HBITMAP CreateDIBSection(HDC dc, const BITMAPINFO* info, UINT usage, void** bits, HANDLE, DWORD)
+{
+ Check(Find(dc, GDI_DC) != NULL && info != NULL && usage == DIB_RGB_COLORS && bits != NULL, "DIB arguments");
+ *bits = NULL;
+ if (failCreateDIB) return NULL;
+ const int wide = info->bmiHeader.biWidth;
+ const int tall = -info->bmiHeader.biHeight;
+ Check(info->bmiHeader.biBitCount == VGUI_RGBA_BYTES * 8 && tall > 0, "top-down 32-bit DIB");
+ const std::size_t handle = Add(GDI_BITMAP, false, wide, tall);
+ objects[handle - 1].bits = new uchar[VGUI_RGBA_BYTES * wide * tall];
+ *bits = objects[handle - 1].bits;
+ return reinterpret_cast<HBITMAP>(handle);
+}
+
 static HGDIOBJ SelectObject(HDC dc, HGDIOBJ object)
 {
  GdiObject* target = Find(dc, GDI_DC);
- if (failSelect || target == NULL || Find(object, GDI_BITMAP) == NULL) return NULL;
+ GdiObject* bitmap = Find(object, GDI_BITMAP);
+ if (failSelect || target == NULL || bitmap == NULL) return NULL;
+ // a bitmap can be selected into only one DC at a time
+ if (!bitmap->stock && IsSelected(reinterpret_cast<std::size_t>(object), target)) return NULL;
  const std::size_t previous = target->selected;
  target->selected = reinterpret_cast<std::size_t>(object);
  return reinterpret_cast<HGDIOBJ>(previous);
@@ -140,7 +192,25 @@ static BOOL DeleteObject(HGDIOBJ handle)
   ++failedDeletes;
   return 0;
  }
- if (!object->stock) object->alive = false;
+ if (!object->stock)
+ {
+  object->alive = false;
+  delete[] object->bits;
+  object->bits = NULL;
+ }
+ return 1;
+}
+
+static BOOL StretchBlt(HDC dest, int, int, int, int, HDC source, int, int, int sourceWide, int sourceTall, DWORD rop)
+{
+ GdiObject* target = Find(dest, GDI_DC);
+ GdiObject* from = Find(source, GDI_DC);
+ Check(target != NULL && from != NULL && rop == SRCCOPY, "blit between live DCs");
+ GdiObject* bitmap = Find(reinterpret_cast<HGDIOBJ>(from->selected), GDI_BITMAP);
+ Check(bitmap != NULL && !bitmap->stock, "blit source is a texture bitmap");
+ Check(bitmap->wide == sourceWide && bitmap->tall == sourceTall, "blit uses the texture size");
+ ++blits;
+ lastBlitSource = from->selected;
  return 1;
 }
 
@@ -185,6 +255,9 @@ public:
  void setSize(int wide, int tall) { _panel._wide = wide; _panel._tall = tall; }
  SurfacePlat* plat() { return _plat; }
  bool recreateContext();
+ void drawSetTexture(int id);
+ void drawSetTextureRGBA(int id, const char* rgba, int wide, int tall);
+ void drawTexturedRect(int x0, int y0, int x1, int y1);
 protected:
  Panel _panel;
  SurfacePlat* _plat;
@@ -199,6 +272,20 @@ static const int LARGE_SIZE[2] = { 1024, 768 };
 static const int MINIMUM_SIZE = 1;
 // windowDC and drawDC are owned by the test fixture
 static const int FIXTURE_DCS = 2;
+static const int TEXTURE_ID = 2700;
+static const int OTHER_TEXTURE_ID = 2701;
+static const int TEXTURE_WIDE = 2;
+static const int TEXTURE_TALL = 2;
+static const int TEXTURE_UPLOADS = 8;
+static const char TEXTURE_RGBA[VGUI_RGBA_BYTES * TEXTURE_WIDE * TEXTURE_TALL] = {
+ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+
+static void UploadAndDraw(Surface& surface, int id, int wide, int tall)
+{
+ surface.drawSetTextureRGBA(id, TEXTURE_RGBA, wide, tall);
+ surface.drawSetTexture(id);
+ surface.drawTexturedRect(0, 0, wide, tall);
+}
 
 static void CheckBacking(Surface& surface, int wide, int tall)
 {
@@ -299,6 +386,65 @@ static void Run(const std::string& test)
   Check(Find(plat->textureDC, GDI_DC) != NULL, "texture DC created");
   CheckOwnership(surface);
  }
+ else if (test == "texture-reupload")
+ {
+  surface.setSize(SMALL_SIZE[0], SMALL_SIZE[1]);
+  Check(surface.recreateContext(), "context");
+  for (int i = 0; i < TEXTURE_UPLOADS; ++i)
+  {
+   UploadAndDraw(surface, TEXTURE_ID, TEXTURE_WIDE, TEXTURE_TALL);
+   Check(blits == i + 1, "texture drawn");
+   // backing bitmap + current texture bitmap
+   Check(LiveCount(GDI_BITMAP) == 2, "old texture bitmap deleted");
+   Check(failedDeletes == 0, "every delete succeeded");
+  }
+  const uchar* bits = Find(reinterpret_cast<HGDIOBJ>(lastBlitSource), GDI_BITMAP)->bits;
+  for (int i = 0; i < TEXTURE_WIDE * TEXTURE_TALL; ++i)
+  {
+   const uchar* source = reinterpret_cast<const uchar*>(TEXTURE_RGBA) + VGUI_RGBA_BYTES * i;
+   const uchar* pixel = bits + VGUI_RGBA_BYTES * i;
+   Check(pixel[0] == source[2] && pixel[1] == source[1] && pixel[2] == source[0] && pixel[3] == source[3],
+    "RGBA converted to BGRA");
+  }
+ }
+ else if (test == "texture-selection-restored")
+ {
+  surface.setSize(SMALL_SIZE[0], SMALL_SIZE[1]);
+  Check(surface.recreateContext(), "context");
+  const HBITMAP defaultBitmap = Selected(plat->textureDC);
+  UploadAndDraw(surface, TEXTURE_ID, TEXTURE_WIDE, TEXTURE_TALL);
+  Check(blits == 1, "texture drawn");
+  Check(Selected(plat->textureDC) == defaultBitmap, "previous selection restored");
+ }
+ else if (test == "texture-two-surfaces")
+ {
+  Surface popup;
+  surface.setSize(SMALL_SIZE[0], SMALL_SIZE[1]);
+  popup.setSize(SMALL_SIZE[0], SMALL_SIZE[1]);
+  Check(surface.recreateContext() && popup.recreateContext(), "contexts");
+  UploadAndDraw(surface, TEXTURE_ID, TEXTURE_WIDE, TEXTURE_TALL);
+  popup.drawSetTexture(TEXTURE_ID);
+  popup.drawTexturedRect(0, 0, TEXTURE_WIDE, TEXTURE_TALL);
+  Check(blits == 2, "texture drawn on both surfaces");
+ }
+ else if (test == "texture-create-fails")
+ {
+  surface.setSize(SMALL_SIZE[0], SMALL_SIZE[1]);
+  Check(surface.recreateContext(), "context");
+  UploadAndDraw(surface, TEXTURE_ID, TEXTURE_WIDE, TEXTURE_TALL);
+  const std::size_t oldBitmap = lastBlitSource;
+  failCreateDIB = true;
+  surface.drawSetTextureRGBA(TEXTURE_ID, TEXTURE_RGBA, TEXTURE_WIDE * 2, TEXTURE_TALL * 2);
+  surface.drawSetTextureRGBA(OTHER_TEXTURE_ID, TEXTURE_RGBA, TEXTURE_WIDE, TEXTURE_TALL);
+  failCreateDIB = false;
+  surface.drawSetTexture(TEXTURE_ID);
+  surface.drawTexturedRect(0, 0, TEXTURE_WIDE, TEXTURE_TALL);
+  Check(blits == 2 && lastBlitSource == oldBitmap, "old texture kept and drawable");
+  surface.drawSetTexture(OTHER_TEXTURE_ID);
+  surface.drawTexturedRect(0, 0, TEXTURE_WIDE, TEXTURE_TALL);
+  Check(blits == 2, "failed first upload draws nothing");
+  Check(failedDeletes == 0, "every delete succeeded");
+ }
  else Check(false, "unknown scenario");
 }
 
@@ -320,6 +466,14 @@ int main(int argc, char** argv)
 '''
 
 
+def define(source, name):
+    return re.search(rf'^#define {name}\b.*$', source, re.M).group(0)
+
+
+def methods(source, signatures):
+    return '\n'.join(block(source, signature, '\n}\n') for signature in signatures)
+
+
 def supports_asan(compiler, folder):
     probe, output = Path(folder) / 'probe.cpp', Path(folder) / 'probe.exe'
     probe.write_text('int main() { return 0; }\n')
@@ -331,14 +485,23 @@ def supports_asan(compiler, folder):
 def main():
     surface = (VGUI / 'win32/Surface.cpp').read_text()
     program = '\n'.join([
-        re.search(r'^#define BITMAP_SPARE_PIXELS.*$', surface, re.M).group(0),
+        define(surface, 'BITMAP_SPARE_PIXELS'),
+        define((VGUI / 'include/VGUI.h').read_text(), 'VGUI_RGBA_BYTES'),
+        define((VGUI / 'include/VGUI_Surface.h').read_text(), 'VGUI_TEXTURE_CAPACITY'),
         PRELUDE,
-        block(surface, 'bool Surface::recreateContext()', '\n}\n'),
+        block(surface, 'struct Texture', 'Texture* currentTexture;'),
+        methods(surface, (
+            'Texture* FindTexture(',
+            'bool Surface::recreateContext()',
+            'void Surface::drawSetTexture(',
+            'void Surface::drawSetTextureRGBA(',
+            'void Surface::drawTexturedRect(')),
         TESTS,
     ])
 
     scenarios = ['resize-cycle', 'texture-dc-reused', 'within-spare', 'minimum-size',
-                 'bitmap-create-fails', 'select-fails', 'texture-dc-fails']
+                 'bitmap-create-fails', 'select-fails', 'texture-dc-fails', 'texture-reupload',
+                 'texture-selection-restored', 'texture-two-surfaces', 'texture-create-fails']
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-gdi-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)
