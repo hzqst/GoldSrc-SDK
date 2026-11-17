@@ -130,12 +130,19 @@ void ScrollBar::OnSliderMoved( int position )
 
 //-----------------------------------------------------------------------------
 // Purpose: Setup the indexed scroll bar button with the input params.
+//			The previous button is owned by the scroll bar and will be deleted.
 //-----------------------------------------------------------------------------
-//LEAK: new and old slider will leak
 void ScrollBar::SetButton( Button* button, int index )
 {
+	if ( !button || _button[index] == button )
+		return;
+
 	if ( _button[index] )
+	{
+		_button[index]->RemoveActionSignalTarget( this );
 		_button[index]->SetParent( (Panel*)NULL );
+		_button[index]->MarkForDeletion();
+	}
 
 	_button[index] = button;
 	button->SetParent( this );
@@ -148,12 +155,19 @@ void ScrollBar::SetButton( Button* button, int index )
 
 //-----------------------------------------------------------------------------
 // Purpose: Set up the slider.
+//			The previous slider is owned by the scroll bar and will be deleted.
 //-----------------------------------------------------------------------------
-//LEAK: new and old slider will leak
 void ScrollBar::SetSlider( ScrollBarSlider* slider )
 {
+	if ( !slider || _slider == slider )
+		return;
+
 	if ( _slider )
+	{
+		_slider->RemoveActionSignalTarget( this );
 		_slider->SetParent( (Panel*)NULL );
+		_slider->MarkForDeletion();
+	}
 
 	_slider = slider;
 	slider->AddActionSignalTarget( this );
