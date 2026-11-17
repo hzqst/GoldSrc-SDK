@@ -28,6 +28,11 @@
 
 namespace vgui2
 {
+// unscaled layout metrics; scaled to the current proportional state in PerformLayout
+static const int SCROLLBAR_BASE_SIZE = 18;
+static const int DEFAULT_HEIGHT_BASE = 24;
+static const int PANEL_BUFFER_BASE = 5;
+
 PanelListPanel::PanelListPanel( Panel* parent, const char* panelName ) : Panel( parent, panelName ), m_DataItems( 0, 0 )
 {
 	SetBounds( 0, 0, 100, 100 );
@@ -44,25 +49,9 @@ PanelListPanel::PanelListPanel( Panel* parent, const char* panelName ) : Panel( 
 
 	m_iFirstColumnWidth = 100; // default width
 
-	if ( IsProportional() )
-	{
-		int width, height;
-		GetProportionalBase( width, height );
-
-		int sw, sh;
-		surface()->GetScreenSize( sw, sh );
-
-		float scale = (float)sw / (float)width;
-		m_iScrollbarSize = (int)( 18.0f * scale );
-		m_iDefaultHeight = (int)( 24.0f * scale );
-		m_iPanelBuffer = (int)( 5.0f * scale );
-	}
-	else
-	{
-		m_iScrollbarSize = 18;
-		m_iDefaultHeight = 24;
-		m_iPanelBuffer = 5;
-	}
+	m_iScrollbarSize = SCROLLBAR_BASE_SIZE;
+	m_iDefaultHeight = DEFAULT_HEIGHT_BASE;
+	m_iPanelBuffer = PANEL_BUFFER_BASE;
 }
 
 //-----------------------------------------------------------------------------
@@ -257,6 +246,11 @@ void PanelListPanel::PerformLayout()
 {
 	int wide, tall;
 	GetSize( wide, tall );
+
+	// recompute from the base sizes so proportional, resolution and scheme changes are picked up
+	m_iScrollbarSize = GetProportionalScaledValue( SCROLLBAR_BASE_SIZE );
+	m_iDefaultHeight = GetProportionalScaledValue( DEFAULT_HEIGHT_BASE );
+	m_iPanelBuffer = GetProportionalScaledValue( PANEL_BUFFER_BASE );
 
 	int vpixels = computeVPixelsNeeded();
 
