@@ -480,15 +480,15 @@ bool Surface::setFullscreenMode( int wide, int tall, int bpp )
 	{
 		return true;
 	}
-	if ( _modeInfoDar.getCount() == 0 )
+	if ( SurfaceBase::getModeInfoCount() == 0 )
 	{
 		getModeInfoCount();
 	}
-	for ( int i = 0; i < _modeInfoDar.getCount(); ++i )
+	for ( int i = 0; i < SurfaceBase::getModeInfoCount(); ++i )
 	{
 		int modeWide, modeTall, modeBpp;
-		sscanf_s( _modeInfoDar[i], "%dx%dx%d", &modeWide, &modeTall, &modeBpp );
-		if ( wide != modeWide || tall != modeTall || bpp != modeBpp )
+		if ( !getModeInfo( i, modeWide, modeTall, modeBpp )
+			|| wide != modeWide || tall != modeTall || bpp != modeBpp )
 		{
 			continue;
 		}
