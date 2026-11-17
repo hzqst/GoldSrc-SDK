@@ -13,7 +13,7 @@ target_include_directories(vgui_game_controls_tests PRIVATE "${GOLDSRC_ROOT}/eng
 set_target_properties(vgui_game_controls_tests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 add_test(NAME vgui_game_controls COMMAND vgui_game_controls_tests)
 
-foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound spectate_connection serverbrowser_sort game_controls)
+foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound spectate_connection serverbrowser_sort game_controls commandmenu viewport)
 	add_test(NAME ${name}
 		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/${name}_tests.py")
 endforeach()

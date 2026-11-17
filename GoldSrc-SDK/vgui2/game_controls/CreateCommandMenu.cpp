@@ -13,6 +13,12 @@
 
 using namespace vgui2;
 
+static char* ParseMenuToken( char* data, char* token )
+{
+	token[0] = 0;
+	return data ? gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token ) : NULL;
+}
+
 void CCreateCommandComboMenu::CreateCommandComboMenu( char* menuFile, ComboBox* parent, int playerTeam )
 {
 	m_iIgnoreDepth = 0;
@@ -34,9 +40,9 @@ Menu* CCreateCommandComboMenu::CreateCustomButton( Panel* parent, Menu* menu, ch
 		Menu* submenu = new Menu( parent, "SubMenu" );
 		menu->AddCascadingMenuItem( text, parent, submenu, NULL );
 		int teams = gViewPortInterface->GetNumberOfTeams();
-		for ( int team = 0; team < 4; team++ )
+		for ( int team = 0; team < teams; team++ )
 		{
-			if ( teams >= team && gViewPortInterface->GetClientDllInterface()->TeamNumber() != team )
+			if ( gViewPortInterface->GetClientDllInterface()->TeamNumber() != team + 1 )
 			{
 				char teamCommand[256];
 				sprintf( teamCommand, "jointeam %d", team + 1 );
@@ -64,17 +70,20 @@ Menu* CCreateCommandComboMenu::CreateCustomButton( Panel* parent, Menu* menu, ch
 
 Menu* CCreateCommandComboMenu::CreateCommandMenu( char* menuFile, int playerTeam, Panel* parent )
 {
+	m_pMenuStack.Clear();
+	m_iIgnoreDepth = 0;
+	m_iIgnoring = 0;
+	m_iDepth = 0;
+	char* file = (char*)gViewPortInterface->GetClientDllInterface()->COM_LoadFile( menuFile, 5, NULL );
+	if ( !file )
+		return NULL;
 	Menu* root = new Menu( parent, menuFile );
 	root->SetVisible( false );
 	Menu* currentMenu = root;
 
-	char* file = (char*)gViewPortInterface->GetClientDllInterface()->COM_LoadFile( menuFile, 5, NULL );
-	if ( !file )
-		return NULL;
-
 	char lastButtonText[32] = "file start";
 	char token[1024];
-	char* data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( file, token );
+	char* data = ParseMenuToken( file, token );
 	while ( strlen( token ) > 0 )
 	{
 		while ( token[0] != '}' && strlen( token ) > 0 )
@@ -93,46 +102,46 @@ Menu* CCreateCommandComboMenu::CreateCommandMenu( char* menuFile, int playerTeam
 			if ( !strcmp( custom, "CUSTOM" ) )
 			{
 				isCustom = true;
-				data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+				data = ParseMenuToken( data, token );
 			}
 			else if ( !strcmp( custom, "MAP" ) )
 			{
-				data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+				data = ParseMenuToken( data, token );
 				strncpy( map, token, sizeof( map ) );
 				map[sizeof( map ) - 1] = 0;
-				data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+				data = ParseMenuToken( data, token );
 			}
 			else if ( !strncmp( custom, "TEAM", 4 ) )
 			{
 				teamOnly = atoi( custom + 4 );
-				data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+				data = ParseMenuToken( data, token );
 			}
 			else if ( !strncmp( custom, "TOGGLE", 6 ) )
 			{
 				toggle = true;
-				data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+				data = ParseMenuToken( data, token );
 				toggleState = _strnicmp( token, "true", 4 ) == 0;
-				data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+				data = ParseMenuToken( data, token );
 			}
 			else if ( IsCustomToken( token ) )
 			{
-				data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+				data = ParseMenuToken( data, token );
 				break;
 			}
 
 			strncpy( boundKey, token, sizeof( boundKey ) );
-			text[sizeof( text ) - 1] = 0;
-			data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+			boundKey[sizeof( boundKey ) - 1] = 0;
+			data = ParseMenuToken( data, token );
 			strncpy( text, token, sizeof( text ) );
 			text[sizeof( text ) - 1] = 0;
 			strcpy( lastButtonText, text );
-			data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+			data = ParseMenuToken( data, token );
 			strncpy( command, token, sizeof( command ) );
 			command[sizeof( command ) - 1] = 0;
 
 			if ( isCustom )
 			{
-				data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+				data = ParseMenuToken( data, token );
 				Menu* customMenu = CreateCustomButton( parent, currentMenu, boundKey, text, command, token[0] == '{' );
 				if ( customMenu )
 				{
@@ -141,9 +150,9 @@ Menu* CCreateCommandComboMenu::CreateCommandMenu( char* menuFile, int playerTeam
 				else
 				{
 					m_iIgnoreDepth++;
-					while ( m_iIgnoreDepth )
+					while ( m_iIgnoreDepth && data )
 					{
-						data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+						data = ParseMenuToken( data, token );
 						if ( token[0] == '{' )
 							m_iIgnoreDepth++;
 						else if ( token[0] == '}' )
@@ -151,7 +160,7 @@ Menu* CCreateCommandComboMenu::CreateCommandMenu( char* menuFile, int playerTeam
 					}
 				}
 				if ( token[0] == '{' )
-					data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+					data = ParseMenuToken( data, token );
 				continue;
 			}
 
@@ -163,16 +172,16 @@ Menu* CCreateCommandComboMenu::CreateCommandMenu( char* menuFile, int playerTeam
 					const char* level = gViewPortInterface->GetClientDllInterface()->GetLevelName();
 					if ( level )
 					{
-						char mapName[256];
-						_snprintf( mapName, sizeof( mapName ) - 1, "maps/%s.bsp", map );
+						char mapName[sizeof( map ) + sizeof( "maps/.bsp" )];
+						_snprintf( mapName, sizeof( mapName ), "maps/%s.bsp", map );
 						mapName[sizeof( mapName ) - 1] = 0;
 						if ( strcmp( mapName, level ) )
 						{
 							createSubmenu = false;
 							m_iIgnoreDepth++;
-							while ( m_iIgnoreDepth )
+							while ( m_iIgnoreDepth && data )
 							{
-								data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+								data = ParseMenuToken( data, token );
 								if ( token[0] == '{' )
 									m_iIgnoreDepth++;
 								else if ( token[0] == '}' )
@@ -207,15 +216,14 @@ Menu* CCreateCommandComboMenu::CreateCommandMenu( char* menuFile, int playerTeam
 				currentMenu->AddMenuItem( text, command, parent, NULL );
 			}
 
-			data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+			data = ParseMenuToken( data, token );
 		}
 
 		if ( currentMenu != root )
 		{
 			if ( m_iDepth > 0 )
 			{
-				currentMenu = m_pMenuStack.Top();
-				m_pMenuStack.Pop();
+				m_pMenuStack.Pop( currentMenu );
 				m_iDepth--;
 				ASSERT_AT( currentMenu != NULL, 269 );
 			}
@@ -225,10 +233,11 @@ Menu* CCreateCommandComboMenu::CreateCommandMenu( char* menuFile, int playerTeam
 			}
 		}
 
-		data = gViewPortInterface->GetClientDllInterface()->COM_ParseFile( data, token );
+		data = ParseMenuToken( data, token );
 	}
 
-	gViewPortInterface->GetClientDllInterface()->COM_FreeFile( data );
+	gViewPortInterface->GetClientDllInterface()->COM_FreeFile( file );
+	m_pMenuStack.Clear();
 	return root;
 }
 

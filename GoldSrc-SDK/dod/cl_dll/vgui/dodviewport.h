@@ -64,6 +64,12 @@ public:
 	void OnTick() override;
 
 private:
+	CClientScoreBoardDialog* CreateScoreBoard() override;
+	CClientMOTD* CreateMOTD() override;
+	CSpectatorGUI* CreateSpectatorGUI() override;
+	CTeamMenu* CreateTeamMenu() override;
+	CClassMenu* CreateClassMenu() override;
+
 	CDoDTeamMenu* m_pTeamMenu;
 	CDoDClassMenu* m_pClassMenu;
 	CWidescreenPanel* m_pWidescreenPanel;

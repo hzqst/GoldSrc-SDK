@@ -11,6 +11,8 @@
 #include "iclientvgui.h"
 #include "iviewportmsgs.h"
 #include "utlvector.h"
+#include "Frame.h"
+#include "vguitextwindow.h"
 
 #define MENU_TEAM			2
 #define MENU_CLASS			3
@@ -135,9 +137,38 @@ public:
 	void MakeSafeName( const char* oldName, char* newName, int capacity ) override;
 
 protected:
-	class CSpecHelpWindow;
-	class CBackGroundPanel;
-	char*						m_sTeamNames[5];
+	static constexpr int TeamSlotCount = 5;
+	static constexpr int SpecialTeamCount = 2;
+	static constexpr int FactoryCount = 5;
+	class CSpecHelpWindow : public CVGUITextWindow
+	{
+	public:
+		CSpecHelpWindow( vgui2::Panel* parent, ISpectatorInterface* spectator );
+		void SetSpectatorInterface( ISpectatorInterface* spectator );
+
+	private:
+		void OnClose() override;
+		ISpectatorInterface* m_SpecGUI;
+	};
+	class CBackGroundPanel : public vgui2::Frame
+	{
+	public:
+		CBackGroundPanel( vgui2::Panel* parent );
+		void ApplySchemeSettings( vgui2::IScheme* scheme ) override;
+		void PerformLayout() override;
+		void OnMousePressed( vgui2::MouseCode code ) override;
+		vgui2::VPANEL IsWithinTraverse( int x, int y, bool traversePopups ) override;
+	};
+	virtual CBackGroundPanel* CreateBackgroundPanel();
+	virtual CClientScoreBoardDialog* CreateScoreBoard();
+	virtual CClientMOTD* CreateMOTD();
+	virtual CSpectatorGUI* CreateSpectatorGUI();
+	virtual CTeamMenu* CreateTeamMenu();
+	virtual CClassMenu* CreateClassMenu();
+	bool SetTeamNames( const char* const* names, int teams );
+	void UpdateTeamMenu();
+
+	char*						m_sTeamNames[TeamSlotCount] = {};
 	// main panels
 	CClientMOTD*				m_pMOTD;
 	ISpectatorInterface*		m_pSpectatorGUI; // spectator is an interface so you can subclass it without having to override all the spectator function calls in TeamFortressViewport
@@ -151,7 +182,7 @@ protected:
 	CSpecHelpWindow*			m_pSpecHelp;
 	CBackGroundPanel*			m_pBackGround;
 	bool						m_bInitialized;
-	CreateInterfaceFn			m_FactoryList[5];
+	CreateInterfaceFn			m_FactoryList[FactoryCount];
 	CSpectatorGUI*				m_pPrivateSpectatorGUI;
 	CClientScoreBoardDialog*		m_pPrivateClientScoreBoard;
 	CUtlQueue<int>				m_PendingDialogs; // a queue of menus to display, the top of the stack is the 
@@ -161,7 +192,7 @@ protected:
 	int							m_iGotAllMOTD;
 	int							m_iAllowSpectators;
 	char						m_sMapName[64];
-	int							m_iValidClasses[5];
+	int							m_iValidClasses[TeamSlotCount];
 	bool						m_bIsFeigning;
 	int							m_iIsSettingDetpack;
 	int							m_iBuildState;

@@ -2,11 +2,11 @@
 #include "TutorStateWindow.h"
 #include "TutorTextWindow.h"
 #include "iviewport.h"
-#include "../../../engine/controls.h"
-#include "controls.h"
-#include <vgui/ISurface.h>
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
+#include "vgui/ISurface.h"
+#include "../../engine/ILocalize.h"
 #include <wchar.h>
-#include <stdio.h>
 
 #ifdef _MSC_VER
 #pragma warning( suppress : 26495 )
@@ -17,6 +17,9 @@ TutorWindowManager::TutorWindowManager()
 	m_currentStateWindow = NULL;
 	m_animating = false;
 	m_hardwareMode = 0;
+	m_currentMessageID = 0;
+	m_currentLineEntity = NULL;
+	m_lineAttachedToThisMessageID = 0;
 }
 
 TutorWindowManager::~TutorWindowManager()
@@ -27,10 +30,7 @@ TutorWindowManager::~TutorWindowManager()
 		m_currentWindow = NULL;
 	}
 	if ( m_currentStateWindow )
-	{
 		delete m_currentStateWindow;
-		m_currentStateWindow = NULL;
-	}
 }
 
 void TutorWindowManager::Think( float )
@@ -78,8 +78,8 @@ void TutorWindowManager::NewTutorWindow( const wchar_t* message, int id, int msg
 	if ( m_currentWindow )
 	{
 		wchar_t newMessage[1024];
-		wcsncpy( newMessage, message, 1024 );
-		newMessage[1023] = 0;
+		wcsncpy( newMessage, message, sizeof( newMessage ) / sizeof( newMessage[0] ) - 1 );
+		newMessage[sizeof( newMessage ) / sizeof( newMessage[0] ) - 1] = 0;
 		InsertPlayerNames( newMessage, 1024 );
 		m_currentWindow->Activate( newMessage, msgClass, isSpectator );
 		m_animating = false;
@@ -93,7 +93,7 @@ void TutorWindowManager::NewTutorLine( int, int id )
 	m_lineAttachedToThisMessageID = id;
 }
 
-void TutorWindowManager::NewTutorState( const wchar_t* string )
+void TutorWindowManager::NewTutorState( const wchar_t* message )
 {
 	if ( m_currentStateWindow )
 	{
@@ -102,7 +102,7 @@ void TutorWindowManager::NewTutorState( const wchar_t* string )
 	}
 	m_currentStateWindow = new CTutorStateWindow;
 	if ( m_currentStateWindow )
-		m_currentStateWindow->Activate( string );
+		m_currentStateWindow->Activate( message );
 }
 
 CreateTutorWindowReturnType TutorWindowManager::CreateNewWindow( int )
@@ -113,7 +113,7 @@ CreateTutorWindowReturnType TutorWindowManager::CreateNewWindow( int )
 		m_currentWindow = NULL;
 	}
 	m_currentWindow = new CTutorTextWindow( m_hardwareMode );
-	return m_currentWindow ? TUTOR_WINDOW_CREATED : TUTOR_WINDOW_FAILED;
+	return m_currentWindow ? CREATETUTOR_NEWWINDOW : CREATETUTOR_ERROR;
 }
 
 void TutorWindowManager::PostWindowCreation( int id )
@@ -138,24 +138,25 @@ void TutorWindowManager::InsertPlayerNames( wchar_t* string, int stringLength )
 	wchar_t tempString[1024];
 	wchar_t playerName[64];
 	wchar_t searchString[16];
+	const size_t tempCapacity = sizeof( tempString ) / sizeof( tempString[0] );
 	tempString[0] = 0;
-	for ( int i = 31; i >= 0; --i )
+	for ( int i = gViewPortInterface->GetClientDllInterface()->GetMaxPlayers(); i > 0; --i )
 	{
 		_snwprintf( searchString, 16, L"%%n%d", i );
-		searchString[15] = 0;
+		searchString[sizeof( searchString ) / sizeof( searchString[0] ) - 1] = 0;
 		wchar_t* match = wcsstr( string, searchString );
 		if ( match )
 		{
-			VGuiLibraryPlayer_t playerInfo = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( i );
-			vgui2::localize()->ConvertANSIToUnicode( playerInfo.name, playerName, sizeof( playerName ) );
-			playerName[63] = 0;
+			VGuiLibraryPlayer_t player = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( i );
+			vgui2::localize()->ConvertANSIToUnicode( player.name ? player.name : "", playerName, sizeof( playerName ) );
+			playerName[sizeof( playerName ) / sizeof( playerName[0] ) - 1] = 0;
 			size_t prefix = match - string;
-			if ( prefix > 1023 )
-				prefix = 1023;
+			if ( prefix >= tempCapacity )
+				prefix = tempCapacity - 1;
 			wcsncpy( tempString, string, prefix );
 			tempString[prefix] = 0;
-			wcsncat( tempString, playerName, 1023 - wcslen( tempString ) );
-			wcsncat( tempString, match + wcslen( searchString ), 1023 - wcslen( tempString ) );
+			wcsncat( tempString, playerName, tempCapacity - prefix - 1 );
+			wcsncat( tempString, match + wcslen( searchString ), tempCapacity - wcslen( tempString ) - 1 );
 			wcsncpy( string, tempString, stringLength - 1 );
 			string[stringLength - 1] = 0;
 		}

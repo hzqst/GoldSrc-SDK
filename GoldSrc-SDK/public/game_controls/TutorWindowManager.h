@@ -2,7 +2,6 @@
 
 class CTutorTextWindow;
 class CTutorStateWindow;
-class CounterStrikeViewport;
 struct cl_entity_s;
 
 enum CreateTutorWindowReturnType
@@ -15,8 +14,6 @@ enum CreateTutorWindowReturnType
 
 class TutorWindowManager
 {
-	friend class CounterStrikeViewport;
-
 public:
 	TutorWindowManager();
 	virtual ~TutorWindowManager();
@@ -31,6 +28,7 @@ public:
 	void DrawLineFromWindowToEntity();
 	bool IsTutorTextWindowOpen() const { return m_currentWindow != 0; }
 	void InsertPlayerNames( wchar_t* string, int stringLength );
+	void SetHardwareMode( int hardwareMode ) { m_hardwareMode = hardwareMode; }
 
 private:
 	int					m_hardwareMode;

@@ -66,6 +66,12 @@ public:
 	void CenterWindow( vgui2::Frame* window );
 
 private:
+	CBackGroundPanel* CreateBackgroundPanel() override;
+	CClientScoreBoardDialog* CreateScoreBoard() override;
+	CSpectatorGUI* CreateSpectatorGUI() override;
+	CTeamMenu* CreateTeamMenu() override;
+	CClassMenu* CreateClassMenu() override;
+
 	class CCSBackGroundPanel : public TeamFortressViewport::CBackGroundPanel
 	{
 	public:

@@ -19,6 +19,7 @@
 // client dll/engine defines
 #include "hud.h"
 #include "cl_dll/IVGuiClientDll.h"
+#include "game_controls/viewport_player_info.h"
 #include "voice_status.h"
 #include "demo_api.h"
 #include "cvardef.h"
@@ -244,5 +245,13 @@ VGuiLibraryInterface_t clientInterface =
 	GetMaxPlayers,
 	StopSquelch,
 	IsDemoPlayingBack,
-	Cvar_GetFloat
+	Cvar_GetFloat,
+	[]( int player, int frags, int deaths, int playerClass, int team )
+	{
+		UpdateViewportPlayerScore( g_PlayerExtraInfo, player, frags, deaths, playerClass, team );
+	},
+	[]( int player, const char* team )
+	{
+		UpdateViewportPlayerTeam( g_PlayerExtraInfo, player, team );
+	}
 };

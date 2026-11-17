@@ -10,6 +10,7 @@
 // $Workfile:     $
 // $Date:         $
 //
+//-----------------------------------------------------------------------------
 // $Log: $
 //
 // $NoKeywords: $
@@ -24,66 +25,86 @@
 #include "commandmenu.h"
 #include "vguitextwindow.h"
 #include "TutorWindowManager.h"
-#include "controls.h"
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
 #include "vgui/ISurface.h"
+#include "vgui/IScheme.h"
 #include "igameuifuncs.h"
 #include "keys.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "buildslave_assert.h"
+#define ASSERT_FILE BUILDSLAVE_PATH( L"vgui2\\game_controls\\vgui_TeamFortressViewport.cpp" )
+
 IViewPort* gViewPortInterface;
 IViewPortMsgs* gViewPortMsgs;
 IGameUIFuncs* gameuifuncs;
 extern void DuckMessage( const char* str );
 
-//-----------------------------------------------------------------------------
-class TeamFortressViewport::CBackGroundPanel : public vgui2::Frame
+void HudMessage( char* text )
 {
-public:
-	CBackGroundPanel() : vgui2::Frame( NULL, "ViewPortBackGround", true, false )
-	{
-		SetScheme( "ClientScheme" );
-		SetTitleBarVisible( false );
-		SetMoveable( false );
-		SetSizeable( false );
-		SetProportional( true );
-	}
-	void OnMousePressed( vgui2::MouseCode ) override
-	{
-	}
-	vgui2::VPANEL IsWithinTraverse( int, int, bool ) override
-	{
-		return 0;
-	}
-	void ApplySchemeSettings( vgui2::IScheme* scheme ) override
-	{
-		vgui2::Frame::ApplySchemeSettings( scheme );
-		SetBgColor( scheme->GetColor( "ViewportBG", Color( 0, 0, 0, 0 ) ) );
-	}
-	void PerformLayout() override
-	{
-		int wide, tall;
-		vgui2::surface()->GetScreenSize( wide, tall );
-		SetBounds( 0, 0, wide, tall );
-		vgui2::Frame::PerformLayout();
-	}
-};
+	gViewPortInterface->GetClientDllInterface()->MessageHud( NULL, (int)strlen( text ) + 1, text );
+}
 
-class TeamFortressViewport::CSpecHelpWindow : public CVGUITextWindow
+//-----------------------------------------------------------------------------
+// Purpose: returns true if a particular class is valid for this map
+//-----------------------------------------------------------------------------
+int GetValidClasses( int playerClass )
 {
-public:
-	CSpecHelpWindow( ISpectatorInterface* spectator ) : CVGUITextWindow( NULL ), m_SpecGUI( spectator )
-	{
-	}
-	void OnClose() override
-	{
-		m_SpecGUI->Activate();
-		gViewPortInterface->HideBackGround();
-		vgui2::Frame::OnClose();
-	}
-	ISpectatorInterface* m_SpecGUI;
-};
+	return gViewPortInterface->GetValidClasses( playerClass );
+}
+
+TeamFortressViewport::CBackGroundPanel::CBackGroundPanel( vgui2::Panel* parent ) :
+	vgui2::Frame( parent, "ViewPortBackGround", true, false )
+{
+	SetScheme( "ClientScheme" );
+	SetTitleBarVisible( false );
+	SetMoveable( false );
+	SetSizeable( false );
+	SetProportional( true );
+}
+
+void TeamFortressViewport::CBackGroundPanel::OnMousePressed( vgui2::MouseCode )
+{
+}
+
+vgui2::VPANEL TeamFortressViewport::CBackGroundPanel::IsWithinTraverse( int, int, bool )
+{
+	return 0;
+}
+
+void TeamFortressViewport::CBackGroundPanel::ApplySchemeSettings( vgui2::IScheme* scheme )
+{
+	vgui2::Frame::ApplySchemeSettings( scheme );
+	SetBgColor( scheme->GetColor( "ViewportBG", Color( 0, 0, 0, 0 ) ) );
+}
+
+void TeamFortressViewport::CBackGroundPanel::PerformLayout()
+{
+	int wide, tall;
+	vgui2::surface()->GetScreenSize( wide, tall );
+	SetBounds( 0, 0, wide, tall );
+	vgui2::Frame::PerformLayout();
+}
+
+TeamFortressViewport::CSpecHelpWindow::CSpecHelpWindow( vgui2::Panel* parent, ISpectatorInterface* spectator ) :
+	CVGUITextWindow( parent ), m_SpecGUI( spectator )
+{
+}
+
+void TeamFortressViewport::CSpecHelpWindow::SetSpectatorInterface( ISpectatorInterface* spectator )
+{
+	m_SpecGUI = spectator;
+}
+
+void TeamFortressViewport::CSpecHelpWindow::OnClose()
+{
+	m_SpecGUI->Activate();
+	gViewPortInterface->HideBackGround();
+	vgui2::Frame::OnClose();
+}
 
 #ifdef _MSC_VER
 #pragma warning( suppress : 26495 )
@@ -99,21 +120,21 @@ TeamFortressViewport::TeamFortressViewport() : m_bInitialized( false ), m_iNumTe
 TeamFortressViewport::~TeamFortressViewport()
 {
 	m_bInitialized = false;
-	for ( int i = 0; i < 5; i++ )
+	for ( int i = 0; i < TeamSlotCount; i++ )
 	{
 		if ( m_sTeamNames[i] )
 			free( m_sTeamNames[i] );
 	}
 }
 
-void TeamFortressViewport::Initialize( CreateInterfaceFn* factories, int )
+void TeamFortressViewport::Initialize( CreateInterfaceFn* factories, int count )
 {
+	if ( !factories || count < FactoryCount - 1 )
+		return;
 	m_FactoryList[0] = Sys_GetFactoryThis();
-	m_FactoryList[1] = factories[0];
-	m_FactoryList[2] = factories[1];
-	m_FactoryList[3] = factories[2];
-	m_FactoryList[4] = factories[3];
-	vgui2::VGuiControls_Init( "ClientUI", m_FactoryList, 5 );
+	for ( int i = 1; i < FactoryCount; ++i )
+		m_FactoryList[i] = factories[i - 1];
+	vgui2::VGuiControls_Init( "ClientUI", m_FactoryList, FactoryCount );
 	vgui2::scheme()->LoadSchemeFromFile( "Resource/ClientScheme.res", "ClientScheme" );
 	vgui2::scheme()->LoadSchemeFromFile( "Resource/TutorScheme.res", "TutorScheme" );
 	gameuifuncs = (IGameUIFuncs*)factories[0]( "VENGINE_GAMEUIFUNCS_VERSION001", NULL );
@@ -121,18 +142,20 @@ void TeamFortressViewport::Initialize( CreateInterfaceFn* factories, int )
 
 void TeamFortressViewport::Start()
 {
-	m_pBackGround = new CBackGroundPanel;
+	if ( m_bInitialized )
+		return;
+	m_pBackGround = CreateBackgroundPanel();
 	m_pBackGround->SetZPos( -20 ); // send it to the back 
 	m_pBackGround->SetVisible( false );
-	m_pPrivateClientScoreBoard = new CClientScoreBoardDialog( NULL );
+	m_pPrivateClientScoreBoard = CreateScoreBoard();
 	m_pPrivateClientScoreBoard->MakeReadyForUse();
 	m_pClientScoreBoard = m_pPrivateClientScoreBoard;
-	m_pMOTD = new CClientMOTD( NULL );
-	m_pPrivateSpectatorGUI = new CSpectatorGUI( NULL );
+	m_pMOTD = CreateMOTD();
+	m_pPrivateSpectatorGUI = CreateSpectatorGUI();
 	m_pSpectatorGUI = m_pPrivateSpectatorGUI;
-	m_pTeamMenu = new CTeamMenu( NULL );
-	m_pClassMenu = new CClassMenu( NULL, true );
-	m_pSpecHelp = new CSpecHelpWindow( m_pSpectatorGUI );
+	m_pTeamMenu = CreateTeamMenu();
+	m_pClassMenu = CreateClassMenu();
+	m_pSpecHelp = new CSpecHelpWindow( NULL, m_pSpectatorGUI );
 	m_pClassHelp = new CVGUITextWindow( NULL );
 	m_pMapBriefing = new CVGUITextWindow( NULL );
 	m_pTutorWindowManager = new TutorWindowManager;
@@ -150,6 +173,36 @@ void TeamFortressViewport::Start()
 	m_bInitialized = true;
 }
 
+TeamFortressViewport::CBackGroundPanel* TeamFortressViewport::CreateBackgroundPanel()
+{
+	return new CBackGroundPanel( NULL );
+}
+
+CClientScoreBoardDialog* TeamFortressViewport::CreateScoreBoard()
+{
+	return new CClientScoreBoardDialog( NULL );
+}
+
+CClientMOTD* TeamFortressViewport::CreateMOTD()
+{
+	return new CClientMOTD( NULL );
+}
+
+CSpectatorGUI* TeamFortressViewport::CreateSpectatorGUI()
+{
+	return new CSpectatorGUI( NULL );
+}
+
+CTeamMenu* TeamFortressViewport::CreateTeamMenu()
+{
+	return new CTeamMenu( NULL );
+}
+
+CClassMenu* TeamFortressViewport::CreateClassMenu()
+{
+	return new CClassMenu( NULL, true );
+}
+
 void TeamFortressViewport::Shutdown()
 {
 }
@@ -161,7 +214,8 @@ void TeamFortressViewport::SetParent( vgui2::VPANEL parent )
 	m_pMOTD->SetParent( parent );
 	m_pSpectatorGUI->SetParent( parent );
 	m_pTeamMenu->SetParent( parent );
-	m_pClassMenu->SetParent( parent );
+	if ( m_pClassMenu )
+		m_pClassMenu->SetParent( parent );
 	m_pSpecHelp->SetParent( parent );
 	m_pClassHelp->SetParent( parent );
 	m_pMapBriefing->SetParent( parent );
@@ -190,7 +244,7 @@ void TeamFortressViewport::HideClientUI()
 
 void TeamFortressViewport::SetNumberOfTeams( int teams )
 {
-	m_iNumTeams = teams;
+	m_iNumTeams = teams < 0 ? 0 : ( teams > TeamSlotCount - SpecialTeamCount ? TeamSlotCount - SpecialTeamCount : teams );
 }
 
 //-----------------------------------------------------------------------------
@@ -204,6 +258,7 @@ VGuiLibraryInterface_t* TeamFortressViewport::GetClientDllInterface()
 void TeamFortressViewport::SetClientDllInterface( VGuiLibraryInterface_t* callbacks )
 {
 	m_pClientDllInterface = callbacks;
+	ASSERT_AT( m_pClientDllInterface, 924 );
 }
 
 int TeamFortressViewport::GetAllowSpectators()
@@ -213,7 +268,7 @@ int TeamFortressViewport::GetAllowSpectators()
 
 int TeamFortressViewport::GetValidClasses( int team )
 {
-	return m_iValidClasses[team];
+	return team >= 0 && team < TeamSlotCount ? m_iValidClasses[team] : 0;
 }
 
 int TeamFortressViewport::GetNumberOfTeams()
@@ -243,7 +298,8 @@ int TeamFortressViewport::IsRandomPC()
 
 char* TeamFortressViewport::GetTeamName( int team )
 {
-	return m_sTeamNames[team];
+	static char empty[] = "";
+	return team >= 0 && team < TeamSlotCount && m_sTeamNames[team] ? m_sTeamNames[team] : empty;
 }
 
 const char* TeamFortressViewport::GetServerName()
@@ -303,6 +359,8 @@ const char* TeamFortressViewport::GetMapName()
 
 void TeamFortressViewport::MakeSafeName( const char* oldName, char* newName, int capacity )
 {
+	if ( !oldName || !newName || capacity <= 0 )
+		return;
 	int count = 0;
 	for ( const char* name = oldName; *name && count < capacity - 1; name++ )
 	{
@@ -310,6 +368,8 @@ void TeamFortressViewport::MakeSafeName( const char* oldName, char* newName, int
 			newName[count++] = '*';
 		else if ( *name == '&' )
 		{
+			if ( count >= capacity - 2 )
+				break;
 			newName[count] = '&';
 			newName[count + 1] = '&';
 			count += 2;
@@ -401,8 +461,6 @@ int TeamFortressViewport::KeyInput( int down, int keynum, const char* )
 void TeamFortressViewport::InputPlayerSpecial()
 {
 	if ( m_bInitialized )
-
-		// if it's any other class, just send the command down to the server
 		m_pClientDllInterface->CallEnghudClientCmd( "_special" );
 }
 
@@ -445,7 +503,7 @@ void TeamFortressViewport::ShowSpectatorGUI()
 	if ( m_bInitialized )
 	{
 		m_pBackGround->SetVisible( false );
-		m_pSpecHelp->m_SpecGUI = m_pSpectatorGUI;
+		m_pSpecHelp->SetSpectatorInterface( m_pSpectatorGUI );
 		m_pSpectatorGUI->Activate();
 	}
 }
@@ -484,7 +542,7 @@ void TeamFortressViewport::DeactivateSpectatorGUI()
 void TeamFortressViewport::UpdateSpectatorPanel()
 {
 	char text[128], map[128];
-	snprintf( text, sizeof( text ), "#Spec_Mode%d", m_pClientDllInterface->SpectatorMode() );
+	_snprintf( text, sizeof( text ), "#Spec_Mode%d", m_pClientDllInterface->SpectatorMode() );
 	m_pClientDllInterface->CheckSettings();
 	int target = -1;
 	if ( m_pClientDllInterface->SpectatorTarget() > 0 &&
@@ -585,7 +643,8 @@ void TeamFortressViewport::OnLevelChange()
 void TeamFortressViewport::HideAllVGUIMenu()
 {
 	m_pTeamMenu->SetVisible( false );
-	m_pClassMenu->SetVisible( false );
+	if ( m_pClassMenu )
+		m_pClassMenu->SetVisible( false );
 	m_pMOTD->SetVisible( false );
 	m_pSpecHelp->SetVisible( false );
 	m_pClassHelp->SetVisible( false );
@@ -602,7 +661,7 @@ bool TeamFortressViewport::IsVGUIMenuActive( int menu )
 	switch ( menu )
 	{
 	case MENU_TEAM: return m_pTeamMenu->IsVisible() || m_pClientScoreBoard->IsVisible();
-	case MENU_CLASS: return m_pClassMenu->IsVisible() || m_pClientScoreBoard->IsVisible();
+	case MENU_CLASS: return ( m_pClassMenu && m_pClassMenu->IsVisible() ) || m_pClientScoreBoard->IsVisible();
 	case MENU_MAPBRIEFING: return m_pMapBriefing->IsVisible();
 	case MENU_INTRO: return m_pMOTD->IsVisible() || m_pClientScoreBoard->IsVisible();
 	case MENU_CLASSHELP: return m_pClassHelp->IsVisible();
@@ -616,7 +675,7 @@ void TeamFortressViewport::HideVGUIMenu( int menu )
 	switch ( menu )
 	{
 	case MENU_TEAM: m_pTeamMenu->SetVisible( false ); break;
-	case MENU_CLASS: m_pClassMenu->SetVisible( false ); break;
+	case MENU_CLASS: if ( m_pClassMenu ) m_pClassMenu->SetVisible( false ); break;
 	case MENU_MAPBRIEFING: m_pMapBriefing->SetVisible( false ); break;
 	case MENU_INTRO: m_pMOTD->SetVisible( false ); break;
 	case MENU_CLASSHELP: m_pClassHelp->SetVisible( false ); break;
@@ -659,38 +718,35 @@ void TeamFortressViewport::DisplayVGUIMenu( int menu )
 		m_pTeamMenu->Activate();
 		break;
 	case MENU_CLASS:
-		m_pClassMenu->Update( m_iValidClasses, 5 );
-		m_pClassMenu->Activate();
+		if ( m_pClassMenu )
+		{
+			m_pClassMenu->Update( m_iValidClasses, TeamSlotCount );
+			m_pClassMenu->Activate();
+		}
 		break;
 	case MENU_MAPBRIEFING:
 	{
-		char filename[64];
-		if ( m_sMapName[0] )
-		{
-			strcpy( filename, "maps/" );
-			strcat( filename, m_sMapName );
-			strcat( filename, ".txt" );
-		}
-		else
+		char filename[sizeof( m_sMapName ) + sizeof( "maps/.txt" )];
+		if ( !m_sMapName[0] )
 		{
 			const char* level = m_pClientDllInterface->GetLevelName();
 			if ( !level )
 				return;
-			strcpy( filename, level );
-			*strchr( filename, '.' ) = 0;
-			strcat( filename, ".txt" );
-			strcpy( m_sMapName, level );
-			char* extension = strchr( m_sMapName, '.' );
+			const char* slash = strrchr( level, '/' );
+			strncpy( m_sMapName, slash ? slash + 1 : level, sizeof( m_sMapName ) - 1 );
+			m_sMapName[sizeof( m_sMapName ) - 1] = 0;
+			char* extension = strrchr( m_sMapName, '.' );
 			if ( extension )
 				*extension = 0;
-			char* slash = strchr( m_sMapName, '/' );
-			if ( slash )
-				memmove( m_sMapName, slash + 1, strlen( slash ) + 1 );
 		}
+		_snprintf( filename, sizeof( filename ), "maps/%s.txt", m_sMapName );
+		filename[sizeof( filename ) - 1] = 0;
 		const char* text = (const char*)m_pClientDllInterface->COM_LoadFile( filename, 5, NULL );
 		strncpy( title, m_sMapName, sizeof( title ) );
 		title[sizeof( title ) - 1] = 0;
-		m_pMapBriefing->Activate( title, text );
+		m_pMapBriefing->Activate( title, text ? text : "" );
+		if ( text )
+			m_pClientDllInterface->COM_FreeFile( (void*)text );
 		break;
 	}
 	case MENU_INTRO:
@@ -756,12 +812,16 @@ void TeamFortressViewport::OnTick()
 			HideSpectatorGUI();
 		DisplayVGUIMenu( menu );
 	}
-	else if ( count == 1 && !IsVGUIMenuActive( GetCurrentMenuID() ) )
+	else
 	{
-		m_PendingDialogs.m_heap.Remove( 0 );
-		m_pBackGround->SetVisible( false );
+		if ( m_PendingDialogs.m_heap.Count() == 1 && !IsVGUIMenuActive( GetCurrentMenuID() ) )
+		{
+			m_PendingDialogs.m_current = m_PendingDialogs.m_heap[0];
+			m_PendingDialogs.m_heap.Remove( 0 );
+			m_pBackGround->SetVisible( false );
+		}
+		else if ( !m_PendingDialogs.m_heap.Count() && m_pBackGround->IsVisible() )
+			m_pBackGround->SetVisible( false );
 	}
-	else if ( !count && m_pBackGround->IsVisible() )
-		m_pBackGround->SetVisible( false );
 	m_pTutorWindowManager->Think( m_pClientDllInterface->HudTime() );
 }

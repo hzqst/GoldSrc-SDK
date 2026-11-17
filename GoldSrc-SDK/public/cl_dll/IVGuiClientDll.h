@@ -108,6 +108,8 @@ struct VGuiLibraryInterface_t
 	VOICESTOPSQUELCH			GameVoice_StopSquelchMode;
 	DEMOPLAYBACK				IsDemoPlayingBack;
 	CVARGETFLOAT				CvarGetFloat;
+	void ( *SetPlayerScoreInfo )( int player, int frags, int deaths, int playerClass, int team );
+	void ( *SetPlayerTeamInfo )( int player, const char* team );
 };
 
 #endif

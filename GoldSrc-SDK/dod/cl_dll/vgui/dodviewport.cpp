@@ -41,18 +41,14 @@ DoDViewport::DoDViewport()
 
 void DoDViewport::Start()
 {
+	if ( m_bInitialized )
+		return;
 	SetClientDllInterface( &clientInterface );
 	m_pClassMenu = NULL;
-	m_pTeamMenu = new CDoDTeamMenu( NULL );
 	m_pHintPanel = new CHintPanel( NULL );
 	m_pWidescreenPanel = new CWidescreenPanel( NULL );
 	m_pMortarPanel = new CMortarPanel( NULL );
 	TeamFortressViewport::Start();
-	m_pPrivateSpectatorGUI = new CDoDSpectatorGUI( NULL );
-	m_pSpectatorGUI = m_pPrivateSpectatorGUI;
-	m_pPrivateClientScoreBoard = new CDoDClientScoreBoardDialog( NULL );
-	m_pClientScoreBoard = m_pPrivateClientScoreBoard;
-	m_pMOTD = new CDoDMOTD( NULL );
 	m_iBackgroundTexture = surface()->CreateNewTextureID( false );
 	surface()->DrawSetTextureFile( m_iBackgroundTexture, "gfx/vgui/white", false, false );
 	int top[4][2] = { {48,42}, {406,42}, {428,64}, {48,64} };
@@ -69,6 +65,34 @@ void DoDViewport::Start()
 		m_BackgroundMainVerts[vertex].y = scheme()->GetProportionalScaledValue( main[vertex][1] );
 		m_BackgroundMainVerts[vertex].u = m_BackgroundMainVerts[vertex].v = 0;
 	}
+}
+
+CClientScoreBoardDialog* DoDViewport::CreateScoreBoard()
+{
+	m_pPrivateClientScoreBoard = new CDoDClientScoreBoardDialog( NULL );
+	return m_pPrivateClientScoreBoard;
+}
+
+CClientMOTD* DoDViewport::CreateMOTD()
+{
+	return new CDoDMOTD( NULL );
+}
+
+CSpectatorGUI* DoDViewport::CreateSpectatorGUI()
+{
+	m_pPrivateSpectatorGUI = new CDoDSpectatorGUI( NULL );
+	return m_pPrivateSpectatorGUI;
+}
+
+CTeamMenu* DoDViewport::CreateTeamMenu()
+{
+	m_pTeamMenu = new CDoDTeamMenu( NULL );
+	return m_pTeamMenu;
+}
+
+CClassMenu* DoDViewport::CreateClassMenu()
+{
+	return NULL; // DoD creates its class menu lazily.
 }
 
 void DoDViewport::SetParent( VPANEL parent )

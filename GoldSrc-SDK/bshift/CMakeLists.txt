@@ -255,14 +255,14 @@ goldsrc_add_module(bshift_cdll
 		vgui2/game_controls/clientmotd.cpp
 		vgui2/game_controls/ClientScoreBoardDialog.cpp
 		vgui2/game_controls/commandmenu.cpp
-		bshift/vgui2/game_controls/CreateCommandMenu.cpp
+		vgui2/game_controls/CreateCommandMenu.cpp
 		vgui2/game_controls/SpectatorGUI.cpp
 		vgui2/game_controls/teammenu.cpp
 		vgui2/game_controls/TutorStateWindow.cpp
 		vgui2/game_controls/TutorTextWindow.cpp
-		bshift/vgui2/game_controls/TutorWindowManager.cpp
-		bshift/vgui2/game_controls/vgui_TeamFortressViewport.cpp
-		bshift/vgui2/game_controls/vgui_TeamFortressViewport_msgs.cpp
+		vgui2/game_controls/TutorWindowManager.cpp
+		vgui2/game_controls/vgui_TeamFortressViewport.cpp
+		vgui2/game_controls/vgui_TeamFortressViewport_msgs.cpp
 		vgui2/game_controls/vguitextwindow.cpp
 	INCLUDES
 		bshift/dlls

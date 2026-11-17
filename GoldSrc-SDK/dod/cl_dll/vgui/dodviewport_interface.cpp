@@ -3,6 +3,7 @@
 #include "demo_api.h"
 #include "voice_status.h"
 #include "game_controls/iviewport.h"
+#include "game_controls/viewport_player_info.h"
 #include "game_controls/CreateCommandMenu.h"
 
 void COM_FileBase( const char* path, char* name );
@@ -216,5 +217,13 @@ VGuiLibraryInterface_t clientInterface =
 	GetMaxPlayers,
 	StopSquelch,
 	IsDemoPlayingBack,
-	Cvar_GetFloat
+	Cvar_GetFloat,
+	[]( int player, int frags, int deaths, int playerClass, int team )
+	{
+		UpdateViewportPlayerScore( g_PlayerExtraInfo, player, frags, deaths, playerClass, team );
+	},
+	[]( int player, const char* team )
+	{
+		UpdateViewportPlayerTeam( g_PlayerExtraInfo, player, team );
+	}
 };

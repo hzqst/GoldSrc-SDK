@@ -97,18 +97,12 @@ void CounterStrikeViewport::Initialize( CreateInterfaceFn* factories, int count 
 
 void CounterStrikeViewport::Start()
 {
+	if ( m_bInitialized )
+		return;
 	// construct our panels
 	m_pClassMenu = NULL;
-	m_pTeamMenu = new CCSTeamMenu( NULL );
 	m_pBuyMenu = NULL; // buy menu needs money info, so create it at the last possible moment
 	SetClientDllInterface( &clientInterface );
-	TeamFortressViewport::Start();
-	m_pCSBackGround = new CCSBackGroundPanel( NULL );
-	m_pBackGround = m_pCSBackGround;
-	m_pPrivateSpectatorGUI = new CCSSpectatorGUI( NULL );
-	m_pSpectatorGUI = m_pPrivateSpectatorGUI; // override spectator interface so the viewport uses our spectatorUI
-	m_pPrivateCSClientScoreBoard = new CCSClientScoreBoardDialog( NULL );
-	m_pClientScoreBoard = m_pPrivateCSClientScoreBoard;
 	m_pCareerRoundEndMenu = NULL;
 	m_pCareerMatchEndMenu = NULL;
 	m_pCreditsMenu = NULL;
@@ -116,15 +110,45 @@ void CounterStrikeViewport::Start()
 	m_pBuyPresetEditMenu = NULL;
 	m_pProgressBar = NULL;
 	m_bCenteredPersistentWindows = false;
+	TeamFortressViewport::Start();
 	if ( IEngineStudio.IsHardware )
 	{
-		m_pTutorWindowManager->m_hardwareMode = IEngineStudio.IsHardware();
+		m_pTutorWindowManager->SetHardwareMode( IEngineStudio.IsHardware() );
 	}
 	if ( !SteamAPI_Init() )
 	{
 		gEngfuncs.Con_DPrintf( "Unable to load steam library.\n" );
 		exit( -1 );
 	}
+}
+
+TeamFortressViewport::CBackGroundPanel* CounterStrikeViewport::CreateBackgroundPanel()
+{
+	m_pCSBackGround = new CCSBackGroundPanel( NULL );
+	return m_pCSBackGround;
+}
+
+CClientScoreBoardDialog* CounterStrikeViewport::CreateScoreBoard()
+{
+	m_pPrivateCSClientScoreBoard = new CCSClientScoreBoardDialog( NULL );
+	return m_pPrivateCSClientScoreBoard;
+}
+
+CSpectatorGUI* CounterStrikeViewport::CreateSpectatorGUI()
+{
+	m_pPrivateSpectatorGUI = new CCSSpectatorGUI( NULL );
+	return m_pPrivateSpectatorGUI;
+}
+
+CTeamMenu* CounterStrikeViewport::CreateTeamMenu()
+{
+	m_pTeamMenu = new CCSTeamMenu( NULL );
+	return m_pTeamMenu;
+}
+
+CClassMenu* CounterStrikeViewport::CreateClassMenu()
+{
+	return NULL; // CS creates its class menu lazily.
 }
 
 void CounterStrikeViewport::Shutdown()
@@ -169,7 +193,7 @@ void CounterStrikeViewport::OnLevelChange()
 	CCareerBaseBox::CloseOpenBoxes( true );
 	if ( IEngineStudio.IsHardware )
 	{
-		m_pTutorWindowManager->m_hardwareMode = IEngineStudio.IsHardware();
+		m_pTutorWindowManager->SetHardwareMode( IEngineStudio.IsHardware() );
 	}
 	UpdateScheme();
 	GetAllPlayersInfo();
