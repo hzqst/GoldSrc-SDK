@@ -9,7 +9,7 @@
 #include "iviewport.h"
 #include "CreateCommandMenu.h"
 #include "../../../engine/igameuifuncs.h"
-#include "vgui_controls/ComboBox.h"
+#include "ComboBox.h"
 #include "Button.h"
 #include "Label.h"
 #include "ImagePanel.h"

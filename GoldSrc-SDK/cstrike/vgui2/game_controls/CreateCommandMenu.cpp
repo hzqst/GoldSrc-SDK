@@ -1,6 +1,6 @@
 #include "CreateCommandMenu.h"
 #include "iviewport.h"
-#include "vgui_controls/ComboBox.h"
+#include "ComboBox.h"
 #include "Menu.h"
 #include "MenuItem.h"
 
