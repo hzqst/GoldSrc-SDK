@@ -27,6 +27,14 @@ public:
 
 namespace vgui2
 {
+// unscaled layout metrics; scaled to the current proportional state when used
+static const int ITEM_PAD_BASE = 5;
+static const int SCROLLBAR_AREA_BASE = 20;
+static const int SCROLLBAR_SIZE_BASE = 18;
+static const int SCROLLBAR_INSET_BASE = 2;
+static const int SCROLL_BUTTON_STEP_BASE = 24;
+static const int SCROLL_WHEEL_STEP_BASE = 15;
+
 MessageMapItem_t PanelHorizListPanel::m_MessageMap[1] =
 {
 	{ "ScrollBarSliderMoved", (MessageFunc_t)(void ( Panel::* )( int ))&PanelHorizListPanel::OnSliderMoved,
@@ -52,7 +60,7 @@ PanelHorizListPanel::PanelHorizListPanel( Panel* parent, const char* panelName )
 	_embedded->SetBounds( 0, 0, 20, 20 );
 	_embedded->SetPaintBackgroundEnabled( false );
 	_embedded->SetPaintBorderEnabled( false );
-	m_itemPad = 5;
+	m_itemPad = ITEM_PAD_BASE;
 }
 
 PanelHorizListPanel::~PanelHorizListPanel()
@@ -97,7 +105,7 @@ void PanelHorizListPanel::OnSliderMoved( int )
 void PanelHorizListPanel::OnMouseWheeled( int delta )
 {
 	int value = _hbar->GetValue();
-	_hbar->SetValue( value - 15 * delta );
+	_hbar->SetValue( value - GetProportionalScaledValue( SCROLL_WHEEL_STEP_BASE ) * delta );
 }
 
 void PanelHorizListPanel::RemoveItem( int itemIndex )
@@ -155,6 +163,9 @@ void PanelHorizListPanel::PerformLayout()
 {
 	int wide, tall;
 	GetSize( wide, tall );
+	// recompute from the base sizes so proportional, resolution and scheme changes are picked up
+	m_itemPad = GetProportionalScaledValue( ITEM_PAD_BASE );
+	int scrollbarArea = GetProportionalScaledValue( SCROLLBAR_AREA_BASE );
 	int needed = computeHPixelsNeeded();
 	int window = 3 * wide / 4;
 	int value = _hbar->GetValue();
@@ -162,13 +173,13 @@ void PanelHorizListPanel::PerformLayout()
 	_hbar->SetEnabled( false );
 	_hbar->SetRange( 0, window + needed - wide );
 	_hbar->SetRangeWindow( window );
-	_hbar->SetButtonPressedScrollValue( 24 );
-	_hbar->SetPos( 0, tall - 20 );
-	_hbar->SetSize( wide - 2, 18 );
+	_hbar->SetButtonPressedScrollValue( GetProportionalScaledValue( SCROLL_BUTTON_STEP_BASE ) );
+	_hbar->SetPos( 0, tall - scrollbarArea );
+	_hbar->SetSize( wide - GetProportionalScaledValue( SCROLLBAR_INSET_BASE ), GetProportionalScaledValue( SCROLLBAR_SIZE_BASE ) );
 	_hbar->InvalidateLayout( false, false );
 	_hbar->SetValue( value );
 	_embedded->SetPos( -_hbar->GetValue(), 0 );
-	_embedded->SetSize( needed, tall - 20 );
+	_embedded->SetSize( needed, tall - scrollbarArea );
 
 	int x = m_itemPad;
 	for ( int i = 0; i < _dataItems.GetCount(); i++ )
@@ -177,7 +188,7 @@ void PanelHorizListPanel::PerformLayout()
 		if ( item && item->panel && item->panel->IsVisible() )
 		{
 			int itemWide = item->panel->GetWide();
-			item->panel->SetBounds( x, m_itemPad, itemWide, tall - 20 - 2 * m_itemPad );
+			item->panel->SetBounds( x, m_itemPad, itemWide, tall - scrollbarArea - 2 * m_itemPad );
 			x += m_itemPad + itemWide;
 		}
 	}
