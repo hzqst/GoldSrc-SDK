@@ -89,13 +89,16 @@ void FileInputStream::readUChar( uchar* buf, int count, bool& success )
 
 void FileInputStream::close( bool& success )
 {
-	if ( _fp == NULL )
+	FILE* fp = _fp;
+	_fp = NULL;
+
+	if ( fp == NULL )
 	{
 		success = false;
 		return;
 	}
 
-	success = fclose( _fp ) == 0;
+	success = fclose( fp ) == 0;
 }
 
 void FileInputStream::close()
