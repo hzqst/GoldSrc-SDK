@@ -31,7 +31,7 @@
 #include "Controls.h"
 #include "vgui/ILocalize.h"
 #include "pm_shared.h"
-#include "../common/GameUI/ICareerUI.h"
+#include "GameUI/ICareerUI.h"
 
 
 DECLARE_MESSAGE(m_Health, Health )

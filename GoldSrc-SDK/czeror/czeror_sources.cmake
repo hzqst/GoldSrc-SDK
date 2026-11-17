@@ -191,9 +191,9 @@ set(CZEROR_CLIENT_SOURCES
 	czeror/cl_dll/worldmap.cpp
 	engine/interface.cpp
 	cstrike/public/checksum_crc.cpp
-	cstrike/common/parsemsg.cpp
+	game_shared/cstrike/parsemsg.cpp
 	cstrike/game_shared/voice_status_hud.cpp
-	cstrike/game_shared/shared_util.cpp
+	game_shared/cstrike/shared_util.cpp
 	cstrike/game_shared/voice_banmgr.cpp
 	cstrike/game_shared/voice_status.cpp
 	czeror/dlls/wpn_ak47.cpp

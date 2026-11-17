@@ -19,7 +19,7 @@
 #include <string.h>
 #include <algorithm>
 
-#include "career/bot_profile.h"
+#include "../game_shared/cstrike/bot_profile.h"
 #include "filesystem.h"
 #include "vgui_controls/Controls.h"
 #include "vgui/IScheme.h"

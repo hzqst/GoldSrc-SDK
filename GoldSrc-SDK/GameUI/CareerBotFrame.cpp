@@ -13,7 +13,7 @@
 #include "Random.h"
 #include "TextImage.h"
 #include "../vgui2/controls/BitmapImagePanel.h"
-#include "career/bot_profile.h"
+#include "../game_shared/cstrike/bot_profile.h"
 #include "../game_shared/shared_util.h"
 #include "vgui/ILocalize.h"
 #include "vgui/IScheme.h"

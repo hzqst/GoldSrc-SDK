@@ -34,6 +34,8 @@ function(goldsrc_add_counterstrike_module target)
 		${src}/pm_shared
 		${src}/game_shared
 		${src}/game_shared/bot
+		# CS sources shared with GameUI; must precede the root common and game_shared/bot.
+		game_shared/cstrike
 		${src}/public/vgui_controls
 		${src}/public
 		${src}/public/vgui

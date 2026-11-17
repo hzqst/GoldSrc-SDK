@@ -13,7 +13,7 @@
 #include <wchar.h>
 
 #include "../game_shared/shared_util.h"
-#include "career/bot_profile.h"
+#include "../game_shared/cstrike/bot_profile.h"
 
 #ifdef _WIN32
 #define CAREER_MAX_PATH _MAX_PATH
