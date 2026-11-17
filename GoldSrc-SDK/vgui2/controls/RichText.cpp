@@ -1920,7 +1920,8 @@ void RichText::RecalculateLineBreaks()
 
 		m_LineBreaks.AddToTail( index );
 		if ( !( wide > charWidth + x ) && ch != L'\r' && ch != L'\n' && textClickable
-			 && clickableTextNum > 0 && clickableTextNum <= _clickableTextPanels.GetCount() )
+			 && clickableTextNum > 0 && clickableTextNum <= _clickableTextPanels.GetCount()
+			 && _clickableTextPanels[clickableTextNum - 1] )
 		{
 			int previousSlot = clickableTextNum - 1;
 			ClickPanel* previous = _clickableTextPanels[previousSlot];

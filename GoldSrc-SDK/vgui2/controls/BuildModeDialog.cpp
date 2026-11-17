@@ -284,6 +284,7 @@ void BuildModeDialog::UpdateControlData( Panel* control )
 
 	char statusText[512];
 	_snprintf( statusText, 511, "%s: '%s'", control->GetClassName(), control->GetName() );
+	statusText[sizeof( statusText ) - 1] = 0;
 	m_pStatusLabel->SetText( statusText );
 	m_pStatusLabel->SetTextColorState( Label::CS_NORMAL );
 }
@@ -786,6 +787,7 @@ void BuildModeDialog::CreateControls()
 		{
 			char buf[32];
 			_snprintf( buf, sizeof( buf ), "%%%s%%", kv->GetName() );
+			buf[sizeof( buf ) - 1] = 0;
 			menu->AddMenuItem( kv->GetName(), new KeyValues( "SetClipboardText", "text", buf ), this, NULL );
 		}
 		m_pVarsButton->SetMenu( menu );
@@ -826,7 +828,8 @@ void BuildModeDialog::ApplyDataToControls()
 	if ( panel && panel != m_pCurrentPanel )
 	{
 		char messageString[512];
-		sprintf( messageString, "Fieldname is not unique: %s\nRename it and try again.", fieldName );
+		_snprintf( messageString, sizeof( messageString ), "Fieldname is not unique: %s\nRename it and try again.", fieldName );
+		messageString[sizeof( messageString ) - 1] = 0;
 		MessageBox* errorBox = new MessageBox( "Cannot Apply", messageString, NULL );
 		errorBox->DoModal( NULL );
 		UpdateControlData( m_pCurrentPanel );

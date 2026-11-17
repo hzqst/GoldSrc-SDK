@@ -237,8 +237,9 @@ Panel* BuildGroup::FieldNameTaken( const char* fieldName )
 //-----------------------------------------------------------------------------
 void BuildGroup::GetNewFieldName( char* newFieldName, Panel* newPanel )
 {
-	char defaultName[25] = "Unnamed dialog";
-	strcpy( defaultName, newPanel->GetClassName() );
+	char defaultName[25];
+	strncpy( defaultName, newPanel->GetClassName(), sizeof( defaultName ) - 1 );
+	defaultName[sizeof( defaultName ) - 1] = 0;
 
 	int axisPos = 1;
 	while ( true )

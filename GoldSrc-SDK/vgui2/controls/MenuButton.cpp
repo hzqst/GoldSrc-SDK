@@ -54,7 +54,7 @@ void MenuButton::SetOpenDirection( MenuDirection_e direction )
 //-----------------------------------------------------------------------------
 void MenuButton::OnKillFocus()
 {
-	if ( !m_pMenu->HasFocus() )
+	if ( m_pMenu && !m_pMenu->HasFocus() )
 		HideMenu();
 
 	Button::OnKillFocus();
