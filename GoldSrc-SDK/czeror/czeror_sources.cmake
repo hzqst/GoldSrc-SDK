@@ -189,7 +189,7 @@ set(CZEROR_CLIENT_SOURCES
 	czeror/cl_dll/util.cpp
 	czeror/cl_dll/view.cpp
 	czeror/cl_dll/worldmap.cpp
-	cstrike/public/interface.cpp
+	engine/interface.cpp
 	cstrike/public/checksum_crc.cpp
 	cstrike/common/parsemsg.cpp
 	cstrike/game_shared/voice_status_hud.cpp
@@ -269,10 +269,10 @@ set(CZEROR_CLIENT_SOURCES
 	vgui2/controls/ToggleButton.cpp
 	vgui2/controls/Tooltip.cpp
 	vgui2/controls/URLLabel.cpp
-	cstrike/public/KeyValues.cpp
-	cstrike/public/UtlBuffer.cpp
-	cstrike/public/utlsymbol.cpp
-	cstrike/public/MemPool.cpp
+	engine/KeyValues.cpp
+	engine/utlbuffer.cpp
+	engine/utlsymbol.cpp
+	engine/MemPool.cpp
 	vgui2/controls/AnimatingImagePanel.cpp
 	vgui2/controls/BitmapImagePanel.cpp
 	vgui2/controls/BuildGroup.cpp

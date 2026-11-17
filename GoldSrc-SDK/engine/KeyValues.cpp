@@ -174,7 +174,7 @@ static char* ReadToken( char** buffer )
 		do // eat whitespaces
 		{
 			character = static_cast<signed char>( *( *buffer )++ );
-		} while ( std::isspace( character ) );
+		} while ( std::isspace( static_cast<unsigned char>( character ) ) );
 		if ( character != '/' )
 			break;	// new token starts here
 		character = static_cast<signed char>( *( *buffer )++ );
@@ -221,7 +221,7 @@ static char* ReadToken( char** buffer )
 		{
 			while ( character >= 0 )
 			{
-				if ( std::isspace( character ) )
+				if ( std::isspace( static_cast<unsigned char>( character ) ) )
 					break;
 				if ( length < TOKEN_BUFFER_BYTES )
 					buf[length++] = character; // add char to buffer
@@ -981,6 +981,9 @@ bool KeyValues::SaveToFile( IFileSystem* filesystem, const char* resourceName, c
 		for ( const char* separator = std::strchr( resourceName, '\\' ); separator;
 			separator = std::strchr( separator + 1, '\\' ) )
 		{
+			// stop before the path no longer fits the directory buffer
+			if ( std::strlen( directory ) + 1 + static_cast<std::size_t>( separator - component ) >= sizeof( directory ) )
+				break;
 			if ( directory[0] )
 				std::strcat( directory, "\\" );
 			std::strncat( directory, component, separator - component );

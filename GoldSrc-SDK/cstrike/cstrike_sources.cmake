@@ -90,8 +90,8 @@ set(CSTRIKE_SERVER_SOURCES
 	cstrike/pm_shared/pm_debug.c
 	cstrike/game_shared/voice_gamemgr.cpp
 	cstrike/game_shared/shared_util.cpp
-	cstrike/public/MemPool.cpp
-	cstrike/public/utlsymbol.cpp
+	engine/MemPool.cpp
+	engine/utlsymbol.cpp
 	cstrike/dlls/hostage/states/hostage_animate.cpp
 	cstrike/dlls/hostage/states/hostage_escape.cpp
 	cstrike/dlls/hostage/states/hostage_follow.cpp
@@ -211,7 +211,7 @@ set(CSTRIKE_CLIENT_SOURCES
 	cstrike/cl_dll/buy_presets.cpp
 	cstrike/cl_dll/buy_preset_weapon_info.cpp
 	cstrike/cl_dll/buy_preset.cpp
-	cstrike/public/interface.cpp
+	engine/interface.cpp
 	cstrike/public/checksum_crc.cpp
 	cstrike/common/steamid.cpp
 	cstrike/common/parsemsg.cpp
@@ -283,10 +283,10 @@ set(CSTRIKE_CLIENT_SOURCES
 	vgui2/controls/URLLabel.cpp
 	vgui2/controls/WizardPanel.cpp
 	vgui2/controls/WizardSubPanel.cpp
-	cstrike/public/KeyValues.cpp
-	cstrike/public/UtlBuffer.cpp
-	cstrike/public/utlsymbol.cpp
-	cstrike/public/MemPool.cpp
+	engine/KeyValues.cpp
+	engine/utlbuffer.cpp
+	engine/utlsymbol.cpp
+	engine/MemPool.cpp
 	vgui2/controls/AnimatingImagePanel.cpp
 	vgui2/controls/BuildModeDialog.cpp
 	vgui2/controls/CheckButton.cpp
