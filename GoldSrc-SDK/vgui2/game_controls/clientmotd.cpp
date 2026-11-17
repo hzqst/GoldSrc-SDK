@@ -7,16 +7,22 @@
 
 #include "clientmotd.h"
 #include "HTML.h"
-#include "../../../vgui2/controls/Label.h"
-#include "vgui_controls/Controls.h"
-#include "../../../public/FileSystem.h"
+#include "../../vgui2/controls/Label.h"
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
+#include "../../public/FileSystem.h"
 #include "iviewport.h"
 #include "igameuifuncs.h"
-#include "vgui/ILocalize.h"
+#include "../../engine/ILocalize.h"
+#include <limits.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
 
 extern IGameUIFuncs* gameuifuncs; // for key binding details
+
+// UTF-8 needs at most four bytes for each wide character
+static const size_t MaxMultiByteCharLength = 4;
 
 class ClientMOTDHTML : public vgui2::HTML
 {
@@ -25,7 +31,7 @@ public:
 	{
 	}
 
-	virtual bool OnStartURL( const char* url, const char*, bool )
+	bool OnStartRequest( const char* url, const char*, const char*, bool ) override
 	{
 		return _strnicmp( "steam://", url, 8 ) != 0;
 	}
@@ -71,27 +77,8 @@ void CClientMOTD::Activate( const char* title, const char* message )
 	vgui2::Frame::Activate();
 	SetTitle( title, false );
 	SetControlString( "serverName", title );
-	if ( IsURL( message ) )
-		m_pMessage->OpenURL( message, NULL, false );
-	else
-	{
-		if ( vgui2::filesystem()->FileExists( m_szTempFileName ) )
-			vgui2::filesystem()->RemoveFile( m_szTempFileName, "GAMECONFIG" );
-		if ( strstr( message, "img src=\"view-source:" ) || strstr( message, "<style>;@/*" ) )
-			return;
-
-		FileHandle_t file = vgui2::filesystem()->Open( m_szTempFileName, "w+", "GAMECONFIG" );
-		if ( file )
-		{
-			vgui2::filesystem()->Write( message, (int)strlen( message ), file );
-			vgui2::filesystem()->Close( file );
-			char localURL[4103] = "file:///";
-			size_t length = strlen( localURL );
-			vgui2::filesystem()->GetLocalPath( m_szTempFileName, localURL + length,
-				(int)( sizeof( localURL ) - length ) );
-			m_pMessage->OpenURL( localURL, NULL, false );
-		}
-	}
+	if ( !ShowMessage( message ) )
+		return;
 	if ( !m_iScoreBoardKey )
 		m_iScoreBoardKey = gameuifuncs->GetVGUI2KeyCodeForBind( "showscores" );
 }
@@ -101,27 +88,50 @@ void CClientMOTD::Activate( const wchar_t* title, const wchar_t* message )
 	vgui2::Frame::Activate();
 	SetTitle( title, false );
 	m_pServerName->SetText( title );
-	char ansiURL[256];
-	vgui2::localize()->ConvertUnicodeToANSI( message, ansiURL, sizeof( ansiURL ) );
-	if ( IsURL( ansiURL ) )
-		m_pMessage->OpenURL( ansiURL, NULL, false );
-	else
+
+	// convert the whole message so local pages are written as text, not raw wide characters
+	const size_t capacity = wcslen( message ) * MaxMultiByteCharLength + 1;
+	if ( capacity > INT_MAX )
+		return;
+	char* text = (char*)malloc( capacity );
+	if ( !text )
+		return;
+	vgui2::localize()->ConvertUnicodeToANSI( message, text, (int)capacity );
+	text[capacity - 1] = 0;
+	const bool shown = ShowMessage( text );
+	free( text );
+	if ( shown )
+		SetVisible( true );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: opens a URL directly, or writes the message to a local page and opens that
+//-----------------------------------------------------------------------------
+bool CClientMOTD::ShowMessage( const char* message )
+{
+	if ( IsURL( message ) )
 	{
-		if ( vgui2::filesystem()->FileExists( m_szTempFileName ) )
-			vgui2::filesystem()->RemoveFile( m_szTempFileName, "GAMECONFIG" );
-		FileHandle_t file = vgui2::filesystem()->Open( m_szTempFileName, "w+", "GAMECONFIG" );
-		if ( file )
-		{
-			vgui2::filesystem()->Write( message, (int)wcslen( message ), file );
-			vgui2::filesystem()->Close( file );
-			char localURL[4103] = "file:///";
-			size_t length = strlen( localURL );
-			vgui2::filesystem()->GetLocalPath( m_szTempFileName, localURL + length,
-				(int)( sizeof( localURL ) + length ) );
-			m_pMessage->OpenURL( localURL, NULL, false );
-		}
+		m_pMessage->OpenURL( message, NULL, false );
+		return true;
 	}
-	SetVisible( true );
+
+	if ( vgui2::filesystem()->FileExists( m_szTempFileName ) )
+		vgui2::filesystem()->RemoveFile( m_szTempFileName, "GAMECONFIG" );
+	if ( strstr( message, "img src=\"view-source:" ) || strstr( message, "<style>;@/*" ) )
+		return false;
+
+	FileHandle_t file = vgui2::filesystem()->Open( m_szTempFileName, "w+", "GAMECONFIG" );
+	if ( file )
+	{
+		vgui2::filesystem()->Write( message, (int)strlen( message ), file );
+		vgui2::filesystem()->Close( file );
+		char localURL[4103] = "file:///";
+		size_t length = strlen( localURL );
+		vgui2::filesystem()->GetLocalPath( m_szTempFileName, localURL + length,
+			(int)( sizeof( localURL ) - length ) );
+		m_pMessage->OpenURL( localURL, NULL, false );
+	}
+	return true;
 }
 
 //-----------------------------------------------------------------------------

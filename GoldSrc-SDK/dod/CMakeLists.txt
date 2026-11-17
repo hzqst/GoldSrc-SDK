@@ -285,13 +285,13 @@ goldsrc_add_module(dod_cdll
 		vgui2/controls/ToggleButton.cpp
 		vgui2/controls/Tooltip.cpp
 		vgui2/controls/URLLabel.cpp
-		dod/vgui2/game_controls/classmenu.cpp
-		dod/vgui2/game_controls/clientmotd.cpp
-		dod/vgui2/game_controls/ClientScoreBoardDialog.cpp
-		dod/vgui2/game_controls/commandmenu.cpp
+		vgui2/game_controls/classmenu.cpp
+		vgui2/game_controls/clientmotd.cpp
+		vgui2/game_controls/ClientScoreBoardDialog.cpp
+		vgui2/game_controls/commandmenu.cpp
 		dod/vgui2/game_controls/CreateCommandMenu.cpp
-		dod/vgui2/game_controls/SpectatorGUI.cpp
-		dod/vgui2/game_controls/teammenu.cpp
+		vgui2/game_controls/SpectatorGUI.cpp
+		vgui2/game_controls/teammenu.cpp
 		vgui2/game_controls/TutorStateWindow.cpp
 		vgui2/game_controls/TutorTextWindow.cpp
 		dod/vgui2/game_controls/TutorWindowManager.cpp

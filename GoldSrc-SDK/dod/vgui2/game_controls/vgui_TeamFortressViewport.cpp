@@ -36,7 +36,6 @@
 IViewPort* gViewPortInterface;
 IViewPortMsgs* gViewPortMsgs;
 IGameUIFuncs* gameuifuncs;
-vgui2::Panel* g_lastPanel;
 extern void DuckMessage( const char* str );
 
 void HudMessage( char* text )

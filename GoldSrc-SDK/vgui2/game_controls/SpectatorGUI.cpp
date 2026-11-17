@@ -8,8 +8,7 @@
 #include "SpectatorGUI.h"
 #include "iviewport.h"
 #include "CreateCommandMenu.h"
-#include "../../../engine/igameuifuncs.h"
-#include "../../../engine/controls.h"
+#include "../../engine/igameuifuncs.h"
 #include "ComboBox.h"
 #include "Button.h"
 #include "Label.h"
@@ -17,7 +16,9 @@
 #include "TextImage.h"
 #include "Menu.h"
 #include "MenuItem.h"
-#include "controls.h"
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
+#include "../../engine/ILocalize.h"
 #include <vgui/ISurface.h>
 #include <vgui/IScheme.h>
 #include <vgui/KeyValues.h>
@@ -101,7 +102,7 @@ private:
 
 class CBottomBar : public Frame
 {
-	DECLARE_CLASS_SIMPLE( CBottomBar, Frame );
+	DECLARE_CLASS_SIMPLE_NAMED( CBottomBar, Frame, "vgui::Frame" );
 public:
 	class CommandComboBox : public ComboBox
 	{
@@ -135,7 +136,7 @@ public:
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
-CBottomBar::CBottomBar( Panel* parent, const char* name ) : Frame( parent, name, true )
+CBottomBar::CBottomBar( Panel* parent, const char* name ) : Frame( parent, name, true, false )
 {
 	m_iChooseTeamKey = KEY_NONE;
 	m_bChooseTeamCommand = false;
@@ -206,6 +207,7 @@ void CBottomBar::CommandComboBox::SetMenuCvarChecks( Menu* menu )
 			{
 				char cvarName[64];
 				_snprintf( cvarName, sizeof( cvarName ), "%s_internal", command );
+				cvarName[sizeof( cvarName ) - 1] = 0;
 				item->SetChecked( gViewPortInterface->GetClientDllInterface()->CvarGetFloat( cvarName ) > 0 );
 			}
 		}
@@ -285,15 +287,10 @@ int CBottomBar::PlayerAddItem( int itemID, wchar_t* text, KeyValues* data )
 
 void CBottomBar::SetPlayerText( const wchar_t* text )
 {
-	int length = (int)wcslen( text ) + 1;
-	CUtlVector<char> ansiBuffer;
-	ansiBuffer.AddMultipleToTail( length );
-	char* ansiText = ansiBuffer.Base();
-	localize()->ConvertUnicodeToANSI( text, ansiText, length );
-	m_pPlayerList->SetText( ansiText );
+	m_pPlayerList->SetText( text );
 }
 
-CSpectatorGUI::CSpectatorGUI( Panel* parent ) : Frame( parent, "SpectatorGUI", true )
+CSpectatorGUI::CSpectatorGUI( Panel* parent ) : Frame( parent, "SpectatorGUI", true, false )
 {
 	m_iDuckKey = KEY_NONE;
 	m_bHelpShown = false;
@@ -330,7 +327,7 @@ CSpectatorGUI::CSpectatorGUI( Panel* parent ) : Frame( parent, "SpectatorGUI", t
 	}
 	int wide, tall;
 	surface()->GetScreenSize( wide, tall );
-	tall = scheme()->GetProportionalScaledValue( 64 );
+	tall = GetProportionalScaledValue( 64 );
 	SetSize( wide, tall );
 	m_pTopBar->SetSize( wide, tall );
 	m_pBottomBar->SetSize( wide, tall );
@@ -465,17 +462,16 @@ void CSpectatorGUI::SetImage( const char* image )
 {
 	if ( image && m_pBannerImage )
 	{
-		CUtlVector<char> imageBuffer;
-		imageBuffer.AddMultipleToTail( (int)strlen( image ) + 1 );
-		char* imageName = imageBuffer.Base();
-		strcpy( imageName, image );
-		char* extension = strstr( imageName, ".tga" );
+		CUtlVector<char> imageName;
+		imageName.AddMultipleToTail( strlen( image ) + 1 );
+		strcpy( imageName.Base(), image );
+		char* extension = strstr( imageName.Base(), ".tga" );
 		if ( extension )
 			*extension = 0;
-		m_pBannerImage->SetImage( scheme()->GetImage( imageName, false ) );
+		m_pBannerImage->SetImage( scheme()->GetImage( imageName.Base(), false ) );
 		m_pBannerImage->InvalidateLayout( false, false );
 		m_pBannerImage->SetPos( 0, 0 );
-		m_pBannerImage->SetSize( 256, scheme()->GetProportionalScaledValue( 64 ) );
+		m_pBannerImage->SetSize( 256, GetProportionalScaledValue( 64 ) );
 		m_pBannerImage->SetVisible( true );
 	}
 	else
@@ -532,7 +528,7 @@ void CSpectatorGUI::OnThink()
 	{
 		lastWide = wide;
 		lastTall = tall;
-		int barHeight = scheme()->GetProportionalScaledValue( 64 );
+		int barHeight = GetProportionalScaledValue( 64 );
 		SetSize( wide, barHeight );
 		m_pTopBar->SetSize( wide, barHeight );
 		m_pBottomBar->SetSize( wide, barHeight );
@@ -607,12 +603,11 @@ void CSpectatorGUI::GetPlayerLabelText( int player, wchar_t* text, int textLengt
 	VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 	if ( info.name )
 	{
-		int nameLength = 2 * (int)strlen( info.name );
-		CUtlVector<char> nameBuffer;
-		nameBuffer.AddMultipleToTail( nameLength + 1 );
-		char* safeName = nameBuffer.Base();
-		gViewPortInterface->MakeSafeName( info.name, safeName, nameLength );
-		localize()->ConvertANSIToUnicode( safeName, playerName, sizeof( playerName ) );
+		int nameLength = 2 * (int)strlen( info.name ) + 1;
+		CUtlVector<char> safeName;
+		safeName.AddMultipleToTail( nameLength );
+		gViewPortInterface->MakeSafeName( info.name, safeName.Base(), nameLength );
+		localize()->ConvertANSIToUnicode( safeName.Base(), playerName, sizeof( playerName ) );
 	}
 	else
 	{
@@ -711,7 +706,7 @@ void CSpectatorGUI::Update( const char*, int player, int mode, bool spectateOnly
 	if ( spectateOnly )
 	{
 		char count[6];
-		_snprintf( count, sizeof( count ), "%d", spectatorCount );
+		_snprintf( count, sizeof( count ), "%i", spectatorCount );
 		localize()->ConvertANSIToUnicode( count, wideName, 6 * sizeof( wchar_t ) );
 		localize()->ConstructString( text, sizeof( text ), localize()->Find( "#Spectators" ), 1, wideName );
 		wcscat( text, L" " );
