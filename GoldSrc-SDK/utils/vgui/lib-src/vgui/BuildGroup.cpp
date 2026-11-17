@@ -7,6 +7,7 @@
 #include "VGUI_LineBorder.h"
 #include "VGUI_Panel.h"
 
+#include <stdio.h>
 #include <string.h>
 
 namespace vgui
@@ -76,25 +77,26 @@ Panel* BuildGroup::getCurrentPanel()
 void BuildGroup::copyPropertiesToClipboard()
 {
 	char text[32768];
+	size_t textLen = 0;
 
 	text[0] = '\0';
 	for ( int i = 0; i < _panelDar.getCount(); ++i )
 	{
-		char buf[512];
+		char buf[512] = {};
 
 		_panelDar[i]->getPersistanceText( buf, sizeof( buf ) );
-#if defined( _MSC_VER )
-#pragma warning( push )
-#pragma warning( disable : 4996 )
-#endif
-		strcat( text, _panelNameDar[i] );
-		strcat( text, buf );
-#if defined( _MSC_VER )
-#pragma warning( pop )
-#endif
+		const size_t remaining = sizeof( text ) - textLen;
+		const int written = snprintf( text + textLen, remaining, "%s%s", _panelNameDar[i], buf );
+		if ( written < 0 || (size_t)written >= remaining )
+		{
+			// Drop the entry that does not fit so the clipboard only holds complete lines.
+			text[textLen] = '\0';
+			break;
+		}
+		textLen += (size_t)written;
 	}
 
-	App::getInstance()->setClipboardText( text, (int)strlen( text ) );
+	App::getInstance()->setClipboardText( text, (int)textLen );
 	vgui_printf( "Copied to clipboard\n" );
 }
 

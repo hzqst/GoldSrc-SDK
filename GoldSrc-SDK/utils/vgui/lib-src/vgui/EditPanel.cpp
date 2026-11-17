@@ -362,20 +362,17 @@ void EditPanel::doCursorDelete()
 
 void EditPanel::doCursorPrintf( char* format, ... )
 {
-	char buf[8192];
+	char buf[8192] = {};
 	va_list args;
 	va_start( args, format );
-#if defined( _MSC_VER )
-#pragma warning( push )
-#pragma warning( disable : 4996 )
-#endif
-	vsprintf( buf, format, args );
-#if defined( _MSC_VER )
-#pragma warning( pop )
-#endif
+	int ret = vsnprintf( buf, sizeof( buf ), format, args );
 	va_end( args );
+	if ( ret < 0 )
+	{
+		buf[0] = 0;
+	}
 
-	for ( int i = 0; i < 8192; i++ )
+	for ( int i = 0; i < (int)sizeof( buf ); i++ )
 	{
 		char ch = buf[i];
 		if ( ch == 0 )
