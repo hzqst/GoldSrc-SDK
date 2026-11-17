@@ -163,7 +163,7 @@ bool CClientScoreBoardDialog::GetPlayerScoreInfo( int playerIndex, KeyValues* kv
 
 const char* CClientScoreBoardDialog::GetTeamName( int index )
 {
-	return (unsigned int)index < 5 ? m_TeamInfo[index].name : NULL;
+	return (unsigned int)index < TeamInfoCount ? m_TeamInfo[index].name : NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -171,7 +171,7 @@ const char* CClientScoreBoardDialog::GetTeamName( int index )
 //-----------------------------------------------------------------------------
 void CClientScoreBoardDialog::SetTeamDetails( int index, int frags, int deaths )
 {
-	if ( (unsigned int)index >= 5 )
+	if ( (unsigned int)index >= TeamInfoCount )
 		return;
 
 	m_TeamInfo[index].scores_overriden = true;
@@ -185,7 +185,7 @@ void CClientScoreBoardDialog::SetTeamDetails( int index, int frags, int deaths )
 //-----------------------------------------------------------------------------
 void CClientScoreBoardDialog::SetTeamName( int index, const char* name )
 {
-	if ( (unsigned int)index < 5 )
+	if ( (unsigned int)index < TeamInfoCount )
 	{
 		if ( m_TeamInfo[index].name )
 			free( (void*)m_TeamInfo[index].name );
@@ -198,7 +198,7 @@ void CClientScoreBoardDialog::SetTeamName( int index, const char* name )
 
 VGuiLibraryTeamInfo_t CClientScoreBoardDialog::GetPlayerTeamInfo( int playerIndex )
 {
-	const VGuiLibraryTeamInfo_t& teamInfo = (unsigned int)playerIndex < 5 ? m_TeamInfo[playerIndex] : m_BlankTeamInfo;
+	const VGuiLibraryTeamInfo_t& teamInfo = (unsigned int)playerIndex < TeamInfoCount ? m_TeamInfo[playerIndex] : m_BlankTeamInfo;
 	return teamInfo;
 }
 

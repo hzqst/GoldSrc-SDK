@@ -76,14 +76,17 @@ public:
 	void MoveLabelToFront( const char* textEntryName );
 
 protected:
+	static constexpr int TeamInfoCount = 5;
+	static constexpr int VoiceImageCount = 5;
+
 	static bool StaticPlayerSortFunc( vgui2::SectionedListPanel* list, int itemID1, int itemID2 );
 
 	int						m_iNumTeams;
 	vgui2::SectionedListPanel*	m_pPlayerList;
 	int						m_iSectionId; // the current section we are entering into
-	int						s_VoiceImage[5];
+	int						s_VoiceImage[VoiceImageCount];
 	int						TrackerImage;
-	ScoreBoardTeamInfo		m_TeamInfo[5];
+	ScoreBoardTeamInfo		m_TeamInfo[TeamInfoCount];
 	ScoreBoardTeamInfo		m_BlankTeamInfo;
 	int						m_iPlayerIndexSymbol;
 	int						m_iDesiredHeight;
