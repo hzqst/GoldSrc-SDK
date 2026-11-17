@@ -68,7 +68,10 @@ void AnimatingImagePanel::LoadAnimation( const char* baseName, int frameCount )
 	m_Frames.RemoveAll();
 	for ( int i = 1; i <= frameCount; i++ )
 	{
-		sprintf( imageName, "%s%d", baseName, i );
+		// stop instead of loading a truncated image name
+		int length = _snprintf( imageName, sizeof( imageName ), "%s%d", baseName, i );
+		if ( length < 0 || length >= static_cast<int>( sizeof( imageName ) ) )
+			break;
 		AddImage( scheme()->GetImage( imageName, m_bFiltered ) );
 	}
 }

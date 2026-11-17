@@ -1018,6 +1018,7 @@ void Label::ApplySettings( KeyValues* settings )
 			localize()->ConvertANSIToUnicode( text, unicodeVariable, sizeof( unicodeVariable ) );
 			char token[256];
 			_snprintf( token, sizeof( token ), "#var_%s", text );
+			token[sizeof( token ) - 1] = 0;
 			localize()->AddString( token + 1, unicodeVariable, "" );
 			SetText( token );
 		}

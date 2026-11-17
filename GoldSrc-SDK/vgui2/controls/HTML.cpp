@@ -179,7 +179,7 @@ void HTMLComboBoxHost::OnKillFocus()
 
 void HTMLComboBoxHost::OnCursorMoved( int x, int y )
 {
-	if ( vgui2::input()->GetMouseOver() == GetVPanel() )
+	if ( vgui2::input()->GetMouseOver() == GetVPanel() && m_pParent->m_Serializer != nullptr )
 		m_pParent->m_Serializer->MouseMove( x, y );
 }
 
@@ -257,9 +257,12 @@ HTML::HTML( Panel* parent, const char* name, bool allowJavaScript, bool bPopupWi
 		if ( controller != nullptr )
 		{
 			m_Serializer = controller->CreateSerializer( this );
-			controller->CreateBrowser(
-				reinterpret_cast<IHTMLResponses*>( static_cast<std::uintptr_t>( m_Serializer->GetBrowserHandle() ) ),
-				bPopupWindow, "Valve Half-Life" );
+			if ( m_Serializer != nullptr )
+			{
+				controller->CreateBrowser(
+					reinterpret_cast<IHTMLResponses*>( static_cast<std::uintptr_t>( m_Serializer->GetBrowserHandle() ) ),
+					bPopupWindow, "Valve Half-Life" );
+			}
 		}
 	}
 
@@ -296,7 +299,7 @@ HTML::~HTML()
 	if ( surface() != nullptr )
 	{
 		IHTMLChromeController* controller = surface()->AccessChromeHTMLController();
-		if ( controller != nullptr )
+		if ( controller != nullptr && m_Serializer != nullptr )
 		{
 			controller->RemoveBrowser(
 				reinterpret_cast<IHTMLResponses*>( static_cast<std::uintptr_t>( m_Serializer->GetBrowserHandle() ) ) );
@@ -318,6 +321,8 @@ void HTML::OnSetCursorVGUI( int cursor )
 //-----------------------------------------------------------------------------
 bool HTML::StopLoading()
 {
+	if ( m_Serializer == nullptr )
+		return false;
 	m_Serializer->StopLoad();
 	return true;
 }
@@ -327,18 +332,22 @@ bool HTML::StopLoading()
 //-----------------------------------------------------------------------------
 bool HTML::Refresh()
 {
+	if ( m_Serializer == nullptr )
+		return false;
 	m_Serializer->Reload();
 	return true;
 }
 
 void HTML::GoBack()
 {
-	m_Serializer->GoBack();
+	if ( m_Serializer != nullptr )
+		m_Serializer->GoBack();
 }
 
 void HTML::GoForward()
 {
-	m_Serializer->GoForward();
+	if ( m_Serializer != nullptr )
+		m_Serializer->GoForward();
 }
 
 //-----------------------------------------------------------------------------
@@ -359,17 +368,20 @@ bool HTML::BCanGoFoward()
 
 void HTML::RunJavascript( const char* pchScript )
 {
-	m_Serializer->ExecuteJavascript( pchScript );
+	if ( m_Serializer != nullptr )
+		m_Serializer->ExecuteJavascript( pchScript );
 }
 
 void HTML::OnMouseDoublePressed( MouseCode code )
 {
-	m_Serializer->MouseDoubleClick( ConvertMouseCodeToCEFCode( code ) );
+	if ( m_Serializer != nullptr )
+		m_Serializer->MouseDoubleClick( ConvertMouseCodeToCEFCode( code ) );
 }
 
 void HTML::OnKeyTyped( wchar_t unichar )
 {
-	m_Serializer->KeyChar( unichar );
+	if ( m_Serializer != nullptr )
+		m_Serializer->KeyChar( unichar );
 }
 
 void HTML::OnMouseWheeled( int delta )
@@ -379,7 +391,8 @@ void HTML::OnMouseWheeled( int delta )
 		double value = static_cast<double>( _vbar->GetValue() ) - static_cast<double>( delta ) * 100.0 / 3.0;
 		_vbar->SetValue( static_cast<int>( value ) );
 	}
-	m_Serializer->MouseWheel( delta );
+	if ( m_Serializer != nullptr )
+		m_Serializer->MouseWheel( delta );
 }
 
 //-----------------------------------------------------------------------------
@@ -425,7 +438,8 @@ void HTML::OnEditNewLine( Panel* panel )
 void HTML::BrowserStartRequest( const char* url, const char* target, const char* postdata, bool isredirect )
 {
 	bool allow = OnStartRequest( url, target, postdata, isredirect );
-	m_Serializer->StartRequestResponse( allow );
+	if ( m_Serializer != nullptr )
+		m_Serializer->StartRequestResponse( allow );
 	UpdateCachedHTMLValues();
 }
 
@@ -482,7 +496,8 @@ void HTML::BrowserGetZoomResponse( float flZoom )
 
 void HTML::DismissJSDialog( int bResult )
 {
-	m_Serializer->JSDialogResponse( bResult );
+	if ( m_Serializer != nullptr )
+		m_Serializer->JSDialogResponse( bResult );
 }
 
 void HTML::BrowserCanGoBackandForward( bool bgoback, bool bgoforward )
@@ -493,7 +508,8 @@ void HTML::BrowserCanGoBackandForward( bool bgoback, bool bgoforward )
 
 void HTML::UpdateCachedHTMLValues()
 {
-	m_Serializer->FullRepaint();
+	if ( m_Serializer != nullptr )
+		m_Serializer->FullRepaint();
 }
 
 void HTML::BrowserLoadingResource()
@@ -538,7 +554,8 @@ void HTML::BrowserNeedsPaint( int textureid, int wide, int tall, const unsigned 
 	}
 
 	Repaint();
-	m_Serializer->NeedsPaintResponse( textureid );
+	if ( m_Serializer != nullptr )
+		m_Serializer->NeedsPaintResponse( textureid );
 }
 
 void HTML::BrowserSetHTMLTitle( const char* title )
@@ -555,7 +572,8 @@ void HTML::BrowserStatusText( const char* text )
 void HTML::OnSetFocus()
 {
 	Panel::OnSetFocus();
-	m_Serializer->SetFocus( true );
+	if ( m_Serializer != nullptr )
+		m_Serializer->SetFocus( true );
 }
 
 void HTML::PostChildPaint()
@@ -624,9 +642,9 @@ void HTML::PerformLayout()
 
 void HTML::OnSliderMoved()
 {
-	if ( _hbar->IsVisible() )
+	if ( m_Serializer != nullptr && _hbar->IsVisible() )
 		m_Serializer->SetHorizontalScroll( _hbar->GetValue() );
-	if ( _vbar->IsVisible() )
+	if ( m_Serializer != nullptr && _vbar->IsVisible() )
 		m_Serializer->SetVerticalScroll( _vbar->GetValue() );
 	PostActionSignal( new KeyValues( "HTMLSliderMoved" ) );
 }
@@ -754,6 +772,8 @@ void HTML::BrowserResize()
 		m_iTalLastHTMLSize = 64;
 		htmlWide = m_iWideLastHTMLSize;
 	}
+	if ( m_Serializer == nullptr )
+		return;
 	m_Serializer->BrowserSize( htmlWide, htmlTall );
 	int vertical = _vbar->GetValue();
 	int horizontal = _hbar->GetValue();
@@ -822,7 +842,8 @@ void HTML::OnMove()
 	int absX = 0;
 	int absY = 0;
 	ipanel()->GetAbsPos( GetVPanel(), absX, absY );
-	m_Serializer->BrowserPosition( absX, absY );
+	if ( m_Serializer != nullptr )
+		m_Serializer->BrowserPosition( absX, absY );
 	if ( m_pComboBoxHost != nullptr && m_pComboBoxHost->IsVisible() )
 		m_pComboBoxHost->SetVisible( false );
 }
@@ -846,7 +867,8 @@ void HTML::OnMousePressed( MouseCode code )
 	{
 		if ( m_bContextMenuEnabled )
 		{
-			m_Serializer->LinkAtPosition( m_iMouseX, m_iMouseY );
+			if ( m_Serializer != nullptr )
+				m_Serializer->LinkAtPosition( m_iMouseX, m_iMouseY );
 			Menu::PlaceContextMenu( this, m_pContextMenu );
 		}
 		else
@@ -858,6 +880,8 @@ void HTML::OnMousePressed( MouseCode code )
 
 	// ask for the focus to come to this window
 	RequestFocus( 0 );
+	if ( m_Serializer == nullptr )
+		return;
 	if ( code == MOUSE_MIDDLE )
 	{
 		m_Serializer->MouseDown( ConvertMouseCodeToCEFCode( code ) );
@@ -881,7 +905,7 @@ void HTML::OnKillFocus()
 {
 	if ( input()->GetFocus() != m_pComboBoxHost->GetVPanel() )
 		Panel::OnKillFocus();
-	if ( !m_pContextMenu->HasFocus() && !m_pComboBoxHost->HasFocus() )
+	if ( m_Serializer != nullptr && !m_pContextMenu->HasFocus() && !m_pComboBoxHost->HasFocus() )
 		m_Serializer->SetFocus( false );
 }
 
@@ -915,7 +939,8 @@ void HTML::OnMouseReleased( MouseCode code )
 		m_sDragURL.m_pchString = nullptr;
 		cefCode = 0;
 	}
-	m_Serializer->MouseUp( cefCode );
+	if ( m_Serializer != nullptr )
+		m_Serializer->MouseUp( cefCode );
 }
 
 void HTML::OnCursorMoved( int x, int y )
@@ -925,7 +950,8 @@ void HTML::OnCursorMoved( int x, int y )
 	{
 		m_iMouseX = x;
 		m_iMouseY = y;
-		m_Serializer->MouseMove( x, y );
+		if ( m_Serializer != nullptr )
+			m_Serializer->MouseMove( x, y );
 	}
 	else if ( m_sDragURL.m_pchString == nullptr )
 	{
@@ -994,7 +1020,8 @@ void HTML::OnCommand( const char* pchCommand )
 		int htmlY = 0;
 		ipanel()->GetAbsPos( GetVPanel(), htmlX, htmlY );
 		m_bRequestingCopyLink = true;
-		m_Serializer->LinkAtPosition( menuX - htmlX, menuY - htmlY );
+		if ( m_Serializer != nullptr )
+			m_Serializer->LinkAtPosition( menuX - htmlX, menuY - htmlY );
 		return;
 	}
 	Panel::OnCommand( pchCommand );
@@ -1064,7 +1091,7 @@ static void SubmitURL( IHTMLSerializer* serializer, const char* url, const char*
 void HTML::OpenURL( const char* URL, const char* postData, bool force )
 {
 	( void )force;
-	if ( m_Serializer->GetBrowserIndex() < 0 )
+	if ( m_Serializer == nullptr || m_Serializer->GetBrowserIndex() < 0 )
 		StorePendingNavigation( m_sPendingURLLoad, m_sPendingPostData, URL, postData );
 	else
 		SubmitURL( m_Serializer, URL, postData );
@@ -1078,7 +1105,7 @@ void HTML::BrowserReady()
 	const char* post = "";
 	if ( m_sPendingPostData.m_pchString != nullptr )
 		post = m_sPendingPostData.m_pchString;
-	if ( m_Serializer->GetBrowserIndex() < 0 )
+	if ( m_Serializer == nullptr || m_Serializer->GetBrowserIndex() < 0 )
 	{
 		StorePendingNavigation( m_sPendingURLLoad, m_sPendingPostData, url, post );
 	}
@@ -1170,7 +1197,7 @@ void HTML::PaintComboBox()
 void HTML::PostURL( const char* URL, const char* pchPostData, bool force )
 {
 	( void )force;
-	if ( m_Serializer->GetBrowserIndex() < 0 )
+	if ( m_Serializer == nullptr || m_Serializer->GetBrowserIndex() < 0 )
 		StorePendingNavigation( m_sPendingURLLoad, m_sPendingPostData, URL, pchPostData );
 	else
 		SubmitURL( m_Serializer, URL, pchPostData );
@@ -1230,7 +1257,8 @@ bool HTML::FindDialogVisible()
 void HTML::OnKeyCodeReleased( KeyCode code )
 {
 	int virtualKey = system()->KeyCode_VGUIToVirtualKey( code );
-	m_Serializer->KeyUp( virtualKey, GetKeyModifiers() );
+	if ( m_Serializer != nullptr )
+		m_Serializer->KeyUp( virtualKey, GetKeyModifiers() );
 }
 
 void HTML::OnKeyCodeTyped( KeyCode code )
@@ -1253,14 +1281,16 @@ void HTML::OnKeyCodeTyped( KeyCode code )
 			default:
 				break;
 			}
-			m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
+			if ( m_Serializer != nullptr )
+				m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
 			return;
 		}
 		if ( code != KEY_F )
 		{
 			if ( code != KEY_TAB )
 			{
-				m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
+				if ( m_Serializer != nullptr )
+					m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
 				return;
 			}
 		}
@@ -1270,7 +1300,8 @@ void HTML::OnKeyCodeTyped( KeyCode code )
 				ShowFindDialog();
 			else
 				HideFindDialog();
-			m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
+			if ( m_Serializer != nullptr )
+				m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
 			return;
 		}
 	}
@@ -1278,7 +1309,8 @@ void HTML::OnKeyCodeTyped( KeyCode code )
 	if ( m_pFindBar->IsVisible() && !m_pFindBar->m_bHidden )
 	{
 		HideFindDialog();
-		m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
+		if ( m_Serializer != nullptr )
+			m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
 		return;
 	}
 	if ( input()->IsKeyDown( KEY_LCONTROL ) || input()->IsKeyDown( KEY_RCONTROL ) )
@@ -1286,7 +1318,8 @@ void HTML::OnKeyCodeTyped( KeyCode code )
 		Panel::OnKeyTyped( static_cast<wchar_t>( code ) );
 		return;
 	}
-	m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
+	if ( m_Serializer != nullptr )
+		m_Serializer->KeyDown( system()->KeyCode_VGUIToVirtualKey( code ), GetKeyModifiers() );
 }
 
 //-----------------------------------------------------------------------------
@@ -1309,7 +1342,8 @@ bool HTML::IsScrollbarVisible()
 
 void HTML::AddHeader( const char* pchHeader, const char* pchValue )
 {
-	m_Serializer->AddHeader( pchHeader, pchValue );
+	if ( m_Serializer != nullptr )
+		m_Serializer->AddHeader( pchHeader, pchValue );
 }
 
 void HTML::Find( const char* pchSubStr )
@@ -1337,7 +1371,8 @@ void HTML::StopFind()
 
 void HTML::GetLinkAtPosition( int x, int y )
 {
-	m_Serializer->LinkAtPosition( x, y );
+	if ( m_Serializer != nullptr )
+		m_Serializer->LinkAtPosition( x, y );
 }
 
 void HTML::UpdateSizeAndScrollBars()
