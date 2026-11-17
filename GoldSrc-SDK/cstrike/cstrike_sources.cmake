@@ -303,10 +303,10 @@ set(CSTRIKE_CLIENT_SOURCES
 	cstrike/vgui2/game_controls/vgui_avatarimage.cpp
 	cstrike/vgui2/game_controls/vgui_TeamFortressViewport.cpp
 	cstrike/vgui2/game_controls/vgui_TeamFortressViewport_msgs.cpp
-	cstrike/vgui2/game_controls/vguitextwindow.cpp
+	vgui2/game_controls/vguitextwindow.cpp
 	cstrike/vgui2/game_controls/clientmotd.cpp
 	cstrike/vgui2/game_controls/commandmenu.cpp
 	cstrike/vgui2/game_controls/TutorWindowManager.cpp
-	cstrike/vgui2/game_controls/TutorStateWindow.cpp
-	cstrike/vgui2/game_controls/TutorTextWindow.cpp
+	vgui2/game_controls/TutorStateWindow.cpp
+	vgui2/game_controls/TutorTextWindow.cpp
 )
