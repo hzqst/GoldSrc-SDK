@@ -1,12 +1,13 @@
-"""Compile the production VGUI1 Win32 Surface GDI resource handling (#242, #295).
+"""Compile the production VGUI1 Win32 Surface GDI resource handling (#242, #295, #298).
 
 Run: python tests/vgui1_surface_gdi_tests.py
 Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
-Surface::recreateContext and the texture methods are extracted as-is and run
-against stub GDI calls that track live objects and DC selections. As in GDI,
+Surface::createPlat, ~Surface, recreateContext and the texture methods are
+extracted as-is and run against stub Win32 / GDI calls that track live windows,
+objects and DC selections. As in GDI,
 deleting an object that is still selected into a DC fails and leaves it alive,
 and a bitmap cannot be selected into a second DC.
 
@@ -27,6 +28,11 @@ and a bitmap cannot be selected into a second DC.
 - texture-two-surfaces: a texture drawn on one surface can be drawn on another.
 - texture-create-fails: a refused re-upload keeps the old texture drawable, and
   a refused first upload draws nothing.
+- destroy-releases: destroying a drawn surface releases its window, window DC,
+  DCs, backing bitmap, clip region and SurfacePlat, detaching the window first.
+- destroy-before-context: destroying a surface without a context releases
+  everything it created.
+- destroy-fullscreen: destroying a fullscreen surface restores the display mode.
 """
 import os
 from pathlib import Path
@@ -63,6 +69,10 @@ typedef unsigned int UINT;
 typedef unsigned long DWORD;
 typedef unsigned char uchar;
 typedef void* HANDLE;
+typedef std::intptr_t LONG_PTR;
+typedef struct HWND__* HWND;
+typedef struct HINSTANCE__* HINSTANCE;
+typedef struct HRGN__* HRGN;
 typedef struct HDC__* HDC;
 typedef struct HBITMAP__* HBITMAP;
 typedef void* HGDIOBJ;
@@ -70,6 +80,13 @@ static HGDIOBJ const HGDI_ERROR = reinterpret_cast<HGDIOBJ>(static_cast<std::int
 static const DWORD BI_RGB = 0;
 static const UINT DIB_RGB_COLORS = 0;
 static const DWORD SRCCOPY = 0x00CC0020;
+static const DWORD WS_POPUP = 0x80000000;
+static const UINT CS_HREDRAW = 2;
+static const UINT CS_VREDRAW = 1;
+static const UINT CS_DBLCLKS = 8;
+static const int GWLP_USERDATA = -21;
+static const int TRANSPARENT = 1;
+static const UINT TA_UPDATECP = 1;
 
 struct BITMAPINFOHEADER
 {
@@ -86,7 +103,7 @@ struct BITMAPINFO
  BITMAPINFOHEADER bmiHeader;
 };
 
-enum GdiKind { GDI_DC, GDI_BITMAP };
+enum GdiKind { GDI_DC, GDI_BITMAP, GDI_REGION, GDI_WINDOW };
 
 struct GdiObject
 {
@@ -97,6 +114,7 @@ struct GdiObject
  int tall;
  std::size_t selected;
  uchar* bits;
+ LONG_PTR userData;
 };
 
 static std::vector<GdiObject> objects;
@@ -107,10 +125,13 @@ static bool failSelect = false;
 static bool failCreateDIB = false;
 static int blits = 0;
 static std::size_t lastBlitSource = 0;
+static int displayRestores = 0;
+static int livePlats = 0;
+static int destroyedAttachedWindows = 0;
 
 static std::size_t Add(GdiKind kind, bool stock, int wide, int tall)
 {
- GdiObject object = { kind, true, stock, wide, tall, 0, NULL };
+ GdiObject object = { kind, true, stock, wide, tall, 0, NULL, 0 };
  objects.push_back(object);
  return objects.size();
 }
@@ -187,6 +208,11 @@ static HGDIOBJ SelectObject(HDC dc, HGDIOBJ object)
 static BOOL DeleteObject(HGDIOBJ handle)
 {
  GdiObject* object = Find(handle, GDI_BITMAP);
+ if (GdiObject* region = Find(handle, GDI_REGION))
+ {
+  region->alive = false;
+  return 1;
+ }
  if (object == NULL || IsSelected(reinterpret_cast<std::size_t>(handle)))
  {
   ++failedDeletes;
@@ -214,6 +240,90 @@ static BOOL StretchBlt(HDC dest, int, int, int, int, HDC source, int, int, int s
  return 1;
 }
 
+// Deleting a DC deselects whatever it holds.
+static BOOL DeleteDC(HDC dc)
+{
+ GdiObject* object = Find(dc, GDI_DC);
+ Check(object != NULL, "DC deleted once");
+ object->alive = false;
+ return 1;
+}
+
+static HRGN CreateRectRgn(int, int, int, int)
+{
+ return reinterpret_cast<HRGN>(Add(GDI_REGION, false, 0, 0));
+}
+
+struct WNDCLASSA
+{
+ UINT style;
+ LONG_PTR (*lpfnWndProc)(HWND, UINT, LONG_PTR, LONG_PTR);
+ int cbClsExtra;
+ int cbWndExtra;
+ HINSTANCE hInstance;
+ void* hIcon;
+ void* hCursor;
+ void* hbrBackground;
+ const char* lpszMenuName;
+ const char* lpszClassName;
+};
+
+static LONG_PTR SurfaceWindowProc(HWND, UINT, LONG_PTR, LONG_PTR) { return 0; }
+static void InitializeInputTables() {}
+static HINSTANCE GetModuleHandleA(const char*) { return NULL; }
+static unsigned short RegisterClassA(const WNDCLASSA* windowClass)
+{
+ Check(windowClass->lpfnWndProc == SurfaceWindowProc, "window procedure registered");
+ return 1;
+}
+
+static HWND CreateWindowExA(DWORD, const char*, const char*, DWORD, int, int, int wide, int tall, HWND, void*,
+ HINSTANCE, void*)
+{
+ return reinterpret_cast<HWND>(Add(GDI_WINDOW, false, wide, tall));
+}
+
+static LONG_PTR SetWindowLongPtrA(HWND window, int index, LONG_PTR value)
+{
+ GdiObject* object = Find(window, GDI_WINDOW);
+ Check(object != NULL && index == GWLP_USERDATA, "user data on a live window");
+ const LONG_PTR previous = object->userData;
+ object->userData = value;
+ return previous;
+}
+
+static BOOL DestroyWindow(HWND window)
+{
+ GdiObject* object = Find(window, GDI_WINDOW);
+ Check(object != NULL, "window destroyed once");
+ if (object->userData != 0) ++destroyedAttachedWindows;
+ object->alive = false;
+ return 1;
+}
+
+// The window DC is a DC object until it is released.
+static HDC GetDC(HWND window)
+{
+ Check(Find(window, GDI_WINDOW) != NULL, "DC of a live window");
+ return CreateCompatibleDC(NULL);
+}
+
+static int ReleaseDC(HWND window, HDC dc)
+{
+ Check(Find(window, GDI_WINDOW) != NULL, "DC released before its window is destroyed");
+ return DeleteDC(dc);
+}
+
+static int SetBkMode(HDC, int) { return 0; }
+static UINT SetTextAlign(HDC, UINT) { return 0; }
+
+static long ChangeDisplaySettingsA(void* mode, DWORD flags)
+{
+ Check(mode == NULL && flags == 0, "display mode restored");
+ ++displayRestores;
+ return 0;
+}
+
 static HBITMAP Selected(HDC dc)
 {
  GdiObject* object = Find(dc, GDI_DC);
@@ -224,33 +334,37 @@ class Panel
 {
 public:
  void getSize(int& wide, int& tall) { wide = _wide; tall = _tall; }
+ void getBounds(int& x, int& y, int& wide, int& tall) { x = 0; y = 0; getSize(wide, tall); }
  int _wide;
  int _tall;
 };
 
 struct SurfacePlat
 {
+ SurfacePlat() { ++livePlats; }
+ ~SurfacePlat() { --livePlats; }
+ HWND window;
  HDC drawDC;
  HDC windowDC;
  HDC textureDC;
+ HRGN clip;
  HBITMAP bitmap;
  int bitmapSize[2];
+ bool isFullscreen;
 };
 
 class Surface
 {
 public:
+ // Surface::Surface calls createPlat; the tests call recreateContext themselves.
  Surface()
  {
   _panel._wide = 0;
   _panel._tall = 0;
-  _plat = &_platData;
-  _platData = SurfacePlat();
-  _platData.windowDC = CreateCompatibleDC(NULL);
-  _platData.drawDC = CreateCompatibleDC(NULL);
-  _platData.textureDC = NULL;
-  _platData.bitmap = NULL;
+  createPlat();
  }
+ ~Surface();
+ bool createPlat();
  Panel* getPanel() { return &_panel; }
  void setSize(int wide, int tall) { _panel._wide = wide; _panel._tall = tall; }
  SurfacePlat* plat() { return _plat; }
@@ -261,7 +375,6 @@ public:
 protected:
  Panel _panel;
  SurfacePlat* _plat;
- SurfacePlat _platData;
 };
 '''
 
@@ -270,7 +383,7 @@ static const int RESIZE_CYCLES = 32;
 static const int SMALL_SIZE[2] = { 160, 120 };
 static const int LARGE_SIZE[2] = { 1024, 768 };
 static const int MINIMUM_SIZE = 1;
-// windowDC and drawDC are owned by the test fixture
+// windowDC and drawDC are created by createPlat
 static const int FIXTURE_DCS = 2;
 static const int TEXTURE_ID = 2700;
 static const int OTHER_TEXTURE_ID = 2701;
@@ -302,6 +415,18 @@ static void CheckOwnership(Surface& surface)
 {
  Check(LiveCount(GDI_BITMAP) == 1, "one backing bitmap alive");
  Check(LiveCount(GDI_DC) == FIXTURE_DCS + (surface.plat()->textureDC != NULL ? 1 : 0), "no leaked DCs");
+ Check(failedDeletes == 0, "every delete succeeded");
+}
+
+// Only the fixture's own surface may still be alive; shared textures are not owned by a Surface.
+static void CheckReleased(int sharedTextures)
+{
+ Check(LiveCount(GDI_WINDOW) == 1, "window destroyed");
+ Check(LiveCount(GDI_DC) == FIXTURE_DCS, "window DC released and DCs deleted");
+ Check(LiveCount(GDI_REGION) == 1, "clip region deleted");
+ Check(LiveCount(GDI_BITMAP) == sharedTextures, "backing bitmap deleted");
+ Check(livePlats == 1, "SurfacePlat deleted");
+ Check(destroyedAttachedWindows == 0, "window detached before it is destroyed");
  Check(failedDeletes == 0, "every delete succeeded");
 }
 
@@ -445,6 +570,34 @@ static void Run(const std::string& test)
   Check(blits == 2, "failed first upload draws nothing");
   Check(failedDeletes == 0, "every delete succeeded");
  }
+ else if (test == "destroy-releases")
+ {
+  Surface* destroyed = new Surface();
+  destroyed->setSize(SMALL_SIZE[0], SMALL_SIZE[1]);
+  Check(destroyed->recreateContext(), "context");
+  UploadAndDraw(*destroyed, TEXTURE_ID, TEXTURE_WIDE, TEXTURE_TALL);
+  destroyed->setSize(LARGE_SIZE[0], LARGE_SIZE[1]);
+  Check(destroyed->recreateContext(), "context recreated");
+  const int sharedTextures = LiveCount(GDI_BITMAP) - 1;
+  delete destroyed;
+  CheckReleased(sharedTextures);
+ }
+ else if (test == "destroy-before-context")
+ {
+  Surface* destroyed = new Surface();
+  delete destroyed;
+  CheckReleased(0);
+ }
+ else if (test == "destroy-fullscreen")
+ {
+  Surface* destroyed = new Surface();
+  destroyed->setSize(SMALL_SIZE[0], SMALL_SIZE[1]);
+  Check(destroyed->recreateContext(), "context");
+  destroyed->plat()->isFullscreen = true;
+  delete destroyed;
+  Check(displayRestores == 1, "display mode restored once");
+  CheckReleased(0);
+ }
  else Check(false, "unknown scenario");
 }
 
@@ -489,9 +642,12 @@ def main():
         define((VGUI / 'include/VGUI.h').read_text(), 'VGUI_RGBA_BYTES'),
         define((VGUI / 'include/VGUI_Surface.h').read_text(), 'VGUI_TEXTURE_CAPACITY'),
         PRELUDE,
+        re.search(r'^const char surfaceClassName\[\].*$', surface, re.M).group(0),
         block(surface, 'struct Texture', 'Texture* currentTexture;'),
         methods(surface, (
             'Texture* FindTexture(',
+            'Surface::~Surface()',
+            'bool Surface::createPlat()',
             'bool Surface::recreateContext()',
             'void Surface::drawSetTexture(',
             'void Surface::drawSetTextureRGBA(',
@@ -501,7 +657,8 @@ def main():
 
     scenarios = ['resize-cycle', 'texture-dc-reused', 'within-spare', 'minimum-size',
                  'bitmap-create-fails', 'select-fails', 'texture-dc-fails', 'texture-reupload',
-                 'texture-selection-restored', 'texture-two-surfaces', 'texture-create-fails']
+                 'texture-selection-restored', 'texture-two-surfaces', 'texture-create-fails',
+                 'destroy-releases', 'destroy-before-context', 'destroy-fullscreen']
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-gdi-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)
