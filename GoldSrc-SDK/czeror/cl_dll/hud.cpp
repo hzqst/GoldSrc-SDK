@@ -25,7 +25,7 @@
 #include "../../cl_dll/demo.h"
 #include "../game_shared/voice_status.h"
 #include "../public/game_controls/legacy_iviewport.h"
-#include "../public/game_controls/iviewportmsgs.h"
+#include "../public/game_controls/legacy_iviewportmsgs.h"
 #include "vgui/iczeroviewport.h"
 #include "../../vgui2/controls/controls.h"
 #include "vgui/IScheme.h"

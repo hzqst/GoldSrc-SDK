@@ -16,8 +16,8 @@
 // $NoKeywords: $
 //=============================================================================
 
-#ifndef IVIEWPORT_H
-#define IVIEWPORT_H
+#ifndef LEGACY_IVIEWPORT_H
+#define LEGACY_IVIEWPORT_H
 
 namespace vgui2
 {
@@ -68,4 +68,4 @@ public:
 
 extern IViewPort* gViewPortInterface;
 
-#endif // IVIEWPORT_H
+#endif // LEGACY_IVIEWPORT_H
