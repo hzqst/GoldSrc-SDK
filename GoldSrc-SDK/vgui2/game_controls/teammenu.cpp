@@ -6,18 +6,20 @@
 //=============================================================================
 
 #include "teammenu.h"
-#include "../../../vgui2/controls/Button.h"
-#include "../../../vgui2/controls/RichText.h"
-#include "../../../vgui2/controls/Label.h"
-#include "vgui_controls/Controls.h"
+#include "../../vgui2/controls/Button.h"
+#include "../../vgui2/controls/RichText.h"
+#include "../../vgui2/controls/Label.h"
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
 #include "iviewport.h"
 #include "igameuifuncs.h"
-#include "../../../public/FileSystem.h"
+#include "../../public/FileSystem.h"
 #include "vgui/KeyValues.h"
 #include "vgui/IScheme.h"
 #include <stdio.h>
 #include <stdlib.h> // MAX_PATH define
 #include <string.h>
+#include <limits.h>
 
 extern IGameUIFuncs* gameuifuncs; // for key binding details
 void DuckMessage( const char* text );
@@ -78,7 +80,7 @@ CTeamMenu::~CTeamMenu()
 //-----------------------------------------------------------------------------
 void CTeamMenu::OnTeamButton( int team )
 {
-	char command[64];
+	char command[64] = {};
 	if ( m_iNumTeams > team )
 		_snprintf( command, sizeof( command ), "jointeam %i", team + 1 );
 	else if ( m_iNumTeams == team )
@@ -88,7 +90,8 @@ void CTeamMenu::OnTeamButton( int team )
 		DuckMessage( "#Spec_Duck" );
 		gViewPortInterface->HideBackGround();
 	}
-	gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( command );
+	if ( command[0] )
+		gViewPortInterface->GetClientDllInterface()->CallEnghudClientCmd( command );
 	SetVisible( false );
 	OnClose();
 }
@@ -147,9 +150,21 @@ void CTeamMenu::LoadMapPage( const char* map )
 	}
 
 	FileHandle_t file = vgui2::filesystem()->Open( filename, "r", NULL );
+	if ( !file )
+		return;
 
 	unsigned int size = vgui2::filesystem()->Size( file );
+	if ( size > INT_MAX - sizeof( wchar_t ) )
+	{
+		vgui2::filesystem()->Close( file );
+		return;
+	}
 	wchar_t* text = (wchar_t*)malloc( size + sizeof( wchar_t ) );
+	if ( !text )
+	{
+		vgui2::filesystem()->Close( file );
+		return;
+	}
 	memset( text, 0, size + sizeof( wchar_t ) );
 	vgui2::filesystem()->Read( text, (int)size, file );
 

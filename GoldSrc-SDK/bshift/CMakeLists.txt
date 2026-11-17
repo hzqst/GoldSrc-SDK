@@ -251,13 +251,13 @@ goldsrc_add_module(bshift_cdll
 		vgui2/controls/ToggleButton.cpp
 		vgui2/controls/Tooltip.cpp
 		vgui2/controls/URLLabel.cpp
-		bshift/vgui2/game_controls/classmenu.cpp
-		bshift/vgui2/game_controls/clientmotd.cpp
-		bshift/vgui2/game_controls/ClientScoreBoardDialog.cpp
-		bshift/vgui2/game_controls/commandmenu.cpp
+		vgui2/game_controls/classmenu.cpp
+		vgui2/game_controls/clientmotd.cpp
+		vgui2/game_controls/ClientScoreBoardDialog.cpp
+		vgui2/game_controls/commandmenu.cpp
 		bshift/vgui2/game_controls/CreateCommandMenu.cpp
-		bshift/vgui2/game_controls/SpectatorGUI.cpp
-		bshift/vgui2/game_controls/teammenu.cpp
+		vgui2/game_controls/SpectatorGUI.cpp
+		vgui2/game_controls/teammenu.cpp
 		vgui2/game_controls/TutorStateWindow.cpp
 		vgui2/game_controls/TutorTextWindow.cpp
 		bshift/vgui2/game_controls/TutorWindowManager.cpp

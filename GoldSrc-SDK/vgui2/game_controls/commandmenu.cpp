@@ -7,8 +7,9 @@
 
 #include "commandmenu.h"
 #include "CreateCommandMenu.h"
-#include "../../../vgui2/controls/Menu.h"
-#include "vgui_controls/Controls.h"
+#include "../../vgui2/controls/Menu.h"
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
 #include "iviewport.h"
 #include "vgui/ISurface.h"
 #include "vgui/IScheme.h"
@@ -87,6 +88,7 @@ void CCommandMenu::UpdateCommandMenu()
 	vgui2::IScheme* scheme = vgui2::scheme()->GetIScheme( GetScheme() );
 	PositionCommandMenu();
 	m_pMenu->SetKeyBoardInputEnabled( false );
+	m_pMenu->SetBorder( NULL );
 	m_pMenu->SetBgColor( scheme ? GetBgColor() : Color( 0, 0, 0, 200 ) );
 	SetMenuVisible( true );
 }

@@ -10,16 +10,21 @@
 #include "SectionedListPanel.h"
 #include "ImageList.h"
 #include "Label.h"
-#include "controls.h"
-#include "../../../engine/controls.h"
+#include "../controls/controls.h"
+#include "../../engine/controls.h"
 #include "vgui/IImage.h"
 #include "vgui/KeyValues.h"
+#include "../../engine/ILocalize.h"
+#include "vgui/IScheme.h"
 #include "IKeyValues.h"
 
 #include <malloc.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+
+#include "buildslave_assert.h"
+#define ASSERT_FILE BUILDSLAVE_PATH( L"vgui2\\game_controls\\ClientScoreBoardDialog.cpp" )
 
 CClientScoreBoardDialog::CClientScoreBoardDialog( vgui2::Panel* parent )
 	: vgui2::Frame( parent, "ClientScoreBoard", true, false )
@@ -104,17 +109,25 @@ void CClientScoreBoardDialog::MoveToFront()
 
 bool CClientScoreBoardDialog::StaticPlayerSortFunc( vgui2::SectionedListPanel* list, int itemID1, int itemID2 )
 {
-	KeyValues* player1 = list->GetItemData( itemID1 );
-	KeyValues* player2 = list->GetItemData( itemID2 );
-	int frags1 = player1->GetInt( "frags", 0 );
-	int frags2 = player2->GetInt( "frags", 0 );
-	if ( frags1 != frags2 )
-		return frags1 > frags2;
+	KeyValues* it1 = list->GetItemData( itemID1 );
+	KeyValues* it2 = list->GetItemData( itemID2 );
+	ASSERT_AT( it1 && it2, 429 );
 
-	int deaths1 = player1->GetInt( "deaths", 0 );
-	int deaths2 = player2->GetInt( "deaths", 0 );
-	if ( deaths1 != deaths2 )
-		return deaths1 < deaths2;
+	// first compare frags
+	int v1 = it1->GetInt( "frags", 0 );
+	int v2 = it2->GetInt( "frags", 0 );
+	if ( v1 > v2 )
+		return true;
+	else if ( v1 < v2 )
+		return false;
+
+	// next compare deaths
+	v1 = it1->GetInt( "deaths", 0 );
+	v2 = it2->GetInt( "deaths", 0 );
+	if ( v1 > v2 )
+		return false;
+	else if ( v1 < v2 )
+		return true;
 
 	// the same, so compare itemID's (as a sentinel value to get deterministic sorts)
 	return itemID1 < itemID2;
@@ -166,22 +179,27 @@ void CClientScoreBoardDialog::SetTeamDetails( int index, int frags, int deaths )
 	m_TeamInfo[index].deaths = deaths;
 }
 
+
+//-----------------------------------------------------------------------------
+// Purpose: Sets the name of this team
+//-----------------------------------------------------------------------------
 void CClientScoreBoardDialog::SetTeamName( int index, const char* name )
 {
-	if ( (unsigned int)index >= 5 )
-		return;
-
-	if ( m_TeamInfo[index].name )
-		free( (void*)m_TeamInfo[index].name );
-	char* teamName = (char*)malloc( strlen( name ) + 1 );
-	m_TeamInfo[index].name = teamName;
-	if ( teamName )
-		strcpy( teamName, name );
+	if ( (unsigned int)index < 5 )
+	{
+		if ( m_TeamInfo[index].name )
+			free( (void*)m_TeamInfo[index].name );
+		m_TeamInfo[index].name = (char*)malloc( strlen( name ) + 1 );
+		ASSERT_AT( m_TeamInfo[index].name, 545 );
+		if ( m_TeamInfo[index].name )
+			strcpy( (char*)m_TeamInfo[index].name, name );
+	}
 }
 
 VGuiLibraryTeamInfo_t CClientScoreBoardDialog::GetPlayerTeamInfo( int playerIndex )
 {
-	return (unsigned int)playerIndex < 5 ? (const VGuiLibraryTeamInfo_t&)m_TeamInfo[playerIndex] : m_BlankTeamInfo;
+	const VGuiLibraryTeamInfo_t& teamInfo = (unsigned int)playerIndex < 5 ? m_TeamInfo[playerIndex] : m_BlankTeamInfo;
+	return teamInfo;
 }
 
 //-----------------------------------------------------------------------------
@@ -206,13 +224,13 @@ void CClientScoreBoardDialog::AddHeader()
 	m_pPlayerList->AddSection( m_iSectionId, "", NULL );
 	m_pPlayerList->SetSectionAlwaysVisible( m_iSectionId, true );
 	m_pPlayerList->AddColumnToSection( m_iSectionId, "name", "#PlayerName", 0,
-		vgui2::scheme()->GetProportionalScaledValue( 160 ) );
+		GetProportionalScaledValue( 160 ) );
 	m_pPlayerList->AddColumnToSection( m_iSectionId, "frags", "#PlayerScore", 0,
-		vgui2::scheme()->GetProportionalScaledValue( 60 ) );
+		GetProportionalScaledValue( 60 ) );
 	m_pPlayerList->AddColumnToSection( m_iSectionId, "deaths", "#PlayerDeath", 0,
-		vgui2::scheme()->GetProportionalScaledValue( 60 ) );
+		GetProportionalScaledValue( 60 ) );
 	m_pPlayerList->AddColumnToSection( m_iSectionId, "ping", "#PlayerPing", 0,
-		vgui2::scheme()->GetProportionalScaledValue( 80 ) );
+		GetProportionalScaledValue( 80 ) );
 //	m_pPlayerList->AddColumnToSection(m_iSectionId, "voice", "#PlayerVoice", SectionedListPanel::COLUMN_IMAGE | SectionedListPanel::COLUMN_CENTER, scheme()->GetProportionalScaledValue(VOICE_WIDTH) );
 //	m_pPlayerList->AddColumnToSection(m_iSectionId, "tracker", "#PlayerTracker", SectionedListPanel::COLUMN_IMAGE, scheme()->GetProportionalScaledValue(FRIENDS_WIDTH) );
 }
@@ -227,9 +245,10 @@ void CClientScoreBoardDialog::AddSection( int teamType, VGuiLibraryTeamInfo_t* t
 		KeyValues* data = new KeyValues( "data" );
 		wchar_t string[1024];
 		wchar_t name[64];
-		wchar_t numPlayers[13];
+		wchar_t numPlayers[6];
 		wchar_t* teamName = vgui2::localize()->Find( team_info->name );
-		swprintf( numPlayers, 6, L"%i", team_info->players );
+		_snwprintf( numPlayers, 6, L"%i", team_info->players );
+		numPlayers[sizeof( numPlayers ) / sizeof( numPlayers[0] ) - 1] = L'\0';
 		if ( !teamName )
 		{
 			vgui2::localize()->ConvertANSIToUnicode( team_info->name, name, sizeof( name ) );
@@ -239,16 +258,16 @@ void CClientScoreBoardDialog::AddSection( int teamType, VGuiLibraryTeamInfo_t* t
 			vgui2::localize()->Find( team_info->players == 1 ? "#Player" : "#Players" ), 2, teamName, numPlayers );
 		m_pPlayerList->AddSection( m_iSectionId, "", StaticPlayerSortFunc );
 		m_pPlayerList->AddColumnToSection( m_iSectionId, "name", string, 0,
-			vgui2::scheme()->GetProportionalScaledValue( 160 ) );
+			GetProportionalScaledValue( 160 ) );
 		data->SetInt( "frags", team_info->frags );
 		data->SetInt( "deaths", team_info->deaths );
 		data->SetInt( "ping", team_info->ping );
 		m_pPlayerList->AddColumnToSection( m_iSectionId, "frags", data->GetString( "frags", "" ), 0,
-			vgui2::scheme()->GetProportionalScaledValue( 60 ) );
+			GetProportionalScaledValue( 60 ) );
 		m_pPlayerList->AddColumnToSection( m_iSectionId, "deaths", data->GetString( "deaths", "" ), 0,
-			vgui2::scheme()->GetProportionalScaledValue( 60 ) );
+			GetProportionalScaledValue( 60 ) );
 		m_pPlayerList->AddColumnToSection( m_iSectionId, "ping", data->GetString( "ping", "" ), 0,
-			vgui2::scheme()->GetProportionalScaledValue( 80 ) );
+			GetProportionalScaledValue( 80 ) );
 		data->deleteThis();
 	}
 	else if ( teamType == 2 )
@@ -272,8 +291,10 @@ void CClientScoreBoardDialog::ApplySchemeSettings( vgui2::IScheme* scheme )
 	{
 		int wide, tall;
 		images->GetImage( i )->GetSize( wide, tall );
-		images->GetImage( i )->SetSize( vgui2::scheme()->GetProportionalScaledValue( wide ),
-			vgui2::scheme()->GetProportionalScaledValue( tall ) );
+		vgui2::IImage* image = images->GetImage( i );
+		int scaledTall = GetProportionalScaledValue( tall );
+		int scaledWide = GetProportionalScaledValue( wide );
+		image->SetSize( scaledWide, scaledTall );
 	}
 	m_pPlayerList->SetImageList( images, false );
 	m_pPlayerList->SetVisible( true );
@@ -412,13 +433,11 @@ void CClientScoreBoardDialog::UpdatePlayerInfo()
 			KeyValues* data = new KeyValues( "data" );
 			GetPlayerScoreInfo( player, data );
 			const char* oldName = data->GetString( "name", "" );
-			int bufsize = 2 * (int)strlen( oldName );
-#ifdef _MSC_VER
-#pragma warning( suppress: 6255 6263 )
-#endif
-			char* newName = (char*)_alloca( bufsize + 1 );
-			gViewPortInterface->MakeSafeName( oldName, newName, bufsize );
-			data->SetString( "name", newName );
+			int size = 2 * (int)strlen( oldName ) + 1;
+			CUtlVector<char> name;
+			name.AddMultipleToTail( size );
+			gViewPortInterface->MakeSafeName( oldName, name.Base(), size );
+			data->SetString( "name", name.Base() );
 			int item = FindItemIDForPlayerIndex( player );
 			if ( playerInfo.thisplayer )
 				selectedRow = item;
