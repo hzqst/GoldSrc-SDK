@@ -12,6 +12,8 @@ namespace vgui
 
 static int staticFontId = VGUI_FIRST_FONT_ID;
 static Dar<BaseFontPlat*> staticFontPlatDar( 4 );
+// staticFontPlatIdDar[i] is the font id assigned when staticFontPlatDar[i] was created.
+static Dar<int> staticFontPlatIdDar( 4 );
 
 CUtlRBTree<FontPlat::font_name_entry, int> FontPlat::m_FriendlyNameCache;
 bool FontPlat::ms_bSetFriendlyNameCacheLessFunc = false;
@@ -19,6 +21,7 @@ bool FontPlat::ms_bSetFriendlyNameCacheLessFunc = false;
 void Font_Reset()
 {
 	staticFontPlatDar.removeAll();
+	staticFontPlatIdDar.removeAll();
 }
 
 bool FontPlat::ExtendedABCWidthsCacheLessFunc( const abc_cache_t& lhs, const abc_cache_t& rhs )
@@ -265,16 +268,19 @@ void Font::init( const char* name, void* pFileData, int fileDataLen, int tall, i
 			BaseFontPlat* entry = staticFontPlatDar[i];
 			if ( entry->equals( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol ) )
 			{
+				// Fonts sharing a platform share its id, so the engine caches its glyphs once.
 				_plat = staticFontPlatDar[i];
+				_id = staticFontPlatIdDar[i];
 				return;
 			}
 		}
 
 		_plat = new FontPlat( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol );
 	}
-	staticFontPlatDar.addElement( _plat );
 	_id = staticFontId;
 	++staticFontId;
+	staticFontPlatDar.addElement( _plat );
+	staticFontPlatIdDar.addElement( _id );
 }
 
 void Font::getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, uchar* rgba )
