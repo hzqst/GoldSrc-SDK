@@ -16,7 +16,10 @@ stub system/bitmap font platforms whose bitmap Create uses the real loader.
   system font with the requested metrics instead of leaving _plat unset.
 - {win32,linux}-null-data: no data creates a system font as before.
 - {win32,linux}-reuse: two fallbacks with the same parameters share one system
-  font platform.
+  font platform and its id.
+- {win32,linux}-shared-id: fonts reusing different platforms get those
+  platforms' ids instead of all getting -1, so the engine's per-id glyph cache
+  cannot mix them up.
 """
 import os
 from pathlib import Path
@@ -54,8 +57,8 @@ static void Check(bool condition, const char* message)
 }
 '''
 
-# Shared by both platforms; DAR and NEXT_ID are replaced with each source's
-# platform-list and id-counter names.
+# Shared by both platforms; DAR, IDS and NEXT_ID are replaced with each source's
+# platform-list, platform-id-list and id-counter names.
 PLATFORM_STUBS = r'''
 template<class T> class Dar
 {
@@ -134,6 +137,7 @@ private:
 };
 
 static Dar<BaseFontPlat*> DAR;
+static Dar<int> IDS;
 static int NEXT_ID = VGUI_FIRST_FONT_ID;
 
 class Font
@@ -237,6 +241,18 @@ static void CheckFont(const std::string& test)
   FontType second("Tahoma", tga.data(), truncated, SYSTEM_TALL, 0, 0, SYSTEM_WEIGHT, false, false, false, false);
   Check(nullptr != dynamic_cast<SystemType*>(first._plat), "first fallback is a system font");
   Check(first._plat == second._plat, "matching fallbacks share one platform");
+  Check(first._id >= VGUI_FIRST_FONT_ID && second._id == first._id, "matching fallbacks share the platform id");
+ }
+ else if (test == "shared-id")
+ {
+  FontType small("Arial", nullptr, 0, SYSTEM_TALL, 0, 0, SYSTEM_WEIGHT, false, false, false, false);
+  FontType large("Arial", nullptr, 0, SYSTEM_TALL * 2, 0, 0, SYSTEM_WEIGHT, false, false, false, false);
+  FontType smallAgain("Arial", nullptr, 0, SYSTEM_TALL, 0, 0, SYSTEM_WEIGHT, false, false, false, false);
+  FontType largeAgain("Arial", nullptr, 0, SYSTEM_TALL * 2, 0, 0, SYSTEM_WEIGHT, false, false, false, false);
+  Check(small._id >= VGUI_FIRST_FONT_ID && large._id >= VGUI_FIRST_FONT_ID, "new platforms get ids");
+  Check(small._id != large._id, "different platforms get different ids");
+  Check(smallAgain._plat == small._plat && smallAgain._id == small._id, "reused small platform keeps its id");
+  Check(largeAgain._plat == large._plat && largeAgain._id == large._id, "reused large platform keeps its id");
  }
  else
  {
@@ -302,8 +318,8 @@ def font_methods(source):
         'int Font::getTall()'))
 
 
-def platform(namespace, source, dar, next_id):
-    stubs = PLATFORM_STUBS.replace('DAR', dar).replace('NEXT_ID', next_id)
+def platform(namespace, source, dar, ids, next_id):
+    stubs = PLATFORM_STUBS.replace('DAR', dar).replace('IDS', ids).replace('NEXT_ID', next_id)
     return f'namespace {namespace}\n{{\n{stubs}\n{font_methods(source)}\n}}\n'
 
 
@@ -320,15 +336,15 @@ def main():
     linux = (VGUI / 'linux/Font.cpp').read_text()
     program = '\n'.join([
         PRELUDE,
-        platform('win32', win32, 'fontPlatforms', 'nextFontId'),
-        platform('vgui_linux', linux, 'staticFontPlatDar', 'staticFontId'),
+        platform('win32', win32, 'fontPlatforms', 'fontPlatformIds', 'nextFontId'),
+        platform('vgui_linux', linux, 'staticFontPlatDar', 'staticFontPlatIdDar', 'staticFontId'),
         TESTS,
     ])
 
     scenarios = ['loader-valid', 'loader-truncated', 'loader-header-only', 'loader-empty',
                  'loader-narrow', 'loader-zero-height', 'loader-bad-depth']
     for prefix in ('win32', 'linux'):
-        scenarios += [f'{prefix}-{name}' for name in ('valid', 'invalid', 'empty', 'null-data', 'reuse')]
+        scenarios += [f'{prefix}-{name}' for name in ('valid', 'invalid', 'empty', 'null-data', 'reuse', 'shared-id')]
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-fallback-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)

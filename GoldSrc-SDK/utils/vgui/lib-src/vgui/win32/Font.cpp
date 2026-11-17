@@ -16,6 +16,8 @@ namespace
 {
 
 Dar<BaseFontPlat*> fontPlatforms;
+// fontPlatformIds[i] is the font id assigned when fontPlatforms[i] was created.
+Dar<int> fontPlatformIds;
 int nextFontId = VGUI_FIRST_FONT_ID;
 
 static_assert( GLYPH_COUNT == VFONT_GLYPH_COUNT, "System and bitmap fonts share one glyph range" );
@@ -223,6 +225,7 @@ private:
 void Font_Reset()
 {
 	fontPlatforms.setCount( 0 );
+	fontPlatformIds.setCount( 0 );
 }
 
 Font::Font( const char* name, int tall, int wide, float rotation, int weight,
@@ -255,14 +258,17 @@ void Font::init( const char* name, void* data, int length, int tall, int wide, f
 		{
 			if ( fontPlatforms[i]->equals( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol ) )
 			{
+				// Fonts sharing a platform share its id, so the engine caches its glyphs once.
 				_plat = fontPlatforms[i];
+				_id = fontPlatformIds[i];
 				return;
 			}
 		}
 		_plat = new FontPlat( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol );
 	}
-	fontPlatforms.addElement( _plat );
 	_id = nextFontId++;
+	fontPlatforms.addElement( _plat );
+	fontPlatformIds.addElement( _id );
 }
 
 void Font::getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, uchar* rgba )

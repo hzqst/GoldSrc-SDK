@@ -94,7 +94,8 @@ bool Load32BitTGA( FileImageStream* fp, FileImage* pImage )
 	TGAFileHeader hdr;
 	char dummyChar;
 	int i, x, y;
-	long color;
+	// TGA pixels are 4 bytes; long is 8 bytes on LP64 targets.
+	unsigned int color;
 	int runLength, curOut;
 	unsigned char* pLine;
 	unsigned char packetHeader;
@@ -142,7 +143,7 @@ bool Load32BitTGA( FileImageStream* fp, FileImage* pImage )
 				fp->Read( &color, 4 );
 				for ( x = 0; x < runLength; x++ )
 				{
-					*( (long*)pLine ) = color;
+					memcpy( pLine, &color, sizeof( color ) );
 					pLine += 4;
 				}
 			}
@@ -151,7 +152,7 @@ bool Load32BitTGA( FileImageStream* fp, FileImage* pImage )
 				for ( x = 0; x < runLength; x++ )
 				{
 					fp->Read( &color, 4 );
-					*( (long*)pLine ) = color;
+					memcpy( pLine, &color, sizeof( color ) );
 					pLine += 4;
 				}
 			}
@@ -160,7 +161,8 @@ bool Load32BitTGA( FileImageStream* fp, FileImage* pImage )
 		}
 	}
 
-	return true;
+	// A truncated stream pads its reads with zeros; reject it instead of returning a blank image.
+	return !fp->ErrorStatus();
 }
 
 // Write a 32-bit TGA file.

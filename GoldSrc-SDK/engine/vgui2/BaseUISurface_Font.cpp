@@ -265,22 +265,22 @@ void EngineFont::Init( const char* name, void* pFileData, int fileDataLen, int t
 	_name = new char[strlen( name ) + 1];
 	strcpy( _name, name );
 	_id = -1;
+	_plat = NULL;
 
 	if ( pFileData )
 	{
 		FileImageStream_Memory memStream( pFileData, fileDataLen );
-		_id = staticFontId;
 		FontPlat_Bitmap* bitmap = FontPlat_Bitmap::Create( name, &memStream, staticFontId );
-		if ( !bitmap )
+		if ( bitmap )
+		{
+			_id = staticFontId++;
+			_plat = bitmap;
+			staticFontPlatDar.AddElement( bitmap );
 			return;
-
-		_plat = bitmap;
-		staticFontPlatDar.AddElement( bitmap );
-		staticFontId++;
-		return;
+		}
+		// Invalid bitmap data falls back to the system font below.
 	}
 
-	_plat = NULL;
 	for ( int i = 0; i < staticFontPlatDar.GetCount(); i++ )
 	{
 		BaseFontPlat* plat = staticFontPlatDar[i];
@@ -388,7 +388,8 @@ bool Load32BitTGA( FileImageStream* fp, FileImage* pImage )
 		}
 	}
 
-	return true;
+	// A truncated stream pads its reads with zeros; reject it instead of returning a blank image.
+	return !fp->ErrorStatus();
 }
 
 bool LoadVFontDataFrom32BitTGA( FileImageStream* fp, VFontData* pData )
@@ -397,7 +398,8 @@ bool LoadVFontDataFrom32BitTGA( FileImageStream* fp, VFontData* pData )
 	memset( &fileImage, 0, sizeof( fileImage ) );
 
 	bool success = false;
-	if ( Load32BitTGA( fp, &fileImage ) )
+	// An image narrower than one pixel per glyph would load as a font of empty glyphs.
+	if ( Load32BitTGA( fp, &fileImage ) && fileImage.m_Width >= BITMAP_GLYPH_COUNT && fileImage.m_Height > 0 )
 	{
 		pData->m_pBitmap = new unsigned char[fileImage.m_Height * fileImage.m_Width];
 		if ( pData->m_pBitmap )
