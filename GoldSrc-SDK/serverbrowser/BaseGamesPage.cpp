@@ -1315,7 +1315,10 @@ void CBaseGamesPage::StopRefresh()
 	m_iServerRefreshCount = 0;
 
 	// Stop the server list refreshing
-	SteamMatchmakingServers()->CancelQuery( m_hServerRequest );
+	if ( m_hServerRequest && SteamMatchmakingServers() )
+	{
+		SteamMatchmakingServers()->CancelQuery( m_hServerRequest );
+	}
 }
 
 //-----------------------------------------------------------------------------

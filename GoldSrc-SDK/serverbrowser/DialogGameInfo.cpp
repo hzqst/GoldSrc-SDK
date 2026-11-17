@@ -517,6 +517,8 @@ void CDialogGameInfo::ServerResponded( gameserveritem_t &server )
 //-----------------------------------------------------------------------------
 void CDialogGameInfo::ServerFailedToRespond()
 {
+	m_hPingQuery = HSERVERQUERY_INVALID;
+
 	// only mark the server as not responding if we haven't ever received a response
 	if ( !m_Server.m_bHadSuccessfulResponse )
 	{
@@ -730,10 +732,11 @@ void CDialogGameInfo::SendPlayerQuery( uint32 unIP, uint16 usQueryPort )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: The player query failed; nothing to do
+// Purpose: The player query failed; it is no longer in flight
 //-----------------------------------------------------------------------------
 void CDialogGameInfo::PlayersFailedToRespond()
 {
+	m_hPlayersQuery = HSERVERQUERY_INVALID;
 }
 
 //-----------------------------------------------------------------------------
