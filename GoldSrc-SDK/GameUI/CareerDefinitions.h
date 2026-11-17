@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CareerGame.h"
-#include "Color.h"
+#include "color.h"
 #include "vgui/Dar.h"
 
 class BotProfileManager;

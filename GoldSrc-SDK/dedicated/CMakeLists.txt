@@ -72,8 +72,7 @@ goldsrc_add_module(hlds
 		dedicated/hlds.rc
 	INCLUDES
 		dedicated
-		cstrike/common
-		cstrike/public
+		vgui2/compat
 		vgui2/controls
 		cl_dll
 		engine

@@ -77,7 +77,7 @@ goldsrc_add_module(serverbrowser
 		engine/controls.cpp
 	INCLUDES
 		serverbrowser
-		cstrike/public
+		vgui2/compat
 		vgui2/controls
 		engine
 		vgui2/src/public

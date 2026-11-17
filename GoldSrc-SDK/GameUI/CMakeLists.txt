@@ -146,7 +146,7 @@ goldsrc_add_module(GameUI
 	INCLUDES
 		GameUI
 		cstrike/common
-		cstrike/public
+		vgui2/compat
 		vgui2/controls
 		cl_dll
 		engine
