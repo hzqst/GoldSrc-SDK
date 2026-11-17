@@ -52,9 +52,12 @@ protected:
 
 protected:
 	SurfacePlat*	_plat;
+	// _needsSwap, _embeddedPanel and _unusedModeInfoDar shadow the SurfaceBase
+	// members of the same names and are only kept for the original Surface
+	// layout. Use SurfaceBase's members (or getPanel() / the mode-info methods).
 	bool			_needsSwap;
 	Panel*			_embeddedPanel;
-	Dar<char*>		_modeInfoDar;
+	Dar<char*>		_unusedModeInfoDar;
 };
 
 }

@@ -245,7 +245,7 @@ bool Surface::setFullscreenMode( int wide, int tall, int bpp )
 		return false;
 	}
 
-	if ( _modeInfoDar.getCount() != 0 )
+	if ( SurfaceBase::getModeInfoCount() != 0 )
 	{
 		return false;
 	}
