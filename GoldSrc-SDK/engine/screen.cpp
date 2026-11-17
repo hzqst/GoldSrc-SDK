@@ -13,6 +13,7 @@
 #include "sound.h"
 #include "view.h"
 #include "vgui_intwrap2.h"
+#include "../common/q_ftol.h"
 
 #include <cstdio>
 
@@ -209,7 +210,7 @@ void SCR_DrawCenterString()
 {
 	int remaining = 9999;
 	if ( cl.intermission )
-		remaining = (int)( ( cl.time - scr_centertime_start ) * scr_printspeed.value );
+		remaining = Q_ftol( ( cl.time - scr_centertime_start ) * scr_printspeed.value );
 	int fontHeight = VGUI2_MessageFontInfo( NULL, VGUI2_GetConsoleFont() );
 	if ( fontHeight < 12 )
 		fontHeight = 12;

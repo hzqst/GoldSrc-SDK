@@ -12,6 +12,7 @@
 
 #include "FileSystem.h"
 #include "UtlBuffer.h"
+#include "../../../common/q_ftol.h"
 
 #ifdef _WIN32
 #include <direct.h>
@@ -365,7 +366,7 @@ int KeyValues::GetInt( const char* keyName, int defaultValue )
 	switch ( dat->m_iDataType )
 	{
 	case TYPE_FLOAT:
-		return (int)dat->m_flValue;
+		return Q_ftol( dat->m_flValue );
 
 	case TYPE_STRING:
 		return atoi( dat->m_sValue );
@@ -1337,7 +1338,7 @@ unsigned long long KeyValues::GetUint64( const char* keyName, unsigned long long
 		return (unsigned long long)strtol( dat->m_sValue, NULL, 10 );
 
 	case TYPE_FLOAT:
-		return (unsigned long long)(int)dat->m_flValue;
+		return (unsigned long long)Q_ftol( dat->m_flValue );
 
 	case TYPE_WSTRING:
 		return (unsigned long long)wcstol( (const wchar_t*)dat->m_pValue, NULL, 10 );
@@ -1381,10 +1382,10 @@ Color KeyValues::GetColor( const char* keyName )
 
 			if ( sscanf( dat->m_sValue, "%f %f %f %f", &red, &green, &blue, &alpha ) <= 0 )
 				break;
-			color[0] = (unsigned char)(int)red;
-			color[1] = (unsigned char)(int)green;
-			color[2] = (unsigned char)(int)blue;
-			color[3] = (unsigned char)(int)alpha;
+			color[0] = (unsigned char)Q_ftol( red );
+			color[1] = (unsigned char)Q_ftol( green );
+			color[2] = (unsigned char)Q_ftol( blue );
+			color[3] = (unsigned char)Q_ftol( alpha );
 			break;
 		}
 
@@ -1393,7 +1394,7 @@ Color KeyValues::GetColor( const char* keyName )
 		break;
 
 	case TYPE_FLOAT:
-		color[0] = (unsigned char)(int)dat->m_flValue;
+		color[0] = (unsigned char)Q_ftol( dat->m_flValue );
 		break;
 
 	case TYPE_COLOR:

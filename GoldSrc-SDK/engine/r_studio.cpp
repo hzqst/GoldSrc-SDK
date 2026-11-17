@@ -22,6 +22,7 @@
 #include "customentity.h"
 #include "../pm_shared/pm_movevars.h"
 #include "../common/triangleapi.h"
+#include "../common/q_ftol.h"
 
 #include <cmath>
 #include <climits>
@@ -226,13 +227,6 @@ cvar_t* cl_righthand;
 
 sv_blending_interface_t svBlending = { SV_BLENDING_INTERFACE_VERSION, SV_StudioSetupBones };
 sv_blending_interface_t* g_pSvBlendingAPI = &svBlending;
-
-static int Q_ftol( double f )
-{
-	if ( f >= -2147483648.0 && f < 2147483648.0 )
-		return (int)f;
-	return INT_MIN;
-}
 
 void R_ResetStudio()
 {
@@ -3925,6 +3919,7 @@ void R_StudioDrawPoints()
 #include "customentity.h"
 #include "../pm_shared/pm_movevars.h"
 #include "../common/triangleapi.h"
+#include "../common/q_ftol.h"
 
 #include <cmath>
 #include <climits>
@@ -4155,13 +4150,6 @@ cvar_t* cl_righthand;
 
 sv_blending_interface_t svBlending = { SV_BLENDING_INTERFACE_VERSION, SV_StudioSetupBones };
 sv_blending_interface_t* g_pSvBlendingAPI = &svBlending;
-
-static int Q_ftol( double f )
-{
-	if ( f >= -2147483648.0 && f < 2147483648.0 )
-		return (int)f;
-	return INT_MIN;
-}
 
 void R_ResetStudio()
 {
