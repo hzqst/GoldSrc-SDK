@@ -22,7 +22,7 @@
 #include "vgui/IPanel.h"
 #include "vgui/IScheme.h"
 #include "vgui/KeyValues.h"
-#include "vgui/ILocalize.h"
+#include "ILocalize.h"
 
 #include <string.h>
 #include <wchar.h>

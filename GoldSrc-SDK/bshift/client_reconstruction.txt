@@ -17,16 +17,15 @@ Source ownership:
     the native VGUI bridge in VGUI/.
   bshift/vgui2/game_controls: native viewport, scoreboard, command/menu,
     spectator, MOTD and tutor controls absent from the existing SDK.
-  bshift/vgui2/controls: native ImageList and SectionedListPanel, plus the
-    client module's controls-interface initialization.
   bshift/game_shared: participating voice status, voice HUD and ban manager.
   bshift/dlls and bshift/pm_shared: existing reconstructed weapons and movement
     units reused by prediction. The server project and output remain separate.
 
 Existing Half-Life source is reused where applicable. Shared controls and
-utility implementations remain at their established root paths. KeyValues,
-MemPool and UtlBuffer use the engine implementations compatible with those
-controls; source-mapping.csv records these substitutions. Common helper
+utility implementations remain at their established root paths, including
+ImageList, SectionedListPanel and the controls-interface initialization.
+KeyValues, MemPool, UtlBuffer, UtlSymbol and localize() use the engine
+implementations compatible with those controls. Common helper
 headers are referenced at their real locations rather than copied wholesale.
 The three recovered viewport interface headers are justified cross-file
 contracts even though their filenames do not appear in the retained ELF
