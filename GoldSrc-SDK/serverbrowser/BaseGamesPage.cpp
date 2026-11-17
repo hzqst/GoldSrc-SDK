@@ -140,6 +140,16 @@ CBaseGamesPage::CBaseGamesPage( vgui2::Panel *parent, const char *name, EMatchMa
 //-----------------------------------------------------------------------------
 CBaseGamesPage::~CBaseGamesPage()
 {
+	// cancel standalone pings, their callbacks target this page
+	if ( SteamMatchmakingServers() )
+	{
+		for ( int i = 0; i < m_vecPingQueries.Count(); i++ )
+		{
+			SteamMatchmakingServers()->CancelServerQuery( m_vecPingQueries[i] );
+		}
+	}
+	m_vecPingQueries.RemoveAll();
+
 	if ( m_hServerRequest )
 	{
 		if ( SteamMatchmakingServers() )
@@ -637,7 +647,7 @@ void CBaseGamesPage::ServerResponded( HServerListRequest hRequest, int iServer )
 	if ( m_eMatchMakingType == eFriendsServer )
 	{
 		// friends' servers are pinged directly to get their details
-		SteamMatchmakingServers()->PingServer( pServerItem->m_NetAdr.GetIP(), pServerItem->m_NetAdr.GetConnectionPort(), this );
+		m_vecPingQueries.AddToTail( SteamMatchmakingServers()->PingServer( pServerItem->m_NetAdr.GetIP(), pServerItem->m_NetAdr.GetConnectionPort(), this ) );
 	}
 	else
 	{
@@ -1524,7 +1534,7 @@ void CBaseGamesPage::OnFavoritesMsg( FavoritesListChanged_t *pFavListChanged )
 
 	if ( pFavListChanged->m_bAdd )
 	{
-		SteamMatchmakingServers()->PingServer( pFavListChanged->m_nIP, pFavListChanged->m_nQueryPort, this );
+		m_vecPingQueries.AddToTail( SteamMatchmakingServers()->PingServer( pFavListChanged->m_nIP, pFavListChanged->m_nQueryPort, this ) );
 		return;
 	}
 

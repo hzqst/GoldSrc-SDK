@@ -151,6 +151,7 @@ protected:
 	int m_iServerRefreshCount;
 	EMatchMakingType m_eMatchMakingType;
 	HServerListRequest m_hServerRequest;
+	CUtlVector<HServerQuery> m_vecPingQueries;
 private:
 	MESSAGE_FUNC_PTR_INT( OnButtonToggled, "ButtonToggled", panel, state );
 	MESSAGE_FUNC_PTR_CHARPTR( OnTextChanged, "TextChanged", panel, text );
