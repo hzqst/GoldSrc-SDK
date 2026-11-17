@@ -19,6 +19,8 @@ Bitmap::Bitmap()
 
 void Bitmap::setSize( int wide, int tall )
 {
+	_uploaded = false;
+
 	if ( _rgba != NULL )
 	{
 		delete[] _rgba;
@@ -57,6 +59,7 @@ void Bitmap::setRGBA( int x, int y, uchar r, uchar g, uchar b, uchar a )
 		_rgba[offset + 1] = g;
 		_rgba[offset + 2] = b;
 		_rgba[offset + 3] = a;
+		_uploaded = false;
 	}
 }
 
