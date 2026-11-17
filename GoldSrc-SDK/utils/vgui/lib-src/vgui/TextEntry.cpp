@@ -430,16 +430,18 @@ void TextEntry::getText( int offset, char* buf, int bufLen )
 		return;
 	}
 
-	for ( int i = offset; i < bufLen - 1; i++ )
+	if ( offset < 0 )
 	{
-		buf[i - offset] = 0;
-		if ( i >= _lineDar.getCount() )
-		{
-			break;
-		}
-		buf[i - offset] = _lineDar[i];
+		offset = 0;
 	}
-	buf[bufLen - 1] = 0;
+
+	const int count = _lineDar.getCount();
+	int i = 0;
+	for ( ; i < bufLen - 1 && offset + i < count; i++ )
+	{
+		buf[i] = _lineDar[offset + i];
+	}
+	buf[i] = 0;
 }
 
 void TextEntry::fireActionSignal()
