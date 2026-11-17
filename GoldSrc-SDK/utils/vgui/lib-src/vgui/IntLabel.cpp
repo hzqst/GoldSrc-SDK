@@ -30,14 +30,7 @@ void IntLabel::paintBackground()
 {
 	char buf[50];
 
-#if defined( _MSC_VER )
-#pragma warning( push )
-#pragma warning( disable : 4996 )
-#endif
-	sprintf( buf, "%d", _value );
-#if defined( _MSC_VER )
-#pragma warning( pop )
-#endif
+	snprintf( buf, sizeof( buf ), "%d", _value );
 	Panel::paintBackground();
 	drawSetTextFont( Scheme::sf_primary1 );
 	drawSetTextColor( Scheme::sc_black );

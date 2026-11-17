@@ -543,21 +543,18 @@ Panel* Panel::createPropertyPanel()
 	return root;
 }
 
-void Panel::getPersistanceText( char* buf, int )
+void Panel::getPersistanceText( char* buf, int bufLen )
 {
+	if ( buf == NULL || bufLen <= 0 )
+	{
+		return;
+	}
 	int x;
 	int y;
 	int wide;
 	int tall;
 	getBounds( x, y, wide, tall );
-#if defined( _MSC_VER )
-#pragma warning( push )
-#pragma warning( disable : 4996 )
-#endif
-	sprintf( buf, "->setBounds(%d,%d,%d,%d);\n", x, y, wide, tall );
-#if defined( _MSC_VER )
-#pragma warning( pop )
-#endif
+	snprintf( buf, (size_t)bufLen, "->setBounds(%d,%d,%d,%d);\n", x, y, wide, tall );
 }
 
 void Panel::applyPersistanceText( const char* )
