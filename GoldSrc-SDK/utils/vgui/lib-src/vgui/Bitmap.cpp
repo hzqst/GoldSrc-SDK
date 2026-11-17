@@ -5,6 +5,8 @@
 #include "VGUI_Panel.h"
 #include "VGUI_SurfaceBase.h"
 
+#include <limits.h>
+
 namespace vgui
 {
 
@@ -17,12 +19,26 @@ Bitmap::Bitmap()
 
 void Bitmap::setSize( int wide, int tall )
 {
-	Image::setSize( wide, tall );
-
 	if ( _rgba != NULL )
+	{
 		delete[] _rgba;
+		_rgba = NULL;
+	}
+
+	if ( wide < 0 || tall < 0 || ( wide != 0 && tall > INT_MAX / VGUI_RGBA_BYTES / wide ) )
+	{
+		Image::setSize( 0, 0 );
+		return;
+	}
 
 	_rgba = new uchar[VGUI_RGBA_BYTES * wide * tall];
+	if ( _rgba == NULL )
+	{
+		Image::setSize( 0, 0 );
+		return;
+	}
+
+	Image::setSize( wide, tall );
 }
 
 void Bitmap::setRGBA( int x, int y, uchar r, uchar g, uchar b, uchar a )
