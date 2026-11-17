@@ -1,7 +1,7 @@
 """Compile the production VGUI1 Win32 Surface::setFullscreenMode (#290).
 
 Run: python tests/vgui1_surface_fullscreen_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
@@ -17,11 +17,14 @@ shadowing _unusedModeInfoDar member and stub Win32 display calls.
 - change-fails: a refused display change returns false and stays windowed.
 - shadow-unused: the shadowing Surface list is never filled.
 """
-import os
 from pathlib import Path
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 VGUI = ROOT / 'GoldSrc-SDK/utils/vgui/lib-src/vgui'
@@ -225,14 +228,6 @@ def methods(source, signatures):
     return '\n'.join(block(source, signature, '\n}\n') for signature in signatures)
 
 
-def supports_asan(compiler, folder):
-    probe, output = Path(folder) / 'probe.cpp', Path(folder) / 'probe.exe'
-    probe.write_text('int main() { return 0; }\n')
-    result = subprocess.run(compiler + ['-fsanitize=address', str(probe), '-o', str(output)],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return result.returncode == 0
-
-
 def main():
     surface_base = (VGUI / 'SurfaceBase.cpp').read_text()
     surface = (VGUI / 'win32/Surface.cpp').read_text()
@@ -255,12 +250,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-fullscreen-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
         # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
-        flags = ['-std=c++17', '-g', '-DVGUI_EXPORTS', f'-I{VGUI / "include"}']
-        if supports_asan(compiler, folder):
-            flags.append('-fsanitize=address')
-        subprocess.run(compiler + flags + [str(source_file), '-o', str(executable)], check=True)
+        executable = compile_program([source_file], executable, includes=[VGUI / 'include'], defines=['VGUI_EXPORTS'],
+                                     debug=True, sanitizers=['address'])
         failed = []
         for scenario in scenarios:
             result = subprocess.run([str(executable), scenario])

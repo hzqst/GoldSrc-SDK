@@ -1,14 +1,17 @@
 """Exercise production server browser filtering, display and sorting with stubs.
 
 Run: python tests/serverbrowser_sort_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 """
-import os
 from pathlib import Path
 import re
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1] / 'GoldSrc-SDK'
 
@@ -233,9 +236,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-serverbrowser-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        subprocess.run(compiler + ['-std=c++17', '-I', str(ROOT), str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-        subprocess.run([str(path / 'test')], check=True, cwd=path)
+        executable = compile_program([path / 'test.cpp'], path / 'test', includes=[ROOT])
+        subprocess.run([str(executable)], check=True, cwd=path)
 
 
 if __name__ == '__main__':

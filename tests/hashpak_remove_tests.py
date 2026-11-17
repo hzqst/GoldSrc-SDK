@@ -1,9 +1,12 @@
 """Exercise production HPAK removal with temporary multi-lump packages."""
 from pathlib import Path
-import os
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1] / 'GoldSrc-SDK/engine'
 
@@ -106,10 +109,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-hpak-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code)
-        compiler = shlex.split(os.environ.get('CXX', 'c++'))
-        subprocess.run(compiler + ['-std=c++17', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
-                                  str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-        subprocess.run([str(path / 'test')], check=True, cwd=path)
+        executable = compile_program([path / 'test.cpp'], path / 'test', sanitizers=['address', 'undefined'])
+        subprocess.run([str(executable)], check=True, cwd=path)
     print('PASS: upload pakname, console default extension, surviving lump bytes and final-lump removal')
 
 

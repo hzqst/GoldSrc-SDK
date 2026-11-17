@@ -1,9 +1,12 @@
 """Exercise production server model bounds and physent conversion."""
 from pathlib import Path
-import os
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1] / 'GoldSrc-SDK/engine'
 
@@ -137,7 +140,6 @@ def main():
     studio = (ROOT / 'r_studio.cpp').read_text()
     with tempfile.TemporaryDirectory(prefix='goldsrc-server-model-') as folder:
         path = Path(folder)
-        compiler = shlex.split(os.environ.get('CXX', 'c++'))
         for variant in range(2):
             functions = ''
             for signature in ('qboolean SV_CheckSphereIntersection(', 'void GetBonePosition(', 'void GetAttachment('):
@@ -145,9 +147,8 @@ def main():
                 assert len(parts) == 3
                 functions += signature + parts[variant + 1].split('\n}', 1)[0] + '\n}\n'
             (path / 'test.cpp').write_text(code + functions + STUDIO_TESTS)
-            subprocess.run(compiler + ['-std=c++17', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
-                                      str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-            subprocess.run([str(path / 'test')], check=True)
+            executable = compile_program([path / 'test.cpp'], path / 'test', sanitizers=['address', 'undefined'])
+            subprocess.run([str(executable)], check=True)
             print('PASS: physents and studio model guards, variant', variant)
 
 

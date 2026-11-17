@@ -1,7 +1,7 @@
 """Compile the production bitmap-font glyph lookups with deterministic stubs (#245).
 
 Run: python tests/vgui_font_glyph_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer is enabled when the compiler supports it.
 
 Text bytes reach the font platforms as sign-extended chars, and callers may pass
@@ -14,11 +14,14 @@ the VGUI1 Win32 and Linux sources and the engine's VGUI1 bitmap font:
 - *-rgba: FontPlat_Bitmap::getCharRGBA renders glyph 255 for 256 and -1
   instead of reading one glyph past the bitmap.
 """
-import os
 from pathlib import Path
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 VGUI = ROOT / 'GoldSrc-SDK/utils/vgui/lib-src/vgui'
@@ -273,14 +276,6 @@ int main(int argc, char** argv)
 '''
 
 
-def supports_asan(compiler, folder):
-    probe, output = Path(folder) / 'probe.cpp', Path(folder) / 'probe.exe'
-    probe.write_text('int main() { return 0; }\n')
-    result = subprocess.run(compiler + ['-fsanitize=address', str(probe), '-o', str(output)],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return result.returncode == 0
-
-
 def main():
     vfontdata = (VGUI / 'common/vfontdata.h').read_text()
     win32 = (VGUI / 'win32/Font.cpp').read_text()
@@ -310,11 +305,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui-font-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(source)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        flags = ['-std=c++17', '-g']
-        if supports_asan(compiler, folder):
-            flags.append('-fsanitize=address')
-        subprocess.run(compiler + flags + [str(source_file), '-o', str(executable)], check=True)
+        executable = compile_program([source_file], executable, debug=True, sanitizers=['address'])
         failed = []
         for scenario in scenarios:
             result = subprocess.run([str(executable), scenario])

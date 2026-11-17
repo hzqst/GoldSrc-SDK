@@ -1,9 +1,12 @@
 """Exercise production VOX parsers with empty and directory-only sentences."""
 from pathlib import Path
-import os
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -82,10 +85,8 @@ int main() {
     with tempfile.TemporaryDirectory(prefix='goldsrc-vox-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code)
-        compiler = shlex.split(os.environ.get('CXX', 'c++'))
-        subprocess.run(compiler + ['-std=c++17', '-fsanitize=address,undefined',
-                                  str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-        subprocess.run([str(path / 'test')], check=True)
+        executable = compile_program([path / 'test.cpp'], path / 'test', sanitizers=['address', 'undefined'])
+        subprocess.run([str(executable)], check=True)
     print('PASS: empty, leading-space, directory-only and normal VOX words')
 
 

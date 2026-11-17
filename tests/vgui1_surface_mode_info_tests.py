@@ -1,7 +1,7 @@
 """Compile the production VGUI1 SurfaceBase mode-info list handling (#243).
 
 Run: python tests/vgui1_surface_mode_info_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
@@ -16,11 +16,14 @@ scenario checks that every mode name addModeInfo allocated is freed.
 - destroy-frees: destroying the surface frees the remaining names.
 - double-reset: a second resetModeInfo does not free a name twice.
 """
-import os
 from pathlib import Path
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 VGUI = ROOT / 'GoldSrc-SDK/utils/vgui/lib-src/vgui'
@@ -185,14 +188,6 @@ def surface_methods(source):
         'void SurfaceBase::addModeInfo('))
 
 
-def supports_asan(compiler, folder):
-    probe, output = Path(folder) / 'probe.cpp', Path(folder) / 'probe.exe'
-    probe.write_text('int main() { return 0; }\n')
-    result = subprocess.run(compiler + ['-fsanitize=address', str(probe), '-o', str(output)],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return result.returncode == 0
-
-
 def main():
     source = (VGUI / 'SurfaceBase.cpp').read_text()
     program = '\n'.join([PRELUDE, surface_methods(source), TESTS])
@@ -201,12 +196,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-mode-info-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
         # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
-        flags = ['-std=c++17', '-g', '-DVGUI_EXPORTS', f'-I{VGUI / "include"}']
-        if supports_asan(compiler, folder):
-            flags.append('-fsanitize=address')
-        subprocess.run(compiler + flags + [str(source_file), '-o', str(executable)], check=True)
+        executable = compile_program([source_file], executable, includes=[VGUI / 'include'], defines=['VGUI_EXPORTS'],
+                                     debug=True, sanitizers=['address'])
         failed = []
         for scenario in scenarios:
             result = subprocess.run([str(executable), scenario])

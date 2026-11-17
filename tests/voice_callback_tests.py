@@ -1,9 +1,12 @@
 """Verify production callback storage on the host; set CXX='c++ -m32' for x86."""
 from pathlib import Path
-import os
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1] / 'GoldSrc-SDK/engine'
 
@@ -34,10 +37,8 @@ int main() {
     with tempfile.TemporaryDirectory(prefix='goldsrc-callback-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code)
-        compiler = shlex.split(os.environ.get('CXX', 'c++'))
-        subprocess.run(compiler + ['-std=c++17', '-Wall', '-Wextra', '-Werror',
-                                  str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-        subprocess.run([str(path / 'test')], check=True)
+        executable = compile_program([path / 'test.cpp'], path / 'test', strict_warnings=True)
+        subprocess.run([str(executable)], check=True)
     print('PASS: voice callback pointer round-trip and ordinary loop sentinels')
 
 

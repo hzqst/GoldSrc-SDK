@@ -3,12 +3,15 @@
 python tests/commandmenu_tests.py --cstrike-menu <path> --dod-menu <path>
 """
 import argparse
-import os
 from pathlib import Path
 import re
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1] / 'GoldSrc-SDK'
 
@@ -157,9 +160,9 @@ def main():
         (path / 'test.cpp').write_text(STUBS + production + TESTS)
         (path / 'cs.txt').write_text(args.cstrike_menu.read_text() if args.cstrike_menu else CS_SAMPLE)
         (path / 'dod.txt').write_text(args.dod_menu.read_text() if args.dod_menu else DOD_SAMPLE)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        subprocess.run(compiler + ['-std=c++17', '-D_CRT_SECURE_NO_WARNINGS', '-I', str(ROOT / 'public'), '-I', str(ROOT / 'engine'), str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-        subprocess.run([str(path / 'test'), str(path / 'cs.txt'), str(path / 'dod.txt')], check=True, timeout=20)
+        executable = compile_program([path / 'test.cpp'], path / 'test', includes=[ROOT / 'public', ROOT / 'engine'],
+                                     defines=['_CRT_SECURE_NO_WARNINGS'])
+        subprocess.run([str(executable), str(path / 'cs.txt'), str(path / 'dod.txt')], check=True, timeout=20)
 
 
 if __name__ == '__main__':
