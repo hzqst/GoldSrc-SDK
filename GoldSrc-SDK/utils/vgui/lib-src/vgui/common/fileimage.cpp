@@ -120,7 +120,8 @@ bool Load32BitTGA( FileImageStream* stream, FileImage* image )
 		}
 	}
 
-	return true;
+	// A truncated stream pads its reads with zeros; reject it instead of returning a blank image.
+	return !stream->ErrorStatus();
 }
 
 void Save32BitTGA( FILE* file, FileImage* image )

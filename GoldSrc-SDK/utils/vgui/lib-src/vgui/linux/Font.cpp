@@ -250,34 +250,28 @@ void Font::init( const char* name, void* pFileData, int fileDataLen, int tall, i
 	_id = -1;
 	_name = strdup( name );
 
+	_plat = NULL;
 	if ( pFileData != NULL )
 	{
 		FileImageStream_Memory memStream( pFileData, fileDataLen );
-		FontPlat_Bitmap* bitmap = FontPlat_Bitmap::Create( name, &memStream );
-		if ( bitmap == NULL )
-		{
-			return;
-		}
-
-		_plat = bitmap;
-		staticFontPlatDar.addElement( bitmap );
-		_id = staticFontId;
-		++staticFontId;
-		return;
+		_plat = FontPlat_Bitmap::Create( name, &memStream );
 	}
 
-	_plat = NULL;
-	for ( int i = 0; i < staticFontPlatDar.getCount(); ++i )
+	// Invalid bitmap data falls back to the system font, as VGUI_Font.h documents.
+	if ( _plat == NULL )
 	{
-		BaseFontPlat* entry = staticFontPlatDar[i];
-		if ( entry->equals( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol ) )
+		for ( int i = 0; i < staticFontPlatDar.getCount(); ++i )
 		{
-			_plat = staticFontPlatDar[i];
-			return;
+			BaseFontPlat* entry = staticFontPlatDar[i];
+			if ( entry->equals( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol ) )
+			{
+				_plat = staticFontPlatDar[i];
+				return;
+			}
 		}
-	}
 
-	_plat = new FontPlat( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol );
+		_plat = new FontPlat( name, tall, wide, rotation, weight, italic, underline, strikeout, symbol );
+	}
 	staticFontPlatDar.addElement( _plat );
 	_id = staticFontId;
 	++staticFontId;
