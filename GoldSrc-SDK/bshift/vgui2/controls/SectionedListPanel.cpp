@@ -34,6 +34,10 @@ namespace vgui2
 static const int SCROLLBAR_BASE_SIZE = 18;
 // unscaled gap between the scrollbar and the right/bottom edges
 static const int SCROLLBAR_INSET_BASE = 2;
+// unscaled left/right/top margin around the sections and items
+static const int CONTENT_INSET_BASE = 5;
+// unscaled gap below each section
+static const int SECTION_GAP_BASE = 8;
 
 //-----------------------------------------------------------------------------
 // Purpose: Individual items in the list
@@ -832,8 +836,9 @@ void SectionedListPanel::ScrollToItem( int itemID )
 void SectionedListPanel::LayoutPanels( int& contentTall )
 {
 	int sectionTall = GetSectionTall();
-	int wide = GetWide() - 10;
-	int y = 5;
+	int inset = GetProportionalScaledValue( CONTENT_INSET_BASE );
+	int wide = GetWide() - 2 * inset;
+	int y = inset;
 	if ( m_pScrollBar->IsVisible() )
 	{
 		y -= m_pScrollBar->GetValue();
@@ -862,7 +867,7 @@ void SectionedListPanel::LayoutPanels( int& contentTall )
 		}
 
 		// draw the header
-		section.m_pHeader->SetBounds( 5, y, wide, sectionTall );
+		section.m_pHeader->SetBounds( inset, y, wide, sectionTall );
 		section.m_pHeader->SetVisible( true );
 		y += sectionTall;
 		if ( first != -1 )
@@ -870,7 +875,7 @@ void SectionedListPanel::LayoutPanels( int& contentTall )
 			for ( int i = first; i <= last; i++ )
 			{
 				CItemButton* item = m_SortedItems[i]; //items[i];
-				item->SetBounds( 5, y, wide, GetLineSpacing() );
+				item->SetBounds( inset, y, wide, GetLineSpacing() );
 				if ( m_hEditModePanel.Get() && m_iEditModeItemID == item->m_iID )
 				{
 					int cellX = 0;
@@ -900,7 +905,7 @@ void SectionedListPanel::LayoutPanels( int& contentTall )
 		}
 
 		// add in a little boundry at the bottom
-		y += 8;
+		y += GetProportionalScaledValue( SECTION_GAP_BASE );
 	}
 
 	// calculate height

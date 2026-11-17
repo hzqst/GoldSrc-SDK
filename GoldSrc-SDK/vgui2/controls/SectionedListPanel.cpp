@@ -41,6 +41,10 @@ namespace vgui2
 static const int SCROLLBAR_BASE_SIZE = 18;
 // unscaled gap between the scrollbar and the right/bottom edges
 static const int SCROLLBAR_INSET_BASE = 2;
+// unscaled left/right/top margin around the sections and items
+static const int CONTENT_INSET_BASE = 5;
+// unscaled gap below each section
+static const int SECTION_GAP_BASE = 8;
 
 //-----------------------------------------------------------------------------
 // Purpose: header label that seperates and names each section
@@ -1182,8 +1186,8 @@ void SectionedListPanel::ScrollToItem( int itemID )
 void SectionedListPanel::LayoutPanels( int& contentTall )
 {
 	int tall = GetSectionTall();
-	int x = 5, wide = GetWide() - 10;
-	int y = 5;
+	int x = GetProportionalScaledValue( CONTENT_INSET_BASE ), wide = GetWide() - 2 * x;
+	int y = x;
 
 	if ( m_pScrollBar->IsVisible() )
 	{
@@ -1247,7 +1251,7 @@ void SectionedListPanel::LayoutPanels( int& contentTall )
 		}
 
 		// add in a little boundry at the bottom
-		y += 8;
+		y += GetProportionalScaledValue( SECTION_GAP_BASE );
 	}
 
 	// calculate height
