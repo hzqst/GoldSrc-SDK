@@ -1,6 +1,6 @@
 //========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================
@@ -92,7 +92,7 @@ bool BotProfile::HasPrimaryPreference( void ) const
 	for( int i=0; i<m_weaponPreferenceCount; ++i )
 	{
 		int weaponClass = AliasToWeaponClass( WeaponIDToAlias( m_weaponPreference[i] ) );
-		
+
 		if (weaponClass == WEAPONCLASS_SUBMACHINEGUN ||
 				weaponClass == WEAPONCLASS_SHOTGUN ||
 				weaponClass == WEAPONCLASS_MACHINEGUN ||
@@ -330,7 +330,7 @@ void BotProfileManager::Init( const char *filename, unsigned int *checksum )
 
 				if (c == NULL)
 					break;
-				
+
 				token = c+1;
 			}
 		}
@@ -496,7 +496,7 @@ void BotProfileManager::Init( const char *filename, unsigned int *checksum )
 
 					if (c == NULL)
 						break;
-					
+
 					token = c+1;
 				}
 			}
@@ -717,4 +717,3 @@ const BotProfile *BotProfileManager::GetRandomProfile( BotDifficultyType difficu
 	return NULL;
 #endif
 }
-

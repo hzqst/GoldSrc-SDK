@@ -1,6 +1,6 @@
 //========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================
@@ -86,7 +86,7 @@ public:
 	bool IsValidForTeam( BotProfileTeamType team ) const;
 
 	bool PrefersSilencer() const							{ return m_prefersSilencer; }
-private:	
+private:
 	friend class BotProfileManager;			///< for loading profiles
 
 	void Inherit( const BotProfile *parent, const BotProfile *baseline );	///< copy values from parent if they differ from baseline

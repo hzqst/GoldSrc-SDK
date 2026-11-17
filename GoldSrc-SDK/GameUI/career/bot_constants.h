@@ -1,6 +1,6 @@
 //========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================
@@ -35,7 +35,7 @@ enum BotDifficultyType
 };
 
 #ifdef DEFINE_DIFFICULTY_NAMES
-	char *BotDifficultyName[] = 
+	char *BotDifficultyName[] =
 	{
 		"EASY", "NORMAL", "HARD", "EXPERT", NULL
 	};
