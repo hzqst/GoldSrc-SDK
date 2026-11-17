@@ -10,13 +10,14 @@ class CursorBitmap : public vgui::Bitmap
 public:
 	CursorBitmap( vgui::Cursor::DefaultCursor cursor )
 	{
-		if ( cursor == vgui::Cursor::dc_none )
-			return;
-
 		const int size = 16;
 		const int center = size / 2;
 		_hotspot[0] = center;
 		_hotspot[1] = center;
+
+		if ( cursor == vgui::Cursor::dc_none )
+			return;
+
 		setSize( size, size );
 		for ( int y = 0; y < size; ++y )
 		{
@@ -47,7 +48,7 @@ vgui::Cursor::Cursor( DefaultCursor dc )
 {
 	_dc = dc;
 	CursorBitmap* bitmap = new CursorBitmap( dc );
-	int x, y;
+	int x = 0, y = 0;
 	bitmap->getHotspot( x, y );
 	privateInit( bitmap, x, y );
 }
