@@ -35,8 +35,11 @@ TESTS = r'''
 
 using namespace vgui;
 
+// VGUI_Dar.h already instantiates these on Windows.
+#ifndef _WIN32
 template class vgui::Dar<char*>;
 template class vgui::Dar<int>;
+#endif
 
 static const int SOURCE_COUNT = 3;
 static const int GROW_COUNT = 64;
@@ -177,7 +180,8 @@ def main():
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(TESTS)
         compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        flags = ['-std=c++17', '-g', f'-I{VGUI / "include"}']
+        # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
+        flags = ['-std=c++17', '-g', '-DVGUI_EXPORTS', f'-I{VGUI / "include"}']
         if supports_asan(compiler, folder):
             flags.append('-fsanitize=address')
         subprocess.run(compiler + flags + [str(source_file), '-o', str(executable)], check=True)
