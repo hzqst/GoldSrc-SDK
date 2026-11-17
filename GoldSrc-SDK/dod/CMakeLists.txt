@@ -114,7 +114,7 @@ goldsrc_add_module(doddll
 		dod/public
 		dod/public/vgui
 		dod/public/game_controls
-		dod/vgui2/controls
+		vgui2/controls
 		dod/vgui2/game_controls
 		dlls
 		cl_dll
@@ -246,43 +246,44 @@ goldsrc_add_module(dod_cdll
 		dod/public/interface.cpp
 		dod/public/KeyValues.cpp
 		dod/public/MemPool.cpp
-		dod/public/UtlBuffer.cpp
-		dod/public/utlsymbol.cpp
-		dod/vgui2/controls/AnimatingImagePanel.cpp
-		dod/vgui2/controls/BitmapImagePanel.cpp
-		dod/vgui2/controls/BuildGroup.cpp
-		dod/vgui2/controls/BuildModeDialog.cpp
-		dod/vgui2/controls/Button.cpp
-		dod/vgui2/controls/CheckButton.cpp
-		dod/vgui2/controls/ComboBox.cpp
-		dod/vgui2/controls/controls.cpp
-		dod/vgui2/controls/Divider.cpp
-		dod/vgui2/controls/EditablePanel.cpp
-		dod/vgui2/controls/FocusNavGroup.cpp
-		dod/vgui2/controls/Frame.cpp
-		dod/vgui2/controls/HTML.cpp
-		dod/vgui2/controls/Image.cpp
-		dod/vgui2/controls/ImageList.cpp
-		dod/vgui2/controls/ImagePanel.cpp
-		dod/vgui2/controls/Label.cpp
-		dod/vgui2/controls/Menu.cpp
-		dod/vgui2/controls/MenuButton.cpp
-		dod/vgui2/controls/MenuItem.cpp
-		dod/vgui2/controls/MessageBox.cpp
-		dod/vgui2/controls/Panel.cpp
-		dod/vgui2/controls/PanelListPanel.cpp
-		dod/vgui2/controls/ProgressBar.cpp
-		dod/vgui2/controls/QueryBox.cpp
-		dod/vgui2/controls/RadioButton.cpp
-		dod/vgui2/controls/RichText.cpp
-		dod/vgui2/controls/ScrollBar.cpp
-		dod/vgui2/controls/ScrollBarSlider.cpp
-		dod/vgui2/controls/SectionedListPanel.cpp
-		dod/vgui2/controls/TextEntry.cpp
-		dod/vgui2/controls/TextImage.cpp
-		dod/vgui2/controls/ToggleButton.cpp
-		dod/vgui2/controls/Tooltip.cpp
-		dod/vgui2/controls/URLLabel.cpp
+		engine/utlbuffer.cpp
+		engine/utlsymbol.cpp
+		vgui2/controls/AnimatingImagePanel.cpp
+		vgui2/controls/BitmapImagePanel.cpp
+		vgui2/controls/BuildGroup.cpp
+		vgui2/controls/BuildModeDialog.cpp
+		vgui2/controls/Button.cpp
+		vgui2/controls/CheckButton.cpp
+		vgui2/controls/ComboBox.cpp
+		vgui2/controls/controls.cpp
+		engine/controls.cpp
+		vgui2/controls/Divider.cpp
+		vgui2/controls/EditablePanel.cpp
+		vgui2/controls/FocusNavGroup.cpp
+		vgui2/controls/Frame.cpp
+		vgui2/controls/HTML.cpp
+		vgui2/controls/Image.cpp
+		vgui2/controls/ImageList.cpp
+		vgui2/controls/ImagePanel.cpp
+		vgui2/controls/Label.cpp
+		vgui2/controls/Menu.cpp
+		vgui2/controls/MenuButton.cpp
+		vgui2/controls/MenuItem.cpp
+		vgui2/controls/MessageBox.cpp
+		vgui2/controls/Panel.cpp
+		vgui2/controls/PanelListPanel.cpp
+		vgui2/controls/ProgressBar.cpp
+		vgui2/controls/QueryBox.cpp
+		vgui2/controls/RadioButton.cpp
+		vgui2/controls/RichText.cpp
+		vgui2/controls/ScrollBar.cpp
+		vgui2/controls/ScrollBarSlider.cpp
+		vgui2/controls/SectionedListPanel.cpp
+		vgui2/controls/TextEntry.cpp
+		vgui2/controls/TextImage.cpp
+		vgui2/controls/ToggleButton.cpp
+		vgui2/controls/Tooltip.cpp
+		vgui2/controls/URLLabel.cpp
 		dod/vgui2/game_controls/classmenu.cpp
 		dod/vgui2/game_controls/clientmotd.cpp
 		dod/vgui2/game_controls/ClientScoreBoardDialog.cpp
@@ -305,7 +306,7 @@ goldsrc_add_module(dod_cdll
 		dod/public
 		dod/public/vgui
 		dod/public/game_controls
-		dod/vgui2/controls
+		vgui2/controls
 		dod/vgui2/game_controls
 		dlls
 		cl_dll
