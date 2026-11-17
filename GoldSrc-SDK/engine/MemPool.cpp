@@ -52,8 +52,14 @@ static inline void MemPool_Assert( bool condition )
 
 void CMemoryPool::AddNewBlob()
 {
+	MemPool_Assert( _numBlobs >= 0 && _numBlobs < MAX_BLOBS );
+	MemPool_Assert( _blocksPerBlob > 0 && _blockSize >= (int)sizeof( void* ) );
+
+	// reject blob sizes that would overflow int before allocating
 	int sizeMultiplier = (int)pow( 2.0, (double)_numBlobs );
+	MemPool_Assert( _blocksPerBlob <= INT_MAX / sizeMultiplier );
 	int nElements = sizeMultiplier * _blocksPerBlob;
+	MemPool_Assert( _blockSize <= INT_MAX / nElements && _numElements <= INT_MAX - nElements );
 	int blobSize = nElements * _blockSize;
 
 	_memBlob[_numBlobs] = malloc( blobSize );
