@@ -100,15 +100,12 @@ void TextGrid::newLine()
 
 int TextGrid::vprintf( const char* format, va_list argList )
 {
-	char buf[2048];
-#if defined( _MSC_VER )
-#pragma warning( push )
-#pragma warning( disable : 4996 )
-#endif
-	int ret = vsprintf( buf, format, argList );
-#if defined( _MSC_VER )
-#pragma warning( pop )
-#endif
+	char buf[2048] = {};
+	int ret = vsnprintf( buf, sizeof( buf ), format, argList );
+	if ( ret < 0 )
+	{
+		buf[0] = 0;
+	}
 	for ( int i = 0; i < (int)sizeof( buf ) && buf[i] != 0; ++i )
 	{
 		if ( buf[i] == '\n' )

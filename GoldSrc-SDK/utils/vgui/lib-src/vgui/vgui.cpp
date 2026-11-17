@@ -73,18 +73,15 @@ char* vgui_strdup( const char* src )
 
 int vgui_printf( const char* format, ... )
 {
-	char buf[2048];
+	char buf[2048] = {};
 	va_list argList;
 	va_start( argList, format );
-#if defined( _MSC_VER )
-#pragma warning( push )
-#pragma warning( disable : 4996 )
-#endif
-	int ret = vsprintf( buf, format, argList );
-#if defined( _MSC_VER )
-#pragma warning( pop )
-#endif
+	int ret = vsnprintf( buf, sizeof( buf ), format, argList );
 	va_end( argList );
+	if ( ret < 0 )
+	{
+		buf[0] = 0;
+	}
 	printf( "%s", buf );
 	return ret;
 }
