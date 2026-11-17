@@ -37,6 +37,10 @@ namespace vgui2
 static_assert( sizeof( Frame ) == 276 );
 static_assert( sizeof( ProgressBox ) == 1072 );
 
+// unscaled cancel button size; scaled to the current proportional state in PerformLayout
+static constexpr int CANCEL_BUTTON_WIDE = 72;
+static constexpr int CANCEL_BUTTON_TALL = 24;
+
 //-----------------------------------------------------------------------------
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
@@ -73,14 +77,12 @@ void ProgressBox::Init()
 {
 	constexpr int initialWide = 384;
 	constexpr int initialTall = 128;
-	constexpr int cancelWide = 72;
-	constexpr int cancelTall = 24;
 	constexpr int tickIntervalMilliseconds = 1000;
 
 	m_pProgressBar = new ProgressBar( this, nullptr );
 	m_pProgressBar->SetVisible( false );
 	m_pCancelButton = new Button( this, nullptr, "#VGui_Cancel" );
-	m_pCancelButton->SetSize( cancelWide, cancelTall );
+	m_pCancelButton->SetSize( CANCEL_BUTTON_WIDE, CANCEL_BUTTON_TALL );
 	m_pCancelButton->SetCommand( "Cancel" );
 	SetMenuButtonResponsive( false );
 	SetMinimizeButtonVisible( false );
@@ -106,9 +108,10 @@ void ProgressBox::ApplySchemeSettings( IScheme* scheme )
 	Frame::ApplySchemeSettings( scheme );
 	int wide;
 	int tall;
+	// the measured text height is already in pixels; only the design sizes are scaled
 	m_pMessageLabel->GetContentSize( wide, tall );
-	SetSize( dialogWide, tall + verticalSpace );
-	m_pMessageLabel->SetSize( labelWide, tall );
+	SetSize( GetProportionalScaledValue( dialogWide ), tall + GetProportionalScaledValue( verticalSpace ) );
+	m_pMessageLabel->SetSize( GetProportionalScaledValue( labelWide ), tall );
 }
 
 void ProgressBox::DoModal( Frame* frameOver )
@@ -276,12 +279,14 @@ void ProgressBox::OnTick()
 
 void ProgressBox::PerformLayout()
 {
-	constexpr int leftMargin = 16;
-	constexpr int topMargin = 12;
-	constexpr int progressTopMargin = 16;
-	constexpr int progressRightSpace = 44;
-	constexpr int progressTall = 24;
-	constexpr int cancelGap = 10;
+	// recompute from the base sizes so proportional, resolution and scheme changes are picked up
+	const int leftMargin = GetProportionalScaledValue( 16 );
+	const int topMargin = GetProportionalScaledValue( 12 );
+	const int progressTopMargin = GetProportionalScaledValue( 16 );
+	const int progressRightSpace = GetProportionalScaledValue( 44 );
+	const int progressTall = GetProportionalScaledValue( 24 );
+	const int cancelGap = GetProportionalScaledValue( 10 );
+	m_pCancelButton->SetSize( GetProportionalScaledValue( CANCEL_BUTTON_WIDE ), GetProportionalScaledValue( CANCEL_BUTTON_TALL ) );
 	int x;
 	int y;
 	int wide;
