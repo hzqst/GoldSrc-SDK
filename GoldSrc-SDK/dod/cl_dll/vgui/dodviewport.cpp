@@ -44,7 +44,7 @@ void DoDViewport::Start()
 	if ( m_bInitialized )
 		return;
 	SetClientDllInterface( &clientInterface );
-	m_pClassMenu = NULL;
+	m_pDoDClassMenu = NULL;
 	m_pHintPanel = new CHintPanel( NULL );
 	m_pWidescreenPanel = new CWidescreenPanel( NULL );
 	m_pMortarPanel = new CMortarPanel( NULL );
@@ -69,8 +69,8 @@ void DoDViewport::Start()
 
 CClientScoreBoardDialog* DoDViewport::CreateScoreBoard()
 {
-	m_pPrivateClientScoreBoard = new CDoDClientScoreBoardDialog( NULL );
-	return m_pPrivateClientScoreBoard;
+	m_pDoDClientScoreBoard = new CDoDClientScoreBoardDialog( NULL );
+	return m_pDoDClientScoreBoard;
 }
 
 CClientMOTD* DoDViewport::CreateMOTD()
@@ -80,14 +80,14 @@ CClientMOTD* DoDViewport::CreateMOTD()
 
 CSpectatorGUI* DoDViewport::CreateSpectatorGUI()
 {
-	m_pPrivateSpectatorGUI = new CDoDSpectatorGUI( NULL );
-	return m_pPrivateSpectatorGUI;
+	m_pDoDSpectatorGUI = new CDoDSpectatorGUI( NULL );
+	return m_pDoDSpectatorGUI;
 }
 
 CTeamMenu* DoDViewport::CreateTeamMenu()
 {
-	m_pTeamMenu = new CDoDTeamMenu( NULL );
-	return m_pTeamMenu;
+	m_pDoDTeamMenu = new CDoDTeamMenu( NULL );
+	return m_pDoDTeamMenu;
 }
 
 CClassMenu* DoDViewport::CreateClassMenu()
@@ -98,9 +98,9 @@ CClassMenu* DoDViewport::CreateClassMenu()
 void DoDViewport::SetParent( VPANEL parent )
 {
 	TeamFortressViewport::SetParent( parent );
-	if ( m_pClassMenu )
-		m_pClassMenu->SetParent( parent );
-	m_pTeamMenu->SetParent( parent );
+	if ( m_pDoDClassMenu )
+		m_pDoDClassMenu->SetParent( parent );
+	m_pDoDTeamMenu->SetParent( parent );
 	m_pHintPanel->SetParent( parent );
 	m_pWidescreenPanel->SetParent( parent );
 	m_pMortarPanel->SetParent( parent );
@@ -109,9 +109,9 @@ void DoDViewport::SetParent( VPANEL parent )
 void DoDViewport::HideAllVGUIMenu()
 {
 	TeamFortressViewport::HideAllVGUIMenu();
-	if ( m_pClassMenu )
-		m_pClassMenu->SetVisible( false );
-	m_pTeamMenu->SetVisible( false );
+	if ( m_pDoDClassMenu )
+		m_pDoDClassMenu->SetVisible( false );
+	m_pDoDTeamMenu->SetVisible( false );
 	m_pHintPanel->SetVisible( false );
 	m_pWidescreenPanel->SetVisible( false );
 	m_pMOTD->SetVisible( false );
@@ -152,7 +152,7 @@ void DoDViewport::setWidescreenSubtitle( int subtitle )
 
 void DoDViewport::updateTeamMenu()
 {
-	m_pTeamMenu->Update();
+	m_pDoDTeamMenu->Update();
 }
 
 void DoDViewport::ShowHintMessage( const char* message )
@@ -187,12 +187,12 @@ void DoDViewport::UpdateOnPlayerInfo()
 
 int DoDViewport::GetTeamScore( int team )
 {
-	return m_pPrivateClientScoreBoard ? m_pPrivateClientScoreBoard->GetTeamScore( team ) : -1;
+	return m_pDoDClientScoreBoard ? m_pDoDClientScoreBoard->GetTeamScore( team ) : -1;
 }
 
 ExtraScoreBoardInfo DoDViewport::GetExtraScoreBoardInfo( int team )
 {
-	return m_pPrivateClientScoreBoard->GetExtraScoreBoardInfo( team );
+	return m_pDoDClientScoreBoard->GetExtraScoreBoardInfo( team );
 }
 
 VGuiLibraryTeamInfo_t DoDViewport::GetPlayerTeamInfo( int team )
@@ -230,10 +230,10 @@ void DoDViewport::OnTick()
 		m_pSpectatorGUI->UpdateTimer();
 	if ( m_pHintPanel )
 		m_pHintPanel->OnTick();
-	if ( m_pTeamMenu && m_pTeamMenu->IsVisible() )
-		m_pTeamMenu->OnTick();
-	if ( m_pClassMenu && m_pClassMenu->IsVisible() )
-		m_pClassMenu->OnTick();
+	if ( m_pDoDTeamMenu && m_pDoDTeamMenu->IsVisible() )
+		m_pDoDTeamMenu->OnTick();
+	if ( m_pDoDClassMenu && m_pDoDClassMenu->IsVisible() )
+		m_pDoDClassMenu->OnTick();
 	if ( m_pMortarPanel->IsVisible() )
 		m_pMortarPanel->OnTick();
 }
@@ -242,14 +242,14 @@ bool DoDViewport::IsVGUIMenuActive( int menu )
 {
 	if ( menu == MENU_TEAM )
 	{
-		if ( m_pTeamMenu->IsVisible() )
+		if ( m_pDoDTeamMenu->IsVisible() )
 			return true;
 	}
 	else if ( menu >= 10 && menu <= 14 )
 	{
-		if ( !m_pClassMenu )
+		if ( !m_pDoDClassMenu )
 			return false;
-		if ( m_pClassMenu->IsVisible() )
+		if ( m_pDoDClassMenu->IsVisible() )
 			return true;
 	}
 	else
@@ -261,11 +261,11 @@ void DoDViewport::HideVGUIMenu( int menu )
 {
 	if ( menu >= 10 && menu <= 14 )
 	{
-		if ( m_pClassMenu )
-			m_pClassMenu->SetVisible( false );
+		if ( m_pDoDClassMenu )
+			m_pDoDClassMenu->SetVisible( false );
 	}
 	else if ( menu == MENU_TEAM )
-		m_pTeamMenu->SetVisible( false );
+		m_pDoDTeamMenu->SetVisible( false );
 	else if ( menu == 15 )
 		m_pMortarPanel->HideMortarPanel();
 	else
@@ -279,19 +279,19 @@ void DoDViewport::DisplayVGUIMenu( int menu )
 	((Panel*)m_pBackGround)->SetVisible( true );
 	if ( menu == MENU_TEAM )
 	{
-		m_pTeamMenu->Update( GetMapName(), m_iAllowSpectators != 0, (const char**)m_sTeamNames, m_iNumTeams );
-		m_pTeamMenu->Activate();
+		m_pDoDTeamMenu->Update( GetMapName(), m_iAllowSpectators != 0, (const char**)m_sTeamNames, m_iNumTeams );
+		m_pDoDTeamMenu->Activate();
 	}
 	else if ( menu >= 10 && menu <= 14 )
 	{
-		if ( m_pClassMenu )
-			m_pClassMenu->MarkForDeletion();
+		if ( m_pDoDClassMenu )
+			m_pDoDClassMenu->MarkForDeletion();
 		g_lastPanel = NULL;
-		m_pClassMenu = new CDoDClassMenu( NULL );
-		m_pClassMenu->SetParent( GetViewPortPanel() );
-		m_pClassMenu->SetClassMask( m_iClassMask );
-		m_pClassMenu->Update( NULL, menu );
-		m_pClassMenu->Activate();
+		m_pDoDClassMenu = new CDoDClassMenu( NULL );
+		m_pDoDClassMenu->SetParent( GetViewPortPanel() );
+		m_pDoDClassMenu->SetClassMask( m_iClassMask );
+		m_pDoDClassMenu->Update( NULL, menu );
+		m_pDoDClassMenu->Activate();
 	}
 	else if ( menu == 15 )
 		m_pMortarPanel->ShowMortarPanel();
@@ -348,7 +348,7 @@ int DoDViewport::MsgFunc_TeamScore( const char*, int size, void* buffer )
 	{
 		if ( m_pClientScoreBoard->GetPlayerTeamInfo( index ).teamnumber == team )
 		{
-			m_pPrivateClientScoreBoard->SetExtraScoreBoardInfo( index, READ_SHORT() );
+			m_pDoDClientScoreBoard->SetExtraScoreBoardInfo( index, READ_SHORT() );
 			m_pSpectatorGUI->UpdateSpectatorPlayerList();
 			return 1;
 		}

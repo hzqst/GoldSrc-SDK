@@ -230,7 +230,7 @@ public:
 
 private:
 	CClientScoreBoardDialog* CreateScoreBoard() override;
-	TFCCClientScoreBoardDialog* m_pPrivateClientScoreBoard;
+	TFCCClientScoreBoardDialog* m_pTFCClientScoreBoard;
 
 #ifdef _MSC_VER
 #pragma warning( suppress : 26495 )
@@ -245,8 +245,8 @@ void TFViewPort::Start()
 
 CClientScoreBoardDialog* TFViewPort::CreateScoreBoard()
 {
-	m_pPrivateClientScoreBoard = new TFCCClientScoreBoardDialog( NULL );
-	return m_pPrivateClientScoreBoard;
+	m_pTFCClientScoreBoard = new TFCCClientScoreBoardDialog( NULL );
+	return m_pTFCClientScoreBoard;
 }
 
 int TFViewPort::MsgFunc_TeamNames( const char* name, int size, void* buffer )
