@@ -4,6 +4,7 @@
 # directory differs.
 
 include(GoldSrcCounterStrike)
+include(${GOLDSRC_ROOT}/vgui2/game_controls/game_controls_sources.cmake)
 include(cstrike_sources.cmake)
 
 foreach(game IN ITEMS cstrike czero)

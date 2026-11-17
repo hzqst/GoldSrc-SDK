@@ -1,5 +1,7 @@
 # Day of Defeat game server and client.
 
+include(${GOLDSRC_ROOT}/vgui2/game_controls/game_controls_sources.cmake)
+
 goldsrc_add_module(doddll
 	TYPE SHARED
 	OUTPUT_NAME dod
@@ -113,10 +115,8 @@ goldsrc_add_module(doddll
 		dod/game_shared
 		dod/public
 		dod/public/vgui
-		dod/public/game_controls
 		public/game_controls
 		vgui2/controls
-		dod/vgui2/game_controls
 		dlls
 		cl_dll
 		common
@@ -285,19 +285,7 @@ goldsrc_add_module(dod_cdll
 		vgui2/controls/ToggleButton.cpp
 		vgui2/controls/Tooltip.cpp
 		vgui2/controls/URLLabel.cpp
-		vgui2/game_controls/classmenu.cpp
-		vgui2/game_controls/clientmotd.cpp
-		vgui2/game_controls/ClientScoreBoardDialog.cpp
-		vgui2/game_controls/commandmenu.cpp
-		vgui2/game_controls/CreateCommandMenu.cpp
-		vgui2/game_controls/SpectatorGUI.cpp
-		vgui2/game_controls/teammenu.cpp
-		vgui2/game_controls/TutorStateWindow.cpp
-		vgui2/game_controls/TutorTextWindow.cpp
-		vgui2/game_controls/TutorWindowManager.cpp
-		vgui2/game_controls/vgui_TeamFortressViewport.cpp
-		vgui2/game_controls/vgui_TeamFortressViewport_msgs.cpp
-		vgui2/game_controls/vguitextwindow.cpp
+		${GOLDSRC_GAME_CONTROLS_SOURCES}
 	INCLUDES
 		dod/dlls
 		dod/cl_dll
@@ -306,10 +294,8 @@ goldsrc_add_module(dod_cdll
 		dod/game_shared
 		dod/public
 		dod/public/vgui
-		dod/public/game_controls
 		vgui2/controls
 		public/game_controls
-		dod/vgui2/game_controls
 		dlls
 		cl_dll
 		common
