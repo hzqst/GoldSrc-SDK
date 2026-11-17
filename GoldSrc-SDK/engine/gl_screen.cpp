@@ -15,6 +15,7 @@
 #include "mem.h"
 #include "vgui_intwrap2.h"
 #include "wad.h"
+#include "../common/q_ftol.h"
 
 #include <cstdio>
 #include <limits>
@@ -122,12 +123,7 @@ void SCR_DrawCenterString()
 	int remaining = UNLIMITED_CENTER_CHARACTERS;
 	if ( cl.intermission )
 	{
-		double characters = ( cl.time - scr_centertime_start ) * scr_printspeed.value;
-		constexpr int MIN_CHARACTER_COUNT = ( std::numeric_limits<int>::min )();
-		constexpr double CHARACTER_COUNT_LIMIT = -static_cast<double>( MIN_CHARACTER_COUNT );
-		remaining = MIN_CHARACTER_COUNT;
-		if ( characters >= MIN_CHARACTER_COUNT && characters < CHARACTER_COUNT_LIMIT )
-			remaining = static_cast<int>( characters );
+		remaining = Q_ftol( ( cl.time - scr_centertime_start ) * scr_printspeed.value );
 		if ( VGuiWrap2_IsInCareerMatch() )
 			return;
 	}

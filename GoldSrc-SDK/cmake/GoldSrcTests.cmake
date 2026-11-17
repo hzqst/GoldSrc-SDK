@@ -18,6 +18,13 @@ foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound spectate_conne
 		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/${name}_tests.py")
 endforeach()
 
+add_executable(q_ftol_tests "${GOLDSRC_TESTS_DIR}/q_ftol_tests.cpp")
+set_target_properties(q_ftol_tests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+if(MSVC)
+	target_compile_options(q_ftol_tests PRIVATE /W4 /WX)
+endif()
+add_test(NAME q_ftol COMMAND q_ftol_tests)
+
 add_executable(cd_thread_tests "${GOLDSRC_TESTS_DIR}/cd_thread_tests.cpp")
 set_target_properties(cd_thread_tests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 if(MSVC)

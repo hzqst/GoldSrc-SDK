@@ -3,6 +3,7 @@
 #include "controls.h"
 #include "filesystem.h"
 #include "utlbuffer.h"
+#include "../common/q_ftol.h"
 
 #if defined( _WIN32 )
 #include <direct.h>			// for _mkdir
@@ -18,7 +19,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
-#include <limits>
 #include <new>
 
 #if defined( _WIN32 )
@@ -409,13 +409,7 @@ int KeyValues::GetInt( const char* name, int defaultValue )
 	case TYPE_STRING:
 		return std::atoi( key->m_sValue );
 	case TYPE_FLOAT:
-	{
-		constexpr double INTEGER_LIMIT = 2147483648.0;
-		double value = key->m_flValue;
-		if ( value >= -INTEGER_LIMIT && value < INTEGER_LIMIT )
-			return static_cast<int>( value );
-		return ( std::numeric_limits<int>::min )();
-	}
+		return Q_ftol( key->m_flValue );
 	case TYPE_WSTRING:
 		return _wtoi( reinterpret_cast<const wchar_t*>( key->m_sValue ) );
 	case TYPE_UINT64:
@@ -439,14 +433,7 @@ uint64 KeyValues::GetUint64( const char* name, uint64 defaultValue )
 	case TYPE_STRING:
 		return static_cast<uint64>( std::atoi( key->m_sValue ) );
 	case TYPE_FLOAT:
-	{
-		constexpr double INTEGER_LIMIT = 2147483648.0;
-		double value = key->m_flValue;
-		int integer = ( std::numeric_limits<int>::min )();
-		if ( value >= -INTEGER_LIMIT && value < INTEGER_LIMIT )
-			integer = static_cast<int>( value );
-		return static_cast<uint64>( integer );
-	}
+		return static_cast<uint64>( Q_ftol( key->m_flValue ) );
 	case TYPE_WSTRING:
 		return static_cast<uint64>( _wtoi( static_cast<const wchar_t*>( key->m_pValue ) ) );
 	case TYPE_UINT64:
@@ -511,15 +498,14 @@ Color KeyValues::GetColor( const char* name )
 		float alpha = 0.0f;
 		if ( std::sscanf( key->m_sValue, "%f %f %f %f", &red, &green, &blue, &alpha ) <= 0 )
 			break;
-		color.SetColor(
-			static_cast<int>( red ), static_cast<int>( green ), static_cast<int>( blue ), static_cast<int>( alpha ) );
+		color.SetColor( Q_ftol( red ), Q_ftol( green ), Q_ftol( blue ), Q_ftol( alpha ) );
 		break;
 	}
 	case TYPE_INT:
 		color.SetColor( key->m_iValue, 0, 0, 0 );
 		break;
 	case TYPE_FLOAT:
-		color.SetColor( static_cast<int>( key->m_flValue ), 0, 0, 0 );
+		color.SetColor( Q_ftol( key->m_flValue ), 0, 0, 0 );
 		break;
 	case TYPE_COLOR:
 		color.SetColor( key->m_Color[0], key->m_Color[1], key->m_Color[2], key->m_Color[3] );

@@ -39,10 +39,10 @@
 #include "../common/in_buttons.h"
 #include "../pm_shared/pm_shared.h"
 #include "../pm_shared/pm_movevars.h"
+#include "../common/q_ftol.h"
 #include "eiface.h"
 
 #include <cctype>
-#include <cfenv>
 #include <climits>
 #include <cmath>
 #include <cstdarg>
@@ -2546,7 +2546,6 @@ void SV_Rcon( netadr_t* address )
 
 constexpr int SERVER_PING_MAXIMUM_SAMPLES = 16;
 constexpr float SERVER_PING_MILLISECONDS_PER_SECOND = 1000.0f;
-constexpr float SERVER_PING_INTEGER_LIMIT = 2147483648.0f;
 
 int SV_CalcPing( client_t* client )
 {
@@ -2576,12 +2575,7 @@ int SV_CalcPing( client_t* client )
 	if ( average < 0.0f )
 		average = 0.0f;
 	float milliseconds = average * SERVER_PING_MILLISECONDS_PER_SECOND;
-	if ( !( milliseconds >= -SERVER_PING_INTEGER_LIMIT && milliseconds < SERVER_PING_INTEGER_LIMIT ) )
-	{
-		std::feraiseexcept( FE_INVALID );
-		return ( std::numeric_limits<int>::min )();
-	}
-	return static_cast<int>( milliseconds );
+	return Q_ftol( milliseconds );
 }
 
 extern delta_t* g_peventdelta;
@@ -2682,10 +2676,7 @@ void SV_EmitEvents( client_t* client, packet_entities_t* packet, sizebuf_t* mess
 				{
 					MSG_WriteBits( 1, 1 );
 					double scaledDelay = static_cast<double>( event.fire_time ) * EVENT_DELAY_SCALE;
-					int delay = INT_MIN;
-					if ( scaledDelay >= static_cast<double>( INT_MIN )
-						 && scaledDelay < -static_cast<double>( INT_MIN ) )
-						delay = static_cast<int>( scaledDelay );
+					int delay = Q_ftol( scaledDelay );
 					MSG_WriteBits( static_cast<std::uint32_t>( delay ), EVENT_DELAY_BITS );
 				}
 			}
@@ -3357,7 +3348,6 @@ void SV_EmitPings( client_t*, sizebuf_t* message )
 	constexpr int PING_VALUE_BITS = 12;
 	constexpr int PING_LOSS_BITS = 7;
 	constexpr double PING_REFRESH_INTERVAL = 2.0;
-	constexpr float LOSS_INTEGER_LIMIT = -static_cast<float>( ( std::numeric_limits<int>::min )() );
 	static unsigned short lastping[MAX_CLIENTS];
 	static byte lastloss[MAX_CLIENTS];
 
@@ -3374,15 +3364,7 @@ void SV_EmitPings( client_t*, sizebuf_t* message )
 		{
 			other->nextping = realtime + PING_REFRESH_INTERVAL;
 			lastping[cacheIndex] = static_cast<unsigned short>( SV_CalcPing( other ) );
-			int loss;
-			if ( other->packet_loss >= -LOSS_INTEGER_LIMIT && other->packet_loss < LOSS_INTEGER_LIMIT )
-				loss = static_cast<int>( other->packet_loss );
-			else
-			{
-				std::feraiseexcept( FE_INVALID );
-				loss = ( std::numeric_limits<int>::min )();
-			}
-			lastloss[cacheIndex] = static_cast<byte>( loss );
+			lastloss[cacheIndex] = static_cast<byte>( Q_ftol( other->packet_loss ) );
 		}
 
 		unsigned int ping = lastping[cacheIndex];
@@ -5001,12 +4983,7 @@ int SV_SpawnServer( qboolean, char* mapName, char* startspot )
 	g_LastScreenUpdateTime = 0.0f;
 	if ( coop.value != 0.0f )
 		Cvar_SetValue( "deathmatch", 0.0f );
-	double adjustedSkill = skill.value + 0.5;
-	if ( adjustedSkill >= static_cast<double>( std::numeric_limits<int>::min() )
-		 && adjustedSkill < static_cast<double>( std::numeric_limits<int>::max() ) + 1.0 )
-		current_skill = static_cast<int>( adjustedSkill );
-	else
-		current_skill = std::numeric_limits<int>::min();
+	current_skill = Q_ftol( skill.value + 0.5 );
 	if ( current_skill < 0 )
 		current_skill = 0;
 	else if ( current_skill > MAX_SKILL_LEVEL )

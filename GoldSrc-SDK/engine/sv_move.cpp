@@ -5,6 +5,7 @@
 #include "enginecallbacks.h"
 #include "mathlib.h"
 #include "world.h"
+#include "../common/q_ftol.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -122,7 +123,9 @@ void SV_NewChaseDir2( edict_t* actor, vec_t* vecGoal, float dist )
 	float d[3];
 	float tdir, olddir, turnaround;
 
-	olddir = anglemod( (float)( (int)( actor->v.ideal_yaw / 45 ) * 45 ) );
+	// Multiply as unsigned so out-of-range yaws wrap like the original imul instead of overflowing
+	unsigned int octant = static_cast<unsigned int>( Q_ftol( actor->v.ideal_yaw / 45 ) );
+	olddir = anglemod( (float)static_cast<int>( octant * 45u ) );
 	turnaround = anglemod( olddir - 180 );
 
 	deltax = vecGoal[0] - actor->v.origin[0];

@@ -3,9 +3,8 @@
 #include "engine_apiproxy.h"
 #include "gl_model.h"
 #include "sys.h"
+#include "../common/q_ftol.h"
 
-#include <cfenv>
-#include <climits>
 #include <cmath>
 #include <utility>
 
@@ -54,13 +53,7 @@ float anglemod( float a )
 
 	steps = a * ( 65536 / 360.0 );
 
-	if ( !( steps >= INT_MIN && steps < (double)INT_MAX + 1 ) )
-	{
-		feraiseexcept( FE_INVALID );
-		return 0.0f;
-	}
-
-	return (float)( ( 360.0 / 65536 ) * ( (int)steps & 65535 ) );
+	return (float)( ( 360.0 / 65536 ) * ( Q_ftol( steps ) & 65535 ) );
 }
 
 qboolean VectorCompare( const vec_t* v1, const vec_t* v2 )
