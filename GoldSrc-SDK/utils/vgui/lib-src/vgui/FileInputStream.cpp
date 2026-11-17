@@ -31,7 +31,7 @@ void FileInputStream::seekStart( bool& success )
 		return;
 	}
 
-	success = fseek( _fp, SEEK_SET, 0 ) != 0;
+	success = fseek( _fp, 0, SEEK_SET ) == 0;
 }
 
 void FileInputStream::seekRelative( int count, bool& success )
@@ -42,7 +42,7 @@ void FileInputStream::seekRelative( int count, bool& success )
 		return;
 	}
 
-	success = fseek( _fp, SEEK_CUR, count ) != 0;
+	success = fseek( _fp, count, SEEK_CUR ) == 0;
 }
 
 void FileInputStream::seekEnd( bool& success )
@@ -53,7 +53,7 @@ void FileInputStream::seekEnd( bool& success )
 		return;
 	}
 
-	success = fseek( _fp, SEEK_END, 0 ) != 0;
+	success = fseek( _fp, 0, SEEK_END ) == 0;
 }
 
 int FileInputStream::getAvailable( bool& success )
