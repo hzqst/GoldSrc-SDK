@@ -129,14 +129,21 @@ void CDialogAddServer::OnCommand( const char *command )
 	}
 	else if ( !stricmp( command, "addselected" ) )
 	{
-		if ( m_pDiscoveredGames->GetSelectedItemsCount() )
+		int itemID = m_pDiscoveredGames->GetSelectedItem( 0 );
+		if ( m_pDiscoveredGames->IsValidItemID( itemID ) )
 		{
 			// get the server
-			int serverID = m_pDiscoveredGames->GetItemUserData( m_pDiscoveredGames->GetSelectedItem( 0 ) );
-			ServerBrowserDialog().AddServerToFavorites( m_Servers[serverID] );
-			m_pDiscoveredGames->RemoveItem( m_pDiscoveredGames->GetSelectedItem( 0 ) );
+			int serverID = m_pDiscoveredGames->GetItemUserData( itemID );
+			if ( m_Servers.IsValidIndex( serverID ) )
+			{
+				ServerBrowserDialog().AddServerToFavorites( m_Servers[serverID] );
+			}
+			m_pDiscoveredGames->RemoveItem( itemID );
 			m_pDiscoveredGames->SetEmptyListText( "" );
 		}
+
+		// removing the row doesn't post ItemSelected, so update the button here
+		m_pAddSelectedServerButton->SetEnabled( m_pDiscoveredGames->GetSelectedItem( 0 ) != -1 );
 	}
 	else
 	{
@@ -186,13 +193,23 @@ void CDialogAddServer::OnOK()
 //-----------------------------------------------------------------------------
 void CDialogAddServer::TestServers()
 {
+	// cancel pings still pending from the previous test, their late replies would index the new round
+	for ( int i = 0; i < m_Queries.Count(); i++ )
+	{
+		SteamMatchmakingServers()->CancelServerQuery( m_Queries[i] );
+	}
+	m_Queries.RemoveAll();
+
+	// rows store indices into m_Servers, so both must be cleared together
+	m_pDiscoveredGames->RemoveAll();
+	m_Servers.RemoveAll();
+	m_pAddSelectedServerButton->SetEnabled( false );
+
 	m_pDiscoveredGames->SetEmptyListText( "" );
 
 	const char *address = GetControlString( "ServerNameText", "" );
 	netadr_t netaddr;
 	netaddr.SetFromString( address, true );
-
-	m_Servers.RemoveAll();
 
 	CUtlVector<netadr_t> vecAdress;
 	if ( netaddr.GetPort() )
