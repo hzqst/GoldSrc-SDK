@@ -126,11 +126,12 @@ goldsrc_add_module(GameUI
 		engine/utlsymbol.cpp
 		engine/BaseSystemModule.cpp
 		common/ObjectList.cpp
-		cstrike/common/parsemsg.cpp
-		cstrike/common/Random.cpp
-		cstrike/game_shared/shared_util.cpp
-		cstrike/game_shared/bot/bot_profile.cpp
-		cstrike/dlls/weapontype.cpp
+		# Career retains its CS-specific parsing, formatting and weapon behavior.
+		GameUI/career/parsemsg.cpp
+		GameUI/career/Random.cpp
+		GameUI/career/shared_util.cpp
+		GameUI/career/bot_profile.cpp
+		GameUI/career/weapontype.cpp
 		HLTV/DemoPlayer/private/HLTV/common/DirectorCmd.cpp
 		HLTV/common/byteorder.cpp
 		HLTV/DemoPlayer/private/HLTV/common/BitBuffer.cpp
@@ -145,7 +146,7 @@ goldsrc_add_module(GameUI
 		vgui2/controls/TestScriptController.cpp
 	INCLUDES
 		GameUI
-		cstrike/common
+		GameUI/career
 		vgui2/compat
 		vgui2/controls
 		cl_dll
@@ -181,9 +182,6 @@ goldsrc_source_properties(GameUI/OptionsSubMultiplayer.cpp
 )
 goldsrc_source_properties(common/ObjectList.cpp
 	INCLUDES HLTV/DemoPlayer/private/HLTV/common
-)
-goldsrc_source_properties(cstrike/game_shared/bot/bot_profile.cpp
-	INCLUDES cstrike/game_shared cstrike/game_shared/bot
 )
 goldsrc_source_properties(HLTV/DemoPlayer/private/HLTV/common/DirectorCmd.cpp
 	INCLUDES HLTV/DemoPlayer/private
