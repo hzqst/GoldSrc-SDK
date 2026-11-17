@@ -35,6 +35,8 @@ namespace vgui2
 {
 // unscaled scrollbar width; scaled to the current proportional state in PerformLayout
 static const int SCROLLBAR_BASE_SIZE = 18;
+// unscaled gap between the scrollbar and the right/bottom edges
+static const int SCROLLBAR_INSET_BASE = 2;
 
 //-----------------------------------------------------------------------------
 // Purpose: Individual items in the list
@@ -763,8 +765,9 @@ void SectionedListPanel::PerformLayout()
 	{
 		m_pScrollBar->SetVisible( true );
 		m_pScrollBar->MoveToFront();
-		m_pScrollBar->SetPos( wide - m_iScrollbarSize - 2, 0 );
-		m_pScrollBar->SetSize( m_iScrollbarSize, tall - 2 );
+		int scrollbarInset = GetProportionalScaledValue( SCROLLBAR_INSET_BASE );
+		m_pScrollBar->SetPos( wide - m_iScrollbarSize - scrollbarInset, 0 );
+		m_pScrollBar->SetSize( m_iScrollbarSize, tall - scrollbarInset );
 		m_pScrollBar->SetRangeWindow( tall );
 		m_pScrollBar->SetRange( 0, m_iContentHeight );
 		m_pScrollBar->InvalidateLayout( false, false );
