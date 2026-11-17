@@ -76,6 +76,8 @@ typedef int ( *GETLOCALPLAYERINDEX )();
 typedef void ( *VOICESTOPSQUELCH )();
 typedef bool ( *DEMOPLAYBACK )();
 typedef float ( *CVARGETFLOAT )( const char* name );
+typedef void ( *SETPLAYERSCOREINFO )( int player, int frags, int deaths, int playerClass, int team );
+typedef void ( *SETPLAYERTEAMINFO )( int player, const char* team );
 
 struct VGuiLibraryInterface_t
 {
@@ -108,8 +110,8 @@ struct VGuiLibraryInterface_t
 	VOICESTOPSQUELCH			GameVoice_StopSquelchMode;
 	DEMOPLAYBACK				IsDemoPlayingBack;
 	CVARGETFLOAT				CvarGetFloat;
-	void ( *SetPlayerScoreInfo )( int player, int frags, int deaths, int playerClass, int team );
-	void ( *SetPlayerTeamInfo )( int player, const char* team );
+	SETPLAYERSCOREINFO			SetPlayerScoreInfo;
+	SETPLAYERTEAMINFO			SetPlayerTeamInfo;
 };
 
 #endif

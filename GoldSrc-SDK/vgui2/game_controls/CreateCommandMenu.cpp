@@ -22,7 +22,6 @@ static char* ParseMenuToken( char* data, char* token )
 void CCreateCommandComboMenu::CreateCommandComboMenu( char* menuFile, ComboBox* parent, int playerTeam )
 {
 	m_iIgnoreDepth = 0;
-	m_iIgnoring = 0;
 	m_iDepth = 0;
 	Menu* menu = CreateCommandMenu( menuFile, playerTeam, parent );
 	if ( menu )
@@ -72,7 +71,6 @@ Menu* CCreateCommandComboMenu::CreateCommandMenu( char* menuFile, int playerTeam
 {
 	m_pMenuStack.Clear();
 	m_iIgnoreDepth = 0;
-	m_iIgnoring = 0;
 	m_iDepth = 0;
 	char* file = (char*)gViewPortInterface->GetClientDllInterface()->COM_LoadFile( menuFile, 5, NULL );
 	if ( !file )

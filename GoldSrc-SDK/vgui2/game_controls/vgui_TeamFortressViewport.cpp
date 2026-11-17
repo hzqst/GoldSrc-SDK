@@ -129,6 +129,9 @@ TeamFortressViewport::~TeamFortressViewport()
 
 void TeamFortressViewport::Initialize( CreateInterfaceFn* factories, int count )
 {
+	// the engine passes at least the engine, vgui, filesystem and chrome factories;
+	// without them the client UI and gameuifuncs stay uninitialized
+	assert( factories && count >= FactoryCount - 1 );
 	if ( !factories || count < FactoryCount - 1 )
 		return;
 	m_FactoryList[0] = Sys_GetFactoryThis();
@@ -298,6 +301,7 @@ int TeamFortressViewport::IsRandomPC()
 
 char* TeamFortressViewport::GetTeamName( int team )
 {
+	// IViewPort returns a mutable name; callers must treat the shared fallback as read-only
 	static char empty[] = "";
 	return team >= 0 && team < TeamSlotCount && m_sTeamNames[team] ? m_sTeamNames[team] : empty;
 }
