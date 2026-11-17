@@ -10,37 +10,8 @@
 // $NoKeywords: $
 //=============================================================================
 
-//#include <vgui/VGUI.h>
-
 #pragma once
 
-#include "interface.h"
-
-class IFileSystem;
-
-namespace vgui2
-{
-class IInput;
-class ILocalize;
-class IPanel;
-class ISchemeManager;
-class ISurface;
-class ISystem;
-class IVGui;
-
-bool			VGuiControls_Init( const char* moduleName, CreateInterfaceFn* factories, int count );
-void			VGuiControls_Shutdown();
-
-// returns the name of the module as specified above
-const char*		GetControlsModuleName();
-
-// #include "FileSystem.h"
-IFileSystem*	filesystem();
-IInput*			input();
-ILocalize*		localize();
-IPanel*			ipanel();
-ISchemeManager*	scheme();
-ISurface*		surface();
-ISystem*		system();
-IVGui*			ivgui();
-}
+// the controls now come from the shared vgui2/controls, keep this path for the game code
+#include "../../../vgui2/controls/controls.h"
+#include "../../../engine/controls.h"

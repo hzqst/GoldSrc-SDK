@@ -253,47 +253,48 @@ set(CSTRIKE_CLIENT_SOURCES
 	cstrike/pm_shared/pm_debug.c
 	cstrike/pm_shared/pm_math.c
 	cstrike/pm_shared/pm_shared.c
-	cstrike/vgui2/controls/BitmapImagePanel.cpp
-	cstrike/vgui2/controls/BuildGroup.cpp
-	cstrike/vgui2/controls/Button.cpp
-	cstrike/vgui2/controls/ComboBox.cpp
-	cstrike/vgui2/controls/controls.cpp
-	cstrike/vgui2/controls/EditablePanel.cpp
-	cstrike/vgui2/controls/FocusNavGroup.cpp
-	cstrike/vgui2/controls/Frame.cpp
+	vgui2/controls/BitmapImagePanel.cpp
+	vgui2/controls/BuildGroup.cpp
+	vgui2/controls/Button.cpp
+	vgui2/controls/ComboBox.cpp
+	vgui2/controls/controls.cpp
+	engine/controls.cpp
+	vgui2/controls/EditablePanel.cpp
+	vgui2/controls/FocusNavGroup.cpp
+	vgui2/controls/Frame.cpp
 	vgui2/controls/ImageList.cpp
-	cstrike/vgui2/controls/ImagePanel.cpp
-	cstrike/vgui2/controls/Label.cpp
-	cstrike/vgui2/controls/Menu.cpp
-	cstrike/vgui2/controls/MenuButton.cpp
-	cstrike/vgui2/controls/MenuItem.cpp
-	cstrike/vgui2/controls/MessageBox.cpp
-	cstrike/vgui2/controls/Panel.cpp
-	cstrike/vgui2/controls/ProgressBar.cpp
-	cstrike/vgui2/controls/RadioButton.cpp
-	cstrike/vgui2/controls/RichText.cpp
-	cstrike/vgui2/controls/ScrollBar.cpp
-	cstrike/vgui2/controls/ScrollBarSlider.cpp
-	cstrike/vgui2/controls/SectionedListPanel.cpp
-	cstrike/vgui2/controls/TextEntry.cpp
-	cstrike/vgui2/controls/TextImage.cpp
-	cstrike/vgui2/controls/ToggleButton.cpp
-	cstrike/vgui2/controls/Tooltip.cpp
-	cstrike/vgui2/controls/URLLabel.cpp
-	cstrike/vgui2/controls/WizardPanel.cpp
-	cstrike/vgui2/controls/WizardSubPanel.cpp
+	vgui2/controls/ImagePanel.cpp
+	vgui2/controls/Label.cpp
+	vgui2/controls/Menu.cpp
+	vgui2/controls/MenuButton.cpp
+	vgui2/controls/MenuItem.cpp
+	vgui2/controls/MessageBox.cpp
+	vgui2/controls/Panel.cpp
+	vgui2/controls/ProgressBar.cpp
+	vgui2/controls/RadioButton.cpp
+	vgui2/controls/RichText.cpp
+	vgui2/controls/ScrollBar.cpp
+	vgui2/controls/ScrollBarSlider.cpp
+	vgui2/controls/SectionedListPanel.cpp
+	vgui2/controls/TextEntry.cpp
+	vgui2/controls/TextImage.cpp
+	vgui2/controls/ToggleButton.cpp
+	vgui2/controls/Tooltip.cpp
+	vgui2/controls/URLLabel.cpp
+	vgui2/controls/WizardPanel.cpp
+	vgui2/controls/WizardSubPanel.cpp
 	cstrike/public/KeyValues.cpp
 	cstrike/public/UtlBuffer.cpp
 	cstrike/public/utlsymbol.cpp
 	cstrike/public/MemPool.cpp
-	cstrike/vgui2/controls/AnimatingImagePanel.cpp
-	cstrike/vgui2/controls/BuildModeDialog.cpp
-	cstrike/vgui2/controls/CheckButton.cpp
-	cstrike/vgui2/controls/Divider.cpp
-	cstrike/vgui2/controls/HTML.cpp
-	cstrike/vgui2/controls/Image.cpp
-	cstrike/vgui2/controls/PanelListPanel.cpp
-	cstrike/vgui2/controls/QueryBox.cpp
+	vgui2/controls/AnimatingImagePanel.cpp
+	vgui2/controls/BuildModeDialog.cpp
+	vgui2/controls/CheckButton.cpp
+	vgui2/controls/Divider.cpp
+	vgui2/controls/HTML.cpp
+	vgui2/controls/Image.cpp
+	vgui2/controls/PanelListPanel.cpp
+	vgui2/controls/QueryBox.cpp
 	cstrike/vgui2/game_controls/classmenu.cpp
 	cstrike/vgui2/game_controls/ClientScoreBoardDialog.cpp
 	cstrike/vgui2/game_controls/CreateCommandMenu.cpp

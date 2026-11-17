@@ -6,7 +6,7 @@
 //=============================================================================
 
 #include "clientmotd.h"
-#include "vgui_controls/HTML.h"
+#include "HTML.h"
 #include "../../../vgui2/controls/Label.h"
 #include "vgui_controls/Controls.h"
 #include "../../../public/FileSystem.h"

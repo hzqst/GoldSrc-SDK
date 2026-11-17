@@ -38,7 +38,6 @@ function(goldsrc_add_counterstrike_module target)
 		${src}/public
 		${src}/public/vgui
 		${src}/public/game_controls
-		${src}/vgui2/controls
 		${src}/vgui2/game_controls
 		dlls
 		common
