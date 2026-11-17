@@ -45,7 +45,7 @@
 #include "bot/bot_manager.h"
 #include "hitgroups.h"
 #include "tutor.h"
-#include "bot/bot_profile.h"
+#include "bot_profile.h"
 #include "bot/cs_bot_chatter.h"
 #include "bot/nav_area.h"
 #include "hostage/hostage_localnav.h"

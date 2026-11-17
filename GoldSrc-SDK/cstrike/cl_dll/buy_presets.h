@@ -1,7 +1,7 @@
 #ifndef BUY_PRESETS_H
 #define BUY_PRESETS_H
 
-#include "../dlls/weapontype.h"
+#include "weapontype.h"
 #include "wrect.h"
 #include "ammo.h"
 #include <vector>

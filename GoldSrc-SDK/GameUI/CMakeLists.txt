@@ -126,12 +126,12 @@ goldsrc_add_module(GameUI
 		engine/utlsymbol.cpp
 		engine/BaseSystemModule.cpp
 		common/ObjectList.cpp
-		# Career retains its CS-specific parsing, formatting and weapon behavior.
-		GameUI/career/parsemsg.cpp
-		GameUI/career/Random.cpp
-		GameUI/career/shared_util.cpp
-		GameUI/career/bot_profile.cpp
-		GameUI/career/weapontype.cpp
+		# Career shares the CS message parsing, formatting, bot profile and weapon sources.
+		game_shared/cstrike/parsemsg.cpp
+		game_shared/cstrike/Random.cpp
+		game_shared/cstrike/shared_util.cpp
+		game_shared/cstrike/bot_profile.cpp
+		game_shared/cstrike/weapontype.cpp
 		HLTV/DemoPlayer/private/HLTV/common/DirectorCmd.cpp
 		HLTV/common/byteorder.cpp
 		HLTV/DemoPlayer/private/HLTV/common/BitBuffer.cpp
@@ -146,7 +146,7 @@ goldsrc_add_module(GameUI
 		vgui2/controls/TestScriptController.cpp
 	INCLUDES
 		GameUI
-		GameUI/career
+		game_shared/cstrike
 		vgui2/compat
 		vgui2/controls
 		cl_dll

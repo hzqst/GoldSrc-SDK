@@ -54,7 +54,7 @@ set(CSTRIKE_SERVER_SOURCES
 	cstrike/dlls/tutor_cs_tutor.cpp
 	cstrike/dlls/tutor_base_states.cpp
 	cstrike/dlls/tutor_cs_states.cpp
-	cstrike/dlls/weapontype.cpp
+	game_shared/cstrike/weapontype.cpp
 	cstrike/dlls/debug.cpp
 	cstrike/dlls/wpn_shared/wpn_ak47.cpp
 	cstrike/dlls/wpn_shared/wpn_aug.cpp
@@ -89,7 +89,7 @@ set(CSTRIKE_SERVER_SOURCES
 	cstrike/pm_shared/pm_math.c
 	cstrike/pm_shared/pm_debug.c
 	cstrike/game_shared/voice_gamemgr.cpp
-	cstrike/game_shared/shared_util.cpp
+	game_shared/cstrike/shared_util.cpp
 	engine/MemPool.cpp
 	engine/utlsymbol.cpp
 	cstrike/dlls/hostage/states/hostage_animate.cpp
@@ -102,7 +102,7 @@ set(CSTRIKE_SERVER_SOURCES
 	cstrike/dlls/hostage/hostage_localnav.cpp
 	cstrike/game_shared/bot/bot.cpp
 	cstrike/game_shared/bot/bot_manager.cpp
-	cstrike/game_shared/bot/bot_profile.cpp
+	game_shared/cstrike/bot_profile.cpp
 	cstrike/game_shared/bot/bot_util.cpp
 	cstrike/game_shared/bot/nav_area.cpp
 	cstrike/game_shared/bot/nav_file.cpp
@@ -214,10 +214,10 @@ set(CSTRIKE_CLIENT_SOURCES
 	engine/interface.cpp
 	cstrike/public/checksum_crc.cpp
 	cstrike/common/steamid.cpp
-	cstrike/common/parsemsg.cpp
-	cstrike/common/Random.cpp
+	game_shared/cstrike/parsemsg.cpp
+	game_shared/cstrike/Random.cpp
 	cstrike/game_shared/voice_status_hud.cpp
-	cstrike/game_shared/shared_util.cpp
+	game_shared/cstrike/shared_util.cpp
 	cstrike/game_shared/voice_banmgr.cpp
 	cstrike/game_shared/voice_status.cpp
 	cstrike/dlls/wpn_shared/wpn_ak47.cpp
@@ -249,7 +249,7 @@ set(CSTRIKE_CLIENT_SOURCES
 	cstrike/dlls/wpn_shared/wpn_ump45.cpp
 	cstrike/dlls/wpn_shared/wpn_usp.cpp
 	cstrike/dlls/wpn_shared/wpn_xm1014.cpp
-	cstrike/dlls/weapontype.cpp
+	game_shared/cstrike/weapontype.cpp
 	cstrike/pm_shared/pm_debug.c
 	cstrike/pm_shared/pm_math.c
 	cstrike/pm_shared/pm_shared.c
