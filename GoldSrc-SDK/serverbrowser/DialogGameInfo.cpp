@@ -213,15 +213,16 @@ void CDialogGameInfo::PerformLayout()
 	SetControlString( "MapText", m_Server.m_szMap );
 	SetControlString( "GameTags", m_Server.m_szGameTags );
 
-	if ( !m_Server.m_szGameDescription[0] && m_SteamIDFriend && SteamApps() )
+	if ( !m_Server.m_szGameDescription[0] && m_SteamIDFriend && SteamFriends() )
 	{
-		// no game description set yet; the friend's game name is never looked up,
-		// so this shows whatever happens to be in the uninitialized name buffer
+		// no game description set yet; the public Steamworks API cannot resolve the
+		// friend's game name, so only report when they are not in a game and let the
+		// server reply fill in the description otherwise
 		FriendGameInfo_t friendGameInfo;
-		char szName[255];
-		CGameID gameID;
-		SteamFriends()->GetFriendGamePlayed( CSteamID( m_SteamIDFriend ), &friendGameInfo );
-		SetControlString( "GameText", szName[0] ? szName : "#ServerBrowser_NotInGame" );
+		if ( !SteamFriends()->GetFriendGamePlayed( CSteamID( m_SteamIDFriend ), &friendGameInfo ) )
+		{
+			SetControlString( "GameText", "#ServerBrowser_NotInGame" );
+		}
 	}
 
 	if ( m_Server.m_bHadSuccessfulResponse )
