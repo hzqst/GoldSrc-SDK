@@ -84,7 +84,7 @@ bool BitmapTGA::loadTGA( InputStream* is, bool invertAlpha )
 	if ( pixelSize != TGA_RGB_BITS && pixelSize != TGA_RGBA_BITS )
 		return false;
 
-	if ( wide * tall > INT_MAX / VGUI_RGBA_BYTES )
+	if ( wide != 0 && tall > INT_MAX / VGUI_RGBA_BYTES / wide )
 		return false;
 
 	setSize( wide, tall );
