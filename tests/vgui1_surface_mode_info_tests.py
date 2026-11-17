@@ -2,7 +2,8 @@
 
 Run: python tests/vgui1_surface_mode_info_tests.py
 Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
-AddressSanitizer is enabled when the compiler supports it.
+AddressSanitizer (including leak checks where supported) is enabled when the
+compiler supports it.
 
 The mode-info methods and destructor are extracted from SurfaceBase.cpp and run
 against the real VGUI_Dar.h. strdup/_strdup and free are counted, so each
@@ -198,12 +199,9 @@ def main():
         if supports_asan(compiler, folder):
             flags.append('-fsanitize=address')
         subprocess.run(compiler + flags + [str(source_file), '-o', str(executable)], check=True)
-        # Dar does not free its own backing array yet, so only the counted
-        # mode names are checked for leaks here.
-        env = dict(os.environ, ASAN_OPTIONS='detect_leaks=0')
         failed = []
         for scenario in scenarios:
-            result = subprocess.run([str(executable), scenario], env=env)
+            result = subprocess.run([str(executable), scenario])
             if result.returncode:
                 failed.append(scenario)
         if failed:

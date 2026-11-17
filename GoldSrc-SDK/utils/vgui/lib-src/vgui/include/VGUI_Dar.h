@@ -29,7 +29,34 @@ public:
 		ensureCapacity( initialCapacity );
 	}
 
-	Dar& operator=( const Dar& ) = default;
+	// Copies get their own array, so destroying or growing one copy cannot
+	// leave the other pointing at freed memory.
+	Dar( const Dar& other )
+	{
+		_count = 0;
+		_capacity = 0;
+		_data = NULL;
+		copyFrom( other );
+	}
+
+	Dar& operator=( const Dar& other )
+	{
+		if ( this != &other )
+		{
+			_count = 0;
+			copyFrom( other );
+		}
+
+		return *this;
+	}
+
+	~Dar()
+	{
+		delete[] _data;
+		_data = NULL;
+		_count = 0;
+		_capacity = 0;
+	}
 
 	void ensureCapacity( int wantedCapacity )
 	{
@@ -187,6 +214,17 @@ public:
 	}
 
 protected:
+	void copyFrom( const Dar& other )
+	{
+		ensureCapacity( other._capacity );
+		for ( int i = 0; i < other._count; ++i )
+		{
+			_data[i] = other._data[i];
+		}
+
+		_count = other._count;
+	}
+
 	int			_count;
 	int			_capacity;
 	ELEMTYPE*	_data;
