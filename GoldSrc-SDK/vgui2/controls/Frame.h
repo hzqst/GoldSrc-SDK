@@ -29,7 +29,7 @@ class Frame : public EditablePanel
 	DECLARE_CLASS_SIMPLE( Frame, EditablePanel );
 
 public:
-	Frame( Panel*, const char*, bool, bool );
+	Frame( Panel* parent, const char* panelName, bool showTaskbarIcon, bool bForceProportional = false );
 	~Frame() override;
 
 	// Set the text in the title bar.  Set surfaceTitle=true if you want this to be the taskbar text as well.

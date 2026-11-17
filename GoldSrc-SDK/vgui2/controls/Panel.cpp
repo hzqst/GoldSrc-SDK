@@ -2640,6 +2640,9 @@ const char* CPanelMessageMapDictionary::StripNamespace( const char* className )
 {
 	if ( _strnicmp( className, "vgui::", 6 ) == 0 )
 		return className + 6;
+	// DECLARE_CLASS_SIMPLE( X, vgui2::Frame ) stringifies the base class with the vgui2 namespace
+	if ( _strnicmp( className, "vgui2::", 7 ) == 0 )
+		return className + 7;
 	return className;
 }
 
