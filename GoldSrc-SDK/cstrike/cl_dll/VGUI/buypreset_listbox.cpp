@@ -11,6 +11,11 @@
 
 using namespace vgui2;
 
+// unscaled layout metrics; scaled to the current proportional state in PerformLayout
+static const int SCROLLBAR_BASE_SIZE = 18;
+static const int DEFAULT_HEIGHT_BASE = 24;
+static const int PANEL_BUFFER_BASE = 5;
+
 BuyPresetListBox::BuyPresetListBox( Panel* parent, const char* panelName ) : Panel( parent, panelName )
 {
 	m_visibleIndex = 0;
@@ -24,25 +29,9 @@ BuyPresetListBox::BuyPresetListBox( Panel* parent, const char* panelName ) : Pan
 	m_pPanelEmbedded->SetBounds( 0, 0, 20, 20 );
 	m_pPanelEmbedded->SetPaintBackgroundEnabled( false );
 	m_pPanelEmbedded->SetPaintBorderEnabled( false );
-	if ( IsProportional() )
-	{
-		int baseWide, baseTall, wide, tall;
-		surface()->GetProportionalBase( baseWide, baseTall );
-		surface()->GetScreenSize( wide, tall );
-		long double scale = (long double)wide / baseWide;
-		float scrollbarSize = (float)( 18 * scale );
-		float defaultHeight = (float)( 24 * scale );
-		float panelBuffer = (float)( 5 * scale );
-		m_iScrollbarSize = (int)scrollbarSize;
-		m_iDefaultHeight = (int)defaultHeight;
-		m_iPanelBuffer = (int)panelBuffer;
-	}
-	else
-	{
-		m_iScrollbarSize = 18;
-		m_iDefaultHeight = 24;
-		m_iPanelBuffer = 5;
-	}
+	m_iScrollbarSize = SCROLLBAR_BASE_SIZE;
+	m_iDefaultHeight = DEFAULT_HEIGHT_BASE;
+	m_iPanelBuffer = PANEL_BUFFER_BASE;
 }
 
 BuyPresetListBox::~BuyPresetListBox()
@@ -156,6 +145,10 @@ void BuyPresetListBox::PerformLayout()
 {
 	int wide, tall;
 	GetSize( wide, tall );
+	// recompute from the base sizes so proportional, resolution and scheme changes are picked up
+	m_iScrollbarSize = GetProportionalScaledValue( SCROLLBAR_BASE_SIZE );
+	m_iDefaultHeight = GetProportionalScaledValue( DEFAULT_HEIGHT_BASE );
+	m_iPanelBuffer = GetProportionalScaledValue( PANEL_BUFFER_BASE );
 	int pixels = computeVPixelsNeeded();
 	int visible = m_visibleIndex;
 	m_vbar->SetVisible( true );

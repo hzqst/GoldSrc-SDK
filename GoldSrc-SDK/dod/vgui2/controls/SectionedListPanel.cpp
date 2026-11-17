@@ -30,6 +30,9 @@
 
 namespace vgui2
 {
+// unscaled scrollbar width; scaled to the current proportional state in PerformLayout
+static const int SCROLLBAR_BASE_SIZE = 18;
+
 //-----------------------------------------------------------------------------
 // Purpose: Individual items in the list
 //-----------------------------------------------------------------------------
@@ -131,18 +134,7 @@ SectionedListPanel::SectionedListPanel( Panel* parent, const char* name ) : Pane
 	m_iLineSpacingOverride = 0;
 	m_pImageList = NULL;
 	m_bDeleteImageListWhenDone = false;
-	if ( IsProportional() )
-	{
-		int width, height, screenWidth, screenHeight;
-		surface()->GetProportionalBase( width, height );
-		surface()->GetScreenSize( screenWidth, screenHeight );
-		float size = (float)screenWidth / (float)width * 18.0f;
-		m_iScrollbarSize = (int)size;
-	}
-	else
-	{
-		m_iScrollbarSize = 18;
-	}
+	m_iScrollbarSize = SCROLLBAR_BASE_SIZE;
 }
 
 //-----------------------------------------------------------------------------
@@ -749,6 +741,8 @@ void SectionedListPanel::PerformLayout()
 		m_bSortNeeded = false;
 	}
 	BaseClass::PerformLayout();
+	// recompute from the base size so proportional, resolution and scheme changes are picked up
+	m_iScrollbarSize = GetProportionalScaledValue( SCROLLBAR_BASE_SIZE );
 	LayoutPanels( m_iContentHeight );
 	int x, y, wide, tall;
 	GetBounds( x, y, wide, tall );
