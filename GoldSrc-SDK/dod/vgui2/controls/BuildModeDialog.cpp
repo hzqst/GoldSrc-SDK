@@ -788,6 +788,7 @@ void BuildModeDialog::ApplyDataToControls()
 
 	KeyValues* settings = BuildModeDialog::StoreSettings();
 	m_pCurrentPanel->ApplySettings( settings );
+	settings->deleteThis();
 
 	m_pApplyButton->SetEnabled( false );
 	m_pSaveButton->SetEnabled( true );
