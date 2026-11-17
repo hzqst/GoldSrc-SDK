@@ -35,6 +35,8 @@ public:
 	void SetLabelText( const char* textEntryName, const wchar_t* text );
 
 private:
+	bool ShowMessage( const char* message );
+
 	vgui2::HTML*	m_pMessage;
 	vgui2::Label*	m_pServerName;
 	bool			m_bFileWritten;

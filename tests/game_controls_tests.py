@@ -1,4 +1,4 @@
-"""Exercise production team selection and MOTD navigation with small UI stubs."""
+"""Exercise production team selection and MOTD handling with small UI stubs."""
 import os
 from pathlib import Path
 import re
@@ -10,14 +10,16 @@ ROOT = Path(__file__).resolve().parents[1] / 'GoldSrc-SDK'
 
 
 def source(name):
-    shared = ROOT / 'vgui2/game_controls' / name
-    return (shared if shared.exists() else ROOT / 'cstrike/vgui2/game_controls' / name).read_text(encoding='utf-8')
+    return (ROOT / 'vgui2/game_controls' / name).read_text(encoding='utf-8')
 
 
 STUBS = r'''
 #include <cassert>
+#include <climits>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <cwchar>
 #include <string>
 #include <vector>
 #if !defined(_WIN32)
@@ -31,8 +33,40 @@ struct HTML {
  HTML(Panel*, const char*, bool, bool) {}
  virtual ~HTML() = default;
  virtual bool OnStartRequest(const char*, const char*, const char*, bool) { return true; }
+ std::vector<std::string> urls;
+ void OpenURL(const char* url, const char*, bool) { urls.emplace_back(url); }
 };
+struct Label { void SetText(const wchar_t*) {} };
+struct Frame {
+ bool visible = false;
+ void Activate() {}
+ void SetTitle(const wchar_t*, bool) {}
+ void SetVisible(bool value) { visible = value; }
+};
+typedef void* FileHandle_t;
+struct FileSystem {
+ std::string written;
+ bool exists = false;
+ bool FileExists(const char*) { return exists; }
+ void RemoveFile(const char*, const char*) { exists = false; }
+ FileHandle_t Open(const char*, const char*, const char*) { written.clear(); return this; }
+ void Write(const void* data, int size, FileHandle_t) { written.append((const char*)data, size); exists = true; }
+ void Close(FileHandle_t) {}
+ void GetLocalPath(const char* name, char* path, int size) { std::snprintf(path, size, "%s", name); }
+} files;
+FileSystem* filesystem() { return &files; }
+struct Localize {
+ int ConvertUnicodeToANSI(const wchar_t* text, char* ansi, int size) {
+  int i = 0;
+  for (; text[i] && i < size - 1; ++i)
+   ansi[i] = (char)text[i];
+  ansi[i] = 0;
+  return i;
+ }
+} localization;
+Localize* localize() { return &localization; }
 }
+using vgui2::FileHandle_t;
 std::vector<std::string> commands;
 int hints = 0;
 void SendCommand(const char* text) { commands.emplace_back(text); }
@@ -50,6 +84,14 @@ struct CTeamMenu {
  void SetVisible(bool value) { visible = value; }
  void OnClose() { ++closes; }
  void OnTeamButton(int team);
+};
+struct CClientMOTD : vgui2::Frame {
+ vgui2::HTML* m_pMessage;
+ vgui2::Label* m_pServerName;
+ char m_szTempFileName[64] = "motd_temp.html";
+ bool IsURL(const char* text);
+ bool ShowMessage(const char* message);
+ void Activate(const wchar_t* title, const wchar_t* message);
 };
 '''
 
@@ -75,18 +117,40 @@ int main() {
  assert(browser->OnStartRequest("https://example.invalid/motd", "", "", true));
  assert(browser->OnStartRequest("file:///motd_temp.html", "", "", false));
  assert(browser->OnStartRequest("", "", "", true));
+ vgui2::Label server;
+ CClientMOTD motd;
+ motd.m_pMessage = &html;
+ motd.m_pServerName = &server;
+ motd.Activate(L"server", L"<b>welcome</b>");
+ assert(motd.visible);
+ assert(std::string("<b>welcome</b>") == vgui2::files.written);
+ assert(1 == html.urls.size() && std::string("file:///motd_temp.html") == html.urls[0]);
+ motd.visible = false;
+ motd.Activate(L"server", L"<img src=\"view-source:x\">");
+ assert(!motd.visible && !vgui2::files.exists && 1 == html.urls.size());
+ motd.Activate(L"server", L"http://example.invalid/motd");
+ assert(motd.visible && 2 == html.urls.size() && std::string("http://example.invalid/motd") == html.urls[1]);
 }
 '''
 
 
+def function(text, signature):
+    start = text.index(signature)
+    return text[start:text.index('\n}', start) + 2] + '\n'
+
+
 def main():
-    team = source('teammenu.cpp')
-    start = team.index('void CTeamMenu::OnTeamButton(')
-    function = team[start:team.index('\n}', start) + 2]
-    html = re.search(r'class ClientMOTDHTML\b.*?\n\};', source('clientmotd.cpp'), re.S).group(0)
+    team = function(source('teammenu.cpp'), 'void CTeamMenu::OnTeamButton(')
+    motd = source('clientmotd.cpp')
+    html = re.search(r'class ClientMOTDHTML\b.*?\n\};', motd, re.S).group(0)
+    limit = re.search(r'static const size_t MaxMultiByteCharLength = \d+;', motd).group(0)
+    motd_functions = ''.join(function(motd, signature) for signature in (
+        'bool CClientMOTD::IsURL(',
+        'bool CClientMOTD::ShowMessage(',
+        'void CClientMOTD::Activate( const wchar_t*'))
     with tempfile.TemporaryDirectory(prefix='goldsrc-game-controls-') as folder:
         path = Path(folder)
-        (path / 'test.cpp').write_text(STUBS + function + html + TESTS)
+        (path / 'test.cpp').write_text('\n'.join((STUBS, team, html, limit, motd_functions, TESTS)))
         compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
         subprocess.run(compiler + ['-std=c++17', str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
         subprocess.run([str(path / 'test')], check=True, cwd=path)
