@@ -214,7 +214,7 @@ goldsrc_add_module(bshift_cdll
 		engine/KeyValues.cpp
 		engine/MemPool.cpp
 		engine/utlbuffer.cpp
-		bshift/public/utlsymbol.cpp
+		engine/utlsymbol.cpp
 		vgui2/controls/AnimatingImagePanel.cpp
 		vgui2/controls/BitmapImagePanel.cpp
 		vgui2/controls/BuildGroup.cpp
@@ -222,14 +222,15 @@ goldsrc_add_module(bshift_cdll
 		vgui2/controls/Button.cpp
 		vgui2/controls/CheckButton.cpp
 		vgui2/controls/ComboBox.cpp
-		bshift/vgui2/controls/controls.cpp
+		vgui2/controls/controls.cpp
+		engine/controls.cpp
 		vgui2/controls/Divider.cpp
 		vgui2/controls/EditablePanel.cpp
 		vgui2/controls/FocusNavGroup.cpp
 		vgui2/controls/Frame.cpp
 		vgui2/controls/HTML.cpp
 		vgui2/controls/Image.cpp
-		bshift/vgui2/controls/ImageList.cpp
+		vgui2/controls/ImageList.cpp
 		vgui2/controls/ImagePanel.cpp
 		vgui2/controls/Label.cpp
 		vgui2/controls/Menu.cpp
@@ -244,7 +245,7 @@ goldsrc_add_module(bshift_cdll
 		vgui2/controls/RichText.cpp
 		vgui2/controls/ScrollBar.cpp
 		vgui2/controls/ScrollBarSlider.cpp
-		bshift/vgui2/controls/SectionedListPanel.cpp
+		vgui2/controls/SectionedListPanel.cpp
 		vgui2/controls/TextEntry.cpp
 		vgui2/controls/TextImage.cpp
 		vgui2/controls/ToggleButton.cpp
@@ -269,7 +270,6 @@ goldsrc_add_module(bshift_cdll
 		bshift/cl_dll/VGUI
 		bshift/game_shared
 		bshift/vgui2/game_controls
-		bshift/vgui2/controls
 		vgui2/controls
 		public
 		common
