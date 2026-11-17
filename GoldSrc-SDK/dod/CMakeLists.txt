@@ -104,7 +104,7 @@ goldsrc_add_module(doddll
 		dod/pm_shared/pm_debug.c
 		dod/pm_shared/pm_math.c
 		dod/pm_shared/pm_shared.c
-		dod/public/MemPool.cpp
+		engine/MemPool.cpp
 	INCLUDES
 		dod/dlls
 		dod/cl_dll
@@ -243,9 +243,9 @@ goldsrc_add_module(dod_cdll
 		dod/pm_shared/pm_debug.c
 		dod/pm_shared/pm_math.c
 		dod/pm_shared/pm_shared.c
-		dod/public/interface.cpp
-		dod/public/KeyValues.cpp
-		dod/public/MemPool.cpp
+		engine/interface.cpp
+		engine/KeyValues.cpp
+		engine/MemPool.cpp
 		engine/utlbuffer.cpp
 		engine/utlsymbol.cpp
 		vgui2/controls/AnimatingImagePanel.cpp
