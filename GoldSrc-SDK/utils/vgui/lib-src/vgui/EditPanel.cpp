@@ -425,6 +425,11 @@ void EditPanel::setFont( Font* font )
 
 void EditPanel::getText( int lineIndex, int offset, char* buf, int bufLen )
 {
+	if ( buf == NULL || bufLen <= 0 )
+	{
+		return;
+	}
+
 	if ( lineIndex < 0 || lineIndex >= _lineDarDar.getCount() )
 	{
 		return;

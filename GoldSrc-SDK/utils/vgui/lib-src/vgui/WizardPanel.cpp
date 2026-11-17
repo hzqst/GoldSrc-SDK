@@ -379,54 +379,22 @@ void WizardPanel::WizardPage::setCancelButtonVisible( bool state )
 
 void WizardPanel::WizardPage::getBackButtonText( char* text, int textLen )
 {
-	size_t length = strlen( _backButtonText );
-
-	if ( textLen - 1 <= (int)length )
-	{
-		length = textLen - 1;
-	}
-
-	memcpy( text, _backButtonText, length );
-	text[length] = 0;
+	vgui_strcpy( text, textLen, _backButtonText );
 }
 
 void WizardPanel::WizardPage::getNextButtonText( char* text, int textLen )
 {
-	size_t length = strlen( _nextButtonText );
-
-	if ( textLen - 1 <= (int)length )
-	{
-		length = textLen - 1;
-	}
-
-	memcpy( text, _nextButtonText, length );
-	text[length] = 0;
+	vgui_strcpy( text, textLen, _nextButtonText );
 }
 
 void WizardPanel::WizardPage::getFinishedButtonText( char* text, int textLen )
 {
-	size_t length = strlen( _finishedButtonText );
-
-	if ( textLen - 1 <= (int)length )
-	{
-		length = textLen - 1;
-	}
-
-	memcpy( text, _finishedButtonText, length );
-	text[length] = 0;
+	vgui_strcpy( text, textLen, _finishedButtonText );
 }
 
 void WizardPanel::WizardPage::getCancelButtonText( char* text, int textLen )
 {
-	size_t length = strlen( _cancelButtonText );
-
-	if ( textLen - 1 <= (int)length )
-	{
-		length = textLen - 1;
-	}
-
-	memcpy( text, _cancelButtonText, length );
-	text[length] = 0;
+	vgui_strcpy( text, textLen, _cancelButtonText );
 }
 
 void WizardPanel::WizardPage::setBackButtonText( const char* text )

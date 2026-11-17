@@ -53,6 +53,16 @@ namespace vgui
 
 void vgui_strcpy( char* dst, int dstLen, const char* src )
 {
+	if ( dst == NULL || dstLen <= 0 )
+	{
+		return;
+	}
+
+	if ( src == NULL )
+	{
+		src = "";
+	}
+
 	int srcLen = (int)strlen( src ) + 1;
 	if ( srcLen > dstLen )
 	{

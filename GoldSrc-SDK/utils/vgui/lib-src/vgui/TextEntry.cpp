@@ -425,7 +425,7 @@ void TextEntry::doDeleteSelected()
 
 void TextEntry::getText( int offset, char* buf, int bufLen )
 {
-	if ( buf == NULL )
+	if ( buf == NULL || bufLen <= 0 )
 	{
 		return;
 	}
