@@ -359,10 +359,6 @@ void Surface::drawSetTextureRGBA( int id, const char* rgba, int wide, int tall )
 		texture = &textures[textureCount++];
 		texture->id = id;
 	}
-	if ( texture->bitmap != NULL )
-	{
-		DeleteObject( texture->bitmap );
-	}
 	BITMAPINFO info = {};
 	info.bmiHeader.biSize = sizeof( info.bmiHeader );
 	info.bmiHeader.biWidth = wide;
@@ -370,10 +366,25 @@ void Surface::drawSetTextureRGBA( int id, const char* rgba, int wide, int tall )
 	info.bmiHeader.biPlanes = 1;
 	info.bmiHeader.biBitCount = VGUI_RGBA_BYTES * 8;
 	info.bmiHeader.biCompression = BI_RGB;
+	void* pixels = NULL;
+	HBITMAP bitmap = CreateDIBSection( _plat->drawDC, &info, DIB_RGB_COLORS, &pixels, NULL, 0 );
+	if ( bitmap == NULL || pixels == NULL )
+	{
+		// Keep the old texture when the new bitmap cannot be created.
+		if ( bitmap != NULL )
+		{
+			DeleteObject( bitmap );
+		}
+		return;
+	}
+	// drawTexturedRect deselects texture bitmaps after each blit, so the old one can be deleted.
+	if ( texture->bitmap != NULL )
+	{
+		DeleteObject( texture->bitmap );
+	}
+	texture->bitmap = bitmap;
 	texture->wide = wide;
 	texture->tall = tall;
-	void* pixels = NULL;
-	texture->bitmap = CreateDIBSection( _plat->drawDC, &info, DIB_RGB_COLORS, &pixels, NULL, 0 );
 	texture->pixels = (uchar*)pixels;
 	for ( int y = 0; y < tall; ++y )
 	{
@@ -394,9 +405,16 @@ void Surface::drawTexturedRect( int x0, int y0, int x1, int y1 )
 	{
 		return;
 	}
-	SelectObject( _plat->textureDC, currentTexture->bitmap );
+	// Textures are shared by every Surface and a bitmap can be selected into one DC at a time,
+	// so restore the previous selection after the blit.
+	const HGDIOBJ previous = SelectObject( _plat->textureDC, currentTexture->bitmap );
+	if ( previous == NULL || previous == HGDI_ERROR )
+	{
+		return;
+	}
 	StretchBlt( _plat->drawDC, x0, y0, x1 - x0, y1 - y0, _plat->textureDC,
 		0, 0, currentTexture->wide, currentTexture->tall, SRCCOPY );
+	SelectObject( _plat->textureDC, previous );
 }
 
 void Surface::pushMakeCurrent( Panel* panel, bool useInsets )
