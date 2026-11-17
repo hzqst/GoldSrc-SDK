@@ -30,6 +30,16 @@ bool FakeImagePanel::isWithin( int, int )
 	return false;
 }
 
+void freeModeInfo( Dar<char*>& modeInfoDar )
+{
+	for ( int i = 0; i < modeInfoDar.getCount(); ++i )
+	{
+		free( modeInfoDar[i] );
+	}
+
+	modeInfoDar.removeAll();
+}
+
 }
 
 #if defined( _MSC_VER )
@@ -50,6 +60,7 @@ SurfaceBase::SurfaceBase( Panel* embeddedPanel )
 SurfaceBase::~SurfaceBase()
 {
 	App::getInstance()->surfaceBaseDeleted( this );
+	freeModeInfo( _modeInfoDar );
 }
 
 Panel* SurfaceBase::getPanel()
@@ -64,7 +75,7 @@ void SurfaceBase::requestSwap()
 
 void SurfaceBase::resetModeInfo()
 {
-	_modeInfoDar.removeAll();
+	freeModeInfo( _modeInfoDar );
 }
 
 int SurfaceBase::getModeInfoCount()
