@@ -32,7 +32,7 @@ wchar_t* SharedFindString( char* asciiIdentifier )
 	{
 		identifier = strings[currentString];
 		currentString = (currentString + 1) % 4;
-		vgui2::localize()->ConvertANSIToUnicode( asciiIdentifier, identifier, 2048 );
+		vgui2::localize()->ConvertANSIToUnicode( asciiIdentifier, identifier, sizeof( strings[0] ) );
 	}
 	return identifier;
 }

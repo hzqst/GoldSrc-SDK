@@ -960,6 +960,7 @@ bool CLocalizedStringTable::SaveToFile( IFileSystem* fileSystem, const char* szF
 	strLength = ConvertANSIToUnicode( startStr, unicodeString, (int)sizeof( unicodeString ) );
 	if ( !strLength )
 	{
+		fileSystem->Close( file );
 		return false;
 	}
 
@@ -999,8 +1000,8 @@ bool CLocalizedStringTable::SaveToFile( IFileSystem* fileSystem, const char* szF
 	}
 
 	// write end string
-	strLength = ConvertANSIToUnicode( endStr, unicodeString, (int)sizeof( unicodeString ) );
-	fileSystem->Write( unicodeString, strLength * sizeof( wchar_t ), file );
+	ConvertANSIToUnicode( endStr, unicodeString, (int)sizeof( unicodeString ) );
+	fileSystem->Write( unicodeString, wcslen( unicodeString ) * sizeof( wchar_t ), file );
 	fileSystem->Close( file );
 	return true;
 }
