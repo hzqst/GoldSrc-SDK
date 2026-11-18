@@ -4,6 +4,7 @@
 #include "CvarLatch.h"
 #include "GameUI_Interface.h"
 #include "MusicManager.h"
+#include "StringUtils.h"
 #include "Taskbar.h"
 
 #include "../game_shared/shared_util.h"
@@ -565,8 +566,10 @@ void CCareerGame::FinishMatchStart()
 	char command[1024];
 	for ( CharacterVec::const_iterator it = enemies.begin(); it != enemies.end(); ++it )
 	{
-		sprintf( command, PlayAsCT() ? "wait\nwait\nbot_add_t \"%s\"\n" : "wait\nwait\nbot_add_ct \"%s\"\n",
-				( *it )->GetName() );
+		// Skip bots whose name does not fit; the next one takes the slot
+		if ( !UTIL_FormatString( command, sizeof( command ),
+				PlayAsCT() ? "wait\nwait\nbot_add_t \"%s\"\n" : "wait\nwait\nbot_add_ct \"%s\"\n", ( *it )->GetName() ) )
+			continue;
 		engine->pfnClientCmd( command );
 		if ( !--count )
 			break;
@@ -575,9 +578,9 @@ void CCareerGame::FinishMatchStart()
 	{
 		for ( CharacterVec::iterator it = m_hiredCharacters.begin(); it != m_hiredCharacters.end(); ++it )
 		{
-			sprintf( command, PlayAsCT() ? "wait\nwait\nbot_add_ct \"%s\"\n" : "wait\nwait\nbot_add_t \"%s\"\n",
-					( *it )->GetName() );
-			engine->pfnClientCmd( command );
+			if ( UTIL_FormatString( command, sizeof( command ),
+					PlayAsCT() ? "wait\nwait\nbot_add_ct \"%s\"\n" : "wait\nwait\nbot_add_t \"%s\"\n", ( *it )->GetName() ) )
+				engine->pfnClientCmd( command );
 		}
 	}
 	const char* extra = m_pLastMap->GetExtraInitialization();
