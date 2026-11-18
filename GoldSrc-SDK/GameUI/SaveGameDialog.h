@@ -38,5 +38,6 @@ private:
 };
 
 int	SaveReadNameAndComment( FileHandle_t file, char* name, char* comment );
+bool	FormatSaveGameCommand( char* buffer, size_t bufferSize, const char* command, const char* shortName );
 int	TimeStampSortFunc( vgui2::ListPanel* panel, const vgui2::ListPanelItem& first,
 		const vgui2::ListPanelItem& second );

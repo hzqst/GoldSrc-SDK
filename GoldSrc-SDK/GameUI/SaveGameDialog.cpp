@@ -183,6 +183,23 @@ int SaveReadNameAndComment( FileHandle_t file, char* name, char* comment )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: formats "<command> <shortName>\n" for the engine, fails when the
+//          name could split the console command or does not fit in buffer
+//-----------------------------------------------------------------------------
+bool FormatSaveGameCommand( char* buffer, size_t bufferSize, const char* command, const char* shortName )
+{
+	if ( strpbrk( shortName, ";\"\n\r" ) )
+		return false;
+
+#ifdef _WIN32
+	int length = _snprintf( buffer, bufferSize, "%s %s\n", command, shortName );
+#else
+	int length = snprintf( buffer, bufferSize, "%s %s\n", command, shortName );
+#endif
+	return length >= 0 && (size_t)length < bufferSize;
+}
+
+//-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
 CSaveGameDialog::CSaveGameDialog( vgui2::Panel* parent ) : CTaskFrame( parent, "SaveGameDialog" )
@@ -240,7 +257,8 @@ void CSaveGameDialog::OnCommand( const char* command )
 
 	// Load the game, return to top and switch to engine
 	char saveCommand[256];
-	sprintf( saveCommand, "save %s\n", shortName );
+	if ( !FormatSaveGameCommand( saveCommand, sizeof( saveCommand ), "save", shortName ) )
+		return;
 	engine->pfnClientCmd( saveCommand );
 	if ( baseuifuncs )
 		baseuifuncs->HideGameUI();
