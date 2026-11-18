@@ -16,5 +16,10 @@ bool	UTIL_CopyString( char* buffer, size_t bufferSize, const char* source );
 // Returns whether text can follow a console command unquoted without adding
 // commands, i.e. it has no command separator, quote or line break
 bool	UTIL_IsUnquotedCommandArgument( const char* text );
+// Returns whether text can go inside a quoted console command argument without
+// closing the quote or ending the command, i.e. it has no quote or line break
+bool	UTIL_IsQuotedCommandArgument( const char* text );
+// Removes the quotes and line breaks so that text can go inside a quoted argument
+void	UTIL_StripQuotedCommandBreaks( char* text );
 // Uppercases only a-z so the user locale cannot rewrite UTF-8 bytes
 void	UTIL_UppercaseASCII( char* text );

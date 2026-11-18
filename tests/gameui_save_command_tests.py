@@ -21,6 +21,10 @@ def function(source, signature):
     return source[start:source.index('\n}', start) + 2]
 
 
+def constants(source):
+    return ''.join(re.findall(r'^static const char \w+\[\] = .*;\n', source, re.M))
+
+
 STUBS = r'''
 #include <cassert>
 #include <cstdarg>
@@ -82,7 +86,7 @@ static void CommandSeparatorsAreRejected() {
 def main():
     utils = (ROOT / 'GameUI/StringUtils.cpp').read_text(encoding='utf-8')
     source = (ROOT / 'GameUI/SaveGameDialog.cpp').read_text(encoding='utf-8')
-    code = STUBS + function(utils, 'bool UTIL_FormatString(') + function(utils, 'bool UTIL_IsUnquotedCommandArgument(')
+    code = STUBS + constants(utils) + function(utils, 'bool UTIL_FormatString(') + function(utils, 'bool UTIL_IsUnquotedCommandArgument(')
     code += function(source, 'bool FormatSaveGameCommand(') + TESTS
     code += ('\nint main() { ShortNamesAreFormatted(); LongestFittingNameIsKept(); '
              'LongNamesAreRejected(); CommandSeparatorsAreRejected(); }\n')

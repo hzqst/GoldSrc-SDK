@@ -8,6 +8,7 @@
 #include "CvarTextEntry.h"
 
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 
 #include "wrect.h"
 #include "cl_dll.h"
@@ -77,8 +78,11 @@ void CCvarTextEntry::ApplyChanges( bool immediate )
 	}
 	else
 	{
+		// The text goes inside quotes, which it must not close or end with a line break
+		UTIL_StripQuotedCommandBreaks( text );
 		char command[256];
-		sprintf( command, "%s \"%s\"\n", m_pszCvarName, text );
+		if ( !text[0] || !UTIL_FormatString( command, sizeof( command ), "%s \"%s\"\n", m_pszCvarName, text ) )
+			return;
 		engine->pfnClientCmd( command );
 	}
 
