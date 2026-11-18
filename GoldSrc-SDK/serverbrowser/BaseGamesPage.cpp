@@ -986,6 +986,21 @@ void CBaseGamesPage::LoadFilterSettings()
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Lowercases A-Z only; other bytes, such as UTF-8 sequences, are kept
+//			whatever the CRT locale is
+//-----------------------------------------------------------------------------
+static void LowercaseASCII( char *pch )
+{
+	for ( ; *pch; pch++ )
+	{
+		if ( *pch >= 'A' && *pch <= 'Z' )
+		{
+			*pch += 'a' - 'A';
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Reads the filter settings from the controls, rebuilds the
 //			matchmaking filter list and saves the settings
 //-----------------------------------------------------------------------------
@@ -1023,17 +1038,11 @@ void CBaseGamesPage::UpdateFilterSettings()
 		m_pGameFilter->SetEnabled( true );
 	}
 
-	for ( char *pch = m_szGameFilter; *pch; pch++ )
-	{
-		*pch = tolower( (unsigned char)*pch );
-	}
+	LowercaseASCII( m_szGameFilter );
 
 	// map
 	m_pMapFilter->GetText( m_szMapFilter, sizeof( m_szMapFilter ) );
-	for ( char *pch = m_szMapFilter; *pch; pch++ )
-	{
-		*pch = tolower( (unsigned char)*pch );
-	}
+	LowercaseASCII( m_szMapFilter );
 
 	// ping
 	char buf[256];
