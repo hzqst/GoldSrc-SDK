@@ -492,6 +492,11 @@ void Surface::pushMakeCurrent( Panel* panel, bool useInsets )
 
 void Surface::popMakeCurrent( Panel* )
 {
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A font selected into a DC cannot be deleted, so the panel's font leaves
+	// the draw DC with its paint; every paint sets its font before drawing text.
+	SelectObject( _plat->drawDC, GetStockObject( SYSTEM_FONT ) );
+#endif
 }
 
 void Surface::enableMouseCapture( bool state )
