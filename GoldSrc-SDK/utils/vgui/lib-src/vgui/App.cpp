@@ -47,6 +47,15 @@ const char* const keyTranslations[KEY_LAST] =
 
 App* App::_instance = NULL;
 
+namespace
+{
+// The surface that has the native mouse capture. The capture panel can leave
+// that surface while it holds the capture, so it is released here rather than
+// on the panel's surface. Kept outside App so that App keeps its layout; there
+// is only one App.
+SurfaceBase* capturedSurface = NULL;
+}
+
 App::App()
 {
 	init();
@@ -177,18 +186,24 @@ void App::internalTick()
 	if ( focusedIndex == _surfaceBaseDar.getCount() )
 		_wantedKeyFocus = NULL;
 
+	// A focus change may delete the panel it is sent to, which clears App's
+	// pointers to it.
 	if ( _keyFocus != _wantedKeyFocus )
 	{
-		if ( _keyFocus != NULL )
+		Panel* oldFocus = _keyFocus;
+		if ( oldFocus != NULL )
 		{
-			_keyFocus->internalFocusChanged( true );
-			_keyFocus->repaint();
+			oldFocus->internalFocusChanged( true );
+			if ( _keyFocus == oldFocus )
+				oldFocus->repaint();
 		}
 
-		if ( _wantedKeyFocus != NULL )
+		Panel* newFocus = _wantedKeyFocus;
+		if ( newFocus != NULL )
 		{
-			_wantedKeyFocus->internalFocusChanged( false );
-			_wantedKeyFocus->repaint();
+			newFocus->internalFocusChanged( false );
+			if ( _wantedKeyFocus == newFocus )
+				newFocus->repaint();
 		}
 	}
 
@@ -265,18 +280,16 @@ void App::setMouseFocus( Panel* newMouseFocus )
 	}
 }
 
+// A panel that is on no surface gets the capture without a native one.
 void App::setMouseCapture( Panel* panel )
 {
-	if ( panel != NULL )
-	{
-		panel->_surfaceBase->enableMouseCapture( true );
-		_mouseCapture = panel;
-		return;
-	}
-
-	if ( _mouseCapture != NULL )
-		_mouseCapture->_surfaceBase->enableMouseCapture( false );
-	_mouseCapture = NULL;
+	SurfaceBase* surfaceBase = panel != NULL ? panel->_surfaceBase : NULL;
+	if ( capturedSurface != NULL && capturedSurface != surfaceBase )
+		capturedSurface->enableMouseCapture( false );
+	capturedSurface = surfaceBase;
+	if ( surfaceBase != NULL )
+		surfaceBase->enableMouseCapture( true );
+	_mouseCapture = panel;
 }
 
 void App::setMouseArena( int x0, int y0, int x1, int y1, bool enabled )
@@ -335,6 +348,7 @@ void App::reset()
 	_keyFocus = NULL;
 	_mouseFocus = NULL;
 	_mouseCapture = NULL;
+	capturedSurface = NULL;
 	_wantedKeyFocus = NULL;
 	_buildMode = false;
 	_wantedBuildMode = false;
@@ -352,29 +366,40 @@ void App::surfaceBaseCreated( SurfaceBase* surfaceBase )
 	_surfaceBaseDar.addElement( surfaceBase );
 }
 
+// Forgets every panel App points to, as the panels may be on this surface. The
+// system releases the capture of a destroyed window by itself; the cursor clip
+// is not tied to a window.
 void App::surfaceBaseDeleted( SurfaceBase* surfaceBase )
 {
 	_surfaceBaseDar.removeElement( surfaceBase );
+	if ( capturedSurface == surfaceBase )
+		capturedSurface = NULL;
+	if ( _mouseArenaPanel != NULL )
+		internalSetMouseArena( 0, 0, 0, 0, false );
+	_oldMouseFocus = NULL;
 	_mouseFocus = NULL;
 	_mouseCapture = NULL;
 	_keyFocus = NULL;
+	_wantedKeyFocus = NULL;
+	_mouseArenaPanel = NULL;
 }
 
 #if VGUI_ABI_COMPAT_MODE != 1
+// Also releases the native capture and cursor clip the panel holds.
 void App::panelDeleted( Panel* panel )
 {
+	if ( _mouseCapture == panel )
+		setMouseCapture( NULL );
+	if ( _mouseArenaPanel == panel )
+		setMouseArena( 0, 0, 0, 0, false );
 	if ( _keyFocus == panel )
 		_keyFocus = NULL;
 	if ( _oldMouseFocus == panel )
 		_oldMouseFocus = NULL;
 	if ( _mouseFocus == panel )
 		_mouseFocus = NULL;
-	if ( _mouseCapture == panel )
-		_mouseCapture = NULL;
 	if ( _wantedKeyFocus == panel )
 		_wantedKeyFocus = NULL;
-	if ( _mouseArenaPanel == panel )
-		_mouseArenaPanel = NULL;
 }
 #endif
 
