@@ -55,10 +55,28 @@ Panel::Panel( const Panel& other )
 
 Panel::~Panel()
 {
+	App* app = App::getInstance();
+
+	// A surface whose root is deleted loses its root and its emulated cursor,
+	// a child deleted with this tree, and App stops ticking it. The surfaces
+	// are found through App, as the root may have been moved off its surface.
+	if ( app != NULL )
+	{
+		for ( int i = app->_surfaceBaseDar.getCount() - 1; i >= 0; --i )
+		{
+			SurfaceBase* surfaceBase = app->_surfaceBaseDar[i];
+			if ( surfaceBase->_embeddedPanel == this )
+			{
+				surfaceBase->_embeddedPanel = NULL;
+				surfaceBase->_emulatedCursor = NULL;
+				app->_surfaceBaseDar.removeElementAt( i );
+			}
+		}
+	}
+
 	if ( _parent != NULL )
 		_parent->removeChild( this );
 
-	App* app = App::getInstance();
 	if ( app != NULL )
 		app->panelDeleted( this );
 

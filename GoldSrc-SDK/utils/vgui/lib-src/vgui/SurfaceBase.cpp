@@ -60,6 +60,19 @@ SurfaceBase::SurfaceBase( Panel* embeddedPanel )
 SurfaceBase::~SurfaceBase()
 {
 	App::getInstance()->surfaceBaseDeleted( this );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A root that outlives its surface loses the emulated cursor the surface
+	// made, and its tree leaves the surface unless it was moved to another one.
+	// A deleted root has already cleared _embeddedPanel. With
+	// VGUI_ABI_COMPAT_MODE == 1 the root may have been freed without a
+	// destructor, so it is not touched.
+	if ( _embeddedPanel != NULL )
+	{
+		delete _emulatedCursor;
+		if ( _embeddedPanel->getSurfaceBase() == this )
+			_embeddedPanel->setSurfaceBaseTraverse( NULL );
+	}
+#endif
 	freeModeInfo( _modeInfoDar );
 }
 
