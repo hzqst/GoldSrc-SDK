@@ -1,15 +1,17 @@
-"""Compile the VGUI1 Cursor and Bitmap and check what they own (#209, #210).
+"""Compile the VGUI1 Cursor, Bitmap, Scheme and BuildGroup and check what they own (#209, #210).
 
 Run: python tests/vgui1_cursor_bitmap_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it; without it only the value checks run.
 
-Cursor, DefaultCursor, Bitmap and BitmapTGA are built with the VGUI1 sources
-and platform stubs from vgui1_panel_tests.py, without its Cursor stub, twice:
-with VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll layout, no destructors)
-and with VGUI_ABI_COMPAT_MODE=0, where a default Cursor owns the bitmap it
-makes and a Bitmap owns its pixels. The test replaces the global operator new
+Cursor, DefaultCursor, Bitmap, BitmapTGA and BuildGroup are built with the
+VGUI1 sources and platform stubs from vgui1_panel_tests.py, without its Cursor
+stub, and vgui_strdup and vgui_printf from vgui.cpp, twice: with
+VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll layout, no destructors) and with
+VGUI_ABI_COMPAT_MODE=0, where a default Cursor owns the bitmap it makes, a
+Bitmap owns its pixels, and a Scheme and a BuildGroup own the cursors they
+make. The test replaces the global operator new
 and delete to count the blocks still allocated. The compatible build frees
 nothing, so its runs check memory errors only.
 
@@ -27,6 +29,16 @@ With VGUI_ABI_COMPAT_MODE=0 only:
   contents and uploads them again.
 - tga-delete: deleting a loaded BitmapTGA, or one whose data ends early,
   frees its pixels.
+- scheme-delete: deleting a Scheme frees the cursors it made, also one that
+  setCursor replaced, and leaves the cursor given to setCursor and its fonts
+  alone.
+- scheme-copy: a copied or assigned Scheme shows its own cursors where the
+  other shows its own, and the other's given cursors; assignment frees no
+  cursor, and all are freed once.
+- build-group-delete: deleting a BuildGroup frees its cursors and panel
+  names and leaves its panels alone.
+- build-group-copy: a copied or assigned BuildGroup has its own cursors and
+  panel names, and all are freed once.
 """
 import os
 from pathlib import Path
@@ -37,12 +49,13 @@ import tempfile
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cxx_toolchain import compile_program
-from vgui1_panel_tests import VGUI, vgui1_sources
+from vgui1_panel_tests import VGUI, function, vgui1_sources
 
 CURSOR_STUB = 'Cursor::Cursor( DefaultCursor ) {}\n'
-SOURCES = ['DefaultCursor.cpp', 'Bitmap.cpp', 'BitmapTGA.cpp', 'DataInputStream.cpp']
+SOURCES = ['DefaultCursor.cpp', 'Bitmap.cpp', 'BitmapTGA.cpp', 'DataInputStream.cpp', 'BuildGroup.cpp']
 
 TESTS = r'''
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -55,8 +68,12 @@ TESTS = r'''
 #include "VGUI_App.h"
 #include "VGUI_Bitmap.h"
 #include "VGUI_BitmapTGA.h"
+#include "VGUI_BuildGroup.h"
 #include "VGUI_Cursor.h"
+#include "VGUI_Font.h"
 #include "VGUI_InputStream.h"
+#include "VGUI_Panel.h"
+#include "VGUI_Scheme.h"
 #undef protected
 #undef private
 
@@ -158,6 +175,18 @@ static Bitmap* MakeBitmap()
  bitmap->setRGBA( 1, 1, PIXEL, 0, 0, PIXEL );
  return bitmap;
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+// The scheme does not own its fonts; frees the ones its constructor made.
+static void DeleteScheme( Scheme* scheme )
+{
+ Font* fonts[Scheme::sf_last];
+ memcpy( fonts, scheme->_font, sizeof( fonts ) );
+ delete scheme;
+ for ( int i = Scheme::sf_user + 1; i < Scheme::sf_last; ++i )
+  delete fonts[i];
+}
+#endif
 
 static void CheckDefaultCursor( Cursor& cursor, Cursor::DefaultCursor dc )
 {
@@ -316,6 +345,110 @@ static void Run(const char* scenario)
   delete (Image*)new BitmapTGA( &truncated, false );
   Check(baseline == liveBlocks, "truncated TGA freed");
  }
+ else if (!std::strcmp(scenario, "scheme-delete"))
+ {
+  DeleteScheme( new Scheme() );
+  Check(baseline == liveBlocks, "scheme cursors freed");
+
+  Cursor given( Cursor::dc_arrow );
+  const int givenBaseline = liveBlocks;
+  Scheme* scheme = new Scheme();
+  Cursor* replaced = scheme->getCursor( Scheme::scu_arrow );
+  CheckDefaultCursor( *replaced, Cursor::dc_arrow );
+  scheme->setCursor( Scheme::scu_arrow, &given );
+  Check(&given == scheme->getCursor( Scheme::scu_arrow ), "given cursor shown");
+  CheckDefaultCursor( *replaced, Cursor::dc_arrow );
+  DeleteScheme( scheme );
+  Check(givenBaseline == liveBlocks, "replaced scheme cursor freed");
+  CheckDefaultCursor( given, Cursor::dc_arrow );
+ }
+ else if (!std::strcmp(scenario, "scheme-copy"))
+ {
+  Cursor given( Cursor::dc_hand );
+  const int givenBaseline = liveBlocks;
+  Font* fonts[Scheme::sf_last];
+  Font* assignedFonts[Scheme::sf_last];
+  {
+   Scheme original;
+   original.setCursor( Scheme::scu_hand, &given );
+   memcpy( fonts, original._font, sizeof( fonts ) );
+
+   Scheme copy( original );
+   for ( int i = Scheme::scu_none; i < Scheme::scu_hand; ++i )
+   {
+    Cursor* cursor = copy.getCursor( (Scheme::SchemeCursor)i );
+    Check(cursor != NULL && cursor != original.getCursor( (Scheme::SchemeCursor)i ), "copy has its own cursor");
+    Check(original.getCursor( (Scheme::SchemeCursor)i )->getDefaultCursor() == cursor->getDefaultCursor(),
+          "copy cursor kind");
+   }
+   Check(&given == copy.getCursor( Scheme::scu_hand ), "copy shows the given cursor");
+   Check(original.getFont( Scheme::sf_primary1 ) == copy.getFont( Scheme::sf_primary1 ), "copy shares fonts");
+
+   Scheme assigned;
+   memcpy( assignedFonts, assigned._font, sizeof( assignedFonts ) );
+   Cursor* ownArrow = assigned.getCursor( Scheme::scu_arrow );
+   Cursor* ownHand = assigned.getCursor( Scheme::scu_hand );
+   assigned = original;
+   Check(ownArrow == assigned.getCursor( Scheme::scu_arrow ), "assigned scheme keeps its own cursor");
+   Check(&given == assigned.getCursor( Scheme::scu_hand ), "assigned scheme shows the given cursor");
+   CheckDefaultCursor( *ownHand, Cursor::dc_hand );
+   assigned = copy;
+   Check(&given == assigned.getCursor( Scheme::scu_hand ), "assigned scheme shows the copy's given cursor");
+
+   Scheme& alias = assigned;
+   assigned = alias;
+   Check(ownArrow == assigned.getCursor( Scheme::scu_arrow ), "self assignment keeps the cursors");
+  }
+  for ( int i = Scheme::sf_user + 1; i < Scheme::sf_last; ++i )
+  {
+   delete fonts[i];
+   delete assignedFonts[i];
+  }
+  Check(givenBaseline == liveBlocks, "copied schemes freed once");
+ }
+ else if (!std::strcmp(scenario, "build-group-delete"))
+ {
+  Panel panel;
+  const int panelBaseline = liveBlocks;
+  BuildGroup* group = new BuildGroup();
+  panel.setBuildGroup( group, "panel" );
+  Check(1 == group->_panelNameDar.getCount(), "panel name kept");
+  delete group;
+  panel._buildGroup = NULL;
+  Check(panelBaseline == liveBlocks, "build group cursors and names freed");
+ }
+ else if (!std::strcmp(scenario, "build-group-copy"))
+ {
+  {
+   Panel panel;
+   BuildGroup original;
+   panel.setBuildGroup( &original, "panel" );
+
+   BuildGroup copy( original );
+   Check(copy._cursor_sizeall != NULL && copy._cursor_sizeall != original._cursor_sizeall,
+         "copy has its own cursors");
+   Check(Cursor::dc_sizeall == copy._cursor_sizeall->getDefaultCursor(), "copy cursor kind");
+   Check(1 == copy._panelNameDar.getCount() && copy._panelNameDar[0] != original._panelNameDar[0]
+         && 0 == strcmp( "panel", copy._panelNameDar[0] ), "copy has its own panel names");
+   Check(1 == copy._panelDar.getCount() && &panel == copy._panelDar[0], "copy lists the same panels");
+
+   BuildGroup assigned;
+   Cursor* ownCursor = assigned._cursor_sizewe;
+   assigned = original;
+   Check(ownCursor == assigned._cursor_sizewe, "assigned group keeps its own cursors");
+   Check(1 == assigned._panelNameDar.getCount() && assigned._panelNameDar[0] != original._panelNameDar[0],
+         "assigned group has its own panel names");
+   assigned = copy;
+   Check(1 == assigned._panelNameDar.getCount(), "assigned again");
+
+   BuildGroup& alias = assigned;
+   assigned = alias;
+   Check(ownCursor == assigned._cursor_sizewe && 1 == assigned._panelNameDar.getCount(),
+         "self assignment keeps the cursors and names");
+   panel._buildGroup = NULL;
+  }
+  Check(baseline == liveBlocks, "copied build groups freed once");
+ }
 #endif
  else Check(false, "unknown scenario");
 }
@@ -341,7 +474,8 @@ int main(int argc, char** argv)
 
 SCENARIOS = ['default-cursors', 'user-cursor']
 NONCOMPAT_SCENARIOS = ['default-cursor-delete', 'user-cursor-borrows', 'cursor-copy', 'bitmap-delete',
-                       'bitmap-copy', 'tga-delete']
+                       'bitmap-copy', 'tga-delete', 'scheme-delete', 'scheme-copy', 'build-group-delete',
+                       'build-group-copy']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
 
@@ -350,7 +484,9 @@ def main():
     failed = []
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-cursor-') as folder:
         test_file = Path(folder) / 'test.cpp'
-        test_file.write_text(TESTS)
+        vgui = (VGUI / 'vgui.cpp').read_text()
+        helpers = function(vgui, 'char* vgui_strdup(') + '\n' + function(vgui, 'int vgui_printf(')
+        test_file.write_text(TESTS + '\nnamespace vgui\n{\n' + helpers + '\n}\n')
         sources = vgui1_sources(folder)
         # The real default Cursor constructor replaces the stub.
         stubs_file = sources[0]

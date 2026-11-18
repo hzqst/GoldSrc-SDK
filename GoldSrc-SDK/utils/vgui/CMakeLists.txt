@@ -103,6 +103,12 @@ if(TARGET vgui)
 			??1Cursor@vgui@@UAE@XZ
 			??2Cursor@vgui@@SAPAXI@Z
 			??3Cursor@vgui@@SAXPAX@Z
+			??1Scheme@vgui@@UAE@XZ
+			??2Scheme@vgui@@SAPAXI@Z
+			??3Scheme@vgui@@SAXPAX@Z
+			??1BuildGroup@vgui@@UAE@XZ
+			??2BuildGroup@vgui@@SAPAXI@Z
+			??3BuildGroup@vgui@@SAXPAX@Z
 			??1TextImage@vgui@@UAE@XZ
 			??1Panel@vgui@@UAE@XZ
 			??2Panel@vgui@@SAPAXI@Z

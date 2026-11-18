@@ -43,6 +43,18 @@ private:
 	Dar<char*>  _panelNameDar;
 public:
 	BuildGroup();
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A BuildGroup owns its cursors and panel names; a copy gets its own.
+	// Its panels and change signals are not owned.
+	BuildGroup(const BuildGroup& other);
+	virtual ~BuildGroup();
+	BuildGroup& operator=(const BuildGroup& other);
+
+	// BuildGroups are freed through the virtual destructor from any module,
+	// so they are always allocated and freed on vgui.dll's heap.
+	static void* operator new(size_t size);
+	static void operator delete(void* memory);
+#endif
 public:
 	virtual void   setEnabled(bool state);
 	virtual bool   isEnabled();
