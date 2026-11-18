@@ -69,8 +69,10 @@ void MusicManager::Init()
 		for ( const auto& entry : g_playlistTracks )
 		{
 			TrackInfo& info = m_tracks[entry.track];
-			// A path that does not fit is dropped instead of truncated, so the track is not played
-			if ( !UTIL_CopyString( info.t_path, sizeof( info.t_path ), playlist->GetString( entry.pathKey ) ) )
+			// The path goes into the cd command unquoted; a path that could add commands
+			// or does not fit is dropped instead of truncated, so the track is not played
+			const char* path = playlist->GetString( entry.pathKey );
+			if ( !UTIL_IsUnquotedCommandArgument( path ) || !UTIL_CopyString( info.t_path, sizeof( info.t_path ), path ) )
 				info.t_path[0] = 0;
 			info.looping = playlist->GetInt( entry.loopKey, entry.defaultLoop ) != 0;
 		}

@@ -108,6 +108,14 @@ static void UppercaseKeepsUTF8Bytes() {
  puts("PASS: uppercasing only changes a-z and keeps UTF-8 bytes");
 }
 
+static void UnquotedArgumentsCannotAddCommands() {
+ for (const char* text : {"", "c1a0", "media/Half-Life01.mp3", "a b", "\xE4\xB8\xAD"})
+  assert(UTIL_IsUnquotedCommandArgument(text));
+ for (const char* text : {";", "a;quit", "a\"b", "a\nquit", "a\rquit", "\""})
+  assert(!UTIL_IsUnquotedCommandArgument(text));
+ puts("PASS: text with a command separator, quote or line break is not an unquoted argument");
+}
+
 static void ModInfoSkipsPairsThatDoNotFit() {
  const std::string longToken(256, 'a'), longestToken(255, 'b');
  const std::string text = "game Half-Life\n" + longToken + " dropped\nstartmap " + longToken + "\n"
@@ -129,10 +137,11 @@ def main():
     modinfo = (ROOT / 'GameUI/ModInfo.cpp').read_text(encoding='utf-8')
     code = STUBS
     code += function(utils, 'bool UTIL_FormatString(') + function(utils, 'bool UTIL_CopyString(') + function(utils, 'void UTIL_UppercaseASCII(')
+    code += function(utils, 'bool UTIL_IsUnquotedCommandArgument(')
     code += function(modinfo, 'void CModInfo::LoadGameInfoFromBuffer(')
     code += TESTS
     code += ('\nint main() { FormatFitsUpToTheTerminator(); FormatReportsTruncation(); CopyFitsUpToTheTerminator(); '
-             'CopyRejectsTextThatDoesNotFit(); UppercaseKeepsUTF8Bytes(); ModInfoSkipsPairsThatDoNotFit(); }\n')
+             'CopyRejectsTextThatDoesNotFit(); UppercaseKeepsUTF8Bytes(); UnquotedArgumentsCannotAddCommands(); ModInfoSkipsPairsThatDoNotFit(); }\n')
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-string-utils-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code, encoding='utf-8')
