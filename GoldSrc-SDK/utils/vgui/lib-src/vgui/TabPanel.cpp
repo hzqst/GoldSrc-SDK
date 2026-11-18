@@ -1,5 +1,6 @@
 #include "VGUI_TabPanel.h"
 #include "ActionSignalForwarder.h"
+#include "DefaultBorder.h"
 
 #include "VGUI_ActionSignal.h"
 #include "VGUI_Border.h"
@@ -120,11 +121,11 @@ TabPanel::TabPanel( int x, int y, int wide, int tall ) : Panel( x, y, wide, tall
 
 	_clientArea = new Panel( 5, 5, wide - 10, tall - 10 );
 	_clientArea->setParent( this );
-	_clientArea->setBorder( new FooClientBorder() );
+	_clientArea->setBorder( defaultBorder<FooClientBorder>() );
 
 	_tabArea = new Panel( 5, 5, wide, 5 );
 	_tabArea->setParent( this );
-	_tabArea->setBorder( new FooTabAreaBorder() );
+	_tabArea->setBorder( defaultBorder<FooTabAreaBorder>() );
 
 	_selectedPanel = NULL;
 	_selectedTab = NULL;

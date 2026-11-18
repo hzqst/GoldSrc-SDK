@@ -1,4 +1,5 @@
 #include "VGUI_Menu.h"
+#include "DefaultBorder.h"
 #include "VGUI_RaisedBorder.h"
 #include "VGUI_StackLayout.h"
 
@@ -24,12 +25,12 @@ void Menu::addMenuItem( Panel* panel )
 
 Menu::Menu( int x, int y, int wide, int tall ) : Panel( x, y, wide, tall )
 {
-	setBorder( new RaisedBorder() );
+	setBorder( defaultBorder<RaisedBorder>() );
 	setLayout( menuLayout() );
 }
 
 Menu::Menu( int wide, int tall ) : Panel( 0, 0, wide, tall )
 {
-	setBorder( new RaisedBorder() );
+	setBorder( defaultBorder<RaisedBorder>() );
 	setLayout( menuLayout() );
 }

@@ -5,11 +5,11 @@ Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it; without it only the value checks run.
 
-The widgets from vgui1_widget_ownership_tests.py, ScrollPanel, MessageBox and
-TaskBar are built with the VGUI1 sources and platform stubs from
-vgui1_panel_tests.py, twice: with VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll
-layout, nothing owns a signal) and with VGUI_ABI_COMPAT_MODE=0, where Button
-and TextEntry own their ActionSignals, Slider and ScrollBar their
+The widgets from vgui1_widget_ownership_tests.py (TaskBar among them),
+ScrollPanel and MessageBox are built with the VGUI1 sources and platform stubs
+from vgui1_panel_tests.py, twice: with VGUI_ABI_COMPAT_MODE=1 (the original
+vgui.dll layout, nothing owns a signal) and with VGUI_ABI_COMPAT_MODE=0, where
+Button and TextEntry own their ActionSignals, Slider and ScrollBar their
 IntChangeSignals and HeaderPanel its ChangeSignals. The compatible build frees
 no panel, so its runs check memory errors only.
 
@@ -46,7 +46,7 @@ from cxx_toolchain import compile_program
 from vgui1_panel_tests import VGUI, function, vgui1_sources
 from vgui1_widget_ownership_tests import WIDGETS
 
-HOLDERS = ['ScrollPanel.cpp', 'MessageBox.cpp', 'TaskBar.cpp', 'LoweredBorder.cpp']
+HOLDERS = ['ScrollPanel.cpp', 'MessageBox.cpp']
 
 TESTS = r'''
 #include <cstdio>

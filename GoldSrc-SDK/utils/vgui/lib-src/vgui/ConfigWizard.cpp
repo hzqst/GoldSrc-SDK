@@ -1,4 +1,5 @@
 #include "VGUI_ConfigWizard.h"
+#include "DefaultBorder.h"
 
 #include "VGUI_Button.h"
 #include "VGUI_LineBorder.h"
@@ -9,14 +10,14 @@ using namespace vgui;
 
 ConfigWizard::ConfigWizard( int x, int y, int wide, int tall ) : Panel( x, y, wide, tall )
 {
-	setBorder( new LineBorder() );
+	setBorder( defaultBorder<LineBorder>() );
 	_treeFolder = new TreeFolder( "DonkeyFoo", 10, 10 );
 	_treeFolder->setParent( this );
-	_treeFolder->setBorder( new LoweredBorder() );
+	_treeFolder->setBorder( defaultBorder<LoweredBorder>() );
 
 	_client = new Panel( 80, 30, 64, 64 );
 	_client->setParent( this );
-	_client->setBorder( new LineBorder() );
+	_client->setBorder( defaultBorder<LineBorder>() );
 
 	_okButton = new Button( "Ok", 80, 80, 60, 20 );
 	_okButton->setParent( this );
