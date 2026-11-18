@@ -22,6 +22,22 @@ int nextFontId = VGUI_FIRST_FONT_ID;
 
 static_assert( GLYPH_COUNT == VFONT_GLYPH_COUNT, "System and bitmap fonts share one glyph range" );
 
+#if VGUI_ABI_COMPAT_MODE != 1
+// The platform list and every Font using a platform each hold a reference, and
+// the last one frees it: Font_Reset frees the platforms no Font uses, and the
+// others live on until their last Font is deleted.
+void AddReference( BaseFontPlat* plat )
+{
+	++plat->references;
+}
+
+void Release( BaseFontPlat* plat )
+{
+	if ( --plat->references == 0 )
+		delete plat;
+}
+#endif
+
 }
 
 class FontPlat : public BaseFontPlat
@@ -66,8 +82,14 @@ public:
 		}
 	}
 
+	// Deleting the DC first deselects the font and the DIB, whose pixels the
+	// DIB owns.
 	virtual ~FontPlat() override
 	{
+		DeleteDC( _dc );
+		DeleteObject( _bitmap );
+		DeleteObject( _font );
+		free( _name );
 	}
 
 	virtual bool equals( const char* name, int tall, int wide, float rotation, int weight,
@@ -224,6 +246,10 @@ private:
 
 void Font_Reset()
 {
+#if VGUI_ABI_COMPAT_MODE != 1
+	for ( int i = 0; i < fontPlatforms.getCount(); ++i )
+		Release( fontPlatforms[i] );
+#endif
 	fontPlatforms.setCount( 0 );
 	fontPlatformIds.setCount( 0 );
 }
@@ -261,6 +287,9 @@ void Font::init( const char* name, void* data, int length, int tall, int wide, f
 				// Fonts sharing a platform share its id, so the engine caches its glyphs once.
 				_plat = fontPlatforms[i];
 				_id = fontPlatformIds[i];
+#if VGUI_ABI_COMPAT_MODE != 1
+				AddReference( _plat );
+#endif
 				return;
 			}
 		}
@@ -269,7 +298,57 @@ void Font::init( const char* name, void* data, int length, int tall, int wide, f
 	_id = nextFontId++;
 	fontPlatforms.addElement( _plat );
 	fontPlatformIds.addElement( _id );
+#if VGUI_ABI_COMPAT_MODE != 1
+	AddReference( _plat );
+	AddReference( _plat );
+#endif
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+Font::Font( const Font& other )
+{
+	_name = NULL;
+	_plat = NULL;
+	_id = -1;
+	*this = other;
+}
+
+Font::~Font()
+{
+	free( _name );
+	if ( _plat != NULL )
+		Release( _plat );
+}
+
+Font& Font::operator=( const Font& other )
+{
+	if ( this == &other )
+		return *this;
+
+	char* name = other._name != NULL ? _strdup( other._name ) : NULL;
+	if ( other._plat != NULL )
+		AddReference( other._plat );
+	if ( _plat != NULL )
+		Release( _plat );
+	free( _name );
+
+	_name = name;
+	_plat = other._plat;
+	_id = other._id;
+
+	return *this;
+}
+
+void* Font::operator new( size_t size )
+{
+	return ::operator new( size );
+}
+
+void Font::operator delete( void* memory )
+{
+	::operator delete( memory );
+}
+#endif
 
 void Font::getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, uchar* rgba )
 {

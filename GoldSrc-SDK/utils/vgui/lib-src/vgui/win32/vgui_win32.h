@@ -34,6 +34,12 @@ public:
 class BaseFontPlat
 {
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	BaseFontPlat() : references( 0 )
+	{
+	}
+#endif
+
 	virtual ~BaseFontPlat()
 	{
 	}
@@ -44,6 +50,11 @@ public:
 	virtual void getCharABCwide( int ch, int& a, int& b, int& c ) = 0;
 	virtual int getTall() = 0;
 	virtual void drawSetTextFont( SurfacePlat* surface ) = 0;
+
+#if VGUI_ABI_COMPAT_MODE != 1
+	// The platform list and each Font using this platform hold one.
+	int		references;
+#endif
 };
 
 }
