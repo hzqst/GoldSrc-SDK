@@ -706,8 +706,9 @@ void CCareerBotFrame::Activate()
 		qsort( sorted.Base(), sorted.Count(), sizeof( CCareerCharacter* ), BotSortFunc );
 	for ( int i = 0; i < sorted.Count(); i++ )
 	{
+		// Name the control by index; bot profile names have no length limit
 		char name[64];
-		sprintf( name, "PoolButton%s", sorted[i]->GetName() );
+		sprintf( name, "PoolButton%d", i );
 		CBotButton* button = new CBotButton( this, name, name );
 		button->SetCommand( name );
 		button->SetSize( wide, tall );
