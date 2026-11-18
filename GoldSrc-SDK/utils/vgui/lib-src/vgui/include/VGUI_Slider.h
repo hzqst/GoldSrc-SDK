@@ -50,7 +50,8 @@ private:
 	int						_nobDragStartPos[2];
 	int						_dragStartPos[2];
 
-	Dar<IntChangeSignal*>	_intChangeSignalDar;
+	// Owns its signals with VGUI_ABI_COMPAT_MODE != 1.
+	OwningDar<IntChangeSignal*>	_intChangeSignalDar;
 	int						_range[2];
 	int						_value;
 	int						_rangeWindow;

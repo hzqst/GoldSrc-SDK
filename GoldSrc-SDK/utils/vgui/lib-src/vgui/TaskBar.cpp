@@ -1,4 +1,5 @@
 #include "VGUI_TaskBar.h"
+#include "ActionSignalForwarder.h"
 #include "VGUI_ActionSignal.h"
 #include "VGUI_App.h"
 #include "VGUI_Button.h"
@@ -165,7 +166,8 @@ void TaskBar::addFrame( Frame* frame )
 	button = new Button( buf, 2, 2 );
 	handler = new FooTaskBarButtonHandler( button, frame );
 	button->setParent( this );
-	button->addActionSignal( handler );
+	// The button deletes its action signals; the frame keeps the handler.
+	button->addActionSignal( new ActionSignalForwarder( handler ) );
 	frame->addFrameSignal( handler );
 	frame->addFocusChangeSignal( handler );
 	_taskButtonDar.addElement( button );

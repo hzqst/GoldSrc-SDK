@@ -10,9 +10,7 @@ Menu, ListPanel, TabPanel and TablePanel are built with the VGUI1 sources and
 platform stubs from vgui1_panel_tests.py, twice: with VGUI_ABI_COMPAT_MODE=1
 (the original vgui.dll layout, no destructors) and with VGUI_ABI_COMPAT_MODE=0.
 vgui_strdup is extracted from vgui.cpp like vgui_strcpy. The compatible build
-frees no panel, so its runs check memory errors only. ActionSignals and
-IntChangeSignals are not owned by any panel, so the ones Frame, ListPanel and
-ScrollBar allocate for themselves are known leaks.
+frees no panel, so its runs check memory errors only.
 
 - wizard-page-texts: setting a WizardPage text again frees the old one with
   delete[].
@@ -46,11 +44,6 @@ from vgui1_panel_tests import VGUI, function, vgui1_sources
 WIDGETS = ['TextPanel.cpp', 'TextGrid.cpp', 'EditPanel.cpp', 'CheckButton.cpp', 'RadioButton.cpp',
            'WizardPanel.cpp', 'Frame.cpp', 'Menu.cpp', 'ListPanel.cpp', 'TabPanel.cpp', 'TablePanel.cpp',
            'StackLayout.cpp', 'ScrollBar.cpp', 'Slider.cpp', 'ButtonGroup.cpp', 'RaisedBorder.cpp', 'HeaderPanel.cpp']
-# ActionSignals and IntChangeSignals are not owned by any panel, so the ones
-# these widgets allocate for themselves still leak; they are left for a later
-# change. Frame's title is checked after setTitle, outside Frame::Frame.
-KNOWN_LEAKS = ['vgui::Frame::Frame', 'vgui::ListPanel::ListPanel', 'vgui::ScrollBar::setButton',
-               'vgui::ScrollBar::setSlider', 'vgui::ScrollBar::addIntChangeSignal']
 
 TESTS = r'''
 #include <cstdio>
@@ -405,8 +398,6 @@ def main():
         test_file = Path(folder) / 'test.cpp'
         strdup = function((VGUI / 'vgui.cpp').read_text(), 'char* vgui_strdup(')
         test_file.write_text(TESTS + '\nnamespace vgui\n{\n' + strdup + '\n}\n')
-        suppressions = Path(folder) / 'lsan.supp'
-        suppressions.write_text(''.join(f'leak:{name}\n' for name in KNOWN_LEAKS))
         sources = [test_file] + vgui1_sources(folder) + [VGUI / name for name in WIDGETS]
         for mode, scenarios in MODES.items():
             executable = Path(folder) / f'test-compat{mode}.exe'
@@ -419,8 +410,6 @@ def main():
             env = dict(os.environ)
             if mode == '1':
                 env['ASAN_OPTIONS'] = 'detect_leaks=0:' + env.get('ASAN_OPTIONS', '')
-            else:
-                env['LSAN_OPTIONS'] = f'suppressions={suppressions}:' + env.get('LSAN_OPTIONS', '')
             for scenario in scenarios:
                 result = subprocess.run([str(executable), scenario], env=env)
                 if result.returncode:

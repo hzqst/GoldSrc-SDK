@@ -1,4 +1,5 @@
 #include "VGUI_TabPanel.h"
+#include "ActionSignalForwarder.h"
 
 #include "VGUI_ActionSignal.h"
 #include "VGUI_Border.h"
@@ -28,7 +29,7 @@ class FooTabPanelTab : public ToggleButton, public ActionSignal
 public:
 	FooTabPanelTab( TabPanel* tabPanel, const char* text ) : ToggleButton( text, 0, 0 ), _tabPanel( tabPanel )
 	{
-		addActionSignal( this );
+		addActionSignal( new ActionSignalForwarder( this ) );
 	}
 
 	virtual void paintBackground() override;

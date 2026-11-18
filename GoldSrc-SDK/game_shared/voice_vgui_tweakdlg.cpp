@@ -116,7 +116,6 @@ public:
 		gViewPort->HideVGUIMenu();
 	}
 };
-CVoiceTweakOKButton g_OKButtonSignal;
 
 
 
@@ -183,7 +182,8 @@ CVoiceVGUITweakDlg::CVoiceVGUITweakDlg()
 	m_Label("")
 {
 	m_pVoiceTweak = NULL;
-	m_Button_OK.addActionSignal(&g_OKButtonSignal);
+	// The button deletes its action signals with VGUI_ABI_COMPAT_MODE != 1.
+	m_Button_OK.addActionSignal(new CVoiceTweakOKButton);
 	m_Label.setBgColor(255,255,255,200);
 }
 

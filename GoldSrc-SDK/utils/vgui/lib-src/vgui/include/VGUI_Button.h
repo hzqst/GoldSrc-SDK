@@ -58,7 +58,8 @@ protected:
 	bool				_selected;
 	bool				_buttonBorderEnabled;
 
-	Dar<ActionSignal*>	_actionSignalDar;
+	// Owns its signals with VGUI_ABI_COMPAT_MODE != 1.
+	OwningDar<ActionSignal*>	_actionSignalDar;
 	int					_mouseClickMask;
 	ButtonGroup*		_buttonGroup;
 	ButtonController*	_buttonController;

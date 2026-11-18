@@ -15,6 +15,11 @@ namespace vgui
 class VGUIAPI TickSignal
  {
  public:
+#if VGUI_ABI_COMPAT_MODE != 1
+  // Not deleted by the objects it is added to; lets its owner delete it
+  // through this interface.
+  virtual ~TickSignal() {}
+#endif
   virtual void ticked()=0;
  };
 }

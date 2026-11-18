@@ -74,7 +74,8 @@ protected:
 	long               _cursorNextBlinkTime;
 	int                _cursorBlinkRate;
 	int                _select[2];
-	Dar<ActionSignal*> _actionSignalDar;
+	// Owns its signals with VGUI_ABI_COMPAT_MODE != 1.
+	OwningDar<ActionSignal*> _actionSignalDar;
 	Font*              _font;
 };
 

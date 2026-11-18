@@ -171,6 +171,39 @@ protected:
 	ELEMTYPE* _data;
 };
 
+#if VGUI_ABI_COMPAT_MODE != 1
+// A Dar of pointers that owns what they point to: it deletes them when it is
+// destroyed, and a copy starts empty instead of sharing them. It adds no
+// members, so a class keeps its layout when a Dar member becomes one.
+template<class ELEMTYPE> class OwningDar : public Dar<ELEMTYPE>
+{
+public:
+	OwningDar()
+	{
+	}
+	OwningDar(int initialCapacity) : Dar<ELEMTYPE>(initialCapacity)
+	{
+	}
+	OwningDar(const OwningDar&)
+	{
+	}
+	OwningDar& operator=(const OwningDar&)
+	{
+		return *this;
+	}
+	~OwningDar()
+	{
+		for(int i=0;i<this->_count;i++)
+		{
+			delete this->_data[i];
+		}
+	}
+};
+#else
+// The original vgui.dll frees nothing.
+template<class ELEMTYPE> using OwningDar=Dar<ELEMTYPE>;
+#endif
+
 #ifdef _WIN32
 //forward referencing all the template types used so they get exported
 template class VGUIAPI Dar<char>;

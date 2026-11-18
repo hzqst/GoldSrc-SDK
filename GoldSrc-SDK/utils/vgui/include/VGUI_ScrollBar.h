@@ -47,7 +47,8 @@ protected:
 protected:
 	Button* _button[2];
 	Slider* _slider;
-	Dar<IntChangeSignal*> _intChangeSignalDar;
+	// Owns its signals with VGUI_ABI_COMPAT_MODE != 1.
+	OwningDar<IntChangeSignal*> _intChangeSignalDar;
 	int     _buttonPressedScrollValue;
 };
 
