@@ -15,6 +15,11 @@ class VGUIAPI Frame : public Panel
 {
 public:
 	Frame( int x, int y, int wide, int tall );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A Frame owns its title; a copy gets its own.
+	Frame( const Frame& other );
+	virtual ~Frame() override;
+#endif
 
 	virtual void setSize( int wide, int tall ) override;
 	virtual void setInternal( bool state );
@@ -67,8 +72,17 @@ protected:
 	Dar<FrameSignal*>	_frameSignalDar;
 	Frame*				_resizeable;
 
+#if VGUI_ABI_COMPAT_MODE != 1
+private:
+	void copyFrom( const Frame& other );
+#endif
+
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	Frame& operator=( const Frame& other );
+#else
 	Frame& operator=( const Frame& ) = default;
+#endif
 };
 
 }

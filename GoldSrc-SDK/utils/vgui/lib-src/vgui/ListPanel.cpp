@@ -29,6 +29,15 @@ void FooDefaultListPanelSignal::intChanged( int value, Panel* )
 	_listPanel->setPixelScroll( -value );
 }
 
+// Panel does not own its layout, and a StackLayout keeps no state between
+// layouts, so every ListPanel shares this one instead of making one nothing
+// frees.
+Layout* itemLayout()
+{
+	static StackLayout layout( 1, false );
+	return &layout;
+}
+
 }
 
 namespace vgui
@@ -38,7 +47,7 @@ ListPanel::ListPanel( int x, int y, int wide, int tall ) : Panel( x, y, wide, ta
 {
 	_vpanel = new Panel( 0, 0, wide - 15, tall * 2 );
 	_vpanel->setParent( this );
-	_vpanel->setLayout( new StackLayout( 1, false ) );
+	_vpanel->setLayout( itemLayout() );
 	_vpanel->setBgColor( 0, 0, 100, 0 );
 
 	_scroll = new ScrollBar( wide - 15, 0, 15, tall, true );

@@ -37,6 +37,12 @@ private:
 	bool           _cellEditingEnabled;
 public:
 	TablePanel(int x,int y,int wide,int tall,int columnCount);
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A TablePanel owns the panel it hit-tests cells with; a copy gets its own.
+	TablePanel(const TablePanel& other);
+	virtual ~TablePanel();
+	TablePanel& operator=(const TablePanel& other);
+#endif
 public:
 	virtual void   setCellEditingEnabled(bool state);
 	virtual void   setColumnCount(int columnCount);

@@ -28,6 +28,12 @@ public:
 	};
 public:
 	TabPanel(int x,int y,int wide,int tall);
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A TabPanel owns its ButtonGroup; a copy gets its own.
+	TabPanel(const TabPanel& other);
+	virtual ~TabPanel();
+	TabPanel& operator=(const TabPanel& other);
+#endif
 public:
 	virtual Panel* addTab(const char* text);
 	virtual void   setSelectedTab(Panel* tab);

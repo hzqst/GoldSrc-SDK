@@ -130,6 +130,43 @@ TabPanel::TabPanel( int x, int y, int wide, int tall ) : Panel( x, y, wide, tall
 	_buttonGroup = new ButtonGroup();
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+TabPanel::TabPanel( const TabPanel& other ) : Panel( other )
+{
+	_buttonGroup = new ButtonGroup();
+	copyFrom( other );
+}
+
+// ButtonGroup has no virtual destructor; this is the ButtonGroup the
+// constructor made.
+TabPanel::~TabPanel()
+{
+	delete _buttonGroup;
+}
+
+// Keeps this panel's own ButtonGroup.
+TabPanel& TabPanel::operator=( const TabPanel& other )
+{
+	if ( this != &other )
+	{
+		Panel::operator=( other );
+		copyFrom( other );
+	}
+
+	return *this;
+}
+
+// Like the original copy, the tab and client areas stay shared.
+void TabPanel::copyFrom( const TabPanel& other )
+{
+	_tabPlacement = other._tabPlacement;
+	_tabArea = other._tabArea;
+	_clientArea = other._clientArea;
+	_selectedTab = other._selectedTab;
+	_selectedPanel = other._selectedPanel;
+}
+#endif
+
 void TabPanel::setSize( int wide, int tall )
 {
 	Panel::setSize( wide, tall );

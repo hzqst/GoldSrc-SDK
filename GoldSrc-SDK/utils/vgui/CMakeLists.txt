@@ -111,7 +111,10 @@ if(TARGET vgui)
 			??1EditPanel@vgui@@UAE@XZ
 			??1CheckButton@vgui@@UAE@XZ
 			??1RadioButton@vgui@@UAE@XZ
-			??1WizardPage@WizardPanel@vgui@@UAE@XZ)
+			??1WizardPage@WizardPanel@vgui@@UAE@XZ
+			??1Frame@vgui@@UAE@XZ
+			??1TabPanel@vgui@@UAE@XZ
+			??1TablePanel@vgui@@UAE@XZ)
 		file(READ "${GOLDSRC_VGUI_IMPORTS_DEF}" GOLDSRC_VGUI_IMPORTS)
 		foreach(export IN LISTS GOLDSRC_VGUI_EXTRA_EXPORTS)
 			string(APPEND GOLDSRC_VGUI_IMPORTS "    ${export}\n")

@@ -22,6 +22,12 @@ class VGUIAPI Frame : public Panel
  {
  public:
   Frame(int x,int y,int wide,int tall);
+#if VGUI_ABI_COMPAT_MODE != 1
+  // A Frame owns its title; a copy gets its own.
+  Frame(const Frame& other);
+  virtual ~Frame();
+  Frame& operator=(const Frame& other);
+#endif
  public:
   virtual void   setSize(int wide,int tall);
   virtual void   setInternal(bool state);
