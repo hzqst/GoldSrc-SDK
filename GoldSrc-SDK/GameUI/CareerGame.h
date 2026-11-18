@@ -129,7 +129,10 @@ public:
 	bool ParseDifficultyChunk( CCareerProfileDifficultyData* save, int version );
 	bool ParseTutorMessageDecayChunk( CCareerProfileData* save, int version );
 	bool ParseSavedProfile( const unsigned char* data, int dataLength, CCareerProfileData* save );
-	static const char* GetSaveGamePlayerName( const char* name );
+	// Returns the u8hex profile key, or an empty string for names that cannot be stored
+	static std::string GetSaveGamePlayerName( const char* name );
+	static bool IsValidProfileName( const char* name );
+	static void ShowInvalidProfileNameMessage();
 	void ApplyTutorMessageData( int* tutorData );
 	void WriteMedalChunk( CCareerProfileData* save );
 	void WriteDifficultyChunk( CCareerProfileDifficultyData* save );

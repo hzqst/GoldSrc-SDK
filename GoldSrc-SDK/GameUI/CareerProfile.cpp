@@ -29,11 +29,10 @@
 #undef MessageBox
 #endif
 
-#ifdef _WIN32
-#define CAREER_PROFILE_PATH_MAX _MAX_PATH
-#else
-#define CAREER_PROFILE_PATH_MAX PATH_MAX
-#endif
+// READ_STRING reads profile strings into char[2048]
+#define CAREER_PROFILE_NAME_BYTES 2048
+// writecfg formats its argument into 257 bytes before it appends ".cfg"
+#define CAREER_CONFIG_NAME_BYTES 257
 
 static unsigned char* ReadFile( const char* filename, int& length )
 {
@@ -73,6 +72,87 @@ static std::string LegacyProfileKey( const char* name )
 			c = '_';
 	}
 	return key;
+}
+
+// The c22ae8c key, read and migrated like the native key
+static std::string HashedProfileKey( const char* name )
+{
+	MD5Context_t context;
+	unsigned char digest[16];
+	MD5Init( &context );
+	MD5Update( &context, (const unsigned char*)name, (unsigned int)strlen( name ) );
+	MD5Final( digest, &context );
+	std::string key = "v2-";
+	char hex[3];
+	for ( size_t i = 0; i < sizeof( digest ); ++i )
+	{
+		sprintf( hex, "%02x", digest[i] );
+		key += hex;
+	}
+	return key;
+}
+
+// Matches CareerProfileStorage::ValidateName in VGUI2Extension: valid UTF-8 without
+// control characters or the characters that split console commands
+static bool IsSafeProfileName( const char* name )
+{
+	const unsigned char* text = (const unsigned char*)name;
+	size_t length = strlen( name );
+	if ( !length || length >= CAREER_PROFILE_NAME_BYTES )
+		return false;
+	for ( size_t i = 0; i < length; )
+	{
+		unsigned int first = text[i++];
+		unsigned int code = first;
+		unsigned int minimum = 0;
+		size_t tail = 0;
+		if ( first >= 0xC2 && first <= 0xDF )
+		{
+			code = first & 0x1F;
+			minimum = 0x80;
+			tail = 1;
+		}
+		else if ( first >= 0xE0 && first <= 0xEF )
+		{
+			code = first & 0x0F;
+			minimum = 0x800;
+			tail = 2;
+		}
+		else if ( first >= 0xF0 && first <= 0xF4 )
+		{
+			code = first & 0x07;
+			minimum = 0x10000;
+			tail = 3;
+		}
+		else if ( first >= 0x80 )
+			return false;
+		if ( tail > length - i )
+			return false;
+		for ( ; tail; --tail )
+		{
+			unsigned int next = text[i++];
+			if ( ( next & 0xC0 ) != 0x80 )
+				return false;
+			code = ( code << 6 ) | ( next & 0x3F );
+		}
+		if ( code < minimum || code > 0x10FFFF || ( code >= 0xD800 && code <= 0xDFFF ) )
+			return false;
+		if ( code < 0x20 || ( code >= 0x7F && code <= 0x9F ) || code == '"' || code == ';' || code == '\\' )
+			return false;
+	}
+	return true;
+}
+
+// Keys from the newest scheme to the oldest; unsafe names have no u8hex key
+static std::vector<std::string> ProfileKeys( const char* name )
+{
+	std::vector<std::string> keys;
+	std::string key = CCareerGame::GetSaveGamePlayerName( name );
+	if ( !key.empty() )
+		keys.push_back( key );
+	keys.push_back( HashedProfileKey( name ) );
+	keys.push_back( LegacyProfileKey( name ) );
+	return keys;
 }
 
 static std::string ProfilePath( const std::string& key )
@@ -116,6 +196,8 @@ static bool SameProfilePath( const std::string& left, const std::string& right )
 static bool CanWriteProfile( CCareerGame* game, const char* name )
 {
 	std::string key = CCareerGame::GetSaveGamePlayerName( name );
+	if ( key.empty() )
+		return false;
 	std::string path = ProfilePath( key );
 	std::string config = "Save/" + key + ".cfg";
 	if ( vgui2::filesystem()->FileExists( path.c_str() ) )
@@ -172,14 +254,21 @@ static bool ConfigHasOwner( const std::string& path, const char* owner )
 static bool MigrateLegacyProfile( CCareerGame* game, const char* name )
 {
 	std::string key = CCareerGame::GetSaveGamePlayerName( name );
+	if ( key.empty() )
+		return false;
 	std::string path = ProfilePath( key );
 	bool canonicalExists = vgui2::filesystem()->FileExists( path.c_str() );
 	if ( canonicalExists && !ReadOwnedProfile( game, path, name ) )
 		return false;
-	std::string legacyKey = LegacyProfileKey( name );
-	std::string legacyPath = ProfilePath( legacyKey );
-	if ( !ReadOwnedProfile( game, legacyPath, name ) )
+	// Copy from the newest older key that this name owns
+	std::vector<std::string> keys = ProfileKeys( name );
+	std::vector<std::string>::const_iterator older = keys.begin() + 1;
+	while ( older != keys.end() && !ReadOwnedProfile( game, ProfilePath( *older ), name ) )
+		++older;
+	if ( older == keys.end() )
 		return true;
+	const std::string& legacyKey = *older;
+	std::string legacyPath = ProfilePath( legacyKey );
 	if ( !canonicalExists && !CanWriteProfile( game, name ) )
 		return false;
 	int length = 0;
@@ -322,25 +411,44 @@ bool CCareerGame::ParseSavedProfile( const unsigned char* data, int dataLength, 
 	return valid && checksum == expected;
 }
 
-const char* CCareerGame::GetSaveGamePlayerName( const char* name )
+std::string CCareerGame::GetSaveGamePlayerName( const char* name )
 {
-	static char nameBuffer[sizeof( "v2-" ) + 32];
 	if ( !name )
 	{
 		char nameCvar[] = "name";
 		name = engine->pfnGetCvarString( nameCvar );
 	}
-	if ( !name )
-		name = "";
-	MD5Context_t context;
-	unsigned char digest[16];
-	MD5Init( &context );
-	MD5Update( &context, (const unsigned char*)name, (unsigned int)strlen( name ) );
-	MD5Final( digest, &context );
-	strcpy( nameBuffer, "v2-" );
-	for ( size_t i = 0; i < sizeof( digest ); ++i )
-		sprintf( nameBuffer + 3 + i * 2, "%02x", digest[i] );
-	return nameBuffer;
+	if ( !name || !IsSafeProfileName( name ) )
+		return "";
+	// Same key as VGUI2Extension: u8hex- and the lowercase hex of every name byte
+	static const char hexDigits[] = "0123456789abcdef";
+	std::string key = "u8hex-";
+	for ( const unsigned char* c = (const unsigned char*)name; *c; ++c )
+	{
+		key += hexDigits[*c >> 4];
+		key += hexDigits[*c & 0x0F];
+	}
+	// A longer writecfg argument would be truncated into the config of another key
+	if ( ( "Save/" + key ).size() >= CAREER_CONFIG_NAME_BYTES )
+		return "";
+	return key;
+}
+
+bool CCareerGame::IsValidProfileName( const char* name )
+{
+	return name && !GetSaveGamePlayerName( name ).empty();
+}
+
+void CCareerGame::ShowInvalidProfileNameMessage()
+{
+	// Each name byte takes two hex digits after "Save/u8hex-" in the writecfg argument
+	const size_t maxNameBytes = ( CAREER_CONFIG_NAME_BYTES - 1 - strlen( "Save/u8hex-" ) ) / 2;
+	char text[256];
+	UTIL_FormatString( text, sizeof( text ), "This name cannot be used for a career profile. It must be valid UTF-8, "
+		"must not contain control characters, quotes, semicolons or backslashes, and must be at most %u bytes.",
+		(unsigned int)maxNameBytes );
+	vgui2::MessageBox* message = new vgui2::MessageBox( "Career profile", text, g_pTaskbar );
+	message->DoModal( NULL );
 }
 
 void CCareerGame::ApplyTutorMessageData( int* tutorData )
@@ -478,21 +586,16 @@ bool CCareerGame::UpdateSavedProfile()
 
 ProfileVector CCareerGame::BuildProfileList()
 {
-	char directory[CAREER_PROFILE_PATH_MAX];
-	const char* saveDirectory = TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory();
+	std::string saveDirectory = TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory();
+	std::string directory = saveDirectory + "/CZProfile-*.czp";
 	ProfileVector profiles;
-	if ( !UTIL_FormatString( directory, sizeof( directory ), "%s/CZProfile-*.czp", saveDirectory ) )
-		return profiles;
 	FileFindHandle_t handle;
-	const char* name = vgui2::filesystem()->FindFirst( directory, &handle, "GAMECONFIG" );
+	const char* name = vgui2::filesystem()->FindFirst( directory.c_str(), &handle, "GAMECONFIG" );
 	while ( name )
 	{
-		char filename[CAREER_PROFILE_PATH_MAX];
+		std::string filename = saveDirectory + "/" + name;
 		int length = 0;
-		unsigned char* data = NULL;
-		// Profiles whose path does not fit are skipped
-		if ( UTIL_FormatString( filename, sizeof( filename ), "%s/%s", saveDirectory, name ) )
-			data = ReadFile( filename, length );
+		unsigned char* data = ReadFile( filename.c_str(), length );
 		CCareerProfileData* profile = NULL;
 		if ( data )
 		{
@@ -506,14 +609,23 @@ ProfileVector CCareerGame::BuildProfileList()
 		}
 		if ( profile )
 		{
-			std::string canonical = ProfilePath( GetSaveGamePlayerName( profile->name.c_str() ) );
-			std::string legacy = ProfilePath( LegacyProfileKey( profile->name.c_str() ) );
-			bool validPath = SameProfilePath( canonical, filename ) || SameProfilePath( legacy, filename );
-			if ( validPath && !SameProfilePath( canonical, filename ) && vgui2::filesystem()->FileExists( canonical.c_str() ) )
-				validPath = false;
+			// List each name once, from the newest key that has a profile
+			bool validPath = false;
+			std::vector<std::string> keys = ProfileKeys( profile->name.c_str() );
+			for ( const std::string& key : keys )
+			{
+				std::string path = ProfilePath( key );
+				if ( SameProfilePath( path, filename ) )
+				{
+					validPath = true;
+					break;
+				}
+				if ( vgui2::filesystem()->FileExists( path.c_str() ) )
+					break;
+			}
 			if ( validPath )
 			{
-				profile->filetime = vgui2::filesystem()->GetFileTime( filename );
+				profile->filetime = vgui2::filesystem()->GetFileTime( filename.c_str() );
 				profiles.push_back( profile );
 			}
 			else
@@ -531,17 +643,21 @@ CCareerProfileData* CCareerGame::GetProfileForName( const char* name )
 		name = engine->pfnGetCvarString( (char*)"name" );
 	if ( !name )
 		return NULL;
-	std::string path = ProfilePath( GetSaveGamePlayerName( name ) );
-	if ( !vgui2::filesystem()->FileExists( path.c_str() ) )
-		path = ProfilePath( LegacyProfileKey( name ) );
-	return ReadOwnedProfile( this, path, name ).release();
+	std::vector<std::string> keys = ProfileKeys( name );
+	for ( const std::string& key : keys )
+	{
+		std::string path = ProfilePath( key );
+		if ( vgui2::filesystem()->FileExists( path.c_str() ) )
+			return ReadOwnedProfile( this, path, name ).release();
+	}
+	return NULL;
 }
 
 void CCareerGame::DeleteProfile( const char* name )
 {
 	if ( !name )
 		return;
-	const std::string keys[] = { GetSaveGamePlayerName( name ), LegacyProfileKey( name ) };
+	std::vector<std::string> keys = ProfileKeys( name );
 	for ( const std::string& key : keys )
 	{
 		std::string path = ProfilePath( key );
@@ -568,13 +684,9 @@ bool CCareerGame::CreateBlankProfile()
 	profile.lastDifficulty = CAREER_DIFFICULTY_EASY;
 	memset( profile.medals, 0, sizeof( profile.medals ) );
 	vgui2::filesystem()->CreateDirHierarchy( TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), NULL );
-	char filename[CAREER_PROFILE_PATH_MAX];
-	if ( !UTIL_FormatString( filename, sizeof( filename ), "%s/CZProfile-%s.czp",
-		TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), GetSaveGamePlayerName( NULL ) ) )
-		return false;
 	std::unique_ptr<unsigned char[]> data( new unsigned char[MAX_CAREER_PROFILE_DATA] );
 	int length = CreateProfileBuffer( &profile, data.get(), MAX_CAREER_PROFILE_DATA, true );
-	return WriteProfileFile( filename, data.get(), length );
+	return WriteProfileFile( ProfilePath( GetSaveGamePlayerName( profile.name.c_str() ) ), data.get(), length );
 }
 
 bool CCareerGame::SaveProfile( bool updateConfig )
@@ -584,19 +696,18 @@ bool CCareerGame::SaveProfile( bool updateConfig )
 	const char* name = m_currentProfile->name.c_str();
 	if ( !name[0] || !MigrateLegacyProfile( this, name ) || !CanWriteProfile( this, name ) )
 		return false;
+	std::string key = GetSaveGamePlayerName( name );
 	bool saved = m_needAutosave;
 	std::unique_ptr<unsigned char[]> data( new unsigned char[MAX_CAREER_PROFILE_DATA] );
 	vgui2::filesystem()->CreateDirHierarchy( TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), NULL );
-	char filename[CAREER_PROFILE_PATH_MAX];
-	if ( !UTIL_FormatString( filename, sizeof( filename ), "%s/CZProfile-%s.czp",
-		TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), GetSaveGamePlayerName( name ) ) )
-		return false;
 	UpdateSavedProfile();
 	int length = CreateProfileBuffer( m_currentProfile, data.get(), MAX_CAREER_PROFILE_DATA, false );
-	saved = WriteProfileFile( filename, data.get(), length );
-	if ( saved && updateConfig && m_currentProfile->name == engine->pfnGetCvarString( (char*)"name" ) &&
-		UTIL_FormatString( filename, sizeof( filename ), "writecfg Save/%s\n", GetSaveGamePlayerName( name ) ) )
-		engine->pfnClientCmd( filename );
+	saved = WriteProfileFile( ProfilePath( key ), data.get(), length );
+	if ( saved && updateConfig && m_currentProfile->name == engine->pfnGetCvarString( (char*)"name" ) )
+	{
+		std::string command = "writecfg Save/" + key + "\n";
+		engine->pfnClientCmd( (char*)command.c_str() );
+	}
 	return saved;
 }
 
@@ -604,7 +715,7 @@ void CCareerGame::ExecuteProfileConfig()
 {
 	const char* name = m_currentProfile->name.c_str();
 	std::string key = GetSaveGamePlayerName( name );
-	if ( name[0] && ReadOwnedProfile( this, ProfilePath( key ), name ) &&
+	if ( !key.empty() && ReadOwnedProfile( this, ProfilePath( key ), name ) &&
 		ConfigHasOwner( "Save/" + key + ".cfg", name ) )
 	{
 		std::string command = "wait\nexec Save/" + key + ".cfg\n";
@@ -615,16 +726,21 @@ void CCareerGame::ExecuteProfileConfig()
 bool CCareerGame::LoadProfile( CareerDifficultyType difficulty )
 {
 	const char* name = engine->pfnGetCvarString( (char*)"name" );
-	if ( !name || !MigrateLegacyProfile( this, name ) )
+	if ( !name )
 		return false;
-	char filename[CAREER_PROFILE_PATH_MAX];
-	if ( !UTIL_FormatString( filename, sizeof( filename ), "%s/CZProfile-%s.czp",
-		TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), GetSaveGamePlayerName( NULL ) ) )
+	std::string key = GetSaveGamePlayerName( name );
+	if ( key.empty() )
+	{
+		ShowInvalidProfileNameMessage();
 		return false;
+	}
+	if ( !MigrateLegacyProfile( this, name ) )
+		return false;
+	std::string filename = ProfilePath( key );
 	int length;
-	unsigned char* data = ReadFile( filename, length );
+	unsigned char* data = ReadFile( filename.c_str(), length );
 	if ( !data )
-		return !vgui2::filesystem()->FileExists( filename );
+		return !vgui2::filesystem()->FileExists( filename.c_str() );
 	SetDifficulty( difficulty );
 	Reset();
 	bool valid = ParseSavedProfile( data, length, m_currentProfile ) && m_currentProfile->name == name;

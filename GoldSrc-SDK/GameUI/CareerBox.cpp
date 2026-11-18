@@ -220,6 +220,12 @@ void CCareerNewProfileBox::OnCommand( const char* command )
 		std::vector<char> name( characters * 4, '\0' );
 		if ( vgui2::localize()->ConvertUnicodeToANSI( wideName.data(), name.data(), (int)name.size() ) <= 0 || !name[0] )
 			return;
+		// Keep the previous name when this one cannot be stored
+		if ( !CCareerGame::IsValidProfileName( name.data() ) )
+		{
+			CCareerGame::ShowInvalidProfileNameMessage();
+			return;
+		}
 		engine->Cvar_Set( (char*)"name", name.data() );
 		CCareerBaseBox::OnCommand( "CreateProfile" );
 	}
