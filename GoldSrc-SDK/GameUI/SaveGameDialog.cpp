@@ -7,6 +7,7 @@
 
 #include "SaveGameDialog.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 #include "Taskbar.h"
 
 #include "Button.h"
@@ -191,12 +192,7 @@ bool FormatSaveGameCommand( char* buffer, size_t bufferSize, const char* command
 	if ( strpbrk( shortName, ";\"\n\r" ) )
 		return false;
 
-#ifdef _WIN32
-	int length = _snprintf( buffer, bufferSize, "%s %s\n", command, shortName );
-#else
-	int length = snprintf( buffer, bufferSize, "%s %s\n", command, shortName );
-#endif
-	return length >= 0 && (size_t)length < bufferSize;
+	return UTIL_FormatString( buffer, bufferSize, "%s %s\n", command, shortName );
 }
 
 //-----------------------------------------------------------------------------

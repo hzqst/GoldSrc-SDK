@@ -1,4 +1,5 @@
 #include "CareerGameTasks.h"
+#include "StringUtils.h"
 
 #include "../game_shared/shared_util.h"
 #include "vgui/ILocalize.h"
@@ -84,15 +85,15 @@ CCareerUITask::CCareerUITask( const char* taskName )
 
 	wchar_t repeat[16];
 	swprintf( repeat, sizeof( repeat ) / sizeof( repeat[0] ), L"%d", m_repeat );
-	if ( m_repeat == 1 )
-		sprintf( taskId, "#Career_Task_%s", m_name );
-	else
-		sprintf( taskId, "#Career_Task_%s_multi", m_name );
+	bool taskIdFormatted = UTIL_FormatString( taskId, sizeof( taskId ),
+		m_repeat == 1 ? "#Career_Task_%s" : "#Career_Task_%s_multi", m_name );
 	if ( !stricmp( m_name, "winfast" ) )
 		m_isWinFast = true;
 
+	// A task id that does not fit is treated as a missing localization string
 	wchar_t taskText[512];
-	ConstructStringWithReordering( taskText, 512, vgui2::localize()->Find( taskId ), 2, weaponName, repeat );
+	ConstructStringWithReordering( taskText, 512, taskIdFormatted ? vgui2::localize()->Find( taskId ) : NULL,
+		2, weaponName, repeat );
 	if ( m_inarow )
 	{
 		vgui2::localize()->ConstructString( m_localizedName, 512,
