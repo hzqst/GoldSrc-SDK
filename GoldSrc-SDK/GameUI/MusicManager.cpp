@@ -1,5 +1,6 @@
 #include "MusicManager.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 
 #include "vgui/KeyValues.h"
 #include "controls.h"
@@ -8,10 +9,28 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 MusicManager* TheMusicManager;
 
 EXPOSE_SINGLE_INTERFACE( MusicManager, IMusicManager, "MusicManager001" );
+
+// playlist.txt keys of each track and whether it loops when the key is missing
+static const struct
+{
+	TrackType	track;
+	const char*	pathKey;
+	const char*	loopKey;
+	int			defaultLoop;
+} g_playlistTracks[] =
+{
+	{ TRACKTYPE_SPLASH,		"Splash",		"SplashLoop",		1 },
+	{ TRACKTYPE_ROUNDWIN,	"RoundWin",		"RoundWinLoop",		0 },
+	{ TRACKTYPE_ROUNDLOSE,	"RoundLose",	"RoundLoseLoop",	0 },
+	{ TRACKTYPE_MATCHWIN,	"MatchWin",		"MatchWinLoop",		0 },
+	{ TRACKTYPE_MATCHLOSE,	"MatchLose",	"MatchLoseLoop",	0 },
+	{ TRACKTYPE_CREDITS,	"Credits",		"CreditsLoop",		1 },
+};
 
 MusicManager::MusicManager()
 {
@@ -47,29 +66,14 @@ void MusicManager::Init()
 		if ( playlist->GetInt( "Version", 1 ) > 1 )
 			m_useLoopingInfo = true;
 
-		strncpy( m_tracks[TRACKTYPE_SPLASH].t_path, playlist->GetString( "Splash" ),
-			sizeof( m_tracks[TRACKTYPE_SPLASH].t_path ) );
-		m_tracks[TRACKTYPE_SPLASH].looping = playlist->GetInt( "SplashLoop", 1 ) != 0;
-
-		strncpy( m_tracks[TRACKTYPE_ROUNDWIN].t_path, playlist->GetString( "RoundWin" ),
-			sizeof( m_tracks[TRACKTYPE_ROUNDWIN].t_path ) );
-		m_tracks[TRACKTYPE_ROUNDWIN].looping = playlist->GetInt( "RoundWinLoop", 0 ) != 0;
-
-		strncpy( m_tracks[TRACKTYPE_ROUNDLOSE].t_path, playlist->GetString( "RoundLose" ),
-			sizeof( m_tracks[TRACKTYPE_ROUNDLOSE].t_path ) );
-		m_tracks[TRACKTYPE_ROUNDLOSE].looping = playlist->GetInt( "RoundLoseLoop", 0 ) != 0;
-
-		strncpy( m_tracks[TRACKTYPE_MATCHWIN].t_path, playlist->GetString( "MatchWin" ),
-			sizeof( m_tracks[TRACKTYPE_MATCHWIN].t_path ) );
-		m_tracks[TRACKTYPE_MATCHWIN].looping = playlist->GetInt( "MatchWinLoop", 0 ) != 0;
-
-		strncpy( m_tracks[TRACKTYPE_MATCHLOSE].t_path, playlist->GetString( "MatchLose" ),
-			sizeof( m_tracks[TRACKTYPE_MATCHLOSE].t_path ) );
-		m_tracks[TRACKTYPE_MATCHLOSE].looping = playlist->GetInt( "MatchLoseLoop", 0 ) != 0;
-
-		strncpy( m_tracks[TRACKTYPE_CREDITS].t_path, playlist->GetString( "Credits" ),
-			sizeof( m_tracks[TRACKTYPE_CREDITS].t_path ) );
-		m_tracks[TRACKTYPE_CREDITS].looping = playlist->GetInt( "CreditsLoop", 1 ) != 0;
+		for ( const auto& entry : g_playlistTracks )
+		{
+			TrackInfo& info = m_tracks[entry.track];
+			// A path that does not fit is dropped instead of truncated, so the track is not played
+			if ( !UTIL_CopyString( info.t_path, sizeof( info.t_path ), playlist->GetString( entry.pathKey ) ) )
+				info.t_path[0] = 0;
+			info.looping = playlist->GetInt( entry.loopKey, entry.defaultLoop ) != 0;
+		}
 	}
 
 	playlist->deleteThis();
@@ -90,13 +94,8 @@ void MusicManager::StartTrack( TrackType track, bool looping )
 	Career_Printf( "MusicManager::StartTrack - playing track %d %s\n", track, looping ? "as looping" : "" );
 	engine->pfnPrimeMusicStream( info.t_path, looping );
 
-	char command[sizeof( info.t_path )];
-#ifdef _WIN32
-	_snprintf( command, sizeof( command ), "cd %s %s\n", looping ? "loopfile" : "playfile", info.t_path );
-#else
-	snprintf( command, sizeof( command ), "cd %s %s\n", looping ? "loopfile" : "playfile", info.t_path );
-#endif
-	engine->pfnClientCmd( command );
+	std::string command = std::string( "cd " ) + ( looping ? "loopfile " : "playfile " ) + info.t_path + "\n";
+	engine->pfnClientCmd( (char*)command.c_str() );
 	m_currentTrack = track;
 }
 
