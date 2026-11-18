@@ -17,6 +17,14 @@ class VGUIAPI Image
 
 public:
 	Image();
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual ~Image();
+
+	// Images are freed through the virtual destructor from any module, so
+	// they are always allocated and freed on vgui.dll's heap.
+	static void* operator new( size_t size );
+	static void operator delete( void* memory );
+#endif
 
 	virtual void setPos( int x, int y );
 	virtual void getPos( int& x, int& y );

@@ -35,6 +35,15 @@ private:
 public:	
 	TextImage(int textBufferLen,const char* text);
 	TextImage(const char* text);
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual ~TextImage();
+#endif
+#ifdef _WIN32
+	// vgui.dll exports these and copies the text; the prebuilt Linux vgui.so
+	// does not export them.
+	TextImage(const TextImage& other);
+	TextImage& operator=(const TextImage& other);
+#endif
 private:
 	virtual void  init(int textBufferLen,const char* text);
 public:

@@ -33,6 +33,10 @@ public:
 	Label( const char* text, int x, int y );
 	Label( const char* text, int x, int y, int wide, int tall );
 	Label( int textBufferLen, const char* text, int x, int y, int wide, int tall );
+#if VGUI_ABI_COMPAT_MODE != 1
+	Label( const Label& other );
+	~Label();
+#endif
 
 	virtual void setImage( Image* image );
 	virtual void setText( int textBufferLen, const char* text );
@@ -69,7 +73,11 @@ private:
 	Image*		_image;
 
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	Label& operator=( const Label& other );
+#else
 	Label& operator=( const Label& ) = default;
+#endif
 };
 
 }
