@@ -6,6 +6,22 @@
 namespace vgui
 {
 
+#if VGUI_ABI_COMPAT_MODE != 1
+Image::~Image()
+{
+}
+
+void* Image::operator new( size_t size )
+{
+	return ::operator new( size );
+}
+
+void Image::operator delete( void* memory )
+{
+	::operator delete( memory );
+}
+#endif
+
 Image::Image()
 {
 	_panel = NULL;

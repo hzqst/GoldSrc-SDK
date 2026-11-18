@@ -12,6 +12,10 @@ class VGUIAPI TextImage : public Image
 public:
 	TextImage( int textBufferLen, const char* text );
 	TextImage( const char* text );
+	TextImage( const TextImage& other );
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual ~TextImage() override;
+#endif
 
 private:
 	virtual void init( int textBufferLen, const char* text );
@@ -47,7 +51,7 @@ private:
 	Scheme::SchemeColor	_textSchemeColor;
 
 public:
-	TextImage& operator=( const TextImage& ) = default;
+	TextImage& operator=( const TextImage& other );
 };
 
 }

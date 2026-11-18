@@ -83,6 +83,47 @@ Label::Label() : Panel( 0, 0, 10, 10 )
 	init( 1, "", true );
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+// A Label owns its TextImage; copies get their own so that the destructor
+// never deletes a shared one. _image is borrowed and stays shared.
+Label::Label( const Label& other ) : Panel( other )
+{
+	_textEnabled = other._textEnabled;
+	_imageEnabled = other._imageEnabled;
+	_contentFitted = other._contentFitted;
+	_textAlignment = other._textAlignment;
+	_contentAlignment = other._contentAlignment;
+	_textImage = other._textImage != NULL ? new TextImage( *other._textImage ) : NULL;
+	_image = other._image;
+}
+
+Label::~Label()
+{
+	delete _textImage;
+}
+
+Label& Label::operator=( const Label& other )
+{
+	if ( this != &other )
+	{
+		Panel::operator=( other );
+
+		TextImage* textImage = other._textImage != NULL ? new TextImage( *other._textImage ) : NULL;
+		delete _textImage;
+
+		_textEnabled = other._textEnabled;
+		_imageEnabled = other._imageEnabled;
+		_contentFitted = other._contentFitted;
+		_textAlignment = other._textAlignment;
+		_contentAlignment = other._contentAlignment;
+		_textImage = textImage;
+		_image = other._image;
+	}
+
+	return *this;
+}
+#endif
+
 void Label::init( int textBufferLen, const char* text, bool textFitted )
 {
 	_contentAlignment = Alignment::a_center;

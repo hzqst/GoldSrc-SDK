@@ -94,8 +94,17 @@ if(TARGET vgui)
 	set(GOLDSRC_VGUI_IMPORTS_DEF "${CMAKE_CURRENT_SOURCE_DIR}/vgui_imports.def")
 	if(NOT GOLDSRC_VGUI_ABI_COMPAT_MODE)
 		# Exports the original vgui.dll does not have.
+		set(GOLDSRC_VGUI_EXTRA_EXPORTS
+			??1MiniApp@vgui@@UAE@XZ
+			??1Image@vgui@@UAE@XZ
+			??2Image@vgui@@SAPAXI@Z
+			??3Image@vgui@@SAXPAX@Z
+			??1TextImage@vgui@@UAE@XZ
+			??1Label@vgui@@QAE@XZ)
 		file(READ "${GOLDSRC_VGUI_IMPORTS_DEF}" GOLDSRC_VGUI_IMPORTS)
-		string(APPEND GOLDSRC_VGUI_IMPORTS "    ??1MiniApp@vgui@@UAE@XZ\n")
+		foreach(export IN LISTS GOLDSRC_VGUI_EXTRA_EXPORTS)
+			string(APPEND GOLDSRC_VGUI_IMPORTS "    ${export}\n")
+		endforeach()
 		set(GOLDSRC_VGUI_IMPORTS_DEF "${CMAKE_CURRENT_BINARY_DIR}/vgui_imports.def")
 		file(WRITE "${GOLDSRC_VGUI_IMPORTS_DEF}" "${GOLDSRC_VGUI_IMPORTS}")
 	endif()

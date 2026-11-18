@@ -68,7 +68,8 @@ void vgui_strcpy( char* dst, int dstLen, const char* src )
 	{
 		srcLen = dstLen;
 	}
-	memcpy( dst, src, srcLen - 1 );
+	// src may point into dst, e.g. TextImage::setText with its own text.
+	memmove( dst, src, srcLen - 1 );
 	dst[srcLen - 1] = 0;
 }
 

@@ -46,6 +46,11 @@ public:
 	{
 		init(1,"",true);
 	}
+#if VGUI_ABI_COMPAT_MODE != 1
+	Label(const Label& other);
+	~Label();
+	Label& operator=(const Label& other);
+#endif
 private:
 	void init(int textBufferLen,const char* text,bool textFitted);
 public:
