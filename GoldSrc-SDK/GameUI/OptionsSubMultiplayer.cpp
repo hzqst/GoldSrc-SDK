@@ -15,6 +15,7 @@
 #include "LabeledCommandComboBox.h"
 #include "ModInfo.h"
 #include "MultiplayerAdvancedDialog.h"
+#include "StringUtils.h"
 
 #include "Button.h"
 #include "ComboBox.h"
@@ -322,11 +323,12 @@ void COptionsSubMultiplayer::InitModelList( CLabeledCommandComboBox* combo )
 	int count = 0;
 	while ( filename )
 	{
-		if ( vgui2::filesystem()->FindIsDirectory( findHandle ) && filename[0] != '.' && !combo->HasItem( filename ) )
+		char command[256];
+		// The directory name goes into the command unquoted; names that could add
+		// commands or do not fit are not listed
+		if ( vgui2::filesystem()->FindIsDirectory( findHandle ) && filename[0] != '.' && !combo->HasItem( filename ) &&
+			UTIL_IsUnquotedCommandArgument( filename ) && UTIL_FormatString( command, sizeof( command ), "model %s\n", filename ) )
 		{
-			char command[256];
-			_snprintf( command, sizeof( command ), "model %s\n", filename );
-			command[sizeof( command ) - 1] = 0;
 			if ( stricmp( currentModel, filename ) == 0 )
 				selection = count;
 
@@ -352,7 +354,8 @@ void COptionsSubMultiplayer::InitLogoList( CLabeledCommandComboBox* combo )
 	const char* filename = vgui2::filesystem()->FindFirst( directory, &findHandle, NULL );
 	while ( filename )
 	{
-		if ( stricmp( filename, "remapped.bmp" ) != 0 && filename[0] && filename[0] != '.' )
+		// The logo name goes into cl_logofile unquoted, so names that could add commands are not listed
+		if ( stricmp( filename, "remapped.bmp" ) != 0 && filename[0] && filename[0] != '.' && UTIL_IsUnquotedCommandArgument( filename ) )
 		{
 			// Strip the .bmp
 			char name[512];
@@ -361,7 +364,8 @@ void COptionsSubMultiplayer::InitLogoList( CLabeledCommandComboBox* combo )
 			if ( length > 3 )
 				name[length - 4] = 0;
 
-			if ( names.Find( name ) == names.InvalidIndex() )
+			// OnApplyChanges reads the name back into m_LogoName, so names it would cut are not listed
+			if ( strlen( name ) < sizeof( m_LogoName ) && names.Find( name ) == names.InvalidIndex() )
 				names.Insert( name );
 		}
 		filename = vgui2::filesystem()->FindNext( findHandle );
@@ -823,8 +827,8 @@ void COptionsSubMultiplayer::OnApplyChanges()
 	{
 		// save the logo name
 		char cmd[512];
-		_snprintf( cmd, sizeof( cmd ) - 1, "cl_logofile %s\n", m_LogoName );
-		engine->pfnClientCmd( cmd );
+		if ( UTIL_IsUnquotedCommandArgument( m_LogoName ) && UTIL_FormatString( cmd, sizeof( cmd ), "cl_logofile %s\n", m_LogoName ) )
+			engine->pfnClientCmd( cmd );
 
 		char infile[256];
 		sprintf( infile, "logos/%s.tga", m_LogoName );

@@ -21,6 +21,10 @@ def function(source, signature):
     return source[start:source.index('\n}', start) + 2]
 
 
+def constants(source):
+    return ''.join(re.findall(r'^static const char \w+\[\] = .*;\n', source, re.M))
+
+
 STUBS = r'''
 #include <cassert>
 #include <clocale>
@@ -116,6 +120,20 @@ static void UnquotedArgumentsCannotAddCommands() {
  puts("PASS: text with a command separator, quote or line break is not an unquoted argument");
 }
 
+static void QuotedArgumentsCannotCloseTheirQuotes() {
+ for (const char* text : {"", "+attack;wait", "My Server", "\xE4\xB8\xAD"})
+  assert(UTIL_IsQuotedCommandArgument(text));
+ for (const char* text : {"\"", "a\"b", "a\nb", "a\rb"})
+  assert(!UTIL_IsQuotedCommandArgument(text));
+ char text[] = "\"a;b\"\r\nc\"";
+ UTIL_StripQuotedCommandBreaks(text);
+ assert(std::string("a;bc") == text);
+ char empty[] = "\"\n";
+ UTIL_StripQuotedCommandBreaks(empty);
+ assert(0 == empty[0]);
+ puts("PASS: quoted arguments keep ';' and lose their quotes and line breaks when stripped");
+}
+
 static void ModInfoSkipsPairsThatDoNotFit() {
  const std::string longToken(256, 'a'), longestToken(255, 'b');
  const std::string text = "game Half-Life\n" + longToken + " dropped\nstartmap " + longToken + "\n"
@@ -135,13 +153,14 @@ static void ModInfoSkipsPairsThatDoNotFit() {
 def main():
     utils = (ROOT / 'GameUI/StringUtils.cpp').read_text(encoding='utf-8')
     modinfo = (ROOT / 'GameUI/ModInfo.cpp').read_text(encoding='utf-8')
-    code = STUBS
+    code = STUBS + constants(utils)
     code += function(utils, 'bool UTIL_FormatString(') + function(utils, 'bool UTIL_CopyString(') + function(utils, 'void UTIL_UppercaseASCII(')
-    code += function(utils, 'bool UTIL_IsUnquotedCommandArgument(')
+    code += function(utils, 'bool UTIL_IsUnquotedCommandArgument(') + function(utils, 'bool UTIL_IsQuotedCommandArgument(')
+    code += function(utils, 'void UTIL_StripQuotedCommandBreaks(')
     code += function(modinfo, 'void CModInfo::LoadGameInfoFromBuffer(')
     code += TESTS
     code += ('\nint main() { FormatFitsUpToTheTerminator(); FormatReportsTruncation(); CopyFitsUpToTheTerminator(); '
-             'CopyRejectsTextThatDoesNotFit(); UppercaseKeepsUTF8Bytes(); UnquotedArgumentsCannotAddCommands(); ModInfoSkipsPairsThatDoNotFit(); }\n')
+             'CopyRejectsTextThatDoesNotFit(); UppercaseKeepsUTF8Bytes(); UnquotedArgumentsCannotAddCommands(); QuotedArgumentsCannotCloseTheirQuotes(); ModInfoSkipsPairsThatDoNotFit(); }\n')
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-string-utils-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code, encoding='utf-8')

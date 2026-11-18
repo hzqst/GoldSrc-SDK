@@ -1,5 +1,6 @@
 #include "ScriptObject.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 
 #include "Label.h"
 #include "vgui_controls/Controls.h"
@@ -11,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 #ifndef _WIN32
 #include <strings.h>
@@ -144,7 +146,7 @@ void CScriptObject::SetCurValue( const char* value )
 ===================
 UTIL_StripInvalidCharacters
 
-Removes any possible formatting codes and double quote characters from the input string
+Removes any possible formatting codes, double quote characters and line breaks from the input string
 ===================
 */
 void UTIL_StripInvalidCharacters( char* text )
@@ -154,11 +156,12 @@ void UTIL_StripInvalidCharacters( char* text )
 	output[0] = 0;
 	for ( const char* src = text; *src; src++ )
 	{
-		if ( *src != '"' && *src != '%' )
+		if ( *src != '%' )
 			*dest++ = *src;
 	}
 	*dest = 0;
 	strcpy( text, output );
+	UTIL_StripQuotedCommandBreaks( text );
 }
 
 void FixupString( char* text )
@@ -327,12 +330,17 @@ void CScriptObject::WriteToConfig()
 		break;
 	}
 
-	char command[256];
-	if ( bSetInfo )
-		sprintf( command, "setinfo %s \"%s\"\n", cvarname, valueText );
-	else
-		sprintf( command, "%s \"%s\"\n", cvarname, valueText );
-	engine->pfnClientCmd( command );
+	// The cvar name goes into the command unquoted; the value goes inside quotes
+	// and UTIL_StripInvalidCharacters already removed its quotes and line breaks
+	if ( !UTIL_IsUnquotedCommandArgument( cvarname ) )
+		return;
+
+	std::string command = bSetInfo ? "setinfo " : "";
+	command += cvarname;
+	command += " \"";
+	command += valueText;
+	command += "\"\n";
+	engine->pfnClientCmd( (char*)command.c_str() );
 }
 
 objtype_t CScriptObject::GetType( char* typeName )

@@ -11,6 +11,11 @@
 #include <stdio.h>
 #include <string.h>
 
+// Cbuf ends a command at ';' outside quotes and at a line break anywhere;
+// a quote cannot be escaped, so it ends the quoted argument
+static const char UNQUOTED_ARGUMENT_BREAKS[] = ";\"\n\r";
+static const char QUOTED_ARGUMENT_BREAKS[] = "\"\n\r";
+
 bool UTIL_FormatString( char* buffer, size_t bufferSize, const char* format, ... )
 {
 	if ( !bufferSize )
@@ -42,7 +47,23 @@ bool UTIL_CopyString( char* buffer, size_t bufferSize, const char* source )
 
 bool UTIL_IsUnquotedCommandArgument( const char* text )
 {
-	return !strpbrk( text, ";\"\n\r" );
+	return !strpbrk( text, UNQUOTED_ARGUMENT_BREAKS );
+}
+
+bool UTIL_IsQuotedCommandArgument( const char* text )
+{
+	return !strpbrk( text, QUOTED_ARGUMENT_BREAKS );
+}
+
+void UTIL_StripQuotedCommandBreaks( char* text )
+{
+	char* dest = text;
+	for ( const char* src = text; *src; src++ )
+	{
+		if ( !strchr( QUOTED_ARGUMENT_BREAKS, *src ) )
+			*dest++ = *src;
+	}
+	*dest = 0;
 }
 
 void UTIL_UppercaseASCII( char* text )

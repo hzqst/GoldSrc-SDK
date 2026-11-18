@@ -102,4 +102,3 @@ IEngineVGui*	EngineVGUI();
 void	Career_Printf( const char* format, ... );
 int		__MsgFunc_CZCareer( const char* name, int size, void* buffer );
 
-char*	UTIL_va( char* format, ... );

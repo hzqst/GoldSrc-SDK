@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <limits.h>
 
 #ifdef _WIN32
@@ -43,27 +44,7 @@
 #include "buildslave_assert.h"
 #define ASSERT_FILE BUILDSLAVE_PATH( L"GameUI\\OptionsSubKeyboard.cpp" )
 
-#define VARARGS_BUFFER_COUNT	4
-#define VARARGS_BUFFER_SIZE	1024
-
 static char token[1024];
-
-char* UTIL_va( char* format, ... )
-{
-	static char string[VARARGS_BUFFER_COUNT][VARARGS_BUFFER_SIZE];
-	static int curstring;
-	curstring = ( curstring + 1 ) % VARARGS_BUFFER_COUNT;
-
-	va_list args;
-	va_start( args, format );
-#ifdef _WIN32
-	_vsnprintf( string[curstring], sizeof( string[curstring] ), format, args );
-#else
-	vsnprintf( string[curstring], sizeof( string[curstring] ), format, args );
-#endif
-	va_end( args );
-	return string[curstring];
-}
 
 SDL_Keycode GetSDLKeycodeFromEngineKey( int key )
 {
@@ -379,7 +360,12 @@ void COptionsSubKeyboard::SaveCurrentBindings()
 //-----------------------------------------------------------------------------
 void COptionsSubKeyboard::BindKey( const char* key, const char* binding )
 {
-	engine->pfnClientCmd( UTIL_va( (char*)"bind \"%s\" \"%s\"\n", key, binding ) );
+	// Both go inside quotes; ';' stays allowed so that bindings such as "+attack;wait" still work
+	if ( !UTIL_IsQuotedCommandArgument( key ) || !UTIL_IsQuotedCommandArgument( binding ) )
+		return;
+
+	std::string command = std::string( "bind \"" ) + key + "\" \"" + binding + "\"\n";
+	engine->pfnClientCmd( (char*)command.c_str() );
 }
 
 //-----------------------------------------------------------------------------
@@ -387,7 +373,11 @@ void COptionsSubKeyboard::BindKey( const char* key, const char* binding )
 //-----------------------------------------------------------------------------
 void COptionsSubKeyboard::UnbindKey( const char* key )
 {
-	engine->pfnClientCmd( UTIL_va( (char*)"unbind \"%s\"\n", key ) );
+	if ( !UTIL_IsQuotedCommandArgument( key ) )
+		return;
+
+	std::string command = std::string( "unbind \"" ) + key + "\"\n";
+	engine->pfnClientCmd( (char*)command.c_str() );
 }
 
 void COptionsSubKeyboard::ApplyAllBindings()
