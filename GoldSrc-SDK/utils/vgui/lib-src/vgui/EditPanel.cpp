@@ -197,6 +197,48 @@ EditPanel::EditPanel( int x, int y, int wide, int tall ) : Panel( x, y, wide, ta
 	getLine( 0 );
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+EditPanel::EditPanel( const EditPanel& other ) : Panel( other ), _lineDarDar( 4 )
+{
+	copyFrom( other );
+}
+
+EditPanel::~EditPanel()
+{
+	for ( int i = 0; i < _lineDarDar.getCount(); ++i )
+		delete _lineDarDar[i];
+}
+
+EditPanel& EditPanel::operator=( const EditPanel& other )
+{
+	if ( this != &other )
+	{
+		Panel::operator=( other );
+		copyFrom( other );
+	}
+
+	return *this;
+}
+
+void EditPanel::copyFrom( const EditPanel& other )
+{
+	for ( int i = 0; i < _lineDarDar.getCount(); ++i )
+		delete _lineDarDar[i];
+	_lineDarDar.removeAll();
+
+	// Dar has no const accessors; the source lines are only read.
+	Dar<Dar<char>*>& lines = const_cast<Dar<Dar<char>*>&>( other._lineDarDar );
+	for ( int i = 0; i < lines.getCount(); ++i )
+		_lineDarDar.addElement( new Dar<char>( *lines[i] ) );
+
+	_cursor[0] = other._cursor[0];
+	_cursor[1] = other._cursor[1];
+	_cursorBlink = other._cursorBlink;
+	_cursorNextBlinkTime = other._cursorNextBlinkTime;
+	_font = other._font;
+}
+#endif
+
 void EditPanel::doCursorUp()
 {
 	int x = _cursor[0];

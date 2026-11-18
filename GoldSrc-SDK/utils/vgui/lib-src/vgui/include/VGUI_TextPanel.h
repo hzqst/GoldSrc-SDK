@@ -12,6 +12,11 @@ class VGUIAPI TextPanel : public Panel
 {
 public:
 	TextPanel( const char* text, int x, int y, int wide, int tall );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A TextPanel owns its TextImage; a copy gets its own.
+	TextPanel( const TextPanel& other );
+	virtual ~TextPanel() override;
+#endif
 
 	virtual void setText( const char* text );
 	virtual void setFont( Scheme::SchemeFont schemeFont );
@@ -29,7 +34,11 @@ private:
 	TextImage*	_textImage;
 
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	TextPanel& operator=( const TextPanel& other );
+#else
 	TextPanel& operator=( const TextPanel& ) = default;
+#endif
 };
 
 }

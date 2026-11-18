@@ -14,6 +14,11 @@ class VGUIAPI EditPanel : public Panel
 {
 public:
 	EditPanel( int x, int y, int wide, int tall );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// An EditPanel owns its lines; a copy gets its own.
+	EditPanel( const EditPanel& other );
+	virtual ~EditPanel() override;
+#endif
 
 	virtual void doCursorUp();
 	virtual void doCursorDown();
@@ -57,8 +62,17 @@ protected:
 	int				_cursorNextBlinkTime;
 	Font*			_font;
 
+#if VGUI_ABI_COMPAT_MODE != 1
+private:
+	void copyFrom( const EditPanel& other );
+#endif
+
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	EditPanel& operator=( const EditPanel& other );
+#else
 	EditPanel& operator=( const EditPanel& ) = default;
+#endif
 };
 
 }

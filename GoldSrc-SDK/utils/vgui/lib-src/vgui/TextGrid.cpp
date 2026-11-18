@@ -52,6 +52,50 @@ TextGrid::TextGrid( int gridWide, int gridTall, int x, int y, int wide, int tall
 	setGridSize( gridWide, gridTall );
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+TextGrid::TextGrid( const TextGrid& other ) : Panel( other )
+{
+	_grid = NULL;
+	copyFrom( other );
+}
+
+TextGrid::~TextGrid()
+{
+	delete[] _grid;
+}
+
+TextGrid& TextGrid::operator=( const TextGrid& other )
+{
+	if ( this != &other )
+	{
+		Panel::operator=( other );
+		copyFrom( other );
+	}
+
+	return *this;
+}
+
+void TextGrid::copyFrom( const TextGrid& other )
+{
+	char* grid = NULL;
+	if ( other._grid != NULL )
+	{
+		const int size = GRID_CELL_BYTES * other._gridSize[0] * other._gridSize[1];
+		grid = new char[size];
+		memcpy( grid, other._grid, size );
+	}
+
+	delete[] _grid;
+	_grid = grid;
+	_gridSize[0] = other._gridSize[0];
+	_gridSize[1] = other._gridSize[1];
+	_xy[0] = other._xy[0];
+	_xy[1] = other._xy[1];
+	_bgColor = other._bgColor;
+	_fgColor = other._fgColor;
+}
+#endif
+
 void TextGrid::setGridSize( int wide, int tall )
 {
 	if ( wide > 0 && tall > 0 )

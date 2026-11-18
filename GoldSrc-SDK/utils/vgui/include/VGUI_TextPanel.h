@@ -26,6 +26,12 @@ private:
 	TextImage* _textImage;
 public:
 	TextPanel(const char* text,int x,int y,int wide,int tall);
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A TextPanel owns its TextImage; a copy gets its own.
+	TextPanel(const TextPanel& other);
+	virtual ~TextPanel();
+	TextPanel& operator=(const TextPanel& other);
+#endif
 public:
 	virtual void setText(const char* text);
 	virtual void setFont(vgui::Scheme::SchemeFont schemeFont);

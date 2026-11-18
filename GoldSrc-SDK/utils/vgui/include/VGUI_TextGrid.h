@@ -19,6 +19,12 @@ class VGUIAPI TextGrid : public Panel
 {
 public:	
 	TextGrid(int gridWide,int gridTall,int x,int y,int wide,int tall);
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A TextGrid owns its grid; a copy gets its own.
+	TextGrid(const TextGrid& other);
+	virtual ~TextGrid();
+	TextGrid& operator=(const TextGrid& other);
+#endif
 public:
 	virtual void setGridSize(int wide,int tall);
 	virtual void newLine();

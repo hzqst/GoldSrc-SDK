@@ -51,19 +51,56 @@ RadioButton::RadioButton( const char* text, int x, int y, int wide, int tall )
 	: ToggleButton( text, x, y, wide, tall )
 {
 	setTextAlignment( Label::a_east );
+#if VGUI_ABI_COMPAT_MODE != 1
+	_ownImage = new FooRadioImage( this );
+	setImage( _ownImage );
+#else
 	setImage( new FooRadioImage( this ) );
+#endif
 }
 
 RadioButton::RadioButton( const char* text, int x, int y ) : ToggleButton( text, x, y )
 {
 	setTextAlignment( Label::a_east );
+#if VGUI_ABI_COMPAT_MODE != 1
+	_ownImage = new FooRadioImage( this );
+	setImage( _ownImage );
+#else
 	setImage( new FooRadioImage( this ) );
+#endif
 
 	int wide;
 	int tall;
 	getContentSize( wide, tall );
 	setSize( wide, tall );
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+RadioButton::RadioButton( const RadioButton& other ) : ToggleButton( other )
+{
+	_ownImage = new FooRadioImage( this );
+	setImage( _ownImage );
+}
+
+// Label does not own its image; free the one the constructor made, whether or
+// not it is still shown.
+RadioButton::~RadioButton()
+{
+	delete _ownImage;
+}
+
+// Keeps this button's own image.
+RadioButton& RadioButton::operator=( const RadioButton& other )
+{
+	if ( this != &other )
+	{
+		ToggleButton::operator=( other );
+		setImage( _ownImage );
+	}
+
+	return *this;
+}
+#endif
 
 void RadioButton::paintBackground()
 {

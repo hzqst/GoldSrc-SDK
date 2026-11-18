@@ -9,6 +9,29 @@ TextPanel::TextPanel( const char* text, int x, int y, int wide, int tall ) : Pan
 	_textImage->setSize( wide, tall );
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+TextPanel::TextPanel( const TextPanel& other ) : Panel( other )
+{
+	_textImage = new TextImage( *other._textImage );
+}
+
+TextPanel::~TextPanel()
+{
+	delete _textImage;
+}
+
+TextPanel& TextPanel::operator=( const TextPanel& other )
+{
+	if ( this != &other )
+	{
+		Panel::operator=( other );
+		*_textImage = *other._textImage;
+	}
+
+	return *this;
+}
+#endif
+
 TextImage* TextPanel::getTextImage()
 {
 	return _textImage;
