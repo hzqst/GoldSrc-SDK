@@ -29,15 +29,18 @@ public:
 protected:
 	virtual void paintBackground() override;
 
-private:
+protected:
 	int		_xy[2];
-	Color	_bgColor;
-	Color	_fgColor;
+	// As in the original vgui.dll, which never uses them: TextGrid draws with
+	// Panel's colors.
+	int		_bgColor[3];
+	int		_fgColor[3];
 
 	char*	_grid;
 	int		_gridSize[2];
 
 #if VGUI_ABI_COMPAT_MODE != 1
+private:
 	void copyFrom( const TextGrid& other );
 #endif
 

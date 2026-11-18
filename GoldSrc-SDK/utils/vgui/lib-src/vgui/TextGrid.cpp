@@ -46,6 +46,8 @@ TextGrid::TextGrid( int gridWide, int gridTall, int x, int y, int wide, int tall
 	_grid = NULL;
 	_gridSize[0] = 0;
 	_gridSize[1] = 0;
+	memset( _bgColor, 0, sizeof( _bgColor ) );
+	memset( _fgColor, 0, sizeof( _fgColor ) );
 	setXY( 0, 0 );
 	setBgColor( 255, 255, 255, 0 );
 	setFgColor( 0, 0, 0, 0 );
@@ -91,8 +93,8 @@ void TextGrid::copyFrom( const TextGrid& other )
 	_gridSize[1] = other._gridSize[1];
 	_xy[0] = other._xy[0];
 	_xy[1] = other._xy[1];
-	_bgColor = other._bgColor;
-	_fgColor = other._fgColor;
+	memcpy( _bgColor, other._bgColor, sizeof( _bgColor ) );
+	memcpy( _fgColor, other._fgColor, sizeof( _fgColor ) );
 }
 #endif
 
