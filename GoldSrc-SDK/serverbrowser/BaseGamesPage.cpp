@@ -1025,14 +1025,14 @@ void CBaseGamesPage::UpdateFilterSettings()
 
 	for ( char *pch = m_szGameFilter; *pch; pch++ )
 	{
-		*pch = tolower( *pch );
+		*pch = tolower( (unsigned char)*pch );
 	}
 
 	// map
-	m_pMapFilter->GetText( m_szMapFilter, sizeof( m_szMapFilter ) - 1 );
+	m_pMapFilter->GetText( m_szMapFilter, sizeof( m_szMapFilter ) );
 	for ( char *pch = m_szMapFilter; *pch; pch++ )
 	{
-		*pch = tolower( *pch );
+		*pch = tolower( (unsigned char)*pch );
 	}
 
 	// ping

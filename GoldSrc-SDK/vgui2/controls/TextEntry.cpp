@@ -1021,6 +1021,11 @@ void TextEntry::OnCursorMoved( int, int )
 //-----------------------------------------------------------------------------
 void TextEntry::GetText( char* buf, int bufLen )
 {
+	if ( !buf || bufLen <= 0 )
+	{
+		return;
+	}
+
 	if ( !m_TextStream.Count() )
 	{
 		buf[0] = 0;

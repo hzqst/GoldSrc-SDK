@@ -513,26 +513,115 @@ int CLocalizedStringTable::ConvertANSIToUnicode( const char* ansi, wchar_t* unic
 #endif
 }
 
-int CLocalizedStringTable::ConvertUnicodeToANSI( const wchar_t* unicode, char* ansi, int ansiBufferSize )
+//-----------------------------------------------------------------------------
+// Purpose: reads one code point from a wide string, returns the wide units used
+//			unpaired surrogates and out of range values become U+FFFD
+//-----------------------------------------------------------------------------
+static int DecodeWideCodePoint( const wchar_t* unicode, unsigned int* codePoint )
 {
-#ifdef _WIN32
-	int result;
+	unsigned int first = (unsigned int)unicode[0];
 
-	result = WideCharToMultiByte( CP_UTF8, 0, unicode, -1, ansi, ansiBufferSize, NULL, NULL );
-	ansi[ansiBufferSize - 1] = 0;
-	return result;
-#else
-	int result;
-
-	if ( !ansi || !unicode )
+	if ( sizeof( wchar_t ) == 2 && first >= 0xD800 && first <= 0xDBFF )
 	{
-		return -1;
+		unsigned int second = (unsigned int)unicode[1];
+
+		if ( second >= 0xDC00 && second <= 0xDFFF )
+		{
+			*codePoint = 0x10000 + ( ( first - 0xD800 ) << 10 ) + ( second - 0xDC00 );
+			return 2;
+		}
 	}
 
-	result = (int)wcstombs( ansi, unicode, ansiBufferSize );
-	ansi[ansiBufferSize - 1] = 0;
-	return result;
-#endif
+	if ( ( first >= 0xD800 && first <= 0xDFFF ) || first > 0x10FFFF )
+	{
+		first = 0xFFFD;
+	}
+
+	*codePoint = first;
+	return 1;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: writes one code point as UTF-8, returns the number of bytes
+//-----------------------------------------------------------------------------
+static int EncodeUTF8CodePoint( unsigned int codePoint, char* output )
+{
+	if ( codePoint < 0x80 )
+	{
+		output[0] = (char)codePoint;
+		return 1;
+	}
+
+	if ( codePoint < 0x800 )
+	{
+		output[0] = (char)( 0xC0 | ( codePoint >> 6 ) );
+		output[1] = (char)( 0x80 | ( codePoint & 0x3F ) );
+		return 2;
+	}
+
+	if ( codePoint < 0x10000 )
+	{
+		output[0] = (char)( 0xE0 | ( codePoint >> 12 ) );
+		output[1] = (char)( 0x80 | ( ( codePoint >> 6 ) & 0x3F ) );
+		output[2] = (char)( 0x80 | ( codePoint & 0x3F ) );
+		return 3;
+	}
+
+	output[0] = (char)( 0xF0 | ( codePoint >> 18 ) );
+	output[1] = (char)( 0x80 | ( ( codePoint >> 12 ) & 0x3F ) );
+	output[2] = (char)( 0x80 | ( ( codePoint >> 6 ) & 0x3F ) );
+	output[3] = (char)( 0x80 | ( codePoint & 0x3F ) );
+	return 4;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: converts to UTF-8
+//			returns the bytes written including the terminator
+//			a null buffer or zero size only returns the bytes required
+//			if the text does not fit, it is cut at a whole character and 0 is returned
+//-----------------------------------------------------------------------------
+int CLocalizedStringTable::ConvertUnicodeToANSI( const wchar_t* unicode, char* ansi, int ansiBufferSize )
+{
+	bool query = !ansi || ansiBufferSize <= 0;
+	int written = 0;
+
+	if ( !unicode )
+	{
+		if ( !query )
+		{
+			ansi[0] = 0;
+		}
+		return 0;
+	}
+
+	while ( *unicode )
+	{
+		unsigned int codePoint;
+		char encoded[4];
+		int units = DecodeWideCodePoint( unicode, &codePoint );
+		int bytes = EncodeUTF8CodePoint( codePoint, encoded );
+
+		if ( !query )
+		{
+			if ( written + bytes > ansiBufferSize - 1 )
+			{
+				ansi[written] = 0;
+				return 0;
+			}
+
+			memcpy( ansi + written, encoded, bytes );
+		}
+
+		written += bytes;
+		unicode += units;
+	}
+
+	if ( !query )
+	{
+		ansi[written] = 0;
+	}
+
+	return written + 1;
 }
 
 static const char* s_LanguageToken = "%language%";

@@ -244,9 +244,14 @@ void CDialogAddServer::TestServers()
 		wstr[( sizeof( wstr ) / sizeof( wstr[0] ) ) - 1] = 0;
 	}
 
-	char str[512];
-	vgui2::localize()->ConvertUnicodeToANSI( wstr, str, sizeof( str ) );
-	m_pTabPanel->AddPage( m_pDiscoveredGames, str );
+	// each wide character needs at most 4 UTF-8 bytes
+	CUtlVector<char> str;
+	str.AddMultipleToTail( (int)wcslen( wstr ) * 4 + 1 );
+	if ( vgui2::localize()->ConvertUnicodeToANSI( wstr, str.Base(), str.Count() ) <= 0 )
+	{
+		str[0] = 0;
+	}
+	m_pTabPanel->AddPage( m_pDiscoveredGames, str.Base() );
 	m_pTabPanel->InvalidateLayout( false, false );
 
 	// Start the servers refreshing
