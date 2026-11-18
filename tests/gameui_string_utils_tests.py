@@ -23,7 +23,9 @@ def function(source, signature):
 
 STUBS = r'''
 #include <cassert>
+#include <clocale>
 #include <cstdarg>
+#include <ctype.h>
 #include <cstdio>
 #include <cstring>
 #include <map>
@@ -89,6 +91,23 @@ static void CopyRejectsTextThatDoesNotFit() {
  puts("PASS: copies that do not fit fail and leave the buffer unchanged");
 }
 
+static void UppercaseKeepsUTF8Bytes() {
+#if defined(_WIN32)
+ // vgui2 switches LC_CTYPE to the user locale; code page 1252 uppercases 0xE0-0xFE
+ bool latin1 = setlocale(LC_CTYPE, ".1252") != nullptr;
+ if (latin1) assert(0xC4 == toupper(0xE4));
+#endif
+ // "bot" followed by U+4E2D (E4 B8 AD) and U+00FF (C3 BF)
+ char text[] = "bot_\xE4\xB8\xAD\xC3\xBFz";
+ UTIL_UppercaseASCII(text);
+ assert(std::string("BOT_\xE4\xB8\xAD\xC3\xBFZ") == text);
+ char empty[] = "";
+ UTIL_UppercaseASCII(empty);
+ assert(0 == empty[0]);
+ setlocale(LC_CTYPE, "C");
+ puts("PASS: uppercasing only changes a-z and keeps UTF-8 bytes");
+}
+
 static void ModInfoSkipsPairsThatDoNotFit() {
  const std::string longToken(256, 'a'), longestToken(255, 'b');
  const std::string text = "game Half-Life\n" + longToken + " dropped\nstartmap " + longToken + "\n"
@@ -109,11 +128,11 @@ def main():
     utils = (ROOT / 'GameUI/StringUtils.cpp').read_text(encoding='utf-8')
     modinfo = (ROOT / 'GameUI/ModInfo.cpp').read_text(encoding='utf-8')
     code = STUBS
-    code += function(utils, 'bool UTIL_FormatString(') + function(utils, 'bool UTIL_CopyString(')
+    code += function(utils, 'bool UTIL_FormatString(') + function(utils, 'bool UTIL_CopyString(') + function(utils, 'void UTIL_UppercaseASCII(')
     code += function(modinfo, 'void CModInfo::LoadGameInfoFromBuffer(')
     code += TESTS
     code += ('\nint main() { FormatFitsUpToTheTerminator(); FormatReportsTruncation(); CopyFitsUpToTheTerminator(); '
-             'CopyRejectsTextThatDoesNotFit(); ModInfoSkipsPairsThatDoNotFit(); }\n')
+             'CopyRejectsTextThatDoesNotFit(); UppercaseKeepsUTF8Bytes(); ModInfoSkipsPairsThatDoNotFit(); }\n')
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-string-utils-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code, encoding='utf-8')

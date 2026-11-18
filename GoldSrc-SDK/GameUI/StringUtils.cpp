@@ -39,3 +39,12 @@ bool UTIL_CopyString( char* buffer, size_t bufferSize, const char* source )
 	memcpy( buffer, source, length + 1 );
 	return true;
 }
+
+void UTIL_UppercaseASCII( char* text )
+{
+	for ( ; *text; text++ )
+	{
+		if ( *text >= 'a' && *text <= 'z' )
+			*text += 'A' - 'a';
+	}
+}

@@ -13,3 +13,5 @@
 bool	UTIL_FormatString( char* buffer, size_t bufferSize, const char* format, ... );
 // Copies source into buffer; returns false and leaves buffer unchanged when it does not fit
 bool	UTIL_CopyString( char* buffer, size_t bufferSize, const char* source );
+// Uppercases only a-z so the user locale cannot rewrite UTF-8 bytes
+void	UTIL_UppercaseASCII( char* text );

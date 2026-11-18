@@ -1,6 +1,7 @@
 #include "CareerBotFrame.h"
 #include "CareerGame.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 #include "Taskbar.h"
 #include "BitmapButton.h"
 #include "DottedLabel.h"
@@ -27,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #include <vector>
 
 #ifdef _WIN32
@@ -359,9 +361,9 @@ void CBotButton::SetCharacter( const CCareerCharacter* character )
 	{
 		SetImgTexture( IMAGE_CHAR, "" );
 		SetImgTexture( IMAGE_WEAPON, "" );
-		char buf[128];
-		snprintf( buf, sizeof( buf ), "%s %s", m_action, m_char->GetName() );
-		SetCommand( buf );
+		// Bot profile names have no length limit; Hire / Fire need the whole name
+		std::string command = std::string( m_action ) + " " + m_char->GetName();
+		SetCommand( command.c_str() );
 		SetText( "" );
 		const BotProfile* profile = m_char->GetProfile();
 		for ( int i = 0; i < TEXT_MAX; i++ )
@@ -384,10 +386,9 @@ void CBotButton::SetCharacter( const CCareerCharacter* character )
 		m_pText[TEXT_POINTS]->SetFont( scheme->GetFontEx( scheme->GetResourceString( "BotPointsFont" ),
 				IsProportional(), IsHDProportional() ) );
 
-		strcpy( buf, m_char->GetName() );
-		for ( size_t i = 0; i < strlen( buf ); i++ )
-			buf[i] = (char)toupper( buf[i] );
-		m_pText[TEXT_NAME]->SetText( buf );
+		std::string upperName = m_char->GetName();
+		UTIL_UppercaseASCII( &upperName[0] );
+		m_pText[TEXT_NAME]->SetText( upperName.c_str() );
 		m_pText[TEXT_NAME]->SetColor( GetSchemeColor( "BotName", GetSchemeColor( "ControlBG", scheme ), scheme ) );
 		m_pText[TEXT_NAME]->SetFont( scheme->GetFontEx( scheme->GetResourceString( "BotNameFont" ),
 				IsProportional(), IsHDProportional() ) );
@@ -409,6 +410,7 @@ void CBotButton::SetCharacter( const CCareerCharacter* character )
 		const char* weapon = GetPreferredWeapon( profile );
 		if ( weapon )
 		{
+			char buf[128];
 			snprintf( buf, sizeof( buf ), "gfx/career/weapons/640_%s", weapon );
 			SetImgTexture( IMAGE_WEAPON, buf );
 		}
