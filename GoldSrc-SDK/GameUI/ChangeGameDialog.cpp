@@ -9,6 +9,7 @@
 
 #include "GameUI_Interface.h"
 #include "ModInfo.h"
+#include "StringUtils.h"
 
 #include "ListPanel.h"
 #include "wrect.h"
@@ -140,7 +141,8 @@ void CChangeGameDialog::OnCommand( const char* command )
 			{
 				// change the game dir and restart the engine
 				char szCmd[256];
-				sprintf( szCmd, "_setgamedir %s\n", kv->GetString( "ModDir", "" ) );
+				if ( !UTIL_FormatString( szCmd, sizeof( szCmd ), "_setgamedir %s\n", kv->GetString( "ModDir", "" ) ) )
+					return;
 				engine->pfnClientCmd( szCmd );
 
 				// Force restart of entire engine
