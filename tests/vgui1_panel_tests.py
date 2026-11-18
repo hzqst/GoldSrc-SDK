@@ -89,6 +89,13 @@ App* App::getInstance() { return _instance; }
 Cursor::Cursor( DefaultCursor dc ) { privateInit( NULL, 0, 0 ); _dc = dc; }
 Font::Font( const char*, void*, int, int, int, float, int, bool, bool, bool, bool ) {}
 void Font::init( const char*, void*, int, int, int, float, int, bool, bool, bool, bool ) {}
+#if VGUI_ABI_COMPAT_MODE != 1
+Font::Font( const Font& other ) { *this = other; }
+Font::~Font() {}
+Font& Font::operator=( const Font& other ) { _name = other._name; _plat = other._plat; _id = other._id; return *this; }
+void* Font::operator new( size_t size ) { return ::operator new( size ); }
+void Font::operator delete( void* memory ) { ::operator delete( memory ); }
+#endif
 void Font::getCharRGBA( int, int, int, int, int, uchar* ) {}
 void Font::getCharABCwide( int, int& a, int& b, int& c ) { a = b = c = 0; }
 int Font::getTall() { return 0; }

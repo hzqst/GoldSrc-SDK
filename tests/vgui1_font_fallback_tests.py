@@ -162,6 +162,9 @@ public:
  int _id;
 };
 
+// Font::init references the platforms it uses; FreePlatforms frees them.
+static void AddReference(BaseFontPlat*) {}
+
 static void FreePlatforms()
 {
  for (int index = 0; index < DAR.getCount(); ++index) delete DAR[index];

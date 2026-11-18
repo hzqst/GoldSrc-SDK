@@ -110,6 +110,9 @@ if(TARGET vgui)
 			??2BuildGroup@vgui@@SAPAXI@Z
 			??3BuildGroup@vgui@@SAXPAX@Z
 			??1OwnScheme@App@vgui@@QAE@XZ
+			??1Font@vgui@@UAE@XZ
+			??2Font@vgui@@SAPAXI@Z
+			??3Font@vgui@@SAXPAX@Z
 			??1TextImage@vgui@@UAE@XZ
 			??1Panel@vgui@@UAE@XZ
 			??2Panel@vgui@@SAPAXI@Z

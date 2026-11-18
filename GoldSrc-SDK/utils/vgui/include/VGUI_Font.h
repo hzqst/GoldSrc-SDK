@@ -24,6 +24,19 @@ class VGUIAPI Font
   // it will create the font using the specified parameters.
   // pUniqueName should be set if pFileData and fileDataLen are set so it can determine if a font is already loaded.
   Font(const char* name,void *pFileData,int fileDataLen, int tall,int wide,float rotation,int weight,bool italic,bool underline,bool strikeout,bool symbol);
+#if VGUI_ABI_COMPAT_MODE != 1
+  // A Font owns its name and holds a reference to its platform font, which
+  // Fonts with the same parameters share. A copy has its own name and holds
+  // another reference.
+  Font(const Font& other);
+  virtual ~Font();
+  Font& operator=(const Font& other);
+
+  // Fonts are freed through the virtual destructor from any module, so
+  // they are always allocated and freed on vgui.dll's heap.
+  static void* operator new(size_t size);
+  static void operator delete(void* memory);
+#endif
  private:
   virtual void init(const char* name,void *pFileData,int fileDataLen, int tall,int wide,float rotation,int weight,bool italic,bool underline,bool strikeout,bool symbol);
  public:
