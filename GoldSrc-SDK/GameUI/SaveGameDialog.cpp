@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 
 #include "buildslave_assert.h"
 #define ASSERT_FILE BUILDSLAVE_PATH( L"GameUI\\SaveGameDialog.cpp" )
@@ -38,6 +39,7 @@
 #define MAX_SAVE_TOKENS	0x02000000
 #define SAVEGAME_MAP_NAME_SIZE	32
 #define SAVEGAME_COMMENT_SIZE	80
+#define SAVEGAME_HEADER_SIZE	( 5 * sizeof( int ) )	// tag, version, size, tokenCount, tokenSize
 
 #ifdef _WIN32
 #define SAVEGAME_PATH_MAX	_MAX_PATH
@@ -57,15 +59,27 @@ int TimeStampSortFunc( vgui2::ListPanel*, const vgui2::ListPanelItem& first,
 	return t1 < t2 ? 1 : -1;
 }
 
+// reads exactly size bytes, a short read fails
+static bool SaveReadExact( FileHandle_t file, void* output, int size )
+{
+	return vgui2::filesystem()->Read( output, size, file ) == size;
+}
+
+// returns NULL for an index outside the table or an empty hash slot
+static const char* SaveTokenAt( const std::vector<const char*>& tokenList, int token )
+{
+	if ( token < 0 || token >= (int)tokenList.size() )
+		return NULL;
+	return tokenList[token];
+}
+
 int SaveReadNameAndComment( FileHandle_t file, char* name, char* comment )
 {
 	int tag;
-	vgui2::filesystem()->Read( &tag, sizeof( tag ), file );
-	if ( tag != SAVEGAME_HEADER )
+	if ( !SaveReadExact( file, &tag, sizeof( tag ) ) || tag != SAVEGAME_HEADER )
 		return 0;
 
-	vgui2::filesystem()->Read( &tag, sizeof( tag ), file );
-	if ( tag != SAVEGAME_VERSION )				// Enforce version for now
+	if ( !SaveReadExact( file, &tag, sizeof( tag ) ) || tag != SAVEGAME_VERSION )	// Enforce version for now
 		return 0;
 
 	name[0] = 0;
@@ -74,106 +88,79 @@ int SaveReadNameAndComment( FileHandle_t file, char* name, char* comment )
 	int size;
 	int tokenCount;
 	int tokenSize;
-	vgui2::filesystem()->Read( &size, sizeof( size ), file );
-	vgui2::filesystem()->Read( &tokenCount, sizeof( tokenCount ), file ); // These two ints are the token list
-	vgui2::filesystem()->Read( &tokenSize, sizeof( tokenSize ), file );
-	size += tokenSize;
+	if ( !SaveReadExact( file, &size, sizeof( size ) )
+		|| !SaveReadExact( file, &tokenCount, sizeof( tokenCount ) )	// These two ints are the token list
+		|| !SaveReadExact( file, &tokenSize, sizeof( tokenSize ) ) )
+		return 0;
 
 	// Sanity Check.
 	if ( tokenCount < 0 || tokenCount > MAX_SAVE_TOKENS )
 		return 0;
 	if ( tokenSize < 0 || tokenSize > MAX_SAVE_TOKENS )
 		return 0;
+	// the data must be in the file, so a damaged size can not allocate more than it
+	unsigned int fileSize = vgui2::filesystem()->Size( file );
+	if ( size < 0 || fileSize < SAVEGAME_HEADER_SIZE
+		|| (unsigned int)size + tokenSize > fileSize - SAVEGAME_HEADER_SIZE )
+		return 0;
+	size += tokenSize;
 
-	char* saveData = new char[size];
-	vgui2::filesystem()->Read( saveData, size, file );
+	std::vector<char> saveData( size );
+	if ( size > 0 && !SaveReadExact( file, &saveData[0], size ) )
+		return 0;
 
-	char* end = saveData + size;
+	const char* data = saveData.data();
+	const char* end = data + size;
 
-	char* data = saveData;
-	char** tokenList;
-	// Allocate a table for the strings, and parse the table
+	// Parse the table of the strings, empty slots of the token hash table stay NULL
+	std::vector<const char*> tokenList( tokenCount, (const char*)NULL );
 	if ( tokenSize > 0 )
 	{
-		tokenList = new char*[tokenCount];
-		// Make sure the token strings pointed to by the pToken hashtable.
-		for ( int i = 0; i < tokenCount; i++ )
+		for ( int i = 0; i < tokenCount && data < end; i++ )
 		{
-			tokenList[i] = ( data < end && *data ) ? data : NULL;
-			while ( data < end && *data )
-				data++;
-			if ( data < end )
-				data++;
+			if ( *data )
+			{
+				const char* terminator = (const char*)memchr( data, 0, end - data );
+				if ( !terminator )
+					return 0;
+				tokenList[i] = data;
+				data = terminator;
+			}
+			data++;
 		}
 	}
-	else
-		tokenList = NULL;
 
 	if ( end - data < 2 * (int)sizeof( short ) + 1 )
-	{
-		delete[] saveData;
 		return 0;
-	}
-	int fieldSize = *(short*)data;
+	int fieldSize = *(const short*)data;
 	data += sizeof( short );
-	int gameHeaderToken = *(short*)data;
-	if ( tokenList && ( gameHeaderToken < 0 || gameHeaderToken >= tokenCount ) )
-	{
-		delete[] saveData;
+	const char* fieldName = SaveTokenAt( tokenList, *(const short*)data );
+	if ( !fieldName || stricmp( fieldName, "GameHeader" ) )
 		return 0;
-	}
-#ifdef _MSC_VER
-#pragma warning( suppress: 6011 )
-#endif
-	const char* fieldName = tokenList[gameHeaderToken];
-#ifdef _MSC_VER
-#pragma warning( suppress: 6387 )
-#endif
-	if ( stricmp( fieldName, "GameHeader" ) )
-	{
-		delete[] saveData;
-		return 0;
-	}
 
 	data += sizeof( short );
 	int fieldCount = *data;
+	if ( fieldSize < 0 || fieldSize > end - data )
+		return 0;
 	data += fieldSize;
 
 	// Each field is a short (size), short (index of name), binary string of "size" bytes (data)
 	for ( int i = 0; i < fieldCount; i++ )
 	{
 		if ( end - data < 2 * (int)sizeof( short ) )
-		{
-			delete[] tokenList;
-			delete[] saveData;
 			return 0;
-		}
-		fieldSize = *(short*)data;
+		fieldSize = *(const short*)data;
 		data += sizeof( short );
-		int fieldToken = *(short*)data;
+		fieldName = SaveTokenAt( tokenList, *(const short*)data );
 		data += sizeof( short );
-		if ( tokenList && ( fieldToken < 0 || fieldToken >= tokenCount ) )
-		{
-			delete[] tokenList;
-			delete[] saveData;
+		if ( !fieldName || fieldSize < 0 || fieldSize > end - data )
 			return 0;
-		}
-		fieldName = tokenList[fieldToken];
-		if ( fieldSize < 0 || fieldSize > end - data )
-		{
-			delete[] tokenList;
-			delete[] saveData;
-			return 0;
-		}
 		if ( !stricmp( fieldName, "comment" ) )
 			strncpy( comment, data, fieldSize > SAVEGAME_COMMENT_SIZE ? SAVEGAME_COMMENT_SIZE : fieldSize );
 		else if ( !stricmp( fieldName, "mapName" ) )
 			strncpy( name, data, fieldSize > SAVEGAME_MAP_NAME_SIZE ? SAVEGAME_MAP_NAME_SIZE : fieldSize );
 		data += fieldSize;
 	}
-
-	delete[] tokenList;
-	delete[] saveData;
 
 	name[SAVEGAME_MAP_NAME_SIZE - 1] = 0;
 	comment[SAVEGAME_COMMENT_SIZE - 1] = 0;
