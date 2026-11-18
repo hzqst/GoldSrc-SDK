@@ -42,8 +42,12 @@ CListBox::~CListBox()
 {
 	Term();
 
-	// Panels do not own IntChangeSignals; the scrollbar is not used again.
+#if VGUI_ABI_COMPAT_MODE == 1
+	// The original ScrollBar2 does not own its IntChangeSignals; the scrollbar
+	// is not used again.
 	delete m_Signal;
+#endif
+	// Otherwise the scrollbar owns it and deletes it with the panel tree.
 	m_Signal = NULL;
 }
 

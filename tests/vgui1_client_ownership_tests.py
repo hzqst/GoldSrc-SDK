@@ -11,16 +11,17 @@ twice: with VGUI_ABI_COMPAT_MODE=1 and with VGUI_ABI_COMPAT_MODE=0, where a
 Panel owns its border, its input signals and its children. They are compiled
 against the internal vgui headers rather than the public ones the client DLLs
 use, which checks their logic but not the client ABI. vgui_LoadTGA is stubbed.
-The compatible build frees no panel, so its runs check memory errors only, and
-the ActionSignals and IntChangeSignals ScrollBar2 allocates are known leaks.
+The compatible build frees no panel, so its runs check memory errors only.
 
 - forwarder: CInputSignalForwarder passes every event to its target.
 - check-button-toggles: clicking a CCheckButton2's label toggles it through the
   forwarder its label owns.
+- scroll-bar2-fires-once: a ScrollBar2 calls each of its IntChangeSignals once
+  per change, and with VGUI_ABI_COMPAT_MODE=0 deletes them.
 With VGUI_ABI_COMPAT_MODE=0 only:
 - list-box-tree: deleting a panel that holds a CListBox frees the list box,
-  its scrollbar (with the default slider it replaced), its items and their
-  entries.
+  its scrollbar (with the default slider it replaced) and the signal it gave
+  the scrollbar, its items and their entries.
 - check-button-tree: deleting a panel that holds a CCheckButton2 frees its
   member label and image panel and their forwarders once.
 """
@@ -41,9 +42,6 @@ CONTROLS = ['vgui_listbox.cpp', 'vgui_scrollbar2.cpp', 'vgui_slider2.cpp', 'vgui
 VGUI_SOURCES = ['ImagePanel.cpp']
 # The client controls use the public headers' null and the MSVC _vsnprintf.
 CONTROL_DEFINES = ['null=0', '_vsnprintf=vsnprintf']
-# ActionSignals and IntChangeSignals are not owned by any panel, so the ones
-# ScrollBar2 allocates for itself still leak; they are left for a later change.
-KNOWN_LEAKS = ['vgui::ScrollBar2::setButton', 'vgui::ScrollBar2::setSlider', 'vgui::ScrollBar2::addIntChangeSignal']
 
 TESTS = r'''
 #include <cstdio>
@@ -53,12 +51,14 @@ TESTS = r'''
 
 #include "VGUI_App.h"
 #include "VGUI_BitmapTGA.h"
+#include "VGUI_IntChangeSignal.h"
 #include "VGUI_Label.h"
 #include "VGUI_Panel.h"
 #include "vgui_checkbutton2.h"
 #include "vgui_defaultinputsignal.h"
 #include "vgui_grid.h"
 #include "vgui_listbox.h"
+#include "vgui_scrollbar2.h"
 
 using namespace vgui;
 
@@ -76,6 +76,22 @@ public:
 
 static const int ITEM_COUNT = 3;
 static const int ENTRY_COUNT = 2;
+static const int SCROLL_MAX = 100;
+static const int SCROLL_VALUE = 50;
+
+static int deletedSignals;
+
+class CountingIntChange : public IntChangeSignal
+{
+public:
+ CountingIntChange() : calls( 0 ) {}
+#if VGUI_ABI_COMPAT_MODE != 1
+ virtual ~CountingIntChange() override { ++deletedSignals; }
+#endif
+ virtual void intChanged( int, Panel* ) override { ++calls; }
+
+ int calls;
+};
 
 class CountingSignal : public CDefaultInputSignal
 {
@@ -130,6 +146,21 @@ static void Run(const std::string& test)
   delete button;
 #endif
  }
+ else if (test == "scroll-bar2-fires-once")
+ {
+  ScrollBar2* scrollBar = new ScrollBar2( 0, 0, 20, 100, true );
+  scrollBar->setRange( 0, SCROLL_MAX );
+  CountingIntChange* first = new CountingIntChange();
+  CountingIntChange* second = new CountingIntChange();
+  scrollBar->addIntChangeSignal( first );
+  scrollBar->addIntChangeSignal( second );
+  scrollBar->setValue( SCROLL_VALUE );
+  Check(1 == first->calls && 1 == second->calls, "each signal called once");
+#if VGUI_ABI_COMPAT_MODE != 1
+  delete scrollBar;
+  Check(2 == deletedSignals, "scroll bar deleted its signals");
+#endif
+ }
 #if VGUI_ABI_COMPAT_MODE != 1
  else if (test == "list-box-tree")
  {
@@ -177,7 +208,7 @@ int main(int argc, char** argv)
 }
 '''
 
-SCENARIOS = ['forwarder', 'check-button-toggles']
+SCENARIOS = ['forwarder', 'check-button-toggles', 'scroll-bar2-fires-once']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + ['list-box-tree', 'check-button-tree']}
 
@@ -187,8 +218,6 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-client-') as folder:
         test_file = Path(folder) / 'test.cpp'
         test_file.write_text(TESTS)
-        suppressions = Path(folder) / 'lsan.supp'
-        suppressions.write_text(''.join(f'leak:{name}\n' for name in KNOWN_LEAKS))
         sources = ([test_file] + vgui1_sources(folder) + [VGUI / name for name in VGUI_SOURCES]
                    + [GAME_SHARED / name for name in CONTROLS])
         for mode, scenarios in MODES.items():
@@ -202,8 +231,6 @@ def main():
             env = dict(os.environ)
             if mode == '1':
                 env['ASAN_OPTIONS'] = 'detect_leaks=0:' + env.get('ASAN_OPTIONS', '')
-            else:
-                env['LSAN_OPTIONS'] = f'suppressions={suppressions}:' + env.get('LSAN_OPTIONS', '')
             for scenario in scenarios:
                 result = subprocess.run([str(executable), scenario], env=env)
                 if result.returncode:

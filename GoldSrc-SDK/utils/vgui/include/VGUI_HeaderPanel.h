@@ -26,7 +26,8 @@ private:
 
 	Dar<Panel*>        _sliderPanelDar;
 	Dar<Panel*>        _sectionPanelDar;
-	Dar<ChangeSignal*> _changeSignalDar;
+	// Owns its signals with VGUI_ABI_COMPAT_MODE != 1.
+	OwningDar<ChangeSignal*> _changeSignalDar;
 	Panel*             _sectionLayer;
 	int                _sliderWide;
 	bool               _dragging;

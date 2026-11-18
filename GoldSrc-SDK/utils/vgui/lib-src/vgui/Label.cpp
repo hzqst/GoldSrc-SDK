@@ -1,4 +1,5 @@
 #include "VGUI_Label.h"
+#include "ActionSignalForwarder.h"
 #include "VGUI_ActionSignal.h"
 #include "VGUI_Color.h"
 #include "VGUI_FlowLayout.h"
@@ -44,7 +45,7 @@ FooDumb::FooDumb( Label* label ) : Panel( 0, 0, 200, 20 )
 
 	_textEntry = new TextEntry( "", 0, 0, 80, 20 );
 	_textEntry->setParent( this );
-	_textEntry->addActionSignal( this );
+	_textEntry->addActionSignal( new ActionSignalForwarder( this ) );
 }
 
 void FooDumb::actionPerformed( Panel* )

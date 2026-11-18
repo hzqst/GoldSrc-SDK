@@ -139,7 +139,8 @@ Button::Button( const char* text, int x, int y ) : Label( text, x, y )
 }
 
 #if VGUI_ABI_COMPAT_MODE != 1
-Button::Button( const Button& other ) : Label( other ), _actionSignalDar( other._actionSignalDar )
+// A copy has no action signals: each button owns its own.
+Button::Button( const Button& other ) : Label( other )
 {
 	_text = NULL;
 	_armed = other._armed;
@@ -162,7 +163,7 @@ Button::~Button()
 	}
 }
 
-// Keeps this button's own controller and ButtonGroup.
+// Keeps this button's own controller, ButtonGroup and action signals.
 Button& Button::operator=( const Button& other )
 {
 	if ( this != &other )
@@ -171,7 +172,6 @@ Button& Button::operator=( const Button& other )
 		_armed = other._armed;
 		_selected = other._selected;
 		_buttonBorderEnabled = other._buttonBorderEnabled;
-		_actionSignalDar = other._actionSignalDar;
 		_mouseClickMask = other._mouseClickMask;
 	}
 

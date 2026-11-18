@@ -175,10 +175,11 @@ int ScrollBar2::getValue()
 	return _slider->getValue();
 }
 
+// setSlider already relays the slider's changes to fireIntChangeSignal; one
+// more relay per signal would call every signal once per relay.
 void ScrollBar2::addIntChangeSignal(IntChangeSignal* s)
 {
 	_intChangeSignalDar.putElement(s);
-	_slider->addIntChangeSignal(new FooDefaultScrollBarIntChangeSignal(this));
 }
 
 void ScrollBar2::setRange(int min,int max)
