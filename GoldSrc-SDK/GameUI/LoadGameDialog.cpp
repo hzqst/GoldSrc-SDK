@@ -93,7 +93,8 @@ void CLoadGameDialog::OnCommand( const char* command )
 
 	// Load the game, return to top and switch to engine
 	char commandBuffer[256];
-	sprintf( commandBuffer, "load %s\n", shortName );
+	if ( !FormatSaveGameCommand( commandBuffer, sizeof( commandBuffer ), "load", shortName ) )
+		return;
 	engine->pfnClientCmd( commandBuffer );
 	OnClose();
 }
