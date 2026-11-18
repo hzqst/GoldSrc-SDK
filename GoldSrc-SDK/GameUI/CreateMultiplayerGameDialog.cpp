@@ -11,6 +11,7 @@
 #include "CreateMultiplayerGameBotPage.h"
 #include "GameUI_Interface.h"
 #include "ModInfo.h"
+#include "StringUtils.h"
 #include "Taskbar.h"
 
 #include "RadioButton.h"
@@ -224,13 +225,16 @@ void CCreateMultiplayerGameDialog::OnOK()
 			if ( !stricmp( key->GetName(), "map" ) )
 				continue;
 
-			static char buffer[128];
+			char buffer[128];
+			bool formatted;
 			if ( key->GetDataType() == KeyValues::TYPE_STRING )
-				sprintf( buffer, "%s \"%s\"\n", key->GetName(), key->GetString() );
+				formatted = UTIL_FormatString( buffer, sizeof( buffer ), "%s \"%s\"\n", key->GetName(), key->GetString() );
 			else
-				sprintf( buffer, "%s %d\n", key->GetName(), key->GetInt() );
+				formatted = UTIL_FormatString( buffer, sizeof( buffer ), "%s %d\n", key->GetName(), key->GetInt() );
 
-			engine->pfnClientCmd( buffer );
+			// Never send a truncated cvar command
+			if ( formatted )
+				engine->pfnClientCmd( buffer );
 		}
 
 		engine->pfnClientCmd( "mp_autoteambalance 0\n" );
