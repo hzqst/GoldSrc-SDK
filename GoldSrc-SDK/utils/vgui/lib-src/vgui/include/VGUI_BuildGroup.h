@@ -16,6 +16,17 @@ class VGUIAPI BuildGroup
 {
 public:
 	BuildGroup();
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A BuildGroup owns its cursors and panel names; a copy gets its own.
+	// Its panels and change signals are not owned.
+	BuildGroup( const BuildGroup& other );
+	virtual ~BuildGroup();
+
+	// BuildGroups are freed through the virtual destructor from any module,
+	// so they are always allocated and freed on vgui.dll's heap.
+	static void* operator new( size_t size );
+	static void operator delete( void* memory );
+#endif
 
 	virtual void setEnabled( bool state );
 	virtual bool isEnabled();
@@ -63,7 +74,11 @@ private:
 	friend class Panel;
 
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	BuildGroup& operator=( const BuildGroup& other );
+#else
 	BuildGroup& operator=( const BuildGroup& ) = default;
+#endif
 };
 
 }

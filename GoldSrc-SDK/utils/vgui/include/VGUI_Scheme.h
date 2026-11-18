@@ -62,6 +62,20 @@ public:
 	};
 public:
 	Scheme();
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A Scheme owns the cursors its constructor makes and keeps them, also
+	// after setCursor replaces them, as panels and surfaces may still use
+	// them. A copy gets its own. Fonts and the cursors given to setCursor
+	// are not owned.
+	Scheme(const Scheme& other);
+	virtual ~Scheme();
+	Scheme& operator=(const Scheme& other);
+
+	// Schemes are freed through the virtual destructor from any module, so
+	// they are always allocated and freed on vgui.dll's heap.
+	static void* operator new(size_t size);
+	static void operator delete(void* memory);
+#endif
 public:
 	virtual void    setColor(SchemeColor sc,int r,int g,int b,int a);
 	virtual void    getColor(SchemeColor sc,int& r,int& g,int& b,int& a);
@@ -73,6 +87,11 @@ protected:
 	int     _color[sc_last][4];
     Font*   _font[sf_last];
 	Cursor* _cursor[scu_last];
+#if VGUI_ABI_COMPAT_MODE != 1
+private:
+	Cursor* _ownCursor[scu_last];
+protected:
+#endif
     friend class Panel;
     friend class Canvas;
 };

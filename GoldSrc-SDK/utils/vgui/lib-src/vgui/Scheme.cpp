@@ -3,6 +3,8 @@
 #include "VGUI_Cursor.h"
 #include "VGUI_Font.h"
 
+#include <string.h>
+
 namespace vgui
 {
 
@@ -74,6 +76,62 @@ Scheme::Scheme()
 	setCursor( scu_sizeall, new Cursor( Cursor::DefaultCursor::dc_sizeall ) );
 	setCursor( scu_no, new Cursor( Cursor::DefaultCursor::dc_no ) );
 	setCursor( scu_hand, new Cursor( Cursor::DefaultCursor::dc_hand ) );
+
+#if VGUI_ABI_COMPAT_MODE != 1
+	_cursor[scu_user] = NULL;
+	memcpy( _ownCursor, _cursor, sizeof( _ownCursor ) );
+#endif
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+Scheme::Scheme( const Scheme& other )
+{
+	memset( _ownCursor, 0, sizeof( _ownCursor ) );
+	*this = other;
+}
+
+Scheme::~Scheme()
+{
+	for ( int i = 0; i < scu_last; ++i )
+		delete _ownCursor[i];
+}
+
+// Where the other scheme shows its own cursor, this one shows its own cursor
+// of the same kind. No cursor is freed, as panels may still use it.
+Scheme& Scheme::operator=( const Scheme& other )
+{
+	if ( this == &other )
+		return *this;
+
+	memcpy( _color, other._color, sizeof( _color ) );
+	memcpy( _font, other._font, sizeof( _font ) );
+
+	for ( int i = 0; i < scu_last; ++i )
+	{
+		if ( other._cursor[i] != NULL && other._cursor[i] == other._ownCursor[i] )
+		{
+			if ( _ownCursor[i] == NULL )
+				_ownCursor[i] = new Cursor( other._ownCursor[i]->getDefaultCursor() );
+			_cursor[i] = _ownCursor[i];
+		}
+		else
+		{
+			_cursor[i] = other._cursor[i];
+		}
+	}
+
+	return *this;
+}
+
+void* Scheme::operator new( size_t size )
+{
+	return ::operator new( size );
+}
+
+void Scheme::operator delete( void* memory )
+{
+	::operator delete( memory );
+}
+#endif
 
 }

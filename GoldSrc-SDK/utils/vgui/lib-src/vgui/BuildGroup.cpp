@@ -31,6 +31,67 @@ BuildGroup::BuildGroup()
 	_dragging = false;
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+BuildGroup::BuildGroup( const BuildGroup& other )
+{
+	_cursor_sizenwse = new Cursor( Cursor::DefaultCursor::dc_sizenwse );
+	_cursor_sizenesw = new Cursor( Cursor::DefaultCursor::dc_sizenesw );
+	_cursor_sizewe = new Cursor( Cursor::DefaultCursor::dc_sizewe );
+	_cursor_sizens = new Cursor( Cursor::DefaultCursor::dc_sizens );
+	_cursor_sizeall = new Cursor( Cursor::DefaultCursor::dc_sizeall );
+	*this = other;
+}
+
+BuildGroup::~BuildGroup()
+{
+	delete _cursor_sizenwse;
+	delete _cursor_sizenesw;
+	delete _cursor_sizewe;
+	delete _cursor_sizens;
+	delete _cursor_sizeall;
+
+	for ( int i = 0; i < _panelNameDar.getCount(); ++i )
+		delete[] _panelNameDar[i];
+}
+
+// Keeps this group's own cursors.
+BuildGroup& BuildGroup::operator=( const BuildGroup& other )
+{
+	if ( this == &other )
+		return *this;
+
+	_enabled = other._enabled;
+	_snapX = other._snapX;
+	_snapY = other._snapY;
+	_dragging = other._dragging;
+	_dragMouseCode = other._dragMouseCode;
+	memcpy( _dragStartPanelPos, other._dragStartPanelPos, sizeof( _dragStartPanelPos ) );
+	memcpy( _dragStartCursorPos, other._dragStartCursorPos, sizeof( _dragStartCursorPos ) );
+	_currentPanel = other._currentPanel;
+	_currentPanelChangeSignalDar = other._currentPanelChangeSignalDar;
+	_panelDar = other._panelDar;
+
+	Dar<char*> names( other._panelNameDar );
+	for ( int i = 0; i < _panelNameDar.getCount(); ++i )
+		delete[] _panelNameDar[i];
+	_panelNameDar.removeAll();
+	for ( int i = 0; i < names.getCount(); ++i )
+		_panelNameDar.addElement( vgui_strdup( names[i] ) );
+
+	return *this;
+}
+
+void* BuildGroup::operator new( size_t size )
+{
+	return ::operator new( size );
+}
+
+void BuildGroup::operator delete( void* memory )
+{
+	::operator delete( memory );
+}
+#endif
+
 void BuildGroup::setEnabled( bool state )
 {
 	if ( _enabled != state )
