@@ -15,11 +15,31 @@ static Dar<BaseFontPlat*> staticFontPlatDar( 4 );
 // staticFontPlatIdDar[i] is the font id assigned when staticFontPlatDar[i] was created.
 static Dar<int> staticFontPlatIdDar( 4 );
 
+#if VGUI_ABI_COMPAT_MODE != 1
+// The platform list and every Font using a platform each hold a reference, and
+// the last one frees it: Font_Reset frees the platforms no Font uses, and the
+// others live on until their last Font is deleted.
+static void AddReference( BaseFontPlat* plat )
+{
+	++plat->references;
+}
+
+static void Release( BaseFontPlat* plat )
+{
+	if ( --plat->references == 0 )
+		delete plat;
+}
+#endif
+
 CUtlRBTree<FontPlat::font_name_entry, int> FontPlat::m_FriendlyNameCache;
 bool FontPlat::ms_bSetFriendlyNameCacheLessFunc = false;
 
 void Font_Reset()
 {
+#if VGUI_ABI_COMPAT_MODE != 1
+	for ( int i = 0; i < staticFontPlatDar.getCount(); ++i )
+		Release( staticFontPlatDar[i] );
+#endif
 	staticFontPlatDar.removeAll();
 	staticFontPlatIdDar.removeAll();
 }
@@ -271,6 +291,9 @@ void Font::init( const char* name, void* pFileData, int fileDataLen, int tall, i
 				// Fonts sharing a platform share its id, so the engine caches its glyphs once.
 				_plat = staticFontPlatDar[i];
 				_id = staticFontPlatIdDar[i];
+#if VGUI_ABI_COMPAT_MODE != 1
+				AddReference( _plat );
+#endif
 				return;
 			}
 		}
@@ -281,7 +304,57 @@ void Font::init( const char* name, void* pFileData, int fileDataLen, int tall, i
 	++staticFontId;
 	staticFontPlatDar.addElement( _plat );
 	staticFontPlatIdDar.addElement( _id );
+#if VGUI_ABI_COMPAT_MODE != 1
+	AddReference( _plat );
+	AddReference( _plat );
+#endif
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+Font::Font( const Font& other )
+{
+	_name = NULL;
+	_plat = NULL;
+	_id = -1;
+	*this = other;
+}
+
+Font::~Font()
+{
+	free( _name );
+	if ( _plat != NULL )
+		Release( _plat );
+}
+
+Font& Font::operator=( const Font& other )
+{
+	if ( this == &other )
+		return *this;
+
+	char* name = other._name != NULL ? strdup( other._name ) : NULL;
+	if ( other._plat != NULL )
+		AddReference( other._plat );
+	if ( _plat != NULL )
+		Release( _plat );
+	free( _name );
+
+	_name = name;
+	_plat = other._plat;
+	_id = other._id;
+
+	return *this;
+}
+
+void* Font::operator new( size_t size )
+{
+	return ::operator new( size );
+}
+
+void Font::operator delete( void* memory )
+{
+	::operator delete( memory );
+}
+#endif
 
 void Font::getCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, uchar* rgba )
 {

@@ -1,12 +1,12 @@
-"""Compile the production VGUI1 Win32 Surface GDI resource handling (#241, #242, #295, #298).
+"""Compile the production VGUI1 Win32 Surface GDI resource handling (#214, #241, #242, #295, #298).
 
 Run: python tests/vgui1_surface_gdi_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
-Surface::createPlat, ~Surface, recreateContext and the texture methods are
-extracted as-is and run against stub Win32 / GDI calls that track live windows,
+Surface::createPlat, ~Surface, recreateContext, popMakeCurrent and the texture
+methods are extracted as-is and run against stub Win32 / GDI calls that track live windows,
 objects and DC selections. As in GDI,
 deleting an object that is still selected into a DC fails and leaves it alive,
 and a bitmap cannot be selected into a second DC.
@@ -33,6 +33,8 @@ and a bitmap cannot be selected into a second DC.
 - destroy-before-context: destroying a surface without a context releases
   everything it created.
 - destroy-fullscreen: destroying a fullscreen surface restores the display mode.
+- pop-deselects-font: popMakeCurrent selects the stock font into the draw DC,
+  so the font a paint selected can be deleted.
 - create-window-fails, create-region-fails, create-dc-fails, get-dc-fails: a
   refused window, clip region, memory DC or window DC makes createPlat return
   false without taking the screen DC, and destroying the surface releases what
@@ -94,6 +96,7 @@ static const UINT CS_DBLCLKS = 8;
 static const int GWLP_USERDATA = -21;
 static const int TRANSPARENT = 1;
 static const UINT TA_UPDATECP = 1;
+static const int SYSTEM_FONT = 13;
 
 struct BITMAPINFOHEADER
 {
@@ -110,7 +113,7 @@ struct BITMAPINFO
  BITMAPINFOHEADER bmiHeader;
 };
 
-enum GdiKind { GDI_DC, GDI_BITMAP, GDI_REGION, GDI_WINDOW };
+enum GdiKind { GDI_DC, GDI_BITMAP, GDI_REGION, GDI_WINDOW, GDI_FONT };
 
 struct GdiObject
 {
@@ -122,6 +125,7 @@ struct GdiObject
  std::size_t selected;
  uchar* bits;
  LONG_PTR userData;
+ std::size_t font;
 };
 
 static std::vector<GdiObject> objects;
@@ -141,7 +145,7 @@ static int destroyedAttachedWindows = 0;
 
 static std::size_t Add(GdiKind kind, bool stock, int wide, int tall)
 {
- GdiObject object = { kind, true, stock, wide, tall, 0, NULL, 0 };
+ GdiObject object = { kind, true, stock, wide, tall, 0, NULL, 0, 0 };
  objects.push_back(object);
  return objects.size();
 }
@@ -203,9 +207,33 @@ static HBITMAP CreateDIBSection(HDC dc, const BITMAPINFO* info, UINT usage, void
  return reinterpret_cast<HBITMAP>(handle);
 }
 
+static bool IsFontSelected(std::size_t font)
+{
+ for (const GdiObject& object : objects)
+ {
+  if (object.alive && object.kind == GDI_DC && object.font == font) return true;
+ }
+ return false;
+}
+
+static HGDIOBJ GetStockObject(int kind)
+{
+ Check(kind == SYSTEM_FONT, "stock system font");
+ static std::size_t systemFont = 0;
+ if (systemFont == 0) systemFont = Add(GDI_FONT, true, 0, 0);
+ return reinterpret_cast<HGDIOBJ>(systemFont);
+}
+
 static HGDIOBJ SelectObject(HDC dc, HGDIOBJ object)
 {
  GdiObject* target = Find(dc, GDI_DC);
+ if (Find(object, GDI_FONT) != NULL)
+ {
+  if (target == NULL) return NULL;
+  const std::size_t previous = target->font;
+  target->font = reinterpret_cast<std::size_t>(object);
+  return reinterpret_cast<HGDIOBJ>(previous);
+ }
  GdiObject* bitmap = Find(object, GDI_BITMAP);
  if (failSelect || target == NULL || bitmap == NULL) return NULL;
  // a bitmap can be selected into only one DC at a time
@@ -217,6 +245,16 @@ static HGDIOBJ SelectObject(HDC dc, HGDIOBJ object)
 
 static BOOL DeleteObject(HGDIOBJ handle)
 {
+ if (GdiObject* font = Find(handle, GDI_FONT))
+ {
+  if (IsFontSelected(reinterpret_cast<std::size_t>(handle)))
+  {
+   ++failedDeletes;
+   return 0;
+  }
+  if (!font->stock) font->alive = false;
+  return 1;
+ }
  GdiObject* object = Find(handle, GDI_BITMAP);
  if (GdiObject* region = Find(handle, GDI_REGION))
  {
@@ -383,6 +421,7 @@ public:
  SurfacePlat* plat() { return _plat; }
  bool created() const { return _created; }
  bool recreateContext();
+ void popMakeCurrent(Panel* panel);
  void drawSetTexture(int id);
  void drawSetTextureRGBA(int id, const char* rgba, int wide, int tall);
  void drawTexturedRect(int x0, int y0, int x1, int y1);
@@ -461,7 +500,20 @@ static void Run(const std::string& test)
 {
  Surface surface;
  SurfacePlat* plat = surface.plat();
- if (test == "resize-cycle")
+ if (test == "pop-deselects-font")
+ {
+  Surface surface;
+  HDC drawDC = surface.plat()->drawDC;
+  HGDIOBJ font = reinterpret_cast<HGDIOBJ>(Add(GDI_FONT, false, 0, 0));
+  SelectObject(drawDC, font);
+  Check(!DeleteObject(font), "a selected font cannot be deleted");
+  failedDeletes = 0;
+  surface.popMakeCurrent(NULL);
+  Check(Find(drawDC, GDI_DC)->font == reinterpret_cast<std::size_t>(GetStockObject(SYSTEM_FONT)),
+        "the stock font is selected");
+  Check(DeleteObject(font) && LiveCount(GDI_FONT) == 0, "the font is deleted after the paint");
+ }
+ else if (test == "resize-cycle")
  {
   for (int i = 0; i < RESIZE_CYCLES; ++i)
   {
@@ -672,13 +724,14 @@ def main():
             'Surface::~Surface()',
             'bool Surface::createPlat()',
             'bool Surface::recreateContext()',
+            'void Surface::popMakeCurrent(',
             'void Surface::drawSetTexture(',
             'void Surface::drawSetTextureRGBA(',
             'void Surface::drawTexturedRect(')),
         TESTS,
     ])
 
-    scenarios = ['resize-cycle', 'texture-dc-reused', 'within-spare', 'minimum-size',
+    scenarios = ['pop-deselects-font', 'resize-cycle', 'texture-dc-reused', 'within-spare', 'minimum-size',
                  'bitmap-create-fails', 'select-fails', 'texture-dc-fails', 'texture-reupload',
                  'texture-selection-restored', 'texture-two-surfaces', 'texture-create-fails',
                  'destroy-releases', 'destroy-before-context', 'destroy-fullscreen',

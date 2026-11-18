@@ -1,4 +1,4 @@
-"""Compile the VGUI1 Win32 Font and check what it owns (#213, #214).
+"""Compile the VGUI1 Win32 and Linux Font and check what it owns (#213, #214).
 
 Run: python tests/vgui1_font_ownership_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -9,8 +9,10 @@ win32/Font.cpp, Font.cpp, common/fileimage.cpp and common/vfontdata.cpp are
 compiled as-is against a stub windows.h whose GDI calls track live fonts, DCs
 and bitmaps and what each DC has selected. As in GDI, deleting an object that
 is still selected into a live DC fails and leaves it alive; deleting a DC
-deselects what it holds. vgui_strdup is extracted from vgui.cpp. They are built
-twice: with VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll layout, no
+deselects what it holds. linux/Font.cpp is built the same way with the
+engine's utlrbtree.h, on hosts other than Windows; its runs check memory errors,
+leaks and the shared platforms, not GDI objects. vgui_strdup and vgui_strcpy
+are extracted from vgui.cpp. Each platform is built twice: with VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll layout, no
 destructors) and with VGUI_ABI_COMPAT_MODE=0, where a Font owns its name and
 holds a reference to its platform font, as does the platform list until
 Font_Reset. The compatible build frees nothing, so its runs check memory
@@ -40,7 +42,7 @@ import tempfile
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cxx_toolchain import compile_program
-from vgui1_panel_tests import VGUI, function
+from vgui1_panel_tests import ROOT, VGUI, function
 
 # Only the declarations win32/Font.cpp and vgui_win32.h use.
 WINDOWS_H = r'''
@@ -142,7 +144,9 @@ TESTS = r'''
 #include <stdexcept>
 #include <vector>
 
+#if TEST_WIN32
 #include <windows.h>
+#endif
 
 // The test reads the name, platform and id a Font keeps.
 #define private public
@@ -159,6 +163,10 @@ static void Check(bool condition, const char* message)
   throw std::runtime_error(message);
 }
 
+static const int FONT_TALL = 14;
+static const int FONT_WEIGHT = 400;
+
+#if TEST_WIN32
 enum GdiKind { GDI_FONT, GDI_DC, GDI_BITMAP };
 
 struct GdiObject
@@ -208,9 +216,6 @@ static int LiveCount(GdiKind kind)
  }
  return count;
 }
-
-static const int FONT_TALL = 14;
-static const int FONT_WEIGHT = 400;
 
 HFONT CreateFontA(int, int, int, int, int, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, DWORD, const char*)
 {
@@ -288,6 +293,29 @@ BOOL DeleteObject(HGDIOBJ handle)
 int Font::getWide() { return 0; }
 #endif
 
+// Each system platform font holds one GDI font, one DC and one DIB.
+static void CheckLivePlatforms(int count, const char* message)
+{
+ Check(count == LiveCount(GDI_FONT) && count == LiveCount(GDI_DC) && count == LiveCount(GDI_BITMAP), message);
+}
+
+// Reads the platform font, so ASan reports one that was freed too early.
+static void CheckTall(Font* font, const char* message)
+{
+ Check(FONT_TALL == font->getTall(), message);
+}
+#else
+// The Linux platform fonts hold no system resources; ASan reports leaks.
+static void CheckLivePlatforms(int, const char*) {}
+static int failedDeletes;
+
+// Reads the platform font, so ASan reports one that was freed too early.
+static void CheckTall(Font* font, const char* message)
+{
+ Check(font->getTall() >= 0, message);
+}
+#endif
+
 static const int TGA_HEADER_BYTES = 18;
 static const int TGA_RLE_IMAGE = 10;
 static const int TGA_PIXEL_BITS = 32;
@@ -322,12 +350,6 @@ static Font* MakeFont(const char* name, int tall = FONT_TALL)
  return new Font(name, NULL, 0, tall, 0, 0.0f, FONT_WEIGHT, false, false, false, false);
 }
 
-// Each system platform font holds one GDI font, one DC and one DIB.
-static void CheckLivePlatforms(int count, const char* message)
-{
- Check(count == LiveCount(GDI_FONT) && count == LiveCount(GDI_DC) && count == LiveCount(GDI_BITMAP), message);
-}
-
 static void Run(const char* scenario)
 {
  if (!std::strcmp(scenario, "reuse"))
@@ -338,7 +360,7 @@ static void Run(const char* scenario)
   Check(first->_plat == second->_plat && first->_id == second->_id, "same parameters share a platform");
   Check(first->_plat != other->_plat && first->_id != other->_id, "other parameters get another platform");
   Check(first->_name != second->_name && 0 == std::strcmp("Arial", second->_name), "each font has its name");
-  Check(FONT_TALL == first->getTall(), "platform metrics");
+  CheckTall(first, "platform metrics");
   CheckLivePlatforms(2, "two platforms");
 #if VGUI_ABI_COMPAT_MODE != 1
   delete first;
@@ -361,7 +383,7 @@ static void Run(const char* scenario)
   Font* before = MakeFont("Arial");
   Font_Reset();
   CheckLivePlatforms(1, "a used platform survives Font_Reset");
-  Check(FONT_TALL == before->getTall(), "the used platform still works");
+  CheckTall(before, "the used platform still works");
 
   Font* after = MakeFont("Arial");
   Check(after->_plat != before->_plat && after->_id != before->_id, "a font after Font_Reset gets a new platform");
@@ -380,7 +402,7 @@ static void Run(const char* scenario)
   Font_Reset();
   delete first;
   CheckLivePlatforms(1, "a shared platform survives its first font");
-  Check(FONT_TALL == second->getTall(), "the second font still works");
+  CheckTall(second, "the second font still works");
   delete second;
   CheckLivePlatforms(0, "a shared platform is freed with its last font");
  }
@@ -402,7 +424,7 @@ static void Run(const char* scenario)
   Check(other->_plat == original->_plat && 0 == std::strcmp("Arial", other->_name), "self assignment");
 
   delete original;
-  Check(FONT_TALL == copy->getTall(), "copy outlives the original");
+  CheckTall(copy, "copy outlives the original");
   delete copy;
   delete other;
   CheckLivePlatforms(0, "copied fonts free their platform once");
@@ -440,7 +462,10 @@ int main(int argc, char** argv)
 }
 '''
 
-SOURCES = ['win32/Font.cpp', 'Font.cpp', 'common/fileimage.cpp', 'common/vfontdata.cpp']
+COMMON_SOURCES = ['Font.cpp', 'common/fileimage.cpp', 'common/vfontdata.cpp']
+# Platform -> its Font source and include directories past the shared ones.
+PLATFORMS = {'win32': ('win32/Font.cpp', [VGUI / 'win32']),
+             'linux': ('linux/Font.cpp', [VGUI / 'linux', ROOT / 'GoldSrc-SDK/engine'])}
 SCENARIOS = ['reuse']
 NONCOMPAT_SCENARIOS = ['reset-frees-unused', 'reset-keeps-used', 'shared-platform', 'copy', 'bitmap-font']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
@@ -454,25 +479,31 @@ def main():
         windows.mkdir()
         (windows / 'windows.h').write_text(WINDOWS_H)
         test_file = Path(folder) / 'test.cpp'
-        strdup = function((VGUI / 'vgui.cpp').read_text(), 'char* vgui_strdup(')
-        test_file.write_text(TESTS + '\nnamespace vgui\n{\n' + strdup + '\n}\n')
-        sources = [test_file] + [VGUI / name for name in SOURCES]
-        for mode, scenarios in MODES.items():
-            executable = Path(folder) / f'test-compat{mode}.exe'
-            # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
-            executable = compile_program(sources, executable,
-                                         includes=[windows, VGUI / 'include', VGUI / 'common', VGUI / 'win32'],
-                                         defines=['VGUI_EXPORTS', f'VGUI_ABI_COMPAT_MODE={mode}'], debug=True,
-                                         sanitizers=['address'])
-            for scenario in scenarios:
-                # Without destructors the compatible build frees nothing; only
-                # check its memory errors.
-                env = dict(os.environ)
-                if mode == '1':
-                    env['ASAN_OPTIONS'] = 'detect_leaks=0:' + env.get('ASAN_OPTIONS', '')
-                result = subprocess.run([str(executable), scenario], env=env)
-                if result.returncode:
-                    failed.append(f'{scenario} (VGUI_ABI_COMPAT_MODE={mode})')
+        vgui = (VGUI / 'vgui.cpp').read_text()
+        helpers = function(vgui, 'char* vgui_strdup(') + '\n' + function(vgui, 'void vgui_strcpy(')
+        test_file.write_text(TESTS + '\nnamespace vgui\n{\n' + helpers + '\n}\n')
+        # linux/Font.cpp uses POSIX string functions.
+        platforms = ['win32'] if sys.platform == 'win32' else ['win32', 'linux']
+        for platform in platforms:
+            source, includes = PLATFORMS[platform]
+            sources = [test_file, VGUI / source] + [VGUI / name for name in COMMON_SOURCES]
+            for mode, scenarios in MODES.items():
+                executable = Path(folder) / f'test-{platform}-compat{mode}.exe'
+                # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
+                executable = compile_program(sources, executable,
+                                             includes=[windows, VGUI / 'include', VGUI / 'common'] + includes,
+                                             defines=['VGUI_EXPORTS', f'VGUI_ABI_COMPAT_MODE={mode}',
+                                                      f'TEST_WIN32={int(platform == "win32")}'],
+                                             debug=True, sanitizers=['address'])
+                for scenario in scenarios:
+                    # Without destructors the compatible build frees nothing;
+                    # only check its memory errors.
+                    env = dict(os.environ)
+                    if mode == '1':
+                        env['ASAN_OPTIONS'] = 'detect_leaks=0:' + env.get('ASAN_OPTIONS', '')
+                    result = subprocess.run([str(executable), scenario], env=env)
+                    if result.returncode:
+                        failed.append(f'{platform} {scenario} (VGUI_ABI_COMPAT_MODE={mode})')
     if failed:
         raise SystemExit('FAILED: ' + ', '.join(failed))
 

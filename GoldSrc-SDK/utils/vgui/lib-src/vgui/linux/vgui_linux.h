@@ -1,6 +1,7 @@
 #ifndef VGUI_LINUX_H
 #define VGUI_LINUX_H
 
+#include "VGUI.h"
 #include "utlrbtree.h"
 #include "vfontdata.h"
 #include "fileimage.h"
@@ -24,6 +25,12 @@ public:
 class BaseFontPlat
 {
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	BaseFontPlat() : references( 0 )
+	{
+	}
+#endif
+
 	virtual ~BaseFontPlat()
 	{
 	}
@@ -35,6 +42,11 @@ public:
 	virtual int getTall() = 0;
 	virtual int getWide() = 0;
 	virtual void drawSetTextFont( SurfacePlat* plat ) = 0;
+
+#if VGUI_ABI_COMPAT_MODE != 1
+	// The platform list and each Font using this platform hold one.
+	int		references;
+#endif
 };
 
 class FontPlat : public BaseFontPlat
