@@ -14,7 +14,12 @@ from its source text with the scheme font lookup replaced by NULL, and
 vgui_strcpy is extracted from vgui.cpp, whose remaining code only builds for
 32-bit targets.
 
-- remove-all-detaches: removeAllChildren clears each child's parent.
+- remove-all-detaches: removeAllChildren clears each child's parent and takes
+  each child's whole tree off the surface, without calling a removeChild
+  override; a detached tree takes the surface of the panel it is added to
+  next (#223).
+- remove-child-detaches: removeChild takes the child's whole tree off the
+  surface and leaves the other children on it (#223).
 With VGUI_ABI_COMPAT_MODE=0 only:
 - delete-tree: deleting a panel deletes its border, input signals and the
   whole child tree.
@@ -177,16 +182,85 @@ static void Check(bool condition, const char* message)
  if (!condition) throw std::runtime_error(message);
 }
 
+// Puts a panel's tree on a surface through the protected setSurfaceBaseTraverse.
+class PanelSurface : public Panel
+{
+public:
+ static void set( Panel* panel, SurfaceBase* surface )
+ {
+  void ( Panel::*traverse )( SurfaceBase* ) = &PanelSurface::setSurfaceBaseTraverse;
+  ( panel->*traverse )( surface );
+ }
+};
+
+// Counts the calls to its removeChild override.
+class RemoveCounter : public Panel
+{
+public:
+ RemoveCounter() : removes( 0 ) {}
+ virtual void removeChild( Panel* child ) override
+ {
+  ++removes;
+  Panel::removeChild( child );
+ }
+
+ int removes;
+};
+
+// Stand-ins for two surfaces; the scenarios only compare these pointers.
+static char surfaceStorage[2];
+static SurfaceBase* const SURFACE_A = reinterpret_cast<SurfaceBase*>( &surfaceStorage[0] );
+static SurfaceBase* const SURFACE_B = reinterpret_cast<SurfaceBase*>( &surfaceStorage[1] );
+
 static void Run(const std::string& test)
 {
  if (test == "remove-all-detaches")
  {
   Panel parent;
+  parent.removeAllChildren();
+  Check(0 == parent.getChildCount(), "nothing to remove");
+  PanelSurface::set( &parent, SURFACE_A );
+  // Declared before the children it takes, so that they are destroyed first.
+  Panel other;
+  PanelSurface::set( &other, SURFACE_B );
   Panel child;
+  Panel grandchild;
+  Panel sibling;
   child.setParent( &parent );
+  grandchild.setParent( &child );
+  sibling.setParent( &parent );
+  Check(SURFACE_A == grandchild.getSurfaceBase(), "tree on the surface");
   parent.removeAllChildren();
   Check(0 == parent.getChildCount(), "children removed");
+  Check(NULL == child.getParent() && NULL == sibling.getParent(), "children detached");
+  Check(NULL == child.getSurfaceBase() && NULL == sibling.getSurfaceBase(), "children off the surface");
+  Check(&child == grandchild.getParent(), "grandchild kept");
+  Check(NULL == grandchild.getSurfaceBase(), "grandchild off the surface");
+  Check(SURFACE_A == parent.getSurfaceBase(), "parent kept its surface");
+  child.setParent( &other );
+  Check(SURFACE_B == child.getSurfaceBase() && SURFACE_B == grandchild.getSurfaceBase(), "tree on the new surface");
+  RemoveCounter counter;
+  Panel counted;
+  counted.setParent( &counter );
+  counter.removeAllChildren();
+  Check(0 == counter.removes && NULL == counted.getParent(), "removeChild override not called");
+ }
+ else if (test == "remove-child-detaches")
+ {
+  Panel parent;
+  PanelSurface::set( &parent, SURFACE_A );
+  Panel child;
+  Panel grandchild;
+  Panel sibling;
+  child.setParent( &parent );
+  grandchild.setParent( &child );
+  sibling.setParent( &parent );
+  parent.removeChild( &child );
+  Check(1 == parent.getChildCount() && &sibling == parent.getChild( 0 ), "sibling kept");
   Check(NULL == child.getParent(), "child detached");
+  Check(NULL == child.getSurfaceBase() && NULL == grandchild.getSurfaceBase(), "child tree off the surface");
+  Check(&child == grandchild.getParent(), "grandchild kept");
+  Check(SURFACE_A == sibling.getSurfaceBase(), "sibling on the surface");
  }
 #if VGUI_ABI_COMPAT_MODE != 1
  else if (test == "delete-tree")
@@ -311,7 +385,8 @@ int main(int argc, char** argv)
 NONCOMPAT_SCENARIOS = ['delete-tree', 'delete-attached-child', 'member-child', 'removed-signal-survives',
                        'app-pointers-cleared', 'text-entry', 'button-controller', 'copy-no-ownership']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
-MODES = {'1': ['remove-all-detaches'], '0': ['remove-all-detaches'] + NONCOMPAT_SCENARIOS}
+SCENARIOS = ['remove-all-detaches', 'remove-child-detaches']
+MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
 
 
 def vgui1_sources(folder):
