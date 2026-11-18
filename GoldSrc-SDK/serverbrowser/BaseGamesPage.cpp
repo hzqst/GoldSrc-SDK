@@ -1125,32 +1125,71 @@ void CBaseGamesPage::OnLoadFilter( KeyValues *filter )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Appends text to a filter description of destChars wide characters,
+//			truncating it at the end of the buffer
+//-----------------------------------------------------------------------------
+static void AppendFilterText( wchar_t *dest, int destChars, const wchar_t *text )
+{
+	int len = (int)wcslen( dest );
+	while ( *text && len < destChars - 1 )
+	{
+		dest[len++] = *text++;
+	}
+	dest[len] = 0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Appends ANSI text to a filter description
+//-----------------------------------------------------------------------------
+static void AppendFilterANSI( wchar_t *dest, int destChars, const char *text )
+{
+	wchar_t unicode[128];
+	vgui2::localize()->ConvertANSIToUnicode( text, unicode, sizeof( unicode ) );
+	AppendFilterText( dest, destChars, unicode );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Appends a localized string to a filter description; a missing token
+//			shows its name, as vgui2 labels do
+//-----------------------------------------------------------------------------
+static void AppendFilterToken( wchar_t *dest, int destChars, const char *token )
+{
+	const wchar_t *text = vgui2::localize()->Find( token );
+	if ( text )
+	{
+		AppendFilterText( dest, destChars, text );
+	}
+	else
+	{
+		AppendFilterANSI( dest, destChars, token );
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Rebuilds the human readable description of the active filters
 //-----------------------------------------------------------------------------
 void CBaseGamesPage::RecalculateFilterString()
 {
 	wchar_t unicode[2048];
-	wchar_t tempUnicode[128];
-	wchar_t spacerUnicode[8];
+	const int unicodeChars = sizeof( unicode ) / sizeof( unicode[0] );
+	const char *spacer = "; ";
 	unicode[0] = 0;
-	vgui2::localize()->ConvertANSIToUnicode( "; ", spacerUnicode, sizeof( spacerUnicode ) );
 
 	if ( m_szGameFilter[0] )
 	{
-		vgui2::localize()->ConvertANSIToUnicode( ModList().GetModNameForModDir( m_iLimitToAppID ), tempUnicode, sizeof( tempUnicode ) );
-		wcscat( unicode, tempUnicode );
-		wcscat( unicode, spacerUnicode );
+		AppendFilterANSI( unicode, unicodeChars, ModList().GetModNameForModDir( m_iLimitToAppID ) );
+		AppendFilterANSI( unicode, unicodeChars, spacer );
 	}
 
 	if ( m_iSecureFilter == 1 )
 	{
-		wcscat( unicode, vgui2::localize()->Find( "#ServerBrowser_FilterDescSecureOnly" ) );
-		wcscat( unicode, spacerUnicode );
+		AppendFilterToken( unicode, unicodeChars, "#ServerBrowser_FilterDescSecureOnly" );
+		AppendFilterANSI( unicode, unicodeChars, spacer );
 	}
 	else if ( m_iSecureFilter == 2 )
 	{
-		wcscat( unicode, vgui2::localize()->Find( "#ServerBrowser_FilterDescInsecureOnly" ) );
-		wcscat( unicode, spacerUnicode );
+		AppendFilterToken( unicode, unicodeChars, "#ServerBrowser_FilterDescInsecureOnly" );
+		AppendFilterANSI( unicode, unicodeChars, spacer );
 	}
 
 	if ( m_iPingFilter )
@@ -1158,42 +1197,39 @@ void CBaseGamesPage::RecalculateFilterString()
 		char tmpBuf[16];
 		snprintf( tmpBuf, sizeof( tmpBuf ), "%d", m_iPingFilter );
 
-		wcscat( unicode, vgui2::localize()->Find( "#ServerBrowser_FilterDescLatency" ) );
-		vgui2::localize()->ConvertANSIToUnicode( " < ", tempUnicode, sizeof( tempUnicode ) );
-		wcscat( unicode, tempUnicode );
-		vgui2::localize()->ConvertANSIToUnicode( tmpBuf, tempUnicode, sizeof( tempUnicode ) );
-		wcscat( unicode, tempUnicode );
-		wcscat( unicode, spacerUnicode );
+		AppendFilterToken( unicode, unicodeChars, "#ServerBrowser_FilterDescLatency" );
+		AppendFilterANSI( unicode, unicodeChars, " < " );
+		AppendFilterANSI( unicode, unicodeChars, tmpBuf );
+		AppendFilterANSI( unicode, unicodeChars, spacer );
 	}
 
 	if ( m_bFilterNoFullServers )
 	{
-		wcscat( unicode, vgui2::localize()->Find( "#ServerBrowser_FilterDescNotFull" ) );
-		wcscat( unicode, spacerUnicode );
+		AppendFilterToken( unicode, unicodeChars, "#ServerBrowser_FilterDescNotFull" );
+		AppendFilterANSI( unicode, unicodeChars, spacer );
 	}
 
 	if ( m_bFilterNoEmptyServers )
 	{
-		wcscat( unicode, vgui2::localize()->Find( "#ServerBrowser_FilterDescNotEmpty" ) );
-		wcscat( unicode, spacerUnicode );
+		AppendFilterToken( unicode, unicodeChars, "#ServerBrowser_FilterDescNotEmpty" );
+		AppendFilterANSI( unicode, unicodeChars, spacer );
 	}
 
 	if ( m_bFilterNoPasswordedServers )
 	{
-		wcscat( unicode, vgui2::localize()->Find( "#ServerBrowser_FilterDescNoPassword" ) );
-		wcscat( unicode, spacerUnicode );
+		AppendFilterToken( unicode, unicodeChars, "#ServerBrowser_FilterDescNoPassword" );
+		AppendFilterANSI( unicode, unicodeChars, spacer );
 	}
 
 	if ( m_bFilterValidSteamAccount )
 	{
-		wcscat( unicode, vgui2::localize()->Find( "#ServerBrowser_FilterDescValidSteamAccount" ) );
-		wcscat( unicode, spacerUnicode );
+		AppendFilterToken( unicode, unicodeChars, "#ServerBrowser_FilterDescValidSteamAccount" );
+		AppendFilterANSI( unicode, unicodeChars, spacer );
 	}
 
 	if ( m_szMapFilter[0] )
 	{
-		vgui2::localize()->ConvertANSIToUnicode( m_szMapFilter, tempUnicode, sizeof( tempUnicode ) );
-		wcscat( unicode, tempUnicode );
+		AppendFilterANSI( unicode, unicodeChars, m_szMapFilter );
 	}
 
 	m_pFilterString->SetText( unicode );
