@@ -31,6 +31,8 @@ public:
 
 	// put all cvars and their current values into 'botKeys'
 	void UpdateKeys( KeyValues* botKeys );
+	// the prefix goes inside quotes in the bot_prefix command
+	bool IsPrefixValid();
 
 protected:
 	virtual void OnResetChanges();
