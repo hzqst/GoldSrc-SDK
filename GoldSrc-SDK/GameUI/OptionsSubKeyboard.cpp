@@ -31,13 +31,11 @@
 #include <limits.h>
 
 #ifdef _WIN32
-#define KEYBIND_PATH_MAX	_MAX_PATH
 #define MOUSE4_KEYNAME	"MOUSE4"
 #define MOUSE5_KEYNAME	"MOUSE5"
 #else
 #include <strings.h>
 #define stricmp			strcasecmp
-#define KEYBIND_PATH_MAX	PATH_MAX
 #define MOUSE4_KEYNAME	"MOUSE5"
 #define MOUSE5_KEYNAME	"MOUSE4"
 #endif
@@ -455,17 +453,31 @@ void COptionsSubKeyboard::OnApplyChanges()
 	ApplyAllBindings();
 }
 
-void COptionsSubKeyboard::FillInDefaultBindings()
+//-----------------------------------------------------------------------------
+// Purpose: reads a key binding list into buffer and ends it with a NUL so that
+//          COM_ParseFile stops at the end of the file data
+//-----------------------------------------------------------------------------
+static bool ReadKeyBindingList( const char* filename, CUtlBuffer& buffer )
 {
-	char filename[KEYBIND_PATH_MAX];
-	sprintf( filename, "%s/kb_def.lst", "gfx/shell" );
 	FileHandle_t file = vgui2::filesystem()->Open( filename, "rb", NULL );
 	if ( !file )
-		return;
-	int size = vgui2::filesystem()->Size( file );
-	CUtlBuffer buffer( 0, size, true );
-	vgui2::filesystem()->Read( buffer.Base(), size, file );
+		return false;
+	int size = (int)vgui2::filesystem()->Size( file );
+	if ( size < 0 )
+		size = 0;
+	buffer.EnsureCapacity( size + 1 );
+	int read = vgui2::filesystem()->Read( buffer.Base(), size, file );
 	vgui2::filesystem()->Close( file );
+	// A short read ends the data where the read stopped
+	( (char*)buffer.Base() )[read > 0 ? read : 0] = 0;
+	return true;
+}
+
+void COptionsSubKeyboard::FillInDefaultBindings()
+{
+	CUtlBuffer buffer( 0, 0, true );
+	if ( !ReadKeyBindingList( "gfx/shell/kb_def.lst", buffer ) )
+		return;
 	// Clear out all current bindings
 	ClearBindItems();
 
@@ -516,17 +528,10 @@ void COptionsSubKeyboard::FillInDefaultBindings()
 //-----------------------------------------------------------------------------
 void COptionsSubKeyboard::ParseActionDescriptions()
 {
-	char filename[KEYBIND_PATH_MAX];
-	sprintf( filename, "%s/kb_act.lst", "gfx/shell" );
-	FileHandle_t file = vgui2::filesystem()->Open( filename, "rb", NULL );
-	if ( !file )
+	CUtlBuffer buffer( 0, 0, true );
+	if ( !ReadKeyBindingList( "gfx/shell/kb_act.lst", buffer ) )
 		return;
-	int size = vgui2::filesystem()->Size( file );
-	CUtlBuffer buffer( 0, size + 1, true );
-	vgui2::filesystem()->Read( buffer.Base(), size, file );
-	vgui2::filesystem()->Close( file );
 	char* data = (char*)buffer.Base();
-	data[size] = 0;
 	int section = 0;
 	while ( true )
 	{
