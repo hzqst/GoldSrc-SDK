@@ -247,7 +247,9 @@ void CBotButton::SetImgTexture( int num, const char* filename )
 	if ( (unsigned int)num >= IMAGE_MAX )
 		return;
 
-	strcpy( m_szImgTexture[num], filename );
+	// A path that does not fit shows no image rather than a truncated one
+	if ( !UTIL_CopyString( m_szImgTexture[num], sizeof( m_szImgTexture[num] ), filename ) )
+		m_szImgTexture[num][0] = 0;
 	if ( m_bImgUploaded[num] )
 		ForceImgReload( num );
 	else

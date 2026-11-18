@@ -1,6 +1,7 @@
 #include "CareerDefinitions.h"
 #include "CareerGameTasks.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 
 #include "filesystem.h"
 #include "vgui/KeyValues.h"
@@ -91,36 +92,19 @@ void CareerDifficultyDefinition::Init( const char* careerName, const char* filen
 		delete *it;
 	m_availableCharacters.clear();
 	char path[CAREER_MAX_PATH];
-#ifdef _WIN32
-	_snprintf( path, sizeof( path ), "MissionPacks/%s/%s", careerName, botFilename );
-#else
-	snprintf( path, sizeof( path ), "MissionPacks/%s/%s", careerName, botFilename );
-#endif
-	if ( !vgui2::filesystem()->FileExists( path ) )
-	{
-#ifdef _WIN32
-		_snprintf( path, sizeof( path ), "BotCampaignProfile.db" );
-#else
-		snprintf( path, sizeof( path ), "BotCampaignProfile.db" );
-#endif
-	}
+	// A mission pack path that does not fit is treated as a missing file
+	if ( !UTIL_FormatString( path, sizeof( path ), "MissionPacks/%s/%s", careerName, botFilename ) ||
+		!vgui2::filesystem()->FileExists( path ) )
+		UTIL_CopyString( path, sizeof( path ), "BotCampaignProfile.db" );
 	m_botManager = new BotProfileManager;
 	m_botManager->Init( path, NULL );
 	KeyValues* data = new KeyValues( "CareerGame" );
 	m_botFilename = CloneString( path );
-#ifdef _WIN32
-	_snprintf( path, sizeof( path ), "MissionPacks/%s/%s", careerName, filename );
-#else
-	snprintf( path, sizeof( path ), "MissionPacks/%s/%s", careerName, filename );
-#endif
-	if ( !data->LoadFromFile( vgui2::filesystem(), path, NULL ) )
+	if ( !UTIL_FormatString( path, sizeof( path ), "MissionPacks/%s/%s", careerName, filename ) ||
+		!data->LoadFromFile( vgui2::filesystem(), path, NULL ) )
 	{
-#ifdef _WIN32
-		_snprintf( path, sizeof( path ), "CareerGame%s", filename );
-#else
-		snprintf( path, sizeof( path ), "CareerGame%s", filename );
-#endif
-		if ( !data->LoadFromFile( vgui2::filesystem(), path, NULL ) )
+		if ( !UTIL_FormatString( path, sizeof( path ), "CareerGame%s", filename ) ||
+			!data->LoadFromFile( vgui2::filesystem(), path, NULL ) )
 		{
 			data->deleteThis();
 			m_basePoints = 2;
@@ -284,18 +268,13 @@ bool CareerDefinition::Init( const char* careerName )
 	}
 	else
 	{
-#ifdef _WIN32
-		_snprintf( path, sizeof( path ), "MissionPacks/%s/Save", careerName );
-#else
-		snprintf( path, sizeof( path ), "MissionPacks/%s/Save", careerName );
-#endif
+		// Mission packs whose paths do not fit are left out of the list
+		if ( !UTIL_FormatString( path, sizeof( path ), "MissionPacks/%s/Save", careerName ) )
+			return false;
 		m_saveDir = CloneString( path );
 	}
-#ifdef _WIN32
-	_snprintf( path, sizeof( path ), "MissionPacks/%s/overview.vdf", careerName );
-#else
-	snprintf( path, sizeof( path ), "MissionPacks/%s/overview.vdf", careerName );
-#endif
+	if ( !UTIL_FormatString( path, sizeof( path ), "MissionPacks/%s/overview.vdf", careerName ) )
+		return false;
 	KeyValues* data = new KeyValues( "MissionPack" );
 	if ( data->LoadFromFile( vgui2::filesystem(), path, NULL ) )
 	{

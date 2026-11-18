@@ -154,19 +154,13 @@ const char* CCareerCharacter::GetSkinThumbnailFname() const
 #else
 	static char imageFilename[PATH_MAX];
 #endif
-	if ( TheBotProfiles->GetCustomSkinModelname( m_pProfile->GetSkin() ) )
+	const char* model = TheBotProfiles->GetCustomSkinModelname( m_pProfile->GetSkin() );
+	// A custom skin path that does not fit falls back to the default thumbnail
+	if ( model && UTIL_FormatString( imageFilename, sizeof( imageFilename ), "gfx/thumbnails/skins/%s.tga", model ) &&
+		vgui2::filesystem()->FileExists( imageFilename ) )
 	{
-		const char* model = TheBotProfiles->GetCustomSkinModelname( m_pProfile->GetSkin() );
-#ifdef _WIN32
-		_snprintf( imageFilename, sizeof( imageFilename ), "gfx/thumbnails/skins/%s.tga", model );
-#else
-		snprintf( imageFilename, sizeof( imageFilename ), "gfx/thumbnails/skins/%s.tga", model );
-#endif
-		if ( vgui2::filesystem()->FileExists( imageFilename ) )
-		{
-			imageFilename[strlen( imageFilename ) - 4] = 0;
-			return imageFilename;
-		}
+		imageFilename[strlen( imageFilename ) - 4] = 0;
+		return imageFilename;
 	}
 
 	if ( TheCareerGame->PlayAsCT() )

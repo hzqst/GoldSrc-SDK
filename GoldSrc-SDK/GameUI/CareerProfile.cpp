@@ -2,6 +2,7 @@
 #include "CareerGame.h"
 #include "CareerDefinitions.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 #include "Taskbar.h"
 
 #include "filesystem.h"
@@ -430,12 +431,8 @@ void CCareerGame::ApplyDifficultyChunk( CCareerProfileDifficultyData* save )
 		if ( !map )
 		{
 			char mapName[64];
-#ifdef _WIN32
-			_snprintf( mapName, sizeof( mapName ), "%s_cz", it->name.c_str() );
-#else
-			snprintf( mapName, sizeof( mapName ), "%s_cz", it->name.c_str() );
-#endif
-			map = GetPlayableMap( mapName );
+			if ( UTIL_FormatString( mapName, sizeof( mapName ), "%s_cz", it->name.c_str() ) )
+				map = GetPlayableMap( mapName );
 		}
 		if ( map )
 			map->SetDefeated( it->defeated );
@@ -483,16 +480,19 @@ ProfileVector CCareerGame::BuildProfileList()
 {
 	char directory[CAREER_PROFILE_PATH_MAX];
 	const char* saveDirectory = TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory();
-	sprintf( directory, "%s/CZProfile-*.czp", saveDirectory );
 	ProfileVector profiles;
+	if ( !UTIL_FormatString( directory, sizeof( directory ), "%s/CZProfile-*.czp", saveDirectory ) )
+		return profiles;
 	FileFindHandle_t handle;
 	const char* name = vgui2::filesystem()->FindFirst( directory, &handle, "GAMECONFIG" );
 	while ( name )
 	{
 		char filename[CAREER_PROFILE_PATH_MAX];
-		sprintf( filename, "%s/%s", TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), name );
 		int length = 0;
-		unsigned char* data = ReadFile( filename, length );
+		unsigned char* data = NULL;
+		// Profiles whose path does not fit are skipped
+		if ( UTIL_FormatString( filename, sizeof( filename ), "%s/%s", saveDirectory, name ) )
+			data = ReadFile( filename, length );
 		CCareerProfileData* profile = NULL;
 		if ( data )
 		{
@@ -569,8 +569,9 @@ bool CCareerGame::CreateBlankProfile()
 	memset( profile.medals, 0, sizeof( profile.medals ) );
 	vgui2::filesystem()->CreateDirHierarchy( TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), NULL );
 	char filename[CAREER_PROFILE_PATH_MAX];
-	sprintf( filename, "%s/CZProfile-%s.czp", TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(),
-		GetSaveGamePlayerName( NULL ) );
+	if ( !UTIL_FormatString( filename, sizeof( filename ), "%s/CZProfile-%s.czp",
+		TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), GetSaveGamePlayerName( NULL ) ) )
+		return false;
 	std::unique_ptr<unsigned char[]> data( new unsigned char[MAX_CAREER_PROFILE_DATA] );
 	int length = CreateProfileBuffer( &profile, data.get(), MAX_CAREER_PROFILE_DATA, true );
 	return WriteProfileFile( filename, data.get(), length );
@@ -587,20 +588,15 @@ bool CCareerGame::SaveProfile( bool updateConfig )
 	std::unique_ptr<unsigned char[]> data( new unsigned char[MAX_CAREER_PROFILE_DATA] );
 	vgui2::filesystem()->CreateDirHierarchy( TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), NULL );
 	char filename[CAREER_PROFILE_PATH_MAX];
-	sprintf( filename, "%s/CZProfile-%s.czp", TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(),
-		GetSaveGamePlayerName( name ) );
+	if ( !UTIL_FormatString( filename, sizeof( filename ), "%s/CZProfile-%s.czp",
+		TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), GetSaveGamePlayerName( name ) ) )
+		return false;
 	UpdateSavedProfile();
 	int length = CreateProfileBuffer( m_currentProfile, data.get(), MAX_CAREER_PROFILE_DATA, false );
 	saved = WriteProfileFile( filename, data.get(), length );
-	if ( saved && updateConfig && m_currentProfile->name == engine->pfnGetCvarString( (char*)"name" ) )
-	{
-#ifdef _WIN32
-		_snprintf( filename, sizeof( filename ), "writecfg Save/%s\n", GetSaveGamePlayerName( name ) );
-#else
-		snprintf( filename, sizeof( filename ), "writecfg Save/%s\n", GetSaveGamePlayerName( name ) );
-#endif
+	if ( saved && updateConfig && m_currentProfile->name == engine->pfnGetCvarString( (char*)"name" ) &&
+		UTIL_FormatString( filename, sizeof( filename ), "writecfg Save/%s\n", GetSaveGamePlayerName( name ) ) )
 		engine->pfnClientCmd( filename );
-	}
 	return saved;
 }
 
@@ -612,7 +608,7 @@ void CCareerGame::ExecuteProfileConfig()
 		ConfigHasOwner( "Save/" + key + ".cfg", name ) )
 	{
 		std::string command = "wait\nexec Save/" + key + ".cfg\n";
-		engine->pfnClientCmd( &command[0] );
+		engine->pfnClientCmd( (char*)command.c_str() );
 	}
 }
 
@@ -622,8 +618,9 @@ bool CCareerGame::LoadProfile( CareerDifficultyType difficulty )
 	if ( !name || !MigrateLegacyProfile( this, name ) )
 		return false;
 	char filename[CAREER_PROFILE_PATH_MAX];
-	sprintf( filename, "%s/CZProfile-%s.czp", TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(),
-		GetSaveGamePlayerName( NULL ) );
+	if ( !UTIL_FormatString( filename, sizeof( filename ), "%s/CZProfile-%s.czp",
+		TheCareerDefinitions->GetActiveCareerDefinition()->GetSaveDirectory(), GetSaveGamePlayerName( NULL ) ) )
+		return false;
 	int length;
 	unsigned char* data = ReadFile( filename, length );
 	if ( !data )
