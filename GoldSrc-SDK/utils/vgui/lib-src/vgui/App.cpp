@@ -78,7 +78,11 @@ void App::init()
 	_wantedKeyFocus = NULL;
 	_instance = this;
 
+#if VGUI_ABI_COMPAT_MODE != 1
+	_scheme = _ownScheme.scheme;
+#else
 	_scheme = new Scheme();
+#endif
 	_mouseArenaPanel = NULL;
 	_buildMode = false;
 	_wantedBuildMode = false;
@@ -354,9 +358,38 @@ void App::reset()
 	_wantedBuildMode = false;
 	Font_Reset();
 
+#if VGUI_ABI_COMPAT_MODE != 1
+	// The default fonts keep their platform fonts, which Font_Reset forgets
+	// but does not free.
+	_ownScheme.scheme->restoreDefaults();
+	setScheme( _ownScheme.scheme );
+#else
 	Scheme* scheme = new Scheme();
 	setScheme( scheme );
+#endif
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+App::OwnScheme::OwnScheme()
+{
+	scheme = new Scheme();
+}
+
+App::OwnScheme::OwnScheme( const OwnScheme& )
+{
+	scheme = new Scheme();
+}
+
+App::OwnScheme::~OwnScheme()
+{
+	delete scheme;
+}
+
+App::OwnScheme& App::OwnScheme::operator=( const OwnScheme& )
+{
+	return *this;
+}
+#endif
 
 void App::surfaceBaseCreated( SurfaceBase* surfaceBase )
 {

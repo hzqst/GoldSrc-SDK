@@ -1,4 +1,4 @@
-"""Compile the VGUI1 Cursor, Bitmap, Scheme and BuildGroup and check what they own (#209, #210).
+"""Compile the VGUI1 Cursor, Bitmap, Scheme, BuildGroup and App and check what they own (#209, #210).
 
 Run: python tests/vgui1_cursor_bitmap_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -10,11 +10,12 @@ VGUI1 sources and platform stubs from vgui1_panel_tests.py, without its Cursor
 stub, and vgui_strdup and vgui_printf from vgui.cpp, twice: with
 VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll layout, no destructors) and with
 VGUI_ABI_COMPAT_MODE=0, where a default Cursor owns the bitmap it makes, a
-Bitmap owns its pixels, and a Scheme and a BuildGroup own the cursors they
-make. The test replaces the global operator new
+Bitmap owns its pixels, a Scheme and a BuildGroup own the cursors they make,
+and App owns the scheme it makes. The test replaces the global operator new
 and delete to count the blocks still allocated. The compatible build frees
 nothing, so its runs check memory errors only.
 
+- app-reset: after App::reset the App has a scheme with the default colors.
 - default-cursors: every default cursor has a bitmap and the hotspot of its
   bitmap.
 - user-cursor: a user cursor keeps the bitmap and hotspot it is given.
@@ -29,16 +30,24 @@ With VGUI_ABI_COMPAT_MODE=0 only:
   contents and uploads them again.
 - tga-delete: deleting a loaded BitmapTGA, or one whose data ends early,
   frees its pixels.
-- scheme-delete: deleting a Scheme frees the cursors it made, also one that
-  setCursor replaced, and leaves the cursor given to setCursor and its fonts
-  alone.
-- scheme-copy: a copied or assigned Scheme shows its own cursors where the
-  other shows its own, and the other's given cursors; assignment frees no
-  cursor, and all are freed once.
+- scheme-delete: deleting a Scheme frees the fonts and cursors it made, also
+  ones that setFont and setCursor replaced, and leaves the font and cursor
+  given to them alone.
+- scheme-copy: a copied or assigned Scheme shows its own fonts and cursors
+  where the other shows its own, and the other's given ones; assignment frees
+  none, and all are freed once.
 - build-group-delete: deleting a BuildGroup frees its cursors and panel
   names and leaves its panels alone.
 - build-group-copy: a copied or assigned BuildGroup has its own cursors and
   panel names, and all are freed once.
+- app-reset-restores: App::reset gives back the App's own scheme with the
+  colors, fonts and cursors its constructor set, allocating nothing, so the
+  cursor override still points to a live cursor.
+- app-set-scheme: App::reset replaces a scheme given to setScheme with the
+  App's own and leaves the given one alone.
+- app-delete: deleting an App frees its scheme.
+- app-copy: a copied App makes its own scheme and an assigned App keeps its
+  own; each is freed once.
 """
 import os
 from pathlib import Path
@@ -51,7 +60,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cxx_toolchain import compile_program
 from vgui1_panel_tests import VGUI, function, vgui1_sources
 
-CURSOR_STUB = 'Cursor::Cursor( DefaultCursor ) {}\n'
+CURSOR_STUB = '''// A default cursor without a bitmap, which ~Cursor can free.
+Cursor::Cursor( DefaultCursor dc ) { privateInit( NULL, 0, 0 ); _dc = dc; }
+'''
 SOURCES = ['DefaultCursor.cpp', 'Bitmap.cpp', 'BitmapTGA.cpp', 'DataInputStream.cpp', 'BuildGroup.cpp']
 
 TESTS = r'''
@@ -162,6 +173,8 @@ static const uchar TGA[] = {
 };
 static const int TGA_TRUNCATED_SIZE = sizeof( TGA ) - 3;
 
+static TestApp* mainApp;
+
 static void Check(bool condition, const char* message)
 {
  if (!condition)
@@ -176,15 +189,19 @@ static Bitmap* MakeBitmap()
  return bitmap;
 }
 
-#if VGUI_ABI_COMPAT_MODE != 1
-// The scheme does not own its fonts; frees the ones its constructor made.
-static void DeleteScheme( Scheme* scheme )
+static void CheckDefaultColors( Scheme* scheme )
 {
- Font* fonts[Scheme::sf_last];
- memcpy( fonts, scheme->_font, sizeof( fonts ) );
- delete scheme;
- for ( int i = Scheme::sf_user + 1; i < Scheme::sf_last; ++i )
-  delete fonts[i];
+ int r = 0, g = 0, b = 0, a = 0;
+ scheme->getColor( Scheme::sc_primary1, r, g, b, a );
+ Check(102 == r && 102 == g && 153 == b && 0 == a, "default primary1 color");
+}
+
+#if VGUI_ABI_COMPAT_MODE != 1
+// Deletes an App made for a test and makes the test App the instance again.
+static void DeleteApp( App* other )
+{
+ delete other;
+ App::_instance = mainApp;
 }
 #endif
 
@@ -200,7 +217,14 @@ static void CheckDefaultCursor( Cursor& cursor, Cursor::DefaultCursor dc )
 static void Run(const char* scenario)
 {
  const int baseline = liveBlocks;
- if (!std::strcmp(scenario, "default-cursors"))
+ if (!std::strcmp(scenario, "app-reset"))
+ {
+  mainApp->getScheme()->setColor( Scheme::sc_primary1, 1, 2, 3, 4 );
+  mainApp->reset();
+  Check(mainApp->getScheme() != NULL, "reset scheme");
+  CheckDefaultColors( mainApp->getScheme() );
+ }
+ else if (!std::strcmp(scenario, "default-cursors"))
  {
   for ( int dc = Cursor::dc_none; dc < Cursor::dc_last; ++dc )
   {
@@ -347,31 +371,33 @@ static void Run(const char* scenario)
  }
  else if (!std::strcmp(scenario, "scheme-delete"))
  {
-  DeleteScheme( new Scheme() );
-  Check(baseline == liveBlocks, "scheme cursors freed");
+  delete new Scheme();
+  Check(baseline == liveBlocks, "scheme fonts and cursors freed");
 
+  Font givenFont( "given", NULL, 0, 0, 0, 0.0f, 0, false, false, false, false );
   Cursor given( Cursor::dc_arrow );
   const int givenBaseline = liveBlocks;
   Scheme* scheme = new Scheme();
   Cursor* replaced = scheme->getCursor( Scheme::scu_arrow );
   CheckDefaultCursor( *replaced, Cursor::dc_arrow );
+  scheme->setFont( Scheme::sf_primary1, &givenFont );
+  Check(&givenFont == scheme->getFont( Scheme::sf_primary1 ), "given font shown");
   scheme->setCursor( Scheme::scu_arrow, &given );
   Check(&given == scheme->getCursor( Scheme::scu_arrow ), "given cursor shown");
   CheckDefaultCursor( *replaced, Cursor::dc_arrow );
-  DeleteScheme( scheme );
-  Check(givenBaseline == liveBlocks, "replaced scheme cursor freed");
+  delete scheme;
+  Check(givenBaseline == liveBlocks, "replaced scheme font and cursor freed");
   CheckDefaultCursor( given, Cursor::dc_arrow );
  }
  else if (!std::strcmp(scenario, "scheme-copy"))
  {
   Cursor given( Cursor::dc_hand );
+  Font givenFont( "given", NULL, 0, 0, 0, 0.0f, 0, false, false, false, false );
   const int givenBaseline = liveBlocks;
-  Font* fonts[Scheme::sf_last];
-  Font* assignedFonts[Scheme::sf_last];
   {
    Scheme original;
    original.setCursor( Scheme::scu_hand, &given );
-   memcpy( fonts, original._font, sizeof( fonts ) );
+   original.setFont( Scheme::sf_primary3, &givenFont );
 
    Scheme copy( original );
    for ( int i = Scheme::scu_none; i < Scheme::scu_hand; ++i )
@@ -382,14 +408,18 @@ static void Run(const char* scenario)
           "copy cursor kind");
    }
    Check(&given == copy.getCursor( Scheme::scu_hand ), "copy shows the given cursor");
-   Check(original.getFont( Scheme::sf_primary1 ) == copy.getFont( Scheme::sf_primary1 ), "copy shares fonts");
+   Check(copy.getFont( Scheme::sf_primary1 ) != NULL
+         && original.getFont( Scheme::sf_primary1 ) != copy.getFont( Scheme::sf_primary1 ), "copy has its own font");
+   Check(&givenFont == copy.getFont( Scheme::sf_primary3 ), "copy shows the given font");
 
    Scheme assigned;
-   memcpy( assignedFonts, assigned._font, sizeof( assignedFonts ) );
+   Font* ownFont = assigned.getFont( Scheme::sf_primary1 );
    Cursor* ownArrow = assigned.getCursor( Scheme::scu_arrow );
    Cursor* ownHand = assigned.getCursor( Scheme::scu_hand );
    assigned = original;
    Check(ownArrow == assigned.getCursor( Scheme::scu_arrow ), "assigned scheme keeps its own cursor");
+   Check(ownFont == assigned.getFont( Scheme::sf_primary1 ), "assigned scheme keeps its own font");
+   Check(&givenFont == assigned.getFont( Scheme::sf_primary3 ), "assigned scheme shows the given font");
    Check(&given == assigned.getCursor( Scheme::scu_hand ), "assigned scheme shows the given cursor");
    CheckDefaultCursor( *ownHand, Cursor::dc_hand );
    assigned = copy;
@@ -398,11 +428,6 @@ static void Run(const char* scenario)
    Scheme& alias = assigned;
    assigned = alias;
    Check(ownArrow == assigned.getCursor( Scheme::scu_arrow ), "self assignment keeps the cursors");
-  }
-  for ( int i = Scheme::sf_user + 1; i < Scheme::sf_last; ++i )
-  {
-   delete fonts[i];
-   delete assignedFonts[i];
   }
   Check(givenBaseline == liveBlocks, "copied schemes freed once");
  }
@@ -449,6 +474,66 @@ static void Run(const char* scenario)
   }
   Check(baseline == liveBlocks, "copied build groups freed once");
  }
+ else if (!std::strcmp(scenario, "app-reset-restores"))
+ {
+  Scheme* scheme = mainApp->getScheme();
+  Font* font = scheme->getFont( Scheme::sf_primary1 );
+  Cursor* arrow = scheme->getCursor( Scheme::scu_arrow );
+  Font clientFont( "client", NULL, 0, 0, 0, 0.0f, 0, false, false, false, false );
+  Cursor clientCursor( Cursor::dc_arrow );
+  scheme->setColor( Scheme::sc_primary1, 1, 2, 3, 4 );
+  scheme->setFont( Scheme::sf_primary1, &clientFont );
+  scheme->setCursor( Scheme::scu_arrow, &clientCursor );
+  mainApp->setCursorOveride( arrow );
+
+  const int before = liveBlocks;
+  mainApp->reset();
+  mainApp->reset();
+  Check(before == liveBlocks, "reset allocates nothing");
+  Check(scheme == mainApp->getScheme(), "reset keeps the own scheme");
+  CheckDefaultColors( scheme );
+  Check(font == scheme->getFont( Scheme::sf_primary1 ), "reset gives back the default font");
+  Check(arrow == scheme->getCursor( Scheme::scu_arrow ), "reset gives back the default cursor");
+  Check(NULL == scheme->getCursor( Scheme::scu_user ) && NULL == scheme->getFont( Scheme::sf_user ),
+        "user slots stay empty");
+  CheckDefaultCursor( *mainApp->getCursorOveride(), Cursor::dc_arrow );
+  mainApp->setCursorOveride( NULL );
+ }
+ else if (!std::strcmp(scenario, "app-set-scheme"))
+ {
+  Scheme* own = mainApp->getScheme();
+  Scheme* given = new Scheme();
+  mainApp->setScheme( given );
+  Check(given == mainApp->getScheme(), "given scheme shown");
+  mainApp->reset();
+  Check(own == mainApp->getScheme(), "reset shows the own scheme");
+  CheckDefaultCursor( *given->getCursor( Scheme::scu_arrow ), Cursor::dc_arrow );
+  delete given;
+  Check(baseline == liveBlocks, "given scheme freed by its owner");
+ }
+ else if (!std::strcmp(scenario, "app-delete"))
+ {
+  TestApp* other = new TestApp();
+  Check(other->getScheme() == other->_ownScheme.scheme && other->getScheme() != mainApp->getScheme(),
+        "an App makes its own scheme");
+  DeleteApp( other );
+  Check(baseline == liveBlocks, "App scheme freed");
+ }
+ else if (!std::strcmp(scenario, "app-copy"))
+ {
+  TestApp* other = new TestApp();
+  TestApp* copy = new TestApp( *other );
+  Check(copy->_ownScheme.scheme != NULL && copy->_ownScheme.scheme != other->_ownScheme.scheme,
+        "copy makes its own scheme");
+  Scheme* own = copy->_ownScheme.scheme;
+  *copy = *other;
+  Check(own == copy->_ownScheme.scheme, "assigned App keeps its own scheme");
+  copy->reset();
+  Check(own == copy->getScheme(), "copy reset shows its own scheme");
+  DeleteApp( copy );
+  DeleteApp( other );
+  Check(baseline == liveBlocks, "copied App schemes freed once");
+ }
 #endif
  else Check(false, "unknown scenario");
 }
@@ -457,6 +542,7 @@ int main(int argc, char** argv)
 {
  // Static so that the scheme App never frees stays reachable for leak checks.
  static TestApp app;
+ mainApp = &app;
  try
  {
   Check(argc == 2, "usage: test <scenario>");
@@ -472,10 +558,10 @@ int main(int argc, char** argv)
 }
 '''
 
-SCENARIOS = ['default-cursors', 'user-cursor']
+SCENARIOS = ['app-reset', 'default-cursors', 'user-cursor']
 NONCOMPAT_SCENARIOS = ['default-cursor-delete', 'user-cursor-borrows', 'cursor-copy', 'bitmap-delete',
                        'bitmap-copy', 'tga-delete', 'scheme-delete', 'scheme-copy', 'build-group-delete',
-                       'build-group-copy']
+                       'build-group-copy', 'app-reset-restores', 'app-set-scheme', 'app-delete', 'app-copy']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
 
