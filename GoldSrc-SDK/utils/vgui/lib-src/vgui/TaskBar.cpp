@@ -31,6 +31,16 @@ public:
 		getApp()->addTickSignal( this );
 	}
 
+#if VGUI_ABI_COMPAT_MODE != 1
+	// The App would otherwise tick a deleted clock.
+	virtual ~FooClock() override
+	{
+		App* app = App::getInstance();
+		if ( app != NULL )
+			app->removeTickSignal( this );
+	}
+#endif
+
 	virtual void paintBackground() override;
 	virtual void ticked() override;
 
@@ -59,6 +69,26 @@ public:
 protected:
 	Button*	_button;
 	Frame*	_frame;
+
+	friend class FooTaskBarButtonSignal;
+};
+
+// The action signal a task bar button owns. The frame keeps the handler after
+// the button is deleted, so the handler stops using the button then.
+class FooTaskBarButtonSignal : public ActionSignalForwarder
+{
+public:
+	FooTaskBarButtonSignal( FooTaskBarButtonHandler* handler ) : ActionSignalForwarder( handler ), _handler( handler ) {}
+
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual ~FooTaskBarButtonSignal() override
+	{
+		_handler->_button = NULL;
+	}
+#endif
+
+private:
+	FooTaskBarButtonHandler*	_handler;
 };
 
 void FooClock::paintBackground()
@@ -135,7 +165,10 @@ void FooTaskBarButtonHandler::minimizing( Frame*, bool )
 
 void FooTaskBarButtonHandler::focusChanged( bool lost, Panel* )
 {
-	_button->setSelected( !lost );
+	if ( _button != NULL )
+	{
+		_button->setSelected( !lost );
+	}
 }
 
 }
@@ -167,7 +200,7 @@ void TaskBar::addFrame( Frame* frame )
 	handler = new FooTaskBarButtonHandler( button, frame );
 	button->setParent( this );
 	// The button deletes its action signals; the frame keeps the handler.
-	button->addActionSignal( new ActionSignalForwarder( handler ) );
+	button->addActionSignal( new FooTaskBarButtonSignal( handler ) );
 	frame->addFrameSignal( handler );
 	frame->addFocusChangeSignal( handler );
 	_taskButtonDar.addElement( button );

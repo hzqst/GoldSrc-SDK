@@ -21,8 +21,9 @@ handlers it gives its frames, so task-bar-click checks memory errors only.
 - label-editor: the Label property editor sets the label's text from its
   TextEntry's action.
 - task-bar-click: clicking a TaskBar button shows its frame, and with
-  VGUI_ABI_COMPAT_MODE=0 the frame can still signal it after the task bar is
-  deleted.
+  VGUI_ABI_COMPAT_MODE=0 deleting the task bar removes its clock from the App's
+  tick signals, and the frame can still signal closing and focus changes to
+  the handler after the task bar and its buttons are deleted.
 With VGUI_ABI_COMPAT_MODE=0 only:
 - button-signals: deleting a Button deletes its action signals; a copy has
   none.
@@ -59,6 +60,7 @@ TESTS = r'''
 #include "VGUI_App.h"
 #include "VGUI_Button.h"
 #include "VGUI_ChangeSignal.h"
+#include "VGUI_FocusChangeSignal.h"
 #include "VGUI_Frame.h"
 #include "VGUI_HeaderPanel.h"
 #include "VGUI_IntChangeSignal.h"
@@ -208,6 +210,8 @@ static void Run(const std::string& test)
  }
  else if (test == "task-bar-click")
  {
+  App* app = App::getInstance();
+  const int tickSignals = app->_tickSignalDar.getCount();
   TaskBar* taskBar = new TaskBar( 0, 0, 200, 26 );
   Frame* frame = new Frame( 0, 0, 100, 100 );
   frame->setVisible( false );
@@ -217,8 +221,13 @@ static void Run(const std::string& test)
 #if VGUI_ABI_COMPAT_MODE != 1
   // The frame keeps the handler after the task bar and its buttons are gone.
   delete taskBar;
+  Check(tickSignals == app->_tickSignalDar.getCount(), "clock no longer ticked");
   frame->fireClosingSignal();
+  for ( int i = 0; i < frame->_focusChangeSignalDar.getCount(); ++i )
+   frame->_focusChangeSignalDar[i]->focusChanged( true, frame );
   delete frame;
+#else
+  (void)tickSignals;
 #endif
  }
 #if VGUI_ABI_COMPAT_MODE != 1

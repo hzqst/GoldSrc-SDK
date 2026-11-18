@@ -120,7 +120,8 @@ if(TARGET vgui)
 			??1FocusChangeSignal@vgui@@UAE@XZ
 			??1FrameSignal@vgui@@UAE@XZ
 			??1IntChangeSignal@vgui@@UAE@XZ
-			??1TickSignal@vgui@@UAE@XZ)
+			??1TickSignal@vgui@@UAE@XZ
+			?removeTickSignal@App@vgui@@QAEXPAVTickSignal@2@@Z)
 		file(READ "${GOLDSRC_VGUI_IMPORTS_DEF}" GOLDSRC_VGUI_IMPORTS)
 		foreach(export IN LISTS GOLDSRC_VGUI_EXTRA_EXPORTS)
 			string(APPEND GOLDSRC_VGUI_IMPORTS "    ${export}\n")

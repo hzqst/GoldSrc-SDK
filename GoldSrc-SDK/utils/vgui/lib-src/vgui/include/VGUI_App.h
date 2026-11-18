@@ -37,6 +37,11 @@ public:
 	virtual bool wasKeyReleased( KeyCode code, Panel* panel );
 
 	virtual void addTickSignal( TickSignal* s );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// Not virtual, so the vtable keeps its original layout. A tick signal that
+	// is deleted before the App removes itself with this.
+	void removeTickSignal( TickSignal* s );
+#endif
 
 	virtual void setCursorPos( int x, int y );
 	virtual void getCursorPos( int& x, int& y );
