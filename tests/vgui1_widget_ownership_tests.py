@@ -6,17 +6,21 @@ AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it; without it only the value checks run.
 
 TextPanel, TextGrid, EditPanel, CheckButton, RadioButton, WizardPanel, Frame,
-Menu, ListPanel, TabPanel and TablePanel are built with the VGUI1 sources and
-platform stubs from vgui1_panel_tests.py, twice: with VGUI_ABI_COMPAT_MODE=1
-(the original vgui.dll layout, no destructors) and with VGUI_ABI_COMPAT_MODE=0.
-vgui_strdup is extracted from vgui.cpp like vgui_strcpy. The compatible build
-frees no panel, so its runs check memory errors only.
+Menu, ListPanel, TabPanel, TablePanel, TaskBar and ConfigWizard are built with
+the VGUI1 sources and platform stubs from vgui1_panel_tests.py, twice: with
+VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll layout, no destructors) and with
+VGUI_ABI_COMPAT_MODE=0. vgui_strdup is extracted from vgui.cpp like
+vgui_strcpy. The compatible build frees no panel, so its runs check memory
+errors only.
 
 - wizard-page-texts: setting a WizardPage text again frees the old one with
   delete[].
 - frame-cursors: a Frame's grips use the scheme's cursors.
 - shared-layouts: every Menu, ListPanel, TreeFolder and Label property panel
   shares one layout of its kind.
+- default-borders: with VGUI_ABI_COMPAT_MODE=1 every Menu, TaskBar,
+  ConfigWizard and TabPanel shares one border of its kind; otherwise each has
+  its own, freed with it (#234).
 With VGUI_ABI_COMPAT_MODE=0 only:
 - toggle-copy: a copied ToggleButton toggles through a controller of its own.
 - text-panel: deleting a TextPanel frees its TextImage; a copy has its own.
@@ -43,7 +47,8 @@ from vgui1_panel_tests import VGUI, function, vgui1_sources
 
 WIDGETS = ['TextPanel.cpp', 'TextGrid.cpp', 'EditPanel.cpp', 'CheckButton.cpp', 'RadioButton.cpp',
            'WizardPanel.cpp', 'Frame.cpp', 'Menu.cpp', 'ListPanel.cpp', 'TabPanel.cpp', 'TablePanel.cpp',
-           'StackLayout.cpp', 'ScrollBar.cpp', 'Slider.cpp', 'ButtonGroup.cpp', 'RaisedBorder.cpp', 'HeaderPanel.cpp']
+           'StackLayout.cpp', 'ScrollBar.cpp', 'Slider.cpp', 'ButtonGroup.cpp', 'RaisedBorder.cpp', 'HeaderPanel.cpp',
+           'LoweredBorder.cpp', 'TaskBar.cpp', 'ConfigWizard.cpp']
 
 TESTS = r'''
 #include <cstdio>
@@ -57,6 +62,7 @@ TESTS = r'''
 #define protected public
 #include "VGUI_App.h"
 #include "VGUI_CheckButton.h"
+#include "VGUI_ConfigWizard.h"
 #include "VGUI_EditPanel.h"
 #include "VGUI_Frame.h"
 #include "VGUI_Image.h"
@@ -67,6 +73,7 @@ TESTS = r'''
 #include "VGUI_Scheme.h"
 #include "VGUI_TabPanel.h"
 #include "VGUI_TablePanel.h"
+#include "VGUI_TaskBar.h"
 #include "VGUI_TextGrid.h"
 #include "VGUI_TextImage.h"
 #include "VGUI_TextPanel.h"
@@ -141,6 +148,18 @@ static std::string Title(WizardPanel::WizardPage& page)
  char buffer[TEXT_BUFFER_SIZE];
  page.getTitle( buffer, TEXT_BUFFER_SIZE );
  return buffer;
+}
+
+// Two widgets of a kind share their default border with VGUI_ABI_COMPAT_MODE=1,
+// where no Panel frees one, and otherwise each has its own.
+static void CheckDefaultBorders(Border* border, Border* other, const char* message)
+{
+ Check(border != NULL && other != NULL, message);
+#if VGUI_ABI_COMPAT_MODE == 1
+ Check(border == other, message);
+#else
+ Check(border != other, message);
+#endif
 }
 
 #if VGUI_ABI_COMPAT_MODE != 1
@@ -221,6 +240,35 @@ static void Run(const std::string& test)
   delete label;
   delete properties;
   delete otherProperties;
+#endif
+ }
+ else if (test == "default-borders")
+ {
+  Menu* menu = new Menu( 10, 10 );
+  Menu* otherMenu = new Menu( 0, 0, 10, 10 );
+  CheckDefaultBorders(menu->_border, otherMenu->_border, "menu borders");
+  TaskBar* taskBar = new TaskBar( 0, 0, 200, 26 );
+  TaskBar* otherTaskBar = new TaskBar( 0, 0, 200, 26 );
+  CheckDefaultBorders(taskBar->_border, otherTaskBar->_border, "task bar borders");
+  CheckDefaultBorders(taskBar->_tray->_border, otherTaskBar->_tray->_border, "task bar tray borders");
+  ConfigWizard* wizard = new ConfigWizard( 0, 0, 100, 100 );
+  ConfigWizard* otherWizard = new ConfigWizard( 0, 0, 100, 100 );
+  CheckDefaultBorders(wizard->_border, otherWizard->_border, "config wizard borders");
+  CheckDefaultBorders(wizard->_treeFolder->_border, otherWizard->_treeFolder->_border, "config wizard folder borders");
+  CheckDefaultBorders(wizard->_client->_border, otherWizard->_client->_border, "config wizard client borders");
+  TabPanel* tabs = new TabPanel( 0, 0, 100, 100 );
+  TabPanel* otherTabs = new TabPanel( 0, 0, 100, 100 );
+  CheckDefaultBorders(tabs->_clientArea->_border, otherTabs->_clientArea->_border, "tab client area borders");
+  CheckDefaultBorders(tabs->_tabArea->_border, otherTabs->_tabArea->_border, "tab area borders");
+#if VGUI_ABI_COMPAT_MODE != 1
+  delete menu;
+  delete otherMenu;
+  delete taskBar;
+  delete otherTaskBar;
+  delete wizard;
+  delete otherWizard;
+  delete tabs;
+  delete otherTabs;
 #endif
  }
 #if VGUI_ABI_COMPAT_MODE != 1
@@ -385,7 +433,7 @@ int main(int argc, char** argv)
 }
 '''
 
-SCENARIOS = ['wizard-page-texts', 'frame-cursors', 'shared-layouts']
+SCENARIOS = ['wizard-page-texts', 'frame-cursors', 'shared-layouts', 'default-borders']
 NONCOMPAT_SCENARIOS = ['toggle-copy', 'text-panel', 'text-grid', 'edit-panel', 'check-button', 'radio-button',
                        'wizard-page', 'frame', 'tab-panel', 'table-panel']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.

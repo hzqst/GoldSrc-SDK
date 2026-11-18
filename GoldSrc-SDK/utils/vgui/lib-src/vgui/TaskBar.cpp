@@ -1,5 +1,6 @@
 #include "VGUI_TaskBar.h"
 #include "ActionSignalForwarder.h"
+#include "DefaultBorder.h"
 #include "VGUI_ActionSignal.h"
 #include "VGUI_App.h"
 #include "VGUI_Button.h"
@@ -210,9 +211,9 @@ TaskBar::TaskBar( int x, int y, int wide, int tall ) : Panel( x, y, wide, tall )
 {
 	FooClock* clock;
 
-	setBorder( new RaisedBorder() );
+	setBorder( defaultBorder<RaisedBorder>() );
 	_tray = new Panel( 100, 0, 120, 26 );
-	_tray->setBorder( new LoweredBorder() );
+	_tray->setBorder( defaultBorder<LoweredBorder>() );
 	_tray->setParent( this );
 	clock = new FooClock( 25, 2, 85, 20 );
 	clock->setParent( _tray );

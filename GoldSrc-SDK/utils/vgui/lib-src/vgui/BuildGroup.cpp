@@ -1,4 +1,5 @@
 #include "VGUI_BuildGroup.h"
+#include "DefaultBorder.h"
 
 #include "VGUI_App.h"
 #include "VGUI_ChangeSignal.h"
@@ -152,13 +153,11 @@ void BuildGroup::mousePressed( MouseCode code, Panel* panel )
 		int lx;
 		int ly;
 		Label* newPanel;
-		LineBorder* border;
 
 		panel->getApp()->getCursorPos( lx, ly );
 		panel->screenToLocal( lx, ly );
 		newPanel = new Label( "Label", lx, ly, 0, 0 );
-		border = new LineBorder();
-		newPanel->setBorder( border );
+		newPanel->setBorder( defaultBorder<LineBorder>() );
 		newPanel->setParent( panel );
 		newPanel->setBuildGroup( this, "Label" );
 		panel = newPanel;
