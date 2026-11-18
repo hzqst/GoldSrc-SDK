@@ -117,7 +117,7 @@ static void CustomThumbnailThatDoesNotFitFallsBack() {
 
 
 def main():
-    utils = (ROOT / 'GameUI/StringUtils.cpp').read_text(encoding='utf-8')
+    utils = (ROOT / 'common/StringUtils.cpp').read_text(encoding='utf-8')
     frame = (ROOT / 'GameUI/CareerBotFrame.cpp').read_text(encoding='utf-8')
     game = (ROOT / 'GameUI/CareerGame.cpp').read_text(encoding='utf-8')
     code = STUBS
