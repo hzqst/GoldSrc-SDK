@@ -1,18 +1,21 @@
 """Compile the production WAV resampler and exercise guarded cache buffers.
 
 Run: python tests/sound_resample_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 
 Each case sizes the cache with S_GetResampledBytes, exactly as S_LoadSound does,
 and places both the input and the cache immediately before a no-access page, so
 a read past the samples or a write past the cache faults (Windows only; other
 hosts fall back to unguarded buffers).
 """
-import os
 from pathlib import Path
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -252,8 +255,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-resample-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(STUBS + '\n'.join(functions) + TESTS)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        subprocess.run(compiler + ['-std=c++17', str(source_file), '-o', str(executable)], check=True)
+        executable = compile_program([source_file], executable)
         failed = []
         for scenario in scenarios:
             result = subprocess.run([str(executable), scenario])

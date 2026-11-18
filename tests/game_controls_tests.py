@@ -1,10 +1,13 @@
 """Exercise production team selection and MOTD handling with small UI stubs."""
-import os
 from pathlib import Path
 import re
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1] / 'GoldSrc-SDK'
 
@@ -151,9 +154,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-game-controls-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text('\n'.join((STUBS, team, html, limit, motd_functions, TESTS)))
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        subprocess.run(compiler + ['-std=c++17', str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-        subprocess.run([str(path / 'test')], check=True, cwd=path)
+        executable = compile_program([path / 'test.cpp'], path / 'test')
+        subprocess.run([str(executable)], check=True, cwd=path)
 
 
 if __name__ == '__main__':

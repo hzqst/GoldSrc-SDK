@@ -89,7 +89,7 @@ Like Valve's Linux `vgui2.so`, the Linux VGUI2 has no surface or fonts of its ow
 
 On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API modules link [`lib/public/linux32/libsteam_api.so`](GoldSrc-SDK/lib/public/linux32/), taken from the Linux Half-Life Dedicated Server (SteamCMD app 90). [`linux/libSDL2-2.0.so.0`](GoldSrc-SDK/linux/) is SDL 2.32.10 built with `vcpkg install --classic "sdl2[core,x11]" --triplet x86-linux --overlay-triplets=cmake/triplets` (X11, PulseAudio and PipeWire backends, loaded at run time). The build copies these libraries next to the binaries.
 
-Configure with `-DGOLDSRC_BUILD_TESTS=ON` to register the regression tests under [`tests/`](tests/) with CTest; run them with `ctest --test-dir bin/obj/cmake/<preset>`.
+Configure with `-DGOLDSRC_BUILD_TESTS=ON` to register the regression tests under [`tests/`](tests/) with CTest; run them with `ctest --test-dir bin/obj/cmake/<preset>`. The Python tests compile their C++ with [`tests/cxx_toolchain.py`](tests/cxx_toolchain.py): `CXX` when set, otherwise MSVC (found through `vswhere`) on Windows and `c++` elsewhere. AddressSanitizer and UndefinedBehaviorSanitizer are enabled where the compiler supports them; MSVC supports only AddressSanitizer.
 
 ## Build output
 

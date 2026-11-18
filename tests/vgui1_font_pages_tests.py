@@ -1,7 +1,7 @@
 """Compile the production VGUI1 engine font-page packer with deterministic stubs.
 
 Run: python tests/vgui1_font_pages_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 
 EngineSurfaceWrap::drawSetTextFont packs a font's glyphs into at most
 FONT_PAGE_LIMIT 512x512 textures, and drawPrintText draws from them. Fresh heap
@@ -16,12 +16,15 @@ memory is filled with 0xCD so uninitialized FontInfoVGUI fields are visible.
 - free-infos: FreeFontInfos deletes every FontInfoVGUI, and the surface
   constructor and destructor both call it.
 """
-import os
 from pathlib import Path
 import re
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'GoldSrc-SDK/engine/VGUI_EngineSurfaceWrap.cpp'
@@ -293,8 +296,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-pages-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        subprocess.run(compiler + ['-std=c++17', '-g', str(source_file), '-o', str(executable)], check=True)
+        executable = compile_program([source_file], executable, debug=True)
         failed = []
         for scenario in scenarios:
             result = subprocess.run([str(executable), scenario])

@@ -13,7 +13,8 @@ target_include_directories(vgui_game_controls_tests PRIVATE "${GOLDSRC_ROOT}/eng
 set_target_properties(vgui_game_controls_tests PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 add_test(NAME vgui_game_controls COMMAND vgui_game_controls_tests)
 
-foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound spectate_connection serverbrowser_sort game_controls commandmenu viewport vgui_font_glyph vgui1_font_pages vgui1_font_fallback engine_font_fallback vgui1_surface_mode_info vgui1_dar vgui1_surface_fullscreen vgui1_surface_gdi)
+foreach(name IN ITEMS hunk_temp_alloc sound_resample stream_sound spectate_connection serverbrowser_sort game_controls commandmenu viewport vgui_font_glyph vgui1_font_pages vgui1_font_fallback engine_font_fallback vgui1_surface_mode_info vgui1_dar vgui1_surface_fullscreen vgui1_surface_gdi
+		hashpak_remove mixer_failure server_model voice_callback voice_wavefile vox waveout_failure)
 	add_test(NAME ${name}
 		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/${name}_tests.py")
 endforeach()

@@ -1,7 +1,7 @@
 """Compile the production VGUI1 bitmap-font loader and Font::init fallback (#244).
 
 Run: python tests/vgui1_font_fallback_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
@@ -21,11 +21,14 @@ stub system/bitmap font platforms whose bitmap Create uses the real loader.
   platforms' ids instead of all getting -1, so the engine's per-id glyph cache
   cannot mix them up.
 """
-import os
 from pathlib import Path
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 VGUI = ROOT / 'GoldSrc-SDK/utils/vgui/lib-src/vgui'
@@ -323,14 +326,6 @@ def platform(namespace, source, dar, ids, next_id):
     return f'namespace {namespace}\n{{\n{stubs}\n{font_methods(source)}\n}}\n'
 
 
-def supports_asan(compiler, folder):
-    probe, output = Path(folder) / 'probe.cpp', Path(folder) / 'probe.exe'
-    probe.write_text('int main() { return 0; }\n')
-    result = subprocess.run(compiler + ['-fsanitize=address', str(probe), '-o', str(output)],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return result.returncode == 0
-
-
 def main():
     win32 = (VGUI / 'win32/Font.cpp').read_text()
     linux = (VGUI / 'linux/Font.cpp').read_text()
@@ -348,12 +343,9 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-fallback-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        flags = ['-std=c++17', '-g', f'-I{VGUI / "include"}', f'-I{VGUI / "common"}']
-        if supports_asan(compiler, folder):
-            flags.append('-fsanitize=address')
-        sources = [str(source_file), str(VGUI / 'common/fileimage.cpp'), str(VGUI / 'common/vfontdata.cpp')]
-        subprocess.run(compiler + flags + sources + ['-o', str(executable)], check=True)
+        sources = [source_file, VGUI / 'common/fileimage.cpp', VGUI / 'common/vfontdata.cpp']
+        executable = compile_program(sources, executable, includes=[VGUI / 'include', VGUI / 'common'], debug=True,
+                                     sanitizers=['address'])
         failed = []
         for scenario in scenarios:
             result = subprocess.run([str(executable), scenario])

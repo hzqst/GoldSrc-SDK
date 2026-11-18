@@ -1,7 +1,7 @@
 """Compile the production hunk-temp-buffer call sites with deterministic stubs.
 
 Run: python tests/hunk_temp_alloc_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 
 Hunk_TempAlloc returns NULL when the hunk is full. Each scenario forces that and
 asserts the production code never reads or copies into the NULL buffer:
@@ -15,9 +15,13 @@ asserts the production code never reads or copies into the NULL buffer:
 """
 import os
 from pathlib import Path
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -377,8 +381,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-hunk-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(STUBS + '\n'.join(functions) + TESTS)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        subprocess.run(compiler + ['-std=c++17', str(source_file), '-o', str(executable)], check=True)
+        executable = compile_program([source_file], executable)
         failed = []
         for scenario in scenarios:
             result = subprocess.run([str(executable), scenario])

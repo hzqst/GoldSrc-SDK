@@ -1,9 +1,12 @@
 """Exercise production WAV reader/writer and recording admission with a memory filesystem."""
 from pathlib import Path
-import os
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1] / 'GoldSrc-SDK/engine'
 STUBS = r'''
@@ -130,10 +133,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-wave-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(STUBS + wave + RECORD_STUBS + record + TESTS)
-        compiler = shlex.split(os.environ.get('CXX', 'c++'))
-        subprocess.run(compiler + ['-std=c++17', '-fsanitize=address,undefined',
-                                  str(path / 'test.cpp'), '-o', str(path / 'test')], check=True)
-        subprocess.run([str(path / 'test')], check=True)
+        executable = compile_program([path / 'test.cpp'], path / 'test', sanitizers=['address', 'undefined'])
+        subprocess.run([str(executable)], check=True)
     print('PASS: WAV round-trip, chunks, truncations, short reads, cleanup and recording format')
 
 

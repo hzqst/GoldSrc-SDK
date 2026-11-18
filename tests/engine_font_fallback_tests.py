@@ -2,7 +2,7 @@
 vgui2 TGA loader with deterministic stubs.
 
 Run: python tests/engine_font_fallback_tests.py
-Requires a C++17 compiler (CXX, or clang++ on Windows / c++ elsewhere).
+Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
@@ -19,11 +19,14 @@ vgui2/src/fileimage.cpp into their own namespace.
   system font instead of leaving _plat uninitialized.
 - engine-reuse: matching fallbacks share one platform and its id.
 """
-import os
 from pathlib import Path
-import shlex
 import subprocess
+import sys
 import tempfile
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 ENGINE_FONT = ROOT / 'GoldSrc-SDK/engine/vgui2/BaseUISurface_Font.cpp'
@@ -208,14 +211,6 @@ int main(int argc, char** argv)
 '''
 
 
-def supports_asan(compiler, folder):
-    probe, output = Path(folder) / 'probe.cpp', Path(folder) / 'probe.exe'
-    probe.write_text('int main() { return 0; }\n')
-    result = subprocess.run(compiler + ['-fsanitize=address', str(probe), '-o', str(output)],
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    return result.returncode == 0
-
-
 def main():
     engine = ENGINE_FONT.read_text()
     vgui2 = VGUI2_IMAGE.read_text()
@@ -248,11 +243,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-engine-font-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)
-        compiler = shlex.split(os.environ.get('CXX', 'clang++' if os.name == 'nt' else 'c++'))
-        flags = ['-std=c++17', '-g', f'-I{ENGINE_FONT.parent}']
-        if supports_asan(compiler, folder):
-            flags.append('-fsanitize=address')
-        subprocess.run(compiler + flags + [str(source_file), '-o', str(executable)], check=True)
+        executable = compile_program([source_file], executable, includes=[ENGINE_FONT.parent], debug=True,
+                                     sanitizers=['address'])
         failed = []
         for scenario in scenarios:
             result = subprocess.run([str(executable), scenario])
