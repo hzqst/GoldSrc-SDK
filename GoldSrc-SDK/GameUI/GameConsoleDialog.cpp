@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 #ifdef PostMessage
 #undef PostMessage
@@ -487,6 +488,11 @@ void CGameConsoleDialog::Hide()
 	m_iNextCompletion = 0;
 }
 
+// wide characters read from the console history per chunk, including the terminator
+static const int CONDUMP_CHUNK_CHARS = 512;
+// a UTF-16 unit becomes at most 3 UTF-8 bytes and a UTF-32 one at most 4
+static const int UTF8_BYTES_PER_WIDE_CHAR = 4;
+
 void CGameConsoleDialog::DumpConsoleTextToFile()
 {
 	char filename[512];
@@ -515,17 +521,25 @@ void CGameConsoleDialog::DumpConsoleTextToFile()
 	FileHandle_t file = vgui2::filesystem()->Open( filename, "wb", NULL );
 	if ( file )
 	{
-		wchar_t text[512];
-		char ansi[512];
+		wchar_t text[CONDUMP_CHUNK_CHARS];
+		// large enough for any chunk, so the conversion is never cut
+		char ansi[CONDUMP_CHUNK_CHARS * UTF8_BYTES_PER_WIDE_CHAR];
 		int offset = 0;
 		for ( ;; )
 		{
 			m_pHistory->GetText( offset, text, sizeof( text ) );
-			offset += sizeof( text ) / sizeof( text[0] );
-			if ( !text[0] )
+			// GetText keeps one slot for the terminator, so advance by what was read
+			int count = wcslen( text );
+			if ( !count )
 				break;
 
-			vgui2::localize()->ConvertUnicodeToANSI( text, ansi, sizeof( ansi ) );
+			// a high surrogate at the end of a chunk is read again with its pair
+			if ( sizeof( wchar_t ) == 2 && count > 1 && text[count - 1] >= 0xD800 && text[count - 1] <= 0xDBFF )
+				text[--count] = 0;
+			offset += count;
+
+			if ( !vgui2::localize()->ConvertUnicodeToANSI( text, ansi, sizeof( ansi ) ) )
+				break;
 			int length = strlen( ansi );
 			for ( int i = 0; i < length; i++ )
 			{
