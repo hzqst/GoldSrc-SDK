@@ -85,7 +85,8 @@ RegistryResult App::getRegistryString( const char*, char*, int ) { return false;
 RegistryResult App::setRegistryInteger( const char*, int ) { return false; }
 RegistryResult App::getRegistryInteger( const char*, int& ) { return false; }
 App* App::getInstance() { return _instance; }
-Cursor::Cursor( DefaultCursor ) {}
+// A default cursor without a bitmap, which ~Cursor can free.
+Cursor::Cursor( DefaultCursor dc ) { privateInit( NULL, 0, 0 ); _dc = dc; }
 Font::Font( const char*, void*, int, int, int, float, int, bool, bool, bool, bool ) {}
 void Font::init( const char*, void*, int, int, int, float, int, bool, bool, bool, bool ) {}
 void Font::getCharRGBA( int, int, int, int, int, uchar* ) {}

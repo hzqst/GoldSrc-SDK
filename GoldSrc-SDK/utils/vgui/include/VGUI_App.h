@@ -125,6 +125,21 @@ protected:
 private:
 	long              _nextTickMillis;
 	long              _minimumTickMillisInterval;
+#if VGUI_ABI_COMPAT_MODE != 1
+	// Holds the scheme App makes, which reset restores instead of leaking it
+	// for a new one; it is freed with the App. A copy makes its own and an
+	// assigned App keeps its own. The schemes given to setScheme are not owned.
+	class VGUIAPI OwnScheme
+	{
+	public:
+		OwnScheme();
+		OwnScheme(const OwnScheme& other);
+		~OwnScheme();
+		OwnScheme& operator=(const OwnScheme& other);
+		Scheme* scheme;
+	};
+	OwnScheme         _ownScheme;
+#endif
 	friend class SurfaceBase;
 };
 }

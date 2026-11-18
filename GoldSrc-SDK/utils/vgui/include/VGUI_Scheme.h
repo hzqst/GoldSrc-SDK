@@ -63,10 +63,10 @@ public:
 public:
 	Scheme();
 #if VGUI_ABI_COMPAT_MODE != 1
-	// A Scheme owns the cursors its constructor makes and keeps them, also
-	// after setCursor replaces them, as panels and surfaces may still use
-	// them. A copy gets its own. Fonts and the cursors given to setCursor
-	// are not owned.
+	// A Scheme owns the fonts and cursors its constructor makes and keeps
+	// them, also after setFont or setCursor replaces them, as panels and
+	// surfaces may still use them. A copy gets its own. The fonts and cursors
+	// given to setFont and setCursor are not owned.
 	Scheme(const Scheme& other);
 	virtual ~Scheme();
 	Scheme& operator=(const Scheme& other);
@@ -90,6 +90,9 @@ protected:
 #if VGUI_ABI_COMPAT_MODE != 1
 private:
 	Cursor* _ownCursor[scu_last];
+	Font*   _ownFont[sf_last];
+	void restoreDefaults();
+	friend class App;
 protected:
 #endif
     friend class Panel;
