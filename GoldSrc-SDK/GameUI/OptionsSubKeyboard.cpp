@@ -6,6 +6,7 @@
 
 #include "OptionsSubKeyboard.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 #include "vcontrolslistpanel.h"
 
 #include "Button.h"
@@ -475,12 +476,14 @@ void COptionsSubKeyboard::FillInDefaultBindings()
 		if ( !token[0] )
 			break;
 		char keyname[256];
-		strcpy( keyname, token );
+		bool keyCopied = UTIL_CopyString( keyname, sizeof( keyname ), token );
 		data = engine->COM_ParseFile( data, token );
 		if ( !token[0] )
 			break;
 		char binding[256];
-		strcpy( binding, token );
+		// Skip entries that do not fit instead of truncating them
+		if ( !keyCopied || !UTIL_CopyString( binding, sizeof( binding ), token ) )
+			continue;
 		KeyValues* item = GetItemForBinding( binding );
 		if ( !item )
 			continue;
@@ -531,12 +534,14 @@ void COptionsSubKeyboard::ParseActionDescriptions()
 		if ( !token[0] )
 			break;
 		char binding[256];
-		strcpy( binding, token );
+		bool bindingCopied = UTIL_CopyString( binding, sizeof( binding ), token );
 		data = engine->COM_ParseFile( data, token );
 		if ( !token[0] )
 			break;
 		char description[256];
-		strcpy( description, token );
+		// Skip entries that do not fit instead of truncating them
+		if ( !bindingCopied || !UTIL_CopyString( description, sizeof( description ), token ) )
+			continue;
 		if ( description[0] == '=' )
 			continue;
 		// Flag as special header row if binding is "blank"
