@@ -20,6 +20,9 @@ vgui_strcpy is extracted from vgui.cpp, whose remaining code only builds for
   next (#223).
 - remove-child-detaches: removeChild takes the child's whole tree off the
   surface and leaves the other children on it (#223).
+- repaint-all-unattached: repaintAll on a panel on no surface marks the top of
+  its own tree for repainting, also after the tree was removed from its
+  parent (#226).
 With VGUI_ABI_COMPAT_MODE=0 only:
 - delete-tree: deleting a panel deletes its border, input signals and the
   whole child tree.
@@ -182,7 +185,8 @@ static void Check(bool condition, const char* message)
  if (!condition) throw std::runtime_error(message);
 }
 
-// Puts a panel's tree on a surface through the protected setSurfaceBaseTraverse.
+// Puts a panel's tree on a surface through the protected setSurfaceBaseTraverse,
+// and reads and clears the protected _needsRepaint.
 class PanelSurface : public Panel
 {
 public:
@@ -190,6 +194,12 @@ public:
  {
   void ( Panel::*traverse )( SurfaceBase* ) = &PanelSurface::setSurfaceBaseTraverse;
   ( panel->*traverse )( surface );
+ }
+
+ static bool& needsRepaint( Panel* panel )
+ {
+  bool Panel::*flag = &PanelSurface::_needsRepaint;
+  return panel->*flag;
  }
 };
 
@@ -244,6 +254,25 @@ static void Run(const std::string& test)
   counted.setParent( &counter );
   counter.removeAllChildren();
   Check(0 == counter.removes && NULL == counted.getParent(), "removeChild override not called");
+ }
+ else if (test == "repaint-all-unattached")
+ {
+  Panel lone;
+  lone.repaintAll();
+  Check(PanelSurface::needsRepaint( &lone ), "unattached panel marked");
+  Panel root;
+  PanelSurface::set( &root, SURFACE_A );
+  Panel child;
+  Panel grandchild;
+  child.setParent( &root );
+  grandchild.setParent( &child );
+  root.removeChild( &child );
+  PanelSurface::needsRepaint( &root ) = false;
+  PanelSurface::needsRepaint( &child ) = false;
+  PanelSurface::needsRepaint( &grandchild ) = false;
+  grandchild.repaintAll();
+  Check(PanelSurface::needsRepaint( &child ), "top of the detached tree marked");
+  Check(!PanelSurface::needsRepaint( &root ), "former parent left alone");
  }
  else if (test == "remove-child-detaches")
  {
@@ -385,7 +414,7 @@ int main(int argc, char** argv)
 NONCOMPAT_SCENARIOS = ['delete-tree', 'delete-attached-child', 'member-child', 'removed-signal-survives',
                        'app-pointers-cleared', 'text-entry', 'button-controller', 'copy-no-ownership']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
-SCENARIOS = ['remove-all-detaches', 'remove-child-detaches']
+SCENARIOS = ['remove-all-detaches', 'remove-child-detaches', 'repaint-all-unattached']
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
 
 
