@@ -14,6 +14,7 @@
 #include "StringUtils.h"
 #include "Taskbar.h"
 
+#include "MessageBox.h"
 #include "RadioButton.h"
 #include "vgui/ILocalize.h"
 #include "vgui/KeyValues.h"
@@ -29,6 +30,19 @@
 #include <strings.h>
 #define stricmp strcasecmp
 #endif
+
+#ifdef MessageBox
+#undef MessageBox
+#endif
+
+//-----------------------------------------------------------------------------
+// Purpose: copies a value of the server command, fails when it is missing,
+//          does not fit in buffer or contains any of the forbidden characters
+//-----------------------------------------------------------------------------
+static bool CopyServerSetting( char* buffer, size_t bufferSize, const char* value, const char* forbidden )
+{
+	return value && !strpbrk( value, forbidden ) && UTIL_CopyString( buffer, bufferSize, value );
+}
 
 CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog( vgui2::Panel* parent ) :
 	BaseClass( parent, "CreateMultiplayerGameDialog" )
@@ -158,11 +172,34 @@ void CCreateMultiplayerGameDialog::SetTitle( const char* title, bool surfaceTitl
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: keeps the dialog open when the server cannot be started
+//-----------------------------------------------------------------------------
+void CCreateMultiplayerGameDialog::OnCommand( const char* command )
+{
+	if ( !stricmp( command, "OK" ) )
+	{
+		if ( StartServer() )
+			BaseClass::OnCommand( "Close" );
+		return;
+	}
+
+	BaseClass::OnCommand( command );
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: runs the server when the OK button is pressed
 //-----------------------------------------------------------------------------
 void CCreateMultiplayerGameDialog::OnOK()
 {
-	BaseClass::OnOK();
+	StartServer();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: applies the pages and runs the server, fails without applying when
+//          the map, hostname or password cannot go into the server command
+//-----------------------------------------------------------------------------
+bool CCreateMultiplayerGameDialog::StartServer()
+{
 	if ( !m_pGameplayPage )
 		m_pGameplayPage = new CCreateMultiplayerGameGameplayPage( this, "GameplayPage" );
 
@@ -170,9 +207,32 @@ void CCreateMultiplayerGameDialog::OnOK()
 	char szHostName[64];
 	char szPassword[64];
 	char szMapCommand[1024];
-	strncpy( szMapName, m_pServerPage->GetMapName(), sizeof( szMapName ) );
-	strncpy( szHostName, m_pGameplayPage->GetHostName(), sizeof( szHostName ) );
-	strncpy( szPassword, m_pGameplayPage->GetPassword(), sizeof( szPassword ) );
+	// The map goes into the command unquoted, the hostname and password quoted;
+	// GetHostName and GetPassword share one buffer, so copy each before the next call
+	bool valid = CopyServerSetting( szMapName, sizeof( szMapName ), m_pServerPage->GetMapName(), ";\"\n\r" ) &&
+		CopyServerSetting( szHostName, sizeof( szHostName ), m_pGameplayPage->GetHostName(), "\"\n\r" ) &&
+		CopyServerSetting( szPassword, sizeof( szPassword ), m_pGameplayPage->GetPassword(), "\"\n\r" );
+
+	bool steamNetworking = m_pServerPage->GetSteamNetworkingEnabled();
+	if ( valid )
+	{
+		valid = UTIL_FormatString( szMapCommand, sizeof( szMapCommand ),
+			"disconnect\nsv_lan %d\nsv_use_steam_networking %d\nsetmaster enable\nmaxplayers %i\n"
+			"sv_password \"%s\"\nhostname \"%s\"\ncd fadeout\nmap %s\n",
+			!steamNetworking, steamNetworking, m_pGameplayPage->GetMaxPlayers(), szPassword, szHostName, szMapName );
+	}
+
+	if ( !valid )
+	{
+		const wchar_t* title = vgui2::localize()->Find( "#GameUI_CreateServerFailedTitle" );
+		const wchar_t* text = vgui2::localize()->Find( "#GameUI_CreateServerInvalidSettingsText" );
+		vgui2::MessageBox* error = new vgui2::MessageBox( title ? title : L"Cannot start server",
+			text ? text : L"The map, server name or password is longer than 63 bytes or contains quotes or line breaks.", NULL );
+		error->DoModal( this );
+		return false;
+	}
+
+	BaseClass::OnOK();
 
 	if ( m_bBotsEnabled )
 	{
@@ -207,11 +267,6 @@ void CCreateMultiplayerGameDialog::OnOK()
 		m_pBotSavedData->SaveToFile( vgui2::filesystem(), "CSBotConfig.vdf", "CONFIG" );
 	}
 
-	bool steamNetworking = m_pServerPage->GetSteamNetworkingEnabled();
-	sprintf( szMapCommand,
-		"disconnect\nsv_lan %d\nsv_use_steam_networking %d\nsetmaster enable\nmaxplayers %i\n"
-		"sv_password \"%s\"\nhostname \"%s\"\ncd fadeout\nmap %s\n",
-		!steamNetworking, steamNetworking, m_pGameplayPage->GetMaxPlayers(), szPassword, szHostName, szMapName );
 	// start loading the map
 	engine->pfnClientCmd( szMapCommand );
 	// wait a few frames after the map loads to make sure everything is "settled"
@@ -240,6 +295,8 @@ void CCreateMultiplayerGameDialog::OnOK()
 		engine->pfnClientCmd( "mp_autoteambalance 0\n" );
 		engine->pfnClientCmd( "mp_limitteams 0\n" );
 	}
+
+	return true;
 }
 
 //-----------------------------------------------------------------------------
