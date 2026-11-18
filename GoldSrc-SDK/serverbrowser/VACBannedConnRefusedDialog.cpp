@@ -16,6 +16,7 @@ CVACBannedConnRefusedDialog::CVACBannedConnRefusedDialog( vgui2::VPANEL hVParent
 	SetParent( hVParent );
 	SetSize( 480, 220 );
 	SetSizeable( false );
+	SetDeleteSelfOnClose( true );
 	LoadControlSettings( "servers/VACBannedConnRefusedDialog.res", NULL );
 	MoveToCenterOfScreen();
 }
