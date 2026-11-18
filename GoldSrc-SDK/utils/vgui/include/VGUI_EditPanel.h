@@ -21,6 +21,12 @@ class VGUIAPI EditPanel : public Panel
 {
 public:
 	EditPanel(int x,int y,int wide,int tall);
+#if VGUI_ABI_COMPAT_MODE != 1
+	// An EditPanel owns its lines; a copy gets its own.
+	EditPanel(const EditPanel& other);
+	virtual ~EditPanel();
+	EditPanel& operator=(const EditPanel& other);
+#endif
 public:
 	virtual void doCursorUp();
 	virtual void doCursorDown();

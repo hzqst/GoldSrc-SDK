@@ -108,4 +108,11 @@ ToggleButton::ToggleButton( const char* text, int x, int y ) : Button( text, x, 
 	setButtonController( new FooDefaultToggleButtonController( this ) );
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+ToggleButton::ToggleButton( const ToggleButton& other ) : Button( other )
+{
+	setButtonController( new FooDefaultToggleButtonController( this ) );
+}
+#endif
+
 }

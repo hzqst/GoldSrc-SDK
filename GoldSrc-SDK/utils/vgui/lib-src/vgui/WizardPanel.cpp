@@ -234,6 +234,57 @@ WizardPanel::WizardPage::WizardPage( int wide, int tall ) : Panel( 0, 0, wide, t
 	init();
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+WizardPanel::WizardPage::WizardPage( const WizardPage& other ) : Panel( other )
+{
+	init();
+	copyFrom( other );
+}
+
+WizardPanel::WizardPage::~WizardPage()
+{
+	delete[] _backButtonText;
+	delete[] _nextButtonText;
+	delete[] _finishedButtonText;
+	delete[] _cancelButtonText;
+	delete[] _title;
+}
+
+WizardPanel::WizardPage& WizardPanel::WizardPage::operator=( const WizardPage& other )
+{
+	if ( this != &other )
+	{
+		Panel::operator=( other );
+		copyFrom( other );
+	}
+
+	return *this;
+}
+
+// The signals and the linked pages are not owned and stay shared.
+void WizardPanel::WizardPage::copyFrom( const WizardPage& other )
+{
+	_backWizardPage = other._backWizardPage;
+	_nextWizardPage = other._nextWizardPage;
+	_backButtonEnabled = other._backButtonEnabled;
+	_nextButtonEnabled = other._nextButtonEnabled;
+	_finishedButtonEnabled = other._finishedButtonEnabled;
+	_cancelButtonEnabled = other._cancelButtonEnabled;
+	_backButtonVisible = other._backButtonVisible;
+	_nextButtonVisible = other._nextButtonVisible;
+	_finishedButtonVisible = other._finishedButtonVisible;
+	_cancelButtonVisible = other._cancelButtonVisible;
+	setBackButtonText( other._backButtonText );
+	setNextButtonText( other._nextButtonText );
+	setFinishedButtonText( other._finishedButtonText );
+	setCancelButtonText( other._cancelButtonText );
+	_switchingToBackPageSignalDar = other._switchingToBackPageSignalDar;
+	_switchingToNextPageSignalDar = other._switchingToNextPageSignalDar;
+	setTitle( other._title );
+	_wantedFocus = other._wantedFocus;
+}
+#endif
+
 void WizardPanel::WizardPage::fireSwitchingToBackPageSignals()
 {
 	for ( int i = 0; i < _switchingToBackPageSignalDar.getCount(); ++i )
@@ -399,25 +450,25 @@ void WizardPanel::WizardPage::getCancelButtonText( char* text, int textLen )
 
 void WizardPanel::WizardPage::setBackButtonText( const char* text )
 {
-	operator delete( _backButtonText );
+	delete[] _backButtonText;
 	_backButtonText = vgui_strdup( text );
 }
 
 void WizardPanel::WizardPage::setNextButtonText( const char* text )
 {
-	operator delete( _nextButtonText );
+	delete[] _nextButtonText;
 	_nextButtonText = vgui_strdup( text );
 }
 
 void WizardPanel::WizardPage::setFinishedButtonText( const char* text )
 {
-	operator delete( _finishedButtonText );
+	delete[] _finishedButtonText;
 	_finishedButtonText = vgui_strdup( text );
 }
 
 void WizardPanel::WizardPage::setCancelButtonText( const char* text )
 {
-	operator delete( _cancelButtonText );
+	delete[] _cancelButtonText;
 	_cancelButtonText = vgui_strdup( text );
 }
 
@@ -443,7 +494,7 @@ void WizardPanel::WizardPage::addSwitchingToNextPageSignal( ActionSignal* s )
 
 void WizardPanel::WizardPage::setTitle( const char* text )
 {
-	operator delete( _title );
+	delete[] _title;
 	_title = vgui_strdup( text );
 }
 

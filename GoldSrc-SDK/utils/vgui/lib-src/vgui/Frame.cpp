@@ -538,7 +538,7 @@ void Frame::setCloseButtonVisible( bool state )
 
 void Frame::setTitle( const char* title )
 {
-	delete _title;
+	delete[] _title;
 	_title = vgui_strdup( title );
 	repaint();
 }

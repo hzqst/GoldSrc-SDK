@@ -58,6 +58,12 @@ public:
 
 		WizardPage();
 		WizardPage(int wide,int tall);
+#if VGUI_ABI_COMPAT_MODE != 1
+		// A WizardPage owns its texts; a copy gets its own.
+		WizardPage(const WizardPage& other);
+		virtual ~WizardPage();
+		WizardPage& operator=(const WizardPage& other);
+#endif
 
 	public:
 

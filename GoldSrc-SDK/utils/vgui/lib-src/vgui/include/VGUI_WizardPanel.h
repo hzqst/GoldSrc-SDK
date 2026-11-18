@@ -21,6 +21,11 @@ public:
 	public:
 		WizardPage();
 		WizardPage( int wide, int tall );
+#if VGUI_ABI_COMPAT_MODE != 1
+		// A WizardPage owns its texts; a copy gets its own.
+		WizardPage( const WizardPage& other );
+		virtual ~WizardPage() override;
+#endif
 
 	private:
 		virtual void fireSwitchingToBackPageSignals();
@@ -89,10 +94,18 @@ public:
 		char*				_title;
 		Panel*				_wantedFocus;
 
+#if VGUI_ABI_COMPAT_MODE != 1
+		void copyFrom( const WizardPage& other );
+#endif
+
 		friend class WizardPanel;
 
 	public:
+#if VGUI_ABI_COMPAT_MODE != 1
+		WizardPage& operator=( const WizardPage& other );
+#else
 		WizardPage& operator=( const WizardPage& ) = default;
+#endif
 	};
 
 	WizardPanel( int x, int y, int wide, int tall );
