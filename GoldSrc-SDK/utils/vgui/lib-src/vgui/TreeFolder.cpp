@@ -159,6 +159,14 @@ void FooTreeFolderDefaultHandler::keyFocusTicked( Panel* )
 {
 }
 
+// Panel does not own its layout, and this one keeps no state between layouts,
+// so every TreeFolder shares it instead of making one nothing frees.
+Layout* folderLayout()
+{
+	static FooTabFolderVerticalLayout layout( 30, 3 );
+	return &layout;
+}
+
 }
 
 namespace vgui
@@ -172,7 +180,7 @@ void TreeFolder::init( const char* name )
 	label = new Label( name, 0, 0 );
 	label->addInputSignal( new FooTreeFolderDefaultHandler( this ) );
 	label->setParent( this );
-	setLayout( new FooTabFolderVerticalLayout( 30, 3 ) );
+	setLayout( folderLayout() );
 }
 
 TreeFolder::TreeFolder( const char* name ) : Panel( 0, 0, 500, 500 )

@@ -33,8 +33,11 @@ FooDumb::FooDumb( Label* label ) : Panel( 0, 0, 200, 20 )
 {
 	_label = label;
 
-	FlowLayout* layout = new FlowLayout( 2 );
-	setLayout( layout );
+	// Panel does not own its layout, and a FlowLayout keeps no state between
+	// layouts, so every FooDumb shares this one instead of making one nothing
+	// frees.
+	static FlowLayout layout( 2 );
+	setLayout( &layout );
 
 	Label* textLabel = new Label( "setText" );
 	textLabel->setParent( this );

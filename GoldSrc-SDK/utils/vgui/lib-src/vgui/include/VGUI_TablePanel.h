@@ -16,6 +16,11 @@ class VGUIAPI TablePanel : public Panel
 
 public:
 	TablePanel( int x, int y, int wide, int tall, int columnCount );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A TablePanel owns the panel it hit-tests cells with; a copy gets its own.
+	TablePanel( const TablePanel& other );
+	virtual ~TablePanel() override;
+#endif
 
 	virtual void setCellEditingEnabled( bool state );
 	virtual void setColumnCount( int columnCount );
@@ -65,8 +70,16 @@ private:
 	int			_virtualSize[2];
 	bool		_cellEditingEnabled;
 
+#if VGUI_ABI_COMPAT_MODE != 1
+	void copyFrom( const TablePanel& other );
+#endif
+
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	TablePanel& operator=( const TablePanel& other );
+#else
 	TablePanel& operator=( const TablePanel& ) = default;
+#endif
 };
 
 }

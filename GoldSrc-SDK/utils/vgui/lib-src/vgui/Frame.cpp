@@ -664,57 +664,59 @@ Frame::Frame( int x, int y, int wide, int tall ) : Panel( x, y, wide, tall )
 	setTitle( "Untitled" );
 	setMinimumSize( 64, 33 );
 
+	// The grips use the scheme's cursors: Panel does not own a cursor, so one
+	// made here would never be freed.
 	_topGrip = new Panel( 15, 0, wide - 30, 5 );
 	_topGrip->setParent( this );
-	_topGrip->setCursor( new Cursor( Cursor::dc_sizens ) );
+	_topGrip->setCursor( Scheme::scu_sizens );
 	_topGrip->addInputSignal( new FooTopGripSignal( this ) );
 	disableGripPaint( _topGrip );
 
 	_bottomGrip = new Panel( 15, tall - 5, wide - 30, 5 );
 	_bottomGrip->setParent( this );
-	_bottomGrip->setCursor( new Cursor( Cursor::dc_sizens ) );
+	_bottomGrip->setCursor( Scheme::scu_sizens );
 	_bottomGrip->addInputSignal( new FooBottomGripSignal( this ) );
 	disableGripPaint( _bottomGrip );
 
 	_leftGrip = new Panel( 0, 15, 5, tall - 30 );
 	_leftGrip->setParent( this );
-	_leftGrip->setCursor( new Cursor( Cursor::dc_sizewe ) );
+	_leftGrip->setCursor( Scheme::scu_sizewe );
 	_leftGrip->addInputSignal( new FooLeftGripSignal( this ) );
 	disableGripPaint( _leftGrip );
 
 	_rightGrip = new Panel( wide - 5, 15, 5, tall - 30 );
 	_rightGrip->setParent( this );
-	_rightGrip->setCursor( new Cursor( Cursor::dc_sizewe ) );
+	_rightGrip->setCursor( Scheme::scu_sizewe );
 	_rightGrip->addInputSignal( new FooRightGripSignal( this ) );
 	disableGripPaint( _rightGrip );
 
 	_topLeftGrip = new Panel( 0, 0, 15, 15 );
 	_topLeftGrip->setParent( this );
-	_topLeftGrip->setCursor( new Cursor( Cursor::dc_sizenwse ) );
+	_topLeftGrip->setCursor( Scheme::scu_sizenwse );
 	_topLeftGrip->addInputSignal( new FooTopLeftGripSignal( this ) );
 	disableGripPaint( _topLeftGrip );
 
 	_topRightGrip = new Panel( wide - 15, 0, 15, 15 );
 	_topRightGrip->setParent( this );
-	_topRightGrip->setCursor( new Cursor( Cursor::dc_sizenesw ) );
+	_topRightGrip->setCursor( Scheme::scu_sizenesw );
 	_topRightGrip->addInputSignal( new FooTopRightGripSignal( this ) );
 	disableGripPaint( _topRightGrip );
 
 	_bottomLeftGrip = new Panel( 0, tall - 15, 15, 15 );
 	_bottomLeftGrip->setParent( this );
-	_bottomLeftGrip->setCursor( new Cursor( Cursor::dc_sizenesw ) );
+	_bottomLeftGrip->setCursor( Scheme::scu_sizenesw );
 	_bottomLeftGrip->addInputSignal( new FooBottomLeftGripSignal( this ) );
 	disableGripPaint( _bottomLeftGrip );
 
 	_bottomRightGrip = new Panel( wide - 15, tall - 15, 15, 15 );
 	_bottomRightGrip->setParent( this );
-	_bottomRightGrip->setCursor( new Cursor( Cursor::dc_sizenwse ) );
+	_bottomRightGrip->setCursor( Scheme::scu_sizenwse );
 	_bottomRightGrip->addInputSignal( new FooBottomRightGripSignal( this ) );
 	disableGripPaint( _bottomRightGrip );
 
 	_captionGrip = new Panel( 5, 5, wide - 10, 23 );
 	_captionGrip->setParent( this );
-	_captionGrip->setCursor( new Cursor( Cursor::dc_sizeall ) );
+	_captionGrip->setCursor( Scheme::scu_sizeall );
 	_captionGrip->addInputSignal( new FooCaptionGripSignal( this ) );
 	disableGripPaint( _captionGrip );
 
@@ -743,5 +745,55 @@ Frame::Frame( int x, int y, int wide, int tall ) : Panel( x, y, wide, tall )
 	_menuButton->setFont( Scheme::sf_secondary1 );
 	_menuButton->setParent( this );
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+Frame::Frame( const Frame& other ) : Panel( other )
+{
+	_title = NULL;
+	copyFrom( other );
+}
+
+Frame::~Frame()
+{
+	delete[] _title;
+}
+
+Frame& Frame::operator=( const Frame& other )
+{
+	if ( this != &other )
+	{
+		Panel::operator=( other );
+		copyFrom( other );
+	}
+
+	return *this;
+}
+
+// Like the original copy, the grips, buttons and signals stay shared.
+void Frame::copyFrom( const Frame& other )
+{
+	setTitle( other._title );
+	_internal = other._internal;
+	_sizeable = other._sizeable;
+	_moveable = other._moveable;
+	_topGrip = other._topGrip;
+	_bottomGrip = other._bottomGrip;
+	_leftGrip = other._leftGrip;
+	_rightGrip = other._rightGrip;
+	_topLeftGrip = other._topLeftGrip;
+	_topRightGrip = other._topRightGrip;
+	_bottomLeftGrip = other._bottomLeftGrip;
+	_bottomRightGrip = other._bottomRightGrip;
+	_captionGrip = other._captionGrip;
+	_client = other._client;
+	_trayButton = other._trayButton;
+	_minimizeButton = other._minimizeButton;
+	_maximizeButton = other._maximizeButton;
+	_closeButton = other._closeButton;
+	_menuButton = other._menuButton;
+	_frameSignalDar = other._frameSignalDar;
+	_resizeable = other._resizeable;
+}
+#endif
 
 }

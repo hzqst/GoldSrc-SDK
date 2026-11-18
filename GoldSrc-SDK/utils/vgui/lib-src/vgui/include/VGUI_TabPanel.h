@@ -22,6 +22,11 @@ public:
 
 public:
 	TabPanel( int x, int y, int wide, int tall );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A TabPanel owns its ButtonGroup; a copy gets its own.
+	TabPanel( const TabPanel& other );
+	virtual ~TabPanel() override;
+#endif
 
 public:
 	virtual Panel* addTab( const char* text );
@@ -41,8 +46,17 @@ protected:
 	Panel*			_selectedPanel;
 	ButtonGroup*	_buttonGroup;
 
+#if VGUI_ABI_COMPAT_MODE != 1
+private:
+	void copyFrom( const TabPanel& other );
+#endif
+
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	TabPanel& operator=( const TabPanel& other );
+#else
 	TabPanel& operator=( const TabPanel& ) = default;
+#endif
 };
 
 }

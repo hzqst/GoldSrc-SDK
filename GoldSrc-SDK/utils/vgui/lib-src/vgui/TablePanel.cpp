@@ -7,6 +7,8 @@
 #include "VGUI_RepaintSignal.h"
 #include "VGUI_Scheme.h"
 
+#include <string.h>
+
 #define COLUMN_EXTENT_BITS	12
 #define COLUMN_EXTENT_MASK	((1 << COLUMN_EXTENT_BITS) - 1)
 
@@ -144,6 +146,50 @@ TablePanel::TablePanel( int x, int y, int wide, int tall, int columnCount ) : Pa
 
 	addInputSignal( new FooVGuiTablePanelHandler( this ) );
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+TablePanel::TablePanel( const TablePanel& other ) : Panel( other )
+{
+	_fakeInputPanel = new Panel();
+	copyFrom( other );
+}
+
+// The fake input panel is only a child while isWithinTraverse runs.
+TablePanel::~TablePanel()
+{
+	delete _fakeInputPanel;
+}
+
+// Keeps this panel's own fake input panel.
+TablePanel& TablePanel::operator=( const TablePanel& other )
+{
+	if ( this != &other )
+	{
+		Panel::operator=( other );
+		copyFrom( other );
+	}
+
+	return *this;
+}
+
+// Like the original copy, the editing cell panel stays shared.
+void TablePanel::copyFrom( const TablePanel& other )
+{
+	_columnDar = other._columnDar;
+	memcpy( _gridVisible, other._gridVisible, sizeof( _gridVisible ) );
+	_gridWide = other._gridWide;
+	_gridTall = other._gridTall;
+	memcpy( _selectedCell, other._selectedCell, sizeof( _selectedCell ) );
+	memcpy( _mouseOverCell, other._mouseOverCell, sizeof( _mouseOverCell ) );
+	memcpy( _editableCell, other._editableCell, sizeof( _editableCell ) );
+	_columnSelectionEnabled = other._columnSelectionEnabled;
+	_rowSelectionEnabled = other._rowSelectionEnabled;
+	_cellSelectionEnabled = other._cellSelectionEnabled;
+	_editableCellPanel = other._editableCellPanel;
+	memcpy( _virtualSize, other._virtualSize, sizeof( _virtualSize ) );
+	_cellEditingEnabled = other._cellEditingEnabled;
+}
+#endif
 
 void TablePanel::setCellEditingEnabled( bool state )
 {
