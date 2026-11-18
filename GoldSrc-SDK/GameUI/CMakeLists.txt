@@ -73,7 +73,6 @@ goldsrc_add_module(GameUI
 		GameUI/RunGameEngine.cpp
 		GameUI/SaveGameDialog.cpp
 		GameUI/ScriptObject.cpp
-		GameUI/StringUtils.cpp
 		GameUI/Sys_Utils.cpp
 		GameUI/Taskbar.cpp
 		GameUI/TaskButton.cpp
@@ -127,6 +126,7 @@ goldsrc_add_module(GameUI
 		engine/utlsymbol.cpp
 		engine/BaseSystemModule.cpp
 		common/ObjectList.cpp
+		common/StringUtils.cpp
 		# Career shares the CS message parsing, formatting, bot profile and weapon sources.
 		game_shared/cstrike/parsemsg.cpp
 		game_shared/cstrike/Random.cpp

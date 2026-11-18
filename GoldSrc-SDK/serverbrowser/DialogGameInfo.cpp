@@ -13,6 +13,7 @@
 
 #include "vgui/ISurface.h"
 #include "vgui/ISystem.h"
+#include "vgui/ILocalize.h"
 #include "vgui/IVGui.h"
 #include "Button.h"
 #include "vgui_controls/Controls.h"
@@ -23,6 +24,7 @@
 #include "ToggleButton.h"
 #include "vgui/KeyValues.h"
 #include "GameUI/common/IRunGameEngine.h"
+#include "StringUtils.h"
 #include "../external/steamworks/isteamapps.h"
 
 #include <stdio.h>
@@ -653,8 +655,19 @@ void CDialogGameInfo::RefreshComplete( EMatchMakingServerResponse response )
 //-----------------------------------------------------------------------------
 void CDialogGameInfo::OnJoinServerWithPassword( const char *password )
 {
-	// copy out the password
-	snprintf( m_szPassword, sizeof( m_szPassword ), "%s", password );
+	// The password goes inside quotes in the password command and the +password
+	// launch option; one that could close them or does not fit is refused, as a
+	// cut password would be wrong anyway
+	if ( !UTIL_IsQuotedCommandArgument( password ) || !UTIL_CopyString( m_szPassword, sizeof( m_szPassword ), password ) )
+	{
+		m_szPassword[0] = 0;
+		const wchar_t* title = vgui2::localize()->Find( "#ServerBrowser_InvalidPasswordTitle" );
+		const wchar_t* text = vgui2::localize()->Find( "#ServerBrowser_InvalidPasswordText" );
+		vgui2::MessageBox* error = new vgui2::MessageBox( title ? title : L"Cannot join server",
+			text ? text : L"The password is longer than 63 bytes or contains quotes or line breaks.", NULL );
+		error->DoModal( this );
+		return;
+	}
 
 	// retry connecting to the server again
 	OnConnect();

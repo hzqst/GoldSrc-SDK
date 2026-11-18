@@ -75,6 +75,7 @@ goldsrc_add_module(serverbrowser
 		engine/KeyValues.cpp
 		engine/MemPool.cpp
 		engine/controls.cpp
+		common/StringUtils.cpp
 	INCLUDES
 		serverbrowser
 		vgui2/compat

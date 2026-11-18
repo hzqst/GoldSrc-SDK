@@ -142,8 +142,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-career-command-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code, encoding='utf-8')
-        executable = compile_program([path / 'test.cpp', gameui / 'StringUtils.cpp'], path / 'test',
-                                     includes=[gameui], sanitizers=['address', 'undefined'],
+        executable = compile_program([path / 'test.cpp', ROOT / 'common/StringUtils.cpp'], path / 'test',
+                                     includes=[ROOT / 'common'], sanitizers=['address', 'undefined'],
                                      defines=['_CRT_SECURE_NO_WARNINGS'])
         subprocess.run([str(executable)], check=True, cwd=path)
 

@@ -164,8 +164,8 @@ def main():
                 (games / directory / 'liblist.gam').write_bytes(description.encode('ascii'))
         else:
             games.mkdir()
-        executable = compile_program([path / 'test.cpp', ROOT / 'GameUI/StringUtils.cpp'], path / 'test',
-                                     includes=[ROOT / 'GameUI'], sanitizers=['address', 'undefined'],
+        executable = compile_program([path / 'test.cpp', ROOT / 'common/StringUtils.cpp'], path / 'test',
+                                     includes=[ROOT / 'common'], sanitizers=['address', 'undefined'],
                                      defines=['_CRT_SECURE_NO_WARNINGS', '_CRT_NONSTDC_NO_DEPRECATE'])
         subprocess.run([str(executable)], check=True, cwd=games)
 

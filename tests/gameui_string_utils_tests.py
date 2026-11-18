@@ -151,7 +151,7 @@ static void ModInfoSkipsPairsThatDoNotFit() {
 
 
 def main():
-    utils = (ROOT / 'GameUI/StringUtils.cpp').read_text(encoding='utf-8')
+    utils = (ROOT / 'common/StringUtils.cpp').read_text(encoding='utf-8')
     modinfo = (ROOT / 'GameUI/ModInfo.cpp').read_text(encoding='utf-8')
     code = STUBS + constants(utils)
     code += function(utils, 'bool UTIL_FormatString(') + function(utils, 'bool UTIL_CopyString(') + function(utils, 'void UTIL_UppercaseASCII(')
