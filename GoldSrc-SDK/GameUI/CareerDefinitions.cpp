@@ -26,6 +26,23 @@
 
 CareerDefinitionManager* TheCareerDefinitions;
 
+//-----------------------------------------------------------------------------
+// Purpose: the map name goes into the career command unquoted, and each task
+//          name unquoted and its weapon quoted into career_add_task
+//-----------------------------------------------------------------------------
+static bool IsSendableCareerMap( const char* mapName, ITaskVec& tasks )
+{
+	if ( !UTIL_IsUnquotedCommandArgument( mapName ) )
+		return false;
+
+	for ( ITaskVec::iterator it = tasks.begin(); it != tasks.end(); ++it )
+	{
+		if ( !UTIL_IsUnquotedCommandArgument( ( *it )->GetTaskName() ) || !UTIL_IsQuotedCommandArgument( ( *it )->GetWeaponName() ) )
+			return false;
+	}
+	return true;
+}
+
 static CharacterVec ParseProfilesFromString( BotProfileManager* manager, const char* names )
 {
 	char* namesCopy = CloneString( names );
@@ -39,7 +56,9 @@ static CharacterVec ParseProfilesFromString( BotProfileManager* manager, const c
 		if ( !token )
 			continue;
 		const BotProfile* profile = manager->GetProfile( token, BOT_TEAM_ANY );
-		if ( profile )
+		// The name goes inside quotes in the bot_add commands, so a bot whose name
+		// could add commands is left out of the career
+		if ( profile && UTIL_IsQuotedCommandArgument( profile->GetName() ) )
 			characters.push_back( new CCareerCharacter( profile ) );
 	}
 	delete[] namesCopy;
@@ -184,6 +203,13 @@ void CareerDifficultyDefinition::Init( const char* careerName, const char* filen
 					}
 					map->SetTasks( tasks );
 					SharedSetQuoteChar( '"' );
+					// A map that could add commands is dropped like a map without bots
+					if ( !IsSendableCareerMap( mapName, *map->GetTasks() ) )
+					{
+						delete map;
+						key = key->GetNextKey();
+						break;
+					}
 					map->SetMinEnemyCount( atoi( key->GetString( "minEnemies", "3" ) ) );
 					map->SetThreshold( atoi( key->GetString( "threshold", "9999" ) ) );
 					map->SetTeammatesAllowed( key->GetInt( "teammates", 1 ) != 0 );

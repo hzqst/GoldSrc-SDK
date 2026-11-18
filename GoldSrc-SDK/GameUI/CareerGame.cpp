@@ -552,6 +552,28 @@ void CCareerGame::AddSavedCvar( const char* cvarName, const char* cvarVal, bool 
 	engine->pfnClientCmd( command );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: formats the command that adds a bot to a team, fails when the name
+//          could close its quotes or the command does not fit
+//-----------------------------------------------------------------------------
+static bool FormatAddBotCommand( char* buffer, size_t bufferSize, bool ctTeam, const char* name )
+{
+	return UTIL_IsQuotedCommandArgument( name ) &&
+		UTIL_FormatString( buffer, bufferSize, ctTeam ? "wait\nwait\nbot_add_ct \"%s\"\n" : "wait\nwait\nbot_add_t \"%s\"\n", name );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: formats career_add_task, fails when the task name could add commands,
+//          the weapon could close its quotes or the command does not fit
+//-----------------------------------------------------------------------------
+static bool FormatAddTaskCommand( char* buffer, size_t bufferSize, const char* name, const char* weapon,
+	int repeat, bool survive, bool inARow, bool complete )
+{
+	return UTIL_IsUnquotedCommandArgument( name ) && UTIL_IsQuotedCommandArgument( weapon ) &&
+		UTIL_FormatString( buffer, bufferSize, "wait\ncareer_add_task %s \"%s\" %d %d %d %d\n",
+			name, weapon, repeat, (int)survive, (int)inARow, (int)complete );
+}
+
 void CCareerGame::FinishMatchStart()
 {
 	CCareerMap* map = m_pLastMap;
@@ -560,9 +582,8 @@ void CCareerGame::FinishMatchStart()
 	char command[1024];
 	for ( CharacterVec::const_iterator it = enemies.begin(); it != enemies.end(); ++it )
 	{
-		// Skip bots whose name does not fit; the next one takes the slot
-		if ( !UTIL_FormatString( command, sizeof( command ),
-				PlayAsCT() ? "wait\nwait\nbot_add_t \"%s\"\n" : "wait\nwait\nbot_add_ct \"%s\"\n", ( *it )->GetName() ) )
+		// Skip bots whose name does not fit or could add commands; the next one takes the slot
+		if ( !FormatAddBotCommand( command, sizeof( command ), !PlayAsCT(), ( *it )->GetName() ) )
 			continue;
 		engine->pfnClientCmd( command );
 		if ( !--count )
@@ -572,8 +593,7 @@ void CCareerGame::FinishMatchStart()
 	{
 		for ( CharacterVec::iterator it = m_hiredCharacters.begin(); it != m_hiredCharacters.end(); ++it )
 		{
-			if ( UTIL_FormatString( command, sizeof( command ),
-					PlayAsCT() ? "wait\nwait\nbot_add_ct \"%s\"\n" : "wait\nwait\nbot_add_t \"%s\"\n", ( *it )->GetName() ) )
+			if ( FormatAddBotCommand( command, sizeof( command ), PlayAsCT(), ( *it )->GetName() ) )
 				engine->pfnClientCmd( command );
 		}
 	}
@@ -601,7 +621,8 @@ int CCareerGame::GetBotPoolSliderPosition()
 
 void CCareerGame::SendMatchCommand()
 {
-	if ( !m_pLastMap || !TheCareerDefinitions->GetActiveCareerDefinition() )
+	// The map name goes into the career command unquoted
+	if ( !m_pLastMap || !TheCareerDefinitions->GetActiveCareerDefinition() || !UTIL_IsUnquotedCommandArgument( m_lastMapName ) )
 		return;
 	char password[9];
 	for ( int i = 0; i < (int)sizeof( password ) - 1; ++i )
@@ -617,9 +638,10 @@ void CCareerGame::SendMatchCommand()
 	m_savedCvars.push_back( new CvarLatch( "sv_password", NULL ) );
 	m_savedCvars.push_back( new CvarLatch( "hostname", NULL ) );
 	char command[1024];
-	sprintf( command, "disconnect\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\n"
+	if ( !UTIL_FormatString( command, sizeof( command ), "disconnect\nsv_lan 1\nsetmaster enable\nmaxplayers %i\nsv_password \"%s\"\n"
 			"hostname \"%s\"\ncd fadeout\ncareer %s\n",
-			(int)maxPlayers, password, "Counter-Strike: Condition Zero", m_lastMapName );
+			(int)maxPlayers, password, "Counter-Strike: Condition Zero", m_lastMapName ) )
+		return;
 	engine->pfnClientCmd( command );
 	engine->pfnClientCmd( "wait\nwait\n" );
 
@@ -675,11 +697,11 @@ void CCareerGame::SendMatchCommand()
 		int repeat = task->GetRepeat();
 		const char* weapon = task->GetWeaponName();
 		const char* name = task->GetTaskName();
-		sprintf( command, "wait\ncareer_add_task %s \"%s\" %d %d %d %d\n",
-				name, weapon, repeat, (int)survive, (int)inARow, (int)complete );
 		if ( !stricmp( task->GetTaskName(), "winfast" ) )
 			m_winfastLength = task->GetRepeat();
-		engine->pfnClientCmd( command );
+		// CareerDefinitions drops maps with such tasks, so this only guards the command
+		if ( FormatAddTaskCommand( command, sizeof( command ), name, weapon, repeat, survive, inARow, complete ) )
+			engine->pfnClientCmd( command );
 	}
 	m_savedCvars.push_back( new CvarLatch( "mp_friendlyfire", "0" ) );
 	engine->pfnClientCmd( m_pLastMap->IsFriendlyFireOn() ? "wait\nmp_friendlyfire 1\n" : "wait\nmp_friendlyfire 0\n" );
