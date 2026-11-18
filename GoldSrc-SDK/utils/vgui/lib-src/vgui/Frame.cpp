@@ -755,6 +755,11 @@ Frame::Frame( const Frame& other ) : Panel( other )
 
 Frame::~Frame()
 {
+	// A copy, since a signal may delete itself; the signals are not owned.
+	Dar<FrameSignal*> signals( _frameSignalDar );
+	for ( int i = 0; i < signals.getCount(); ++i )
+		signals[i]->frameDeleted( this );
+
 	delete[] _title;
 }
 

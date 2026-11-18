@@ -24,6 +24,11 @@ public:
 	TaskBar(int x,int y,int wide,int tall);
 public:
 	virtual void addFrame(Frame* frame);
+#if VGUI_ABI_COMPAT_MODE != 1
+	// Not virtual, so the vtable keeps its original layout. Deletes the
+	// frame's button; the frame is not used, so it may be being deleted.
+	void         removeFrame(Frame* frame);
+#endif
 protected:
 	virtual void performLayout();
 protected:
