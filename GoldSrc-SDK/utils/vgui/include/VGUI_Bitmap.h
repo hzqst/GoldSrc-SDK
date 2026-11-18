@@ -23,6 +23,12 @@ private:
 	bool        _uploaded;
 public:
 	Bitmap();
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A Bitmap owns its pixels. A copy has its own pixels and texture.
+	Bitmap(const Bitmap& other);
+	virtual ~Bitmap();
+	Bitmap& operator=(const Bitmap& other);
+#endif
 protected:
 	virtual void setSize(int wide,int tall);
 	virtual void setRGBA(int x,int y,uchar r,uchar g,uchar b,uchar a);
