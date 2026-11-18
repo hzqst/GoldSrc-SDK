@@ -258,13 +258,13 @@ private:
 	int				m_iHighlightRow;
 
 	vgui::CListBox	m_PlayerList;
-	CGrid			m_PlayerGrids[NUM_ROWS];				// The grid with player and team info.
-	CLabelHeader	m_PlayerEntries[NUM_COLUMNS][NUM_ROWS];	// Labels for the grid entries.
+	CGrid			*m_PlayerGrids[NUM_ROWS];				// The grid with player and team info.
+	CLabelHeader	*m_PlayerEntries[NUM_COLUMNS][NUM_ROWS];	// Labels for the grid entries.
 
 	ScorePanel::HitTestPanel	m_HitTestPanel;
 	CommandButton				*m_pCloseButton;
 	BitmapTGA* m_pTrackerIcon;
-	CLabelHeader*	GetPlayerEntry(int x, int y)	{return &m_PlayerEntries[x][y];}
+	CLabelHeader*	GetPlayerEntry(int x, int y)	{return m_PlayerEntries[x][y];}
 
 public:
 

@@ -31,6 +31,31 @@ namespace vgui
 		virtual void keyReleased( KeyCode, Panel* ) {}
 		virtual void keyFocusTicked( Panel* ) {}
 	};
+
+	// Forwards every input event to an InputSignal it does not own. A Panel
+	// deletes the input signals added to it, so an object that handles input
+	// for several panels, or for its own child panels, adds one of these to
+	// each panel instead of itself.
+	class CInputSignalForwarder : public vgui::InputSignal
+	{
+	public:
+		CInputSignalForwarder( InputSignal* pTarget ) : m_pTarget( pTarget ) {}
+
+		virtual void cursorMoved( int x, int y, Panel* panel ) { m_pTarget->cursorMoved( x, y, panel ); }
+		virtual void cursorEntered( Panel* panel ) { m_pTarget->cursorEntered( panel ); }
+		virtual void cursorExited( Panel* panel ) { m_pTarget->cursorExited( panel ); }
+		virtual void mousePressed( MouseCode code, Panel* panel ) { m_pTarget->mousePressed( code, panel ); }
+		virtual void mouseDoublePressed( MouseCode code, Panel* panel ) { m_pTarget->mouseDoublePressed( code, panel ); }
+		virtual void mouseReleased( MouseCode code, Panel* panel ) { m_pTarget->mouseReleased( code, panel ); }
+		virtual void mouseWheeled( int delta, Panel* panel ) { m_pTarget->mouseWheeled( delta, panel ); }
+		virtual void keyPressed( KeyCode code, Panel* panel ) { m_pTarget->keyPressed( code, panel ); }
+		virtual void keyTyped( KeyCode code, Panel* panel ) { m_pTarget->keyTyped( code, panel ); }
+		virtual void keyReleased( KeyCode code, Panel* panel ) { m_pTarget->keyReleased( code, panel ); }
+		virtual void keyFocusTicked( Panel* panel ) { m_pTarget->keyFocusTicked( panel ); }
+
+	private:
+		InputSignal* m_pTarget;
+	};
 }
 
 #endif // VGUI_DEFAULTINPUTSIGNAL_H

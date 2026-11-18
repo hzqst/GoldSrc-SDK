@@ -12,23 +12,26 @@
 using namespace vgui;
 
 
-CListBox::CListBox() : Panel(0, 0, 0, 0),
-	m_ItemsPanel(0,0,0,0),
-	m_ScrollBar(0, 0, 0, 0, true),
-	m_Slider(0, 0, 10, 40, true)
+// The child panels are heap objects: the Panel tree owns its children, and a
+// ScrollBar2 owns its slider.
+CListBox::CListBox() : Panel(0, 0, 0, 0)
 {
-	m_Signal.m_pListBox = this;
+	m_ItemsPanel = new Panel(0,0,0,0);
+	m_ScrollBar = new ScrollBar2(0, 0, 0, 0, true);
+	m_Slider = new Slider2(0, 0, 10, 40, true);
+	m_Signal = new ListBoxSignal;
+	m_Signal->m_pListBox = this;
 
-	m_ItemsPanel.setParent(this);
-	m_ItemsPanel.setBgColor(0,0,0,255);
+	m_ItemsPanel->setParent(this);
+	m_ItemsPanel->setBgColor(0,0,0,255);
 
-	m_Slider.setRangeWindow(50);
-	m_Slider.setRangeWindowEnabled(true);
+	m_Slider->setRangeWindow(50);
+	m_Slider->setRangeWindowEnabled(true);
 
-	m_ScrollBar.setParent(this);
-	m_ScrollBar.addIntChangeSignal(&m_Signal);
-	m_ScrollBar.setSlider(&m_Slider);
-	m_ScrollBar.setButtonPressedScrollValue(1);
+	m_ScrollBar->setParent(this);
+	m_ScrollBar->addIntChangeSignal(m_Signal);
+	m_ScrollBar->setSlider(m_Slider);
+	m_ScrollBar->setButtonPressedScrollValue(1);
 
 	m_Items.m_pNext = m_Items.m_pPrev = &m_Items;
 	m_ItemOffset = 0;
@@ -38,6 +41,10 @@ CListBox::CListBox() : Panel(0, 0, 0, 0),
 CListBox::~CListBox()
 {
 	Term();
+
+	// Panels do not own IntChangeSignals; the scrollbar is not used again.
+	delete m_Signal;
+	m_Signal = NULL;
 }
 
 void CListBox::Init()
@@ -54,6 +61,9 @@ void CListBox::Term()
 	for(LBItem *pItem=m_Items.m_pNext; pItem != &m_Items; pItem=pNext)
 	{
 		pItem->m_pPanel->setParent(NULL);	// detach the panel from us
+#if VGUI_ABI_COMPAT_MODE != 1
+		delete pItem->m_pPanel;	// the list box owns its items
+#endif
 		pNext = pItem->m_pNext;
 		delete pItem;
 	}
@@ -68,15 +78,15 @@ void CListBox::AddItem(Panel* panel)
 		return;
 
 	pItem->m_pPanel = panel;
-	pItem->m_pPanel->setParent(&m_ItemsPanel);
+	pItem->m_pPanel->setParent(m_ItemsPanel);
 
 	pItem->m_pPrev = m_Items.m_pPrev;
 	pItem->m_pNext = &m_Items;
 	pItem->m_pNext->m_pPrev = pItem->m_pPrev->m_pNext = pItem;
 
-	m_ScrollBar.setRange(0, GetScrollMax());
-	m_Slider.setRangeWindow(50);
-	m_Slider.setRangeWindowEnabled(true);
+	m_ScrollBar->setRange(0, GetScrollMax());
+	m_Slider->setRangeWindow(50);
+	m_Slider->setRangeWindowEnabled(true);
 
 	InternalLayout();
 }
@@ -93,7 +103,7 @@ int CListBox::GetNumItems()
 int CListBox::GetItemWidth()
 {
 	int wide, tall;
-	m_ItemsPanel.getSize(wide, tall);
+	m_ItemsPanel->getSize(wide, tall);
 	return wide;
 }
 
@@ -126,7 +136,7 @@ void CListBox::setSize(int wide,int tall)
 
 void CListBox::setPixelScroll( int )
 {
-	m_ItemOffset = m_ScrollBar.getValue();
+	m_ItemOffset = m_ScrollBar->getValue();
 	InternalLayout();
 }
 
@@ -136,8 +146,8 @@ void CListBox::InternalLayout()
 	getBounds(x, y, wide, tall);
 
 	// Reposition the main panel and the scrollbar.
-	m_ItemsPanel.setBounds(0, 0, wide-15, tall);
-	m_ScrollBar.setBounds(wide-15, 0, 15, tall);
+	m_ItemsPanel->setBounds(0, 0, wide-15, tall);
+	m_ScrollBar->setBounds(wide-15, 0, 15, tall);
 
 	bool bNeedScrollbar = false;
 
@@ -178,7 +188,7 @@ void CListBox::InternalLayout()
 		++curItem;
 	}
 
-	m_ScrollBar.setVisible(bNeedScrollbar);
+	m_ScrollBar->setVisible(bNeedScrollbar);
 
 	repaint();
 }
@@ -190,7 +200,7 @@ void CListBox::paintBackground()
 void CListBox::SetScrollRange(int maxScroll)
 {
 	m_iScrollMax = maxScroll;
-	m_ScrollBar.setRange(0, maxScroll);
+	m_ScrollBar->setRange(0, maxScroll);
 	InternalLayout();
 }
 

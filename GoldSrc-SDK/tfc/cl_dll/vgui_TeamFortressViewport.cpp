@@ -475,7 +475,7 @@ CCommandMenu *TeamFortressViewport::CreateSubMenu( CommandButton *pButton, CComm
 	// Put a > to show it's a submenu
 	CImageLabel *pLabel = new CImageLabel( "arrowright", XRES(CMENU_SIZE_X - SUBMENU_SIZE_X), YRES(SUBMENU_SIZE_Y) );
 	pLabel->setParent(pButton);
-	pLabel->addInputSignal(pISignal);
+	pLabel->addInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, pMenu));	// each panel owns its input signals
 
 	// Reposition
 	pLabel->getPos( iXPos, iYPos );

@@ -155,6 +155,7 @@ CVoiceStatus::~CVoiceStatus()
 {
 	g_pInternalVoiceStatus = NULL;
 	
+#if VGUI_ABI_COMPAT_MODE == 1
 	for(int i=0; i < MAX_VOICE_SPEAKERS; i++)
 	{
 		delete m_Labels[i].m_pLabel;
@@ -169,6 +170,11 @@ CVoiceStatus::~CVoiceStatus()
 
 	delete m_pLocalLabel;
 	m_pLocalLabel = NULL;
+#else
+	// g_VoiceStatus is destroyed when the client DLL unloads, after
+	// VGuiWrap_Shutdown deleted the panel tree, and with it every label
+	// parented to it. A label that was never parented leaks at exit.
+#endif
 
 	FreeBitmaps();
 

@@ -195,16 +195,19 @@ ScorePanel::ScorePanel(int x,int y,int wide,int tall) : Panel(x,y,wide,tall)
 
 	for(int row=0; row < NUM_ROWS; row++)
 	{
-		CGrid *pGridRow = &m_PlayerGrids[row];
+		// The list box deletes its items, and each grid its entries.
+		m_PlayerGrids[row] = new CGrid;
+		CGrid *pGridRow = m_PlayerGrids[row];
 
 		pGridRow->SetDimensions(NUM_COLUMNS, 1);
 
 		for(int col=0; col < NUM_COLUMNS; col++)
 		{
-			m_PlayerEntries[col][row].setContentFitted(false);
-			m_PlayerEntries[col][row].setRow(row);
-			m_PlayerEntries[col][row].addInputSignal(this);
-			pGridRow->SetEntry(col, 0, &m_PlayerEntries[col][row]);
+			m_PlayerEntries[col][row] = new CLabelHeader;
+			m_PlayerEntries[col][row]->setContentFitted(false);
+			m_PlayerEntries[col][row]->setRow(row);
+			m_PlayerEntries[col][row]->addInputSignal(new CInputSignalForwarder(this));
+			pGridRow->SetEntry(col, 0, m_PlayerEntries[col][row]);
 		}
 
 		pGridRow->setBgColor(0,0,0,255);
@@ -222,7 +225,7 @@ ScorePanel::ScorePanel(int x,int y,int wide,int tall) : Panel(x,y,wide,tall)
 	m_HitTestPanel.setBgColor(0,0,0,255);
 	m_HitTestPanel.setParent(this);
 	m_HitTestPanel.setBounds(0, 0, wide, tall);
-	m_HitTestPanel.addInputSignal(this);
+	m_HitTestPanel.addInputSignal(new CInputSignalForwarder(this));
 
 	m_pCloseButton = new CommandButton( "x", wide-XRES(12 + 4), YRES(2), XRES( 12 ) , YRES( 12 ) );
 	m_pCloseButton->setParent( this );
@@ -557,13 +560,13 @@ void ScorePanel::FillGrid()
 	int row;
 	for(row=0; row < NUM_ROWS; row++)
 	{
-		CGrid *pGridRow = &m_PlayerGrids[row];
+		CGrid *pGridRow = m_PlayerGrids[row];
 		pGridRow->SetRowUnderline(0, false, 0, 0, 0, 0, 0);
 
 		if(row >= m_iRows)
 		{
 			for(int col=0; col < NUM_COLUMNS; col++)
-				m_PlayerEntries[col][row].setVisible(false);
+				m_PlayerEntries[col][row]->setVisible(false);
 
 			continue;
 		}
@@ -577,7 +580,7 @@ void ScorePanel::FillGrid()
 
 		for(int col=0; col < NUM_COLUMNS; col++)
 		{
-			CLabelHeader *pLabel = &m_PlayerEntries[col][row];
+			CLabelHeader *pLabel = m_PlayerEntries[col][row];
 
 			pLabel->setVisible(true);
 			pLabel->setText2("");
@@ -861,7 +864,7 @@ void ScorePanel::FillGrid()
 
 	for(row=0; row < NUM_ROWS; row++)
 	{
-		CGrid *pGridRow = &m_PlayerGrids[row];
+		CGrid *pGridRow = m_PlayerGrids[row];
 
 		pGridRow->AutoSetRowHeights();
 		pGridRow->setSize(PanelWidth(pGridRow), pGridRow->CalcDrawHeight());
@@ -960,7 +963,7 @@ void ScorePanel::cursorMoved( int x, int y, Panel* )
 		for (int i = 0; i < NUM_ROWS; i++)
 		{
 			int row, col;
-			if (m_PlayerGrids[i].getCellAtPoint(x, y, row, col))
+			if (m_PlayerGrids[i]->getCellAtPoint(x, y, row, col))
 			{
 				MouseOverCell(i, col);
 				return;
@@ -976,7 +979,7 @@ void ScorePanel::cursorMoved( int x, int y, Panel* )
 //-----------------------------------------------------------------------------
 void ScorePanel::MouseOverCell(int row, int col)
 {
-	CLabelHeader *label = &m_PlayerEntries[col][row];
+	CLabelHeader *label = m_PlayerEntries[col][row];
 
 	// clear the previously highlighted label
 	if (m_pCurrentHighlightLabel != label)

@@ -33,10 +33,10 @@ CCheckButton2::CCheckButton2() :
 	m_Label.setParent(this);
 	m_Label.setFgColor(255,255,255,0);
 	m_Label.setBgColor(0,0,0,255);	// background is not drawn and foreground is white
-	m_Label.addInputSignal(this);
+	m_Label.addInputSignal(new CInputSignalForwarder(this));
 
 	m_CheckboxPanel.setParent(this);
-	m_CheckboxPanel.addInputSignal(this);
+	m_CheckboxPanel.addInputSignal(new CInputSignalForwarder(this));
 
 	setPaintBackgroundEnabled(false);
 }

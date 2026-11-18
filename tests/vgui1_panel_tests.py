@@ -49,27 +49,12 @@ SOURCES = ['Panel.cpp', 'App.cpp', 'Label.cpp', 'Image.cpp', 'Color.cpp', 'Butto
            'Layout.cpp', 'TreeFolder.cpp']
 
 
-def function(source, signature):
-    start = source.index(signature)
-    return source[start:source.index('\n}', start) + 2]
-
-
-TESTS = r'''
-#include <cstdio>
-#include <cstdlib>
-#include <stdexcept>
-#include <string>
-
+# The platform half of App (win32/App.cpp), the platform Font and Cursor code
+# and Font_Reset, for tests that build the VGUI1 sources without a platform.
+PLATFORM_STUBS = r'''
 #include "VGUI_App.h"
-#include "VGUI_Button.h"
 #include "VGUI_Cursor.h"
 #include "VGUI_Font.h"
-#include "VGUI_InputSignal.h"
-#include "VGUI_Label.h"
-#include "VGUI_LineBorder.h"
-#include "VGUI_Panel.h"
-#include "VGUI_TextEntry.h"
-#include "VGUI_ToggleButton.h"
 
 using namespace vgui;
 
@@ -79,7 +64,6 @@ typedef bool RegistryResult;
 typedef int RegistryResult;
 #endif
 
-// Platform half of App (win32/App.cpp) and the platform Font / Cursor code.
 void App::platTick() {}
 void App::setCursorPos( int, int ) {}
 void App::getCursorPos( int& x, int& y ) { x = 0; y = 0; }
@@ -106,6 +90,32 @@ namespace vgui
 {
 void Font_Reset() {}
 }
+'''
+
+
+def function(source, signature):
+    start = source.index(signature)
+    return source[start:source.index('\n}', start) + 2]
+
+
+TESTS = r'''
+#include <cstdio>
+#include <cstdlib>
+#include <stdexcept>
+#include <string>
+
+#include "VGUI_App.h"
+#include "VGUI_Button.h"
+#include "VGUI_Cursor.h"
+#include "VGUI_Font.h"
+#include "VGUI_InputSignal.h"
+#include "VGUI_Label.h"
+#include "VGUI_LineBorder.h"
+#include "VGUI_Panel.h"
+#include "VGUI_TextEntry.h"
+#include "VGUI_ToggleButton.h"
+
+using namespace vgui;
 
 class TestApp : public App
 {
@@ -304,20 +314,28 @@ NONCOMPAT_SCENARIOS = ['delete-tree', 'delete-attached-child', 'member-child', '
 MODES = {'1': ['remove-all-detaches'], '0': ['remove-all-detaches'] + NONCOMPAT_SCENARIOS}
 
 
-def main():
+def vgui1_sources(folder):
+    """Write the platform stubs and the patched TextImage.cpp to folder and
+    return them with SOURCES, ready for compile_program."""
     text_image = (VGUI / 'TextImage.cpp').read_text()
     if FONT_LOOKUP not in text_image:
         raise SystemExit('TextImage::getFont no longer matches: ' + FONT_LOOKUP)
     text_image = text_image.replace(FONT_LOOKUP, 'return NULL;')
     strcpy = function((VGUI / 'vgui.cpp').read_text(), 'void vgui_strcpy(')
 
+    stubs_file = Path(folder) / 'vgui1_stubs.cpp'
+    stubs_file.write_text(PLATFORM_STUBS + '\nnamespace vgui\n{\n' + strcpy + '\n}\n')
+    text_image_file = Path(folder) / 'TextImage.cpp'
+    text_image_file.write_text(text_image)
+    return [stubs_file, text_image_file] + [VGUI / name for name in SOURCES]
+
+
+def main():
     failed = []
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-panel-') as folder:
         test_file = Path(folder) / 'test.cpp'
-        test_file.write_text(TESTS + '\nnamespace vgui\n{\n' + strcpy + '\n}\n')
-        text_image_file = Path(folder) / 'TextImage.cpp'
-        text_image_file.write_text(text_image)
-        sources = [test_file, text_image_file] + [VGUI / name for name in SOURCES]
+        test_file.write_text(TESTS)
+        sources = [test_file] + vgui1_sources(folder)
         for mode, scenarios in MODES.items():
             executable = Path(folder) / f'test-compat{mode}.exe'
             # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
