@@ -39,7 +39,7 @@ wchar_t* SharedFindString( char *asciiIdentifier )
 		identifier = string[curstring];
 		curstring = ( curstring + 1 ) % NumBuffers;
 
-		vgui::localize()->ConvertANSIToUnicode( asciiIdentifier, identifier, BufLen*2 );
+		vgui::localize()->ConvertANSIToUnicode( asciiIdentifier, identifier, sizeof( string[0] ) );
 	}
 
 	return identifier;
