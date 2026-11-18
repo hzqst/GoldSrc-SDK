@@ -23,6 +23,7 @@ def function(source, signature):
 
 STUBS = r'''
 #include <cassert>
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -79,8 +80,9 @@ static void CommandSeparatorsAreRejected() {
 
 
 def main():
+    utils = (ROOT / 'GameUI/StringUtils.cpp').read_text(encoding='utf-8')
     source = (ROOT / 'GameUI/SaveGameDialog.cpp').read_text(encoding='utf-8')
-    code = STUBS + function(source, 'bool FormatSaveGameCommand(') + TESTS
+    code = STUBS + function(utils, 'bool UTIL_FormatString(') + function(source, 'bool FormatSaveGameCommand(') + TESTS
     code += ('\nint main() { ShortNamesAreFormatted(); LongestFittingNameIsKept(); '
              'LongNamesAreRejected(); CommandSeparatorsAreRejected(); }\n')
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-save-command-') as folder:

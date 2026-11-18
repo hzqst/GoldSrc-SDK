@@ -73,6 +73,7 @@ goldsrc_add_module(GameUI
 		GameUI/RunGameEngine.cpp
 		GameUI/SaveGameDialog.cpp
 		GameUI/ScriptObject.cpp
+		GameUI/StringUtils.cpp
 		GameUI/Sys_Utils.cpp
 		GameUI/Taskbar.cpp
 		GameUI/TaskButton.cpp
