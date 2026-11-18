@@ -30,6 +30,7 @@ STUBS = r'''
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <new>
 #include <string>
 #include <vector>
@@ -92,6 +93,9 @@ struct Save {
  int commentToken = TOKEN_COMMENT;
  int sizeAdjust = 0;
  size_t truncate = 0;
+ // appends fields after the three default ones and raises the GameHeader field count
+ std::function<void(std::string&)> extraFields;
+ static const size_t gameHeaderFieldCountOffset = 2 * sizeof(short);
 
  std::string Fields() const {
   std::string fields;
@@ -100,6 +104,10 @@ struct Save {
   Field(fields, gameHeaderSize, gameHeaderToken, header);
   Field(fields, 6, mapNameToken, std::string("c1a0\0\0", 6));
   Field(fields, 12, commentToken, std::string("Hazard 01:23", 12));
+  if (extraFields) {
+   extraFields(fields);
+   fields[gameHeaderFieldCountOffset] = 3;
+  }
   return fields;
  }
 
@@ -117,27 +125,67 @@ struct Save {
  }
 };
 
-static int Parse(const std::string& bytes, char* name, char* comment) {
- MemoryFile file = { bytes, 0 };
+static int Parse(const std::string& bytes, std::string& name, std::string& comment) {
  int before = g_allocations;
- int valid = SaveReadNameAndComment(&file, name, comment);
+ {
+  MemoryFile file = { bytes, 0 };
+  std::string scratchName, scratchComment;
+  SaveReadNameAndComment(&file, scratchName, scratchComment);
+ }
+ // once the results are gone, every buffer the parser used is freed on every path
  assert(before == g_allocations);
- return valid;
+ // results from an earlier parse must not leak into this one
+ name = "stale map";
+ comment = "stale comment";
+ MemoryFile file = { bytes, 0 };
+ return SaveReadNameAndComment(&file, name, comment);
 }
 
 static bool Rejects(const Save& save) {
- char name[SAVEGAME_MAP_NAME_SIZE];
- char comment[SAVEGAME_COMMENT_SIZE];
+ std::string name, comment;
  return Parse(save.Bytes(), name, comment) == 0;
 }
 
 static void ValidSaveIsParsed() {
- char name[SAVEGAME_MAP_NAME_SIZE];
- char comment[SAVEGAME_COMMENT_SIZE];
+ std::string name, comment;
  assert(1 == Parse(Save().Bytes(), name, comment));
  assert(std::string("c1a0") == name);
+ // the comment field has no NUL, so the text runs to the end of the field
  assert(std::string("Hazard 01:23") == comment);
  puts("PASS: a save with empty token slots is parsed");
+}
+
+static void FieldTextEndsAtTheFirstNulOrTheFieldEnd() {
+ std::string name, comment;
+ Save save;
+ save.extraFields = [](std::string& fields) {
+  // a second, shorter comment replaces the first one entirely
+  Field(fields, 9, TOKEN_COMMENT, std::string("Gate\0junk", 9));
+ };
+ assert(1 == Parse(save.Bytes(), name, comment));
+ assert(std::string("Gate") == comment);
+ const std::string longComment(300, 'c');
+ Save longSave;
+ longSave.extraFields = [&](std::string& fields) { Field(fields, (int)longComment.size(), TOKEN_COMMENT, longComment); };
+ assert(1 == Parse(longSave.Bytes(), name, comment));
+ assert(longComment == comment);
+ Save emptyComment;
+ emptyComment.extraFields = [](std::string& fields) { Field(fields, 3, TOKEN_COMMENT, std::string("\0ab", 3)); };
+ assert(0 == Parse(emptyComment.Bytes(), name, comment));
+ puts("PASS: field text ends at its first NUL or at the end of the field, without a length cap");
+}
+
+static void ElapsedTimeIsSplitFromTheComment() {
+ struct Case { const char* input; const char* comment; const char* elapsed; };
+ for (const Case& c : {Case{"Hazard 01:23", "Hazard", "01:23"}, Case{"Hazard    01:23", "Hazard", "01:23"},
+   Case{"x01:23", "x", "01:23"}, Case{" 01:23", " ", "01:23"}, Case{"     01:23", " ", "01:23"},
+   Case{"01:23", "01:23", "??"}, Case{"", "", "??"}, Case{"a b 12:34", "a b", "12:34"}}) {
+  std::string comment = c.input, elapsed = "stale";
+  SplitSaveComment(comment, elapsed);
+  assert(std::string(c.comment) == comment);
+  assert(std::string(c.elapsed) == elapsed);
+ }
+ puts("PASS: the elapsed time is split from the comment and the spaces before it are dropped");
 }
 
 static void MissingTokenTableIsRejected() {
@@ -170,8 +218,7 @@ static void UnterminatedTokenIsRejected() {
  save.tokens = "GameHeader";
  save.tokenCount = 1;
  save.gameHeaderToken = 0;
- char name[SAVEGAME_MAP_NAME_SIZE];
- char comment[SAVEGAME_COMMENT_SIZE];
+ std::string name, comment;
  std::string bytes = save.Bytes();
  bytes.resize(SAVEGAME_HEADER_SIZE + save.tokens.size());
  int size = 0;
@@ -215,11 +262,12 @@ static void ShortDataIsRejected() {
 def main():
     source = (ROOT / 'GameUI/SaveGameDialog.cpp').read_text(encoding='utf-8')
     code = STUBS + defines(source, ['SAVEGAME_HEADER', 'SAVEGAME_VERSION', 'MAX_SAVE_TOKENS',
-                                    'SAVEGAME_MAP_NAME_SIZE', 'SAVEGAME_COMMENT_SIZE', 'SAVEGAME_HEADER_SIZE'])
+                                    'SAVEGAME_ELAPSED_TIME_SIZE', 'SAVEGAME_HEADER_SIZE'])
     code += ''.join(function(source, signature) for signature in (
-        'static bool SaveReadExact(', 'static const char* SaveTokenAt(', 'int SaveReadNameAndComment('))
+        'static bool SaveReadExact(', 'static const char* SaveTokenAt(', 'int SaveReadNameAndComment(',
+        'void SplitSaveComment('))
     code += TESTS
-    code += ('\nint main() { ValidSaveIsParsed(); MissingTokenTableIsRejected(); '
+    code += ('\nint main() { ValidSaveIsParsed(); FieldTextEndsAtTheFirstNulOrTheFieldEnd(); ElapsedTimeIsSplitFromTheComment(); MissingTokenTableIsRejected(); '
              'EmptyOrOutOfRangeTokensAreRejected(); UnterminatedTokenIsRejected(); '
              'BadFieldSizesAreRejected(); ShortDataIsRejected(); }\n')
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-save-read-') as folder:
