@@ -154,6 +154,11 @@ CServerBrowserDialog::~CServerBrowserDialog()
 	{
 		m_pSavedData->deleteThis();
 	}
+
+	if ( m_pFilterData )
+	{
+		m_pFilterData->deleteThis();
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -193,14 +198,20 @@ void CServerBrowserDialog::LoadUserData()
 		m_pSavedData->deleteThis();
 	}
 
+	if ( m_pFilterData )
+	{
+		m_pFilterData->deleteThis();
+	}
+
 	m_pSavedData = new KeyValues( "Filters" );
 	m_pSavedData->LoadFromFile( vgui2::filesystem(), "ServerBrowser.vdf", "CONFIG" );
 
 	KeyValues *filters = m_pSavedData->FindKey( "Filters", false );
 	if ( filters )
 	{
-		m_pFilterData = filters->MakeCopy();
+		// take the filters out of the saved data; m_pFilterData owns them from now on
 		m_pSavedData->RemoveSubKey( filters );
+		m_pFilterData = filters;
 	}
 	else
 	{
@@ -241,6 +252,12 @@ void CServerBrowserDialog::LoadUserData()
 //-----------------------------------------------------------------------------
 void CServerBrowserDialog::SaveUserData()
 {
+	// nothing to save until LoadUserData() has run
+	if ( !m_pSavedData || !m_pFilterData )
+	{
+		return;
+	}
+
 	m_pSavedData->Clear();
 	m_pSavedData->LoadFromFile( vgui2::filesystem(), "ServerBrowser.vdf", "CONFIG" );
 
@@ -270,7 +287,13 @@ void CServerBrowserDialog::SaveUserData()
 		m_pSavedData->SetString( "GameList", "internet" );
 	}
 
-	m_pSavedData->RemoveSubKey( m_pSavedData->FindKey( "Filters", false ) );
+	// replace the filters read from disk with a copy of the current ones
+	KeyValues *oldFilters = m_pSavedData->FindKey( "Filters", false );
+	if ( oldFilters )
+	{
+		m_pSavedData->RemoveSubKey( oldFilters );
+		oldFilters->deleteThis();
+	}
 	m_pSavedData->AddSubKey( m_pFilterData->MakeCopy() );
 	m_pSavedData->SaveToFile( vgui2::filesystem(), "ServerBrowser.vdf", "CONFIG" );
 
