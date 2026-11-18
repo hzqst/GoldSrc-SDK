@@ -8,6 +8,7 @@
 #include "CreateMultiplayerGameBotPage.h"
 #include "CvarToggleCheckButton.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 
 #include "ComboBox.h"
 #include "TextEntry.h"
@@ -165,6 +166,13 @@ void CCreateMultiplayerGameBotPage::UpdateKeys( KeyValues* botKeys )
 	char entryBuffer[256];
 	m_prefixEntry->GetText( entryBuffer, sizeof( entryBuffer ) );
 	botKeys->SetString( "bot_prefix", entryBuffer );
+}
+
+bool CCreateMultiplayerGameBotPage::IsPrefixValid()
+{
+	char entryBuffer[256];
+	m_prefixEntry->GetText( entryBuffer, sizeof( entryBuffer ) );
+	return UTIL_IsQuotedCommandArgument( entryBuffer );
 }
 
 void CCreateMultiplayerGameBotPage::OnResetChanges()

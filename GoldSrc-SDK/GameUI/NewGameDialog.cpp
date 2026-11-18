@@ -8,6 +8,7 @@
 #include "NewGameDialog.h"
 #include "GameUI_Interface.h"
 #include "ModInfo.h"
+#include "StringUtils.h"
 #include "Taskbar.h"
 
 #include "Button.h"
@@ -98,6 +99,26 @@ CNewGameDialog::~CNewGameDialog()
 {
 }
 
+// FormatNewGameCommand leaves out the skill command
+#define NEWGAME_NO_SKILL	-1
+
+//-----------------------------------------------------------------------------
+// Purpose: formats the command that starts a single player map from liblist.gam,
+//          fails when the map name could add commands or the command does not fit
+//-----------------------------------------------------------------------------
+static bool FormatNewGameCommand( char* buffer, size_t bufferSize, const char* mapName, int skill )
+{
+	if ( !UTIL_IsUnquotedCommandArgument( mapName ) )
+	{
+		engine->Con_Printf( (char*)"Cannot start the game: the map name in liblist.gam is not valid\n" );
+		return false;
+	}
+
+	if ( skill == NEWGAME_NO_SKILL )
+		return UTIL_FormatString( buffer, bufferSize, "disconnect\nmaxplayers 1\ndeathmatch 0\nmap %s\n", mapName );
+	return UTIL_FormatString( buffer, bufferSize, "disconnect\nmaxplayers 1\ndeathmatch 0\nskill %i\nmap %s\n", skill, mapName );
+}
+
 void CNewGameDialog::OnCommand( const char* command )
 {
 	char mapcommand[512];
@@ -122,15 +143,14 @@ void CNewGameDialog::OnCommand( const char* command )
 
 	if ( stricmp( command, "Play" ) == 0 )
 	{
+		bool formatted;
 		if ( difficultyVisible || m_nPlayMode > 0 )
-		{
-			sprintf( mapcommand, "disconnect\nmaxplayers 1\ndeathmatch 0\nskill %i\nmap %s\n",
-				m_nPlayMode, ModInfo()->GetStartMap() );
-		}
+			formatted = FormatNewGameCommand( mapcommand, sizeof( mapcommand ), ModInfo()->GetStartMap(), m_nPlayMode );
 		else
-		{
-			sprintf( mapcommand, "disconnect\nmaxplayers 1\ndeathmatch 0\nmap %s\n", ModInfo()->GetTrainMap() );
-		}
+			formatted = FormatNewGameCommand( mapcommand, sizeof( mapcommand ), ModInfo()->GetTrainMap(), NEWGAME_NO_SKILL );
+
+		if ( !formatted )
+			return;
 
 		engine->pfnClientCmd( mapcommand );
 		if ( stricmp( ModInfo()->GetGameDescription(), "Condition-Zero" ) == 0 )
@@ -143,8 +163,8 @@ void CNewGameDialog::OnCommand( const char* command )
 	}
 	else if ( stricmp( command, "PlayTraining" ) == 0 )
 	{
-		sprintf( mapcommand, "disconnect\nmaxplayers 1\ndeathmatch 0\nmap %s\n", ModInfo()->GetTrainMap() );
-		engine->pfnClientCmd( mapcommand );
+		if ( FormatNewGameCommand( mapcommand, sizeof( mapcommand ), ModInfo()->GetTrainMap(), NEWGAME_NO_SKILL ) )
+			engine->pfnClientCmd( mapcommand );
 	}
 	else
 	{

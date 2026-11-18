@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 #ifndef _WIN32
 #include <strings.h>
@@ -37,11 +38,42 @@
 
 //-----------------------------------------------------------------------------
 // Purpose: copies a value of the server command, fails when it is missing,
-//          does not fit in buffer or contains any of the forbidden characters
+//          does not fit in buffer or could add commands where it goes, quoted
+//          or unquoted
 //-----------------------------------------------------------------------------
-static bool CopyServerSetting( char* buffer, size_t bufferSize, const char* value, const char* forbidden )
+static bool CopyServerSetting( char* buffer, size_t bufferSize, const char* value, bool quoted )
 {
-	return value && !strpbrk( value, forbidden ) && UTIL_CopyString( buffer, bufferSize, value );
+	return value && ( quoted ? UTIL_IsQuotedCommandArgument( value ) : UTIL_IsUnquotedCommandArgument( value ) ) &&
+		UTIL_CopyString( buffer, bufferSize, value );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: sends the saved bot settings as cvar commands; the name goes into the
+//          command unquoted and a string value quoted, and a setting that could
+//          add commands is skipped, as CSBotConfig.vdf can be edited by hand
+//-----------------------------------------------------------------------------
+static void SendBotCvars( KeyValues* botData )
+{
+	for ( KeyValues* key = botData->GetFirstSubKey(); key; key = key->GetNextKey() )
+	{
+		const char* name = key->GetName();
+		if ( !stricmp( name, "map" ) || !UTIL_IsUnquotedCommandArgument( name ) )
+			continue;
+
+		std::string command = name;
+		if ( key->GetDataType() == KeyValues::TYPE_STRING )
+		{
+			const char* value = key->GetString();
+			if ( !UTIL_IsQuotedCommandArgument( value ) )
+				continue;
+			command = command + " \"" + value + "\"\n";
+		}
+		else
+		{
+			command = command + " " + std::to_string( key->GetInt() ) + "\n";
+		}
+		engine->pfnClientCmd( (char*)command.c_str() );
+	}
 }
 
 CCreateMultiplayerGameDialog::CCreateMultiplayerGameDialog( vgui2::Panel* parent ) :
@@ -209,9 +241,9 @@ bool CCreateMultiplayerGameDialog::StartServer()
 	char szMapCommand[1024];
 	// The map goes into the command unquoted, the hostname and password quoted;
 	// GetHostName and GetPassword share one buffer, so copy each before the next call
-	bool valid = CopyServerSetting( szMapName, sizeof( szMapName ), m_pServerPage->GetMapName(), ";\"\n\r" ) &&
-		CopyServerSetting( szHostName, sizeof( szHostName ), m_pGameplayPage->GetHostName(), "\"\n\r" ) &&
-		CopyServerSetting( szPassword, sizeof( szPassword ), m_pGameplayPage->GetPassword(), "\"\n\r" );
+	bool valid = CopyServerSetting( szMapName, sizeof( szMapName ), m_pServerPage->GetMapName(), false ) &&
+		CopyServerSetting( szHostName, sizeof( szHostName ), m_pGameplayPage->GetHostName(), true ) &&
+		CopyServerSetting( szPassword, sizeof( szPassword ), m_pGameplayPage->GetPassword(), true );
 
 	bool steamNetworking = m_pServerPage->GetSteamNetworkingEnabled();
 	if ( valid )
@@ -228,6 +260,16 @@ bool CCreateMultiplayerGameDialog::StartServer()
 		const wchar_t* text = vgui2::localize()->Find( "#GameUI_CreateServerInvalidSettingsText" );
 		vgui2::MessageBox* error = new vgui2::MessageBox( title ? title : L"Cannot start server",
 			text ? text : L"The map, server name or password is longer than 63 bytes or contains quotes or line breaks.", NULL );
+		error->DoModal( this );
+		return false;
+	}
+
+	if ( m_bBotsEnabled && m_pBotPage && !m_pBotPage->IsPrefixValid() )
+	{
+		const wchar_t* title = vgui2::localize()->Find( "#GameUI_CreateServerFailedTitle" );
+		const wchar_t* text = vgui2::localize()->Find( "#GameUI_CreateServerInvalidBotPrefixText" );
+		vgui2::MessageBox* error = new vgui2::MessageBox( title ? title : L"Cannot start server",
+			text ? text : L"The bot name prefix contains quotes or line breaks.", NULL );
 		error->DoModal( this );
 		return false;
 	}
@@ -275,22 +317,7 @@ bool CCreateMultiplayerGameDialog::StartServer()
 	if ( m_bBotsEnabled )
 	{
 		// set all of the bot cvars
-		for ( KeyValues* key = m_pBotSavedData->GetFirstSubKey(); key; key = key->GetNextKey() )
-		{
-			if ( !stricmp( key->GetName(), "map" ) )
-				continue;
-
-			char buffer[128];
-			bool formatted;
-			if ( key->GetDataType() == KeyValues::TYPE_STRING )
-				formatted = UTIL_FormatString( buffer, sizeof( buffer ), "%s \"%s\"\n", key->GetName(), key->GetString() );
-			else
-				formatted = UTIL_FormatString( buffer, sizeof( buffer ), "%s %d\n", key->GetName(), key->GetInt() );
-
-			// Never send a truncated cvar command
-			if ( formatted )
-				engine->pfnClientCmd( buffer );
-		}
+		SendBotCvars( m_pBotSavedData );
 
 		engine->pfnClientCmd( "mp_autoteambalance 0\n" );
 		engine->pfnClientCmd( "mp_limitteams 0\n" );

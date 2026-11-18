@@ -70,7 +70,9 @@ void CChangeGameDialog::LoadModList()
 	{
 		do
 		{
-			if ( ( wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) && strnicmp( wfd.cFileName, ".", 1 ) )
+			// The directory name goes into _setgamedir unquoted, so names that could add commands are not listed
+			if ( ( wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) && strnicmp( wfd.cFileName, ".", 1 ) &&
+				UTIL_IsUnquotedCommandArgument( wfd.cFileName ) )
 			{
 				// Check for dlls\*.dll
 				char szDllDirectory[MAX_PATH + 16];
@@ -141,7 +143,8 @@ void CChangeGameDialog::OnCommand( const char* command )
 			{
 				// change the game dir and restart the engine
 				char szCmd[256];
-				if ( !UTIL_FormatString( szCmd, sizeof( szCmd ), "_setgamedir %s\n", kv->GetString( "ModDir", "" ) ) )
+				const char* modDir = kv->GetString( "ModDir", "" );
+				if ( !UTIL_IsUnquotedCommandArgument( modDir ) || !UTIL_FormatString( szCmd, sizeof( szCmd ), "_setgamedir %s\n", modDir ) )
 					return;
 				engine->pfnClientCmd( szCmd );
 
