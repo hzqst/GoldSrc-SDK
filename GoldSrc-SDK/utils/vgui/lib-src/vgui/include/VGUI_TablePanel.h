@@ -9,10 +9,12 @@ namespace vgui
 
 class HeaderPanel;
 class FooVGuiTablePanelHandler;
+class FooTablePanelHeaderSignal;
 
 class VGUIAPI TablePanel : public Panel
 {
 	friend class FooVGuiTablePanelHandler;
+	friend class FooTablePanelHeaderSignal;
 
 public:
 	TablePanel( int x, int y, int wide, int tall, int columnCount );
@@ -69,6 +71,10 @@ private:
 	Panel*		_editableCellPanel;
 	int			_virtualSize[2];
 	bool		_cellEditingEnabled;
+#if VGUI_ABI_COMPAT_MODE != 1
+	// The change signal added to the header, until the table is given another.
+	FooTablePanelHeaderSignal*	_headerSignal;
+#endif
 
 #if VGUI_ABI_COMPAT_MODE != 1
 	void copyFrom( const TablePanel& other );

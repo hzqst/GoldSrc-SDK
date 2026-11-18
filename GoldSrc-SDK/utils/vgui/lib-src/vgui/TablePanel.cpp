@@ -15,14 +15,12 @@
 namespace vgui
 {
 
-class FooVGuiTablePanelHandler : public ChangeSignal, public InputSignal, public RepaintSignal
+class FooVGuiTablePanelHandler : public InputSignal, public RepaintSignal
 {
 public:
 	FooVGuiTablePanelHandler( TablePanel* table ) : _table( table )
 	{
 	}
-
-	virtual void valueChanged( Panel* panel ) override;
 
 	virtual void cursorMoved( int x, int y, Panel* panel ) override;
 	virtual void cursorEntered( Panel* panel ) override;
@@ -42,8 +40,47 @@ private:
 	TablePanel*	_table;
 };
 
-void FooVGuiTablePanelHandler::valueChanged( Panel* panel )
+// The change signal a TablePanel adds to its header, which the header owns.
+// With VGUI_ABI_COMPAT_MODE != 1 the table keeps the one it added last and
+// stops it from using the table when it is deleted or given another header;
+// when the header deletes it first, it tells the table.
+class FooTablePanelHeaderSignal : public ChangeSignal
 {
+public:
+	FooTablePanelHeaderSignal( TablePanel* table, HeaderPanel* header ) : _table( table ), _header( header )
+	{
+	}
+
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual ~FooTablePanelHeaderSignal() override
+	{
+		if ( _table != NULL )
+			_table->_headerSignal = NULL;
+	}
+
+	// Stops the table's header signal, which its header still holds, from
+	// using the table.
+	static void disconnect( TablePanel* table )
+	{
+		if ( table->_headerSignal != NULL )
+		{
+			table->_headerSignal->_table = NULL;
+			table->_headerSignal = NULL;
+		}
+	}
+#endif
+
+	virtual void valueChanged( Panel* panel ) override;
+
+	TablePanel*		_table;
+	HeaderPanel*	_header;
+};
+
+void FooTablePanelHeaderSignal::valueChanged( Panel* panel )
+{
+	if ( _table == NULL )
+		return;
+
 	HeaderPanel* header = dynamic_cast<HeaderPanel*>( panel );
 	int columnCount = _table->getColumnCount();
 	for ( int i = 0; i < header->getSectionCount(); ++i )
@@ -145,22 +182,28 @@ TablePanel::TablePanel( int x, int y, int wide, int tall, int columnCount ) : Pa
 	_virtualSize[1] = tall;
 
 	addInputSignal( new FooVGuiTablePanelHandler( this ) );
+#if VGUI_ABI_COMPAT_MODE != 1
+	_headerSignal = NULL;
+#endif
 }
 
 #if VGUI_ABI_COMPAT_MODE != 1
+// A copy has no header.
 TablePanel::TablePanel( const TablePanel& other ) : Panel( other )
 {
 	_fakeInputPanel = new Panel();
+	_headerSignal = NULL;
 	copyFrom( other );
 }
 
 // The fake input panel is only a child while isWithinTraverse runs.
 TablePanel::~TablePanel()
 {
+	FooTablePanelHeaderSignal::disconnect( this );
 	delete _fakeInputPanel;
 }
 
-// Keeps this panel's own fake input panel.
+// Keeps this panel's own fake input panel and header.
 TablePanel& TablePanel::operator=( const TablePanel& other )
 {
 	if ( this != &other )
@@ -228,10 +271,26 @@ void TablePanel::getSelectedCell( int& column, int& row )
 	row = _selectedCell[1];
 }
 
+// NULL removes the header with VGUI_ABI_COMPAT_MODE != 1; otherwise it is ignored.
+// Setting the same header again only takes its extents again.
 void TablePanel::setHeaderPanel( HeaderPanel* headerPanel )
 {
-	headerPanel->addChangeSignal( new FooVGuiTablePanelHandler( this ) );
-	headerPanel->fireChangeSignal();
+#if VGUI_ABI_COMPAT_MODE != 1
+	if ( _headerSignal == NULL || _headerSignal->_header != headerPanel )
+	{
+		FooTablePanelHeaderSignal::disconnect( this );
+		if ( headerPanel != NULL )
+		{
+			_headerSignal = new FooTablePanelHeaderSignal( this, headerPanel );
+			headerPanel->addChangeSignal( _headerSignal );
+		}
+	}
+#else
+	if ( headerPanel != NULL )
+		headerPanel->addChangeSignal( new FooTablePanelHeaderSignal( this, headerPanel ) );
+#endif
+	if ( headerPanel != NULL )
+		headerPanel->fireChangeSignal();
 	repaint();
 }
 

@@ -19,6 +19,8 @@ no panel, so its runs check memory errors only.
   button owns.
 - label-editor: the Label property editor sets the label's text from its
   TextEntry's action.
+- table-header-null: setHeaderPanel( NULL ) is ignored with
+  VGUI_ABI_COMPAT_MODE=1 (#229).
 - task-bar-click: clicking a TaskBar button shows its frame, and with
   VGUI_ABI_COMPAT_MODE=0 deleting the task bar removes its clock from the App's
   tick signals, and the frame can still signal closing and focus changes to
@@ -29,6 +31,10 @@ With VGUI_ABI_COMPAT_MODE=0 only:
   none.
 - holder-signals: deleting a TextEntry, Slider, ScrollBar or HeaderPanel
   deletes its signals; a copied or assigned Slider has none.
+- table-header: a TablePanel adds one change signal to a header it is given
+  again; a replaced header, a header removed with NULL and the header of a
+  deleted table leave the table alone; a copy has no header; a table whose
+  header is deleted can take another (#229).
 - task-bar-frame-deleted: deleting a frame removes its TaskBar button, and a
   deleted copy of a frame does not.
 - internal-handlers: deleting a Frame, MessageBox, WizardPanel, ScrollPanel,
@@ -129,14 +135,22 @@ public:
  virtual void valueChanged( Panel* ) override {}
 };
 
+// Counts the column extents its header sets.
 class TestTable : public TablePanel
 {
 public:
- TestTable() : TablePanel( 0, 0, 100, 100, 2 ) {}
+ TestTable() : TablePanel( 0, 0, 100, 100, 2 ), extentCalls( 0 ) {}
+ virtual void setColumnExtents( int column, int x0, int x1 ) override
+ {
+  ++extentCalls;
+  TablePanel::setColumnExtents( column, x0, x1 );
+ }
  virtual int getRowCount() override { return 0; }
  virtual int getCellTall( int ) override { return 0; }
  virtual Panel* getCellRenderer( int, int, bool, bool, bool ) override { return NULL; }
  virtual Panel* startCellEditing( int, int ) override { return NULL; }
+
+ int extentCalls;
 };
 
 // Clicks a panel the way App does, through its protected internalMousePressed
@@ -162,6 +176,24 @@ static const int FOO_DUMB_ENTRY = 1;
 static void Check(bool condition, const char* message)
 {
  if (!condition) throw std::runtime_error(message);
+}
+
+static const int SECTION_WIDE = 20;
+
+// A header with one section, so each change sets one column of its table.
+static HeaderPanel* NewHeader()
+{
+ HeaderPanel* header = new HeaderPanel( 0, 0, 100, 20 );
+ header->addSectionPanel( new Panel( 0, 0, SECTION_WIDE, 20 ) );
+ return header;
+}
+
+// How many columns of the table one change of the header sets.
+static int ExtentCalls(TestTable& table, HeaderPanel* header)
+{
+ int before = table.extentCalls;
+ header->fireChangeSignal();
+ return table.extentCalls - before;
 }
 
 static void Run(const std::string& test)
@@ -232,6 +264,14 @@ static void Run(const std::string& test)
   (void)tickSignals;
 #endif
  }
+ else if (test == "table-header-null")
+ {
+  TestTable* table = new TestTable();
+  table->setHeaderPanel( NULL );
+#if VGUI_ABI_COMPAT_MODE != 1
+  delete table;
+#endif
+ }
 #if VGUI_ABI_COMPAT_MODE != 1
  else if (test == "button-signals")
  {
@@ -279,6 +319,40 @@ static void Run(const std::string& test)
   header->addChangeSignal( new CountingChange() );
   delete header;
   Check(4 == deletedSignals, "header panel deleted its signal");
+ }
+ else if (test == "table-header")
+ {
+  HeaderPanel* first = NewHeader();
+  HeaderPanel* second = NewHeader();
+  TestTable* table = new TestTable();
+  table->setHeaderPanel( first );
+  table->setHeaderPanel( first );
+  Check(1 == first->_changeSignalDar.getCount(), "same header added once");
+  Check(1 == ExtentCalls(*table, first), "header sets the table once");
+  table->setHeaderPanel( second );
+  Check(0 == ExtentCalls(*table, first), "replaced header leaves the table alone");
+  Check(1 == ExtentCalls(*table, second), "new header sets the table");
+  TestTable* copy = new TestTable( *table );
+  Check(0 == ExtentCalls(*copy, second), "copy has no header");
+  *copy = *table;
+  Check(0 == ExtentCalls(*copy, second), "assigned copy has no header");
+  delete copy;
+  Check(1 == ExtentCalls(*table, second), "deleted copy leaves the table its header");
+  table->setHeaderPanel( NULL );
+  Check(0 == ExtentCalls(*table, second), "NULL removes the header");
+  table->setHeaderPanel( second );
+  // The table is deleted before its header.
+  delete table;
+  second->fireChangeSignal();
+  // The header is deleted before its table, which can then take another.
+  table = new TestTable();
+  table->setHeaderPanel( second );
+  delete second;
+  Check(NULL == table->_headerSignal, "deleted header forgotten");
+  table->setHeaderPanel( first );
+  Check(1 == ExtentCalls(*table, first), "table takes another header");
+  delete table;
+  delete first;
  }
  else if (test == "task-bar-frame-deleted")
  {
@@ -338,8 +412,9 @@ int main(int argc, char** argv)
 }
 '''
 
-SCENARIOS = ['scroll-bar-fires-once', 'tab-select', 'label-editor', 'task-bar-click']
-NONCOMPAT_SCENARIOS = ['button-signals', 'holder-signals', 'task-bar-frame-deleted', 'internal-handlers']
+SCENARIOS = ['scroll-bar-fires-once', 'tab-select', 'label-editor', 'task-bar-click', 'table-header-null']
+NONCOMPAT_SCENARIOS = ['button-signals', 'holder-signals', 'table-header', 'task-bar-frame-deleted',
+                       'internal-handlers']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
 
