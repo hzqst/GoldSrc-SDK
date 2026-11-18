@@ -23,6 +23,9 @@ class VGUIAPI TextEntry : public Panel , public InputSignal
 {
 public:
 	TextEntry(const char* text,int x,int y,int wide,int tall);
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual ~TextEntry();
+#endif
 public:
 	virtual void setText(const char* text,int textLen);
 	virtual void getText(int offset,char* buf,int bufLen);

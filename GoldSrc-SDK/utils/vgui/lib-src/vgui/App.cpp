@@ -360,6 +360,24 @@ void App::surfaceBaseDeleted( SurfaceBase* surfaceBase )
 	_keyFocus = NULL;
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+void App::panelDeleted( Panel* panel )
+{
+	if ( _keyFocus == panel )
+		_keyFocus = NULL;
+	if ( _oldMouseFocus == panel )
+		_oldMouseFocus = NULL;
+	if ( _mouseFocus == panel )
+		_mouseFocus = NULL;
+	if ( _mouseCapture == panel )
+		_mouseCapture = NULL;
+	if ( _wantedKeyFocus == panel )
+		_wantedKeyFocus = NULL;
+	if ( _mouseArenaPanel == panel )
+		_mouseArenaPanel = NULL;
+}
+#endif
+
 void App::addTickSignal( TickSignal* s )
 {
 	if ( _tickSignalDar.hasElement( s ) )

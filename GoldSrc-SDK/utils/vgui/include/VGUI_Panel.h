@@ -55,6 +55,19 @@ class VGUIAPI Panel
 public:
 	Panel();
 	Panel(int x,int y,int wide,int tall); 
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A Panel owns its border, its input signals and its children and deletes
+	// them when it is destroyed. A copy has the same appearance and state but
+	// no parent, children, border or signals.
+	Panel(const Panel& other);
+	virtual ~Panel();
+	Panel& operator=(const Panel& other);
+
+	// Panels are freed through the virtual destructor from any module, so
+	// they are always allocated and freed on vgui.dll's heap.
+	static void* operator new(size_t size);
+	static void operator delete(void* memory);
+#endif
 private:
 	void init(int x,int y,int wide,int tall);
 public:

@@ -98,6 +98,9 @@ private:
 protected:
 	virtual void surfaceBaseCreated( SurfaceBase* surfaceBase );
 	virtual void surfaceBaseDeleted( SurfaceBase* surfaceBase );
+#if VGUI_ABI_COMPAT_MODE != 1
+	void panelDeleted( Panel* panel );
+#endif
 	virtual void platTick();
 	virtual void internalTick();
 
@@ -137,6 +140,9 @@ private:
 	int					_minimumTickMillisInterval;
 
 	friend class SurfaceBase;
+#if VGUI_ABI_COMPAT_MODE != 1
+	friend class Panel;
+#endif
 
 public:
 	App& operator=( const App& ) = default;

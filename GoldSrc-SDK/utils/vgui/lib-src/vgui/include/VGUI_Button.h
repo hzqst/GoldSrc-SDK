@@ -18,6 +18,12 @@ class VGUIAPI Button : public Label
 public:
 	Button( const char* text, int x, int y, int wide, int tall );
 	Button( const char* text, int x, int y );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// A Button owns its controller. A copy gets the default controller and is
+	// not in any ButtonGroup.
+	Button( const Button& other );
+	virtual ~Button() override;
+#endif
 
 	virtual void setSelected( bool state );
 	virtual void setSelectedDirect( bool state );
@@ -58,7 +64,11 @@ protected:
 	ButtonController*	_buttonController;
 
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	Button& operator=( const Button& other );
+#else
 	Button& operator=( const Button& ) = default;
+#endif
 };
 
 }

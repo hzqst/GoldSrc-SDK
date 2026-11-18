@@ -138,6 +138,47 @@ Button::Button( const char* text, int x, int y ) : Label( text, x, y )
 	init();
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+Button::Button( const Button& other ) : Label( other ), _actionSignalDar( other._actionSignalDar )
+{
+	_text = NULL;
+	_armed = other._armed;
+	_selected = other._selected;
+	_buttonBorderEnabled = other._buttonBorderEnabled;
+	_mouseClickMask = other._mouseClickMask;
+	_buttonGroup = NULL;
+	_buttonController = NULL;
+	setButtonController( new FooDefaultButtonController( this ) );
+}
+
+Button::~Button()
+{
+	// Take the controller's signals off first so that ~Panel does not delete
+	// a controller that registered itself as one.
+	if ( _buttonController != NULL )
+	{
+		_buttonController->removeSignals( this );
+		delete _buttonController;
+	}
+}
+
+// Keeps this button's own controller and ButtonGroup.
+Button& Button::operator=( const Button& other )
+{
+	if ( this != &other )
+	{
+		Label::operator=( other );
+		_armed = other._armed;
+		_selected = other._selected;
+		_buttonBorderEnabled = other._buttonBorderEnabled;
+		_actionSignalDar = other._actionSignalDar;
+		_mouseClickMask = other._mouseClickMask;
+	}
+
+	return *this;
+}
+#endif
+
 void Button::setButtonBorderEnabled( bool state )
 {
 	_buttonBorderEnabled = state;
@@ -275,6 +316,10 @@ void Button::setButtonController( ButtonController* buttonController )
 	if ( _buttonController != NULL )
 	{
 		_buttonController->removeSignals( this );
+#if VGUI_ABI_COMPAT_MODE != 1
+		if ( _buttonController != buttonController )
+			delete _buttonController;
+#endif
 	}
 
 	_buttonController = buttonController;

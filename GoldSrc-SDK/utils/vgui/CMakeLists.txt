@@ -100,7 +100,12 @@ if(TARGET vgui)
 			??2Image@vgui@@SAPAXI@Z
 			??3Image@vgui@@SAXPAX@Z
 			??1TextImage@vgui@@UAE@XZ
-			??1Label@vgui@@QAE@XZ)
+			??1Panel@vgui@@UAE@XZ
+			??2Panel@vgui@@SAPAXI@Z
+			??3Panel@vgui@@SAXPAX@Z
+			??1Label@vgui@@UAE@XZ
+			??1Button@vgui@@UAE@XZ
+			??1TextEntry@vgui@@UAE@XZ)
 		file(READ "${GOLDSRC_VGUI_IMPORTS_DEF}" GOLDSRC_VGUI_IMPORTS)
 		foreach(export IN LISTS GOLDSRC_VGUI_EXTRA_EXPORTS)
 			string(APPEND GOLDSRC_VGUI_IMPORTS "    ${export}\n")
