@@ -32,6 +32,7 @@ STUBS = r'''
 #include <string>
 #include <time.h>
 #include <wchar.h>
+#include <wctype.h>
 typedef unsigned int uint32;
 // records how LastPlayed was stored
 struct KeyValues {

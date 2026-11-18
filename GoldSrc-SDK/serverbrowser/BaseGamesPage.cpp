@@ -31,6 +31,7 @@
 #include <string.h>
 #include <time.h>
 #include <wchar.h>
+#include <wctype.h>
 
 // page currently being shown; the static sort functions read from it
 CBaseGamesPage *g_CurrentGamesPage;
@@ -440,8 +441,8 @@ static void SetServerLastPlayed( KeyValues *kv, uint32 ulTimeLastPlayed )
 	// lowercase a trailing English AM / PM; localized markers are kept
 	if ( len >= 2 && buf[len - 1] == L'M' && ( buf[len - 2] == L'A' || buf[len - 2] == L'P' ) )
 	{
-		buf[len - 2] += L'a' - L'A';
-		buf[len - 1] = L'm';
+		buf[len - 2] = towlower( buf[len - 2] );
+		buf[len - 1] = towlower( buf[len - 1] );
 	}
 
 	kv->SetWString( "LastPlayed", buf );
