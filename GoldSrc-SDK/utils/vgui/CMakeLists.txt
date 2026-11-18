@@ -99,6 +99,10 @@ if(TARGET vgui)
 			??1Image@vgui@@UAE@XZ
 			??2Image@vgui@@SAPAXI@Z
 			??3Image@vgui@@SAXPAX@Z
+			??1Bitmap@vgui@@UAE@XZ
+			??1Cursor@vgui@@UAE@XZ
+			??2Cursor@vgui@@SAPAXI@Z
+			??3Cursor@vgui@@SAXPAX@Z
 			??1TextImage@vgui@@UAE@XZ
 			??1Panel@vgui@@UAE@XZ
 			??2Panel@vgui@@SAPAXI@Z

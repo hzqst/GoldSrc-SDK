@@ -1,6 +1,26 @@
 #include "VGUI_Cursor.h"
 
+#include "VGUI_Bitmap.h"
+
 using namespace vgui;
+
+#if VGUI_ABI_COMPAT_MODE != 1
+Cursor::~Cursor()
+{
+	if ( _dc != dc_user )
+		delete _bitmap;
+}
+
+void* Cursor::operator new( size_t size )
+{
+	return ::operator new( size );
+}
+
+void Cursor::operator delete( void* memory )
+{
+	::operator delete( memory );
+}
+#endif
 
 void Cursor::privateInit( Bitmap* bitmap, int hotspotX, int hotspotY )
 {

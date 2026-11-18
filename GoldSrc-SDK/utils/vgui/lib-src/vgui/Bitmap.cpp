@@ -6,6 +6,7 @@
 #include "VGUI_SurfaceBase.h"
 
 #include <limits.h>
+#include <string.h>
 
 namespace vgui
 {
@@ -16,6 +17,47 @@ Bitmap::Bitmap()
 	_uploaded = false;
 	_rgba = NULL;
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+Bitmap::Bitmap( const Bitmap& other )
+	: Image( other )
+{
+	_id = 0;
+	_uploaded = false;
+	_rgba = NULL;
+	*this = other;
+}
+
+Bitmap::~Bitmap()
+{
+	delete[] _rgba;
+}
+
+// A bitmap keeps its own texture and uploads the copied pixels to it.
+Bitmap& Bitmap::operator=( const Bitmap& other )
+{
+	if ( this == &other )
+		return *this;
+
+	Image::operator=( other );
+
+	delete[] _rgba;
+	_rgba = NULL;
+	_uploaded = false;
+
+	if ( other._rgba != NULL )
+	{
+		int wide;
+		int tall;
+		getSize( wide, tall );
+
+		_rgba = new uchar[VGUI_RGBA_BYTES * wide * tall];
+		memcpy( _rgba, other._rgba, VGUI_RGBA_BYTES * wide * tall );
+	}
+
+	return *this;
+}
+#endif
 
 void Bitmap::setSize( int wide, int tall )
 {

@@ -52,3 +52,28 @@ vgui::Cursor::Cursor( DefaultCursor dc )
 	bitmap->getHotspot( x, y );
 	privateInit( bitmap, x, y );
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+vgui::Cursor::Cursor( const Cursor& other )
+{
+	_dc = dc_user;
+	_bitmap = NULL;
+	*this = other;
+}
+
+vgui::Cursor& vgui::Cursor::operator=( const Cursor& other )
+{
+	if ( this == &other )
+		return *this;
+
+	if ( _dc != dc_user )
+		delete _bitmap;
+
+	_dc = other._dc;
+	_bitmap = _dc != dc_user ? new CursorBitmap( _dc ) : other._bitmap;
+	_hotspot[0] = other._hotspot[0];
+	_hotspot[1] = other._hotspot[1];
+
+	return *this;
+}
+#endif
