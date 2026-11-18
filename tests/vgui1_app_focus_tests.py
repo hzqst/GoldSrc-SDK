@@ -20,11 +20,20 @@ whose runs check memory errors only) and with VGUI_ABI_COMPAT_MODE=0.
 - capture-switch: capturing on another surface releases the first one.
 - repaint-all-attached: repaintAll on a panel on a surface still invalidates
   the surface's top panel (#226).
+- root-deleted-first: deleting a surface after its root, the way
+  VGuiWrap_Shutdown does (with VGUI_ABI_COMPAT_MODE=1 the root is only freed),
+  does not touch the root; otherwise the surface loses its root and App stops
+  ticking it (#224).
 With VGUI_ABI_COMPAT_MODE=0 only:
 - captured-panel-deleted: deleting the capture and arena panel releases the
   native capture and the cursor clip.
 - focus-deleted-in-callback: a panel that deletes itself when it loses or
   gets the key focus is not used afterwards.
+- surface-deleted-first: a root that outlives its surface has its tree taken
+  off the surface and loses the surface's emulated cursor (#224).
+- moved-root: a surface's root moved onto another surface stays on it when
+  the first surface is deleted, and a deleted moved root is forgotten by the
+  first surface (#224).
 """
 import os
 from pathlib import Path
@@ -240,7 +249,57 @@ static void Run(const std::string& test)
   delete root;
 #endif
  }
+ else if (test == "root-deleted-first")
+ {
+  Panel* root = new Panel( 0, 0, 100, 100 );
+  TestSurface* surface = new TestSurface( root );
+  ( new Panel( 0, 0, 10, 10 ) )->setParent( root );
 #if VGUI_ABI_COMPAT_MODE != 1
+  delete root;
+  Check(NULL == surface->getPanel(), "surface lost its root");
+  app->externalTick();
+#else
+  // As VGuiWrap_Shutdown does without destructors.
+  ::operator delete( root );
+#endif
+  delete surface;
+ }
+#if VGUI_ABI_COMPAT_MODE != 1
+ else if (test == "surface-deleted-first")
+ {
+  Panel* root = new Panel( 0, 0, 100, 100 );
+  TestSurface* surface = new TestSurface( root );
+  Panel* child = new Panel( 0, 0, 10, 10 );
+  child->setParent( root );
+  Check(2 == root->getChildCount(), "emulated cursor added");
+  delete surface;
+  Check(NULL == root->getSurfaceBase() && NULL == child->getSurfaceBase(), "tree off the surface");
+  Check(1 == root->getChildCount() && child == root->getChild( 0 ), "emulated cursor deleted");
+  child->repaint();
+  child->repaintAll();
+  delete root;
+ }
+ else if (test == "moved-root")
+ {
+  Panel* otherRoot = new Panel( 0, 0, 100, 100 );
+  TestSurface* otherSurface = new TestSurface( otherRoot );
+  // The surface is deleted first.
+  Panel* root = new Panel( 0, 0, 50, 50 );
+  TestSurface* surface = new TestSurface( root );
+  root->setParent( otherRoot );
+  delete surface;
+  Check(otherSurface == root->getSurfaceBase(), "moved root kept the other surface");
+  delete root;
+  // The moved root is deleted first.
+  root = new Panel( 0, 0, 50, 50 );
+  surface = new TestSurface( root );
+  root->setParent( otherRoot );
+  delete root;
+  Check(NULL == surface->getPanel(), "surface forgot the moved root");
+  delete surface;
+  delete otherSurface;
+  delete otherRoot;
+ }
  else if (test == "captured-panel-deleted")
  {
   Panel* root = new Panel( 0, 0, 100, 100 );
@@ -304,8 +363,9 @@ int main(int argc, char** argv)
 }
 '''
 
-SCENARIOS = ['surface-deleted', 'capture-detached', 'capture-switch', 'repaint-all-attached']
-NONCOMPAT_SCENARIOS = ['captured-panel-deleted', 'focus-deleted-in-callback']
+SCENARIOS = ['surface-deleted', 'capture-detached', 'capture-switch', 'repaint-all-attached', 'root-deleted-first']
+NONCOMPAT_SCENARIOS = ['captured-panel-deleted', 'focus-deleted-in-callback', 'surface-deleted-first',
+                       'moved-root']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
 SOURCES = ['SurfaceBase.cpp', 'ImagePanel.cpp']
