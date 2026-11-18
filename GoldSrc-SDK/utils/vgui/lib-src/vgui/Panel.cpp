@@ -307,10 +307,11 @@ void Panel::insertChildAt( Panel* child, int index )
 	child->setSurfaceBaseTraverse( _surfaceBase );
 }
 
+// The child's whole tree leaves this panel's surface.
 void Panel::removeChild( Panel* child )
 {
 	child->_parent = NULL;
-	child->_surfaceBase = NULL;
+	child->setSurfaceBaseTraverse( NULL );
 	_childDar.removeElement( child );
 }
 
@@ -606,15 +607,12 @@ bool Panel::isBuildGroupEnabled()
 	return _buildGroup->isEnabled();
 }
 
+// Detaches every child as removeChild does, without deleting them. Like the
+// original, it does not call a removeChild override.
 void Panel::removeAllChildren()
 {
-	for ( int i = 0; i < _childDar.getCount(); ++i )
-	{
-		_childDar[i]->_parent = NULL;
-		_childDar[i]->_surfaceBase = NULL;
-	}
-
-	_childDar.removeAll();
+	while ( _childDar.getCount() > 0 )
+		Panel::removeChild( _childDar[_childDar.getCount() - 1] );
 }
 
 void Panel::repaintParent()
