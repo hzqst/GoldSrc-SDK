@@ -386,6 +386,13 @@ void App::addTickSignal( TickSignal* s )
 	_tickSignalDar.addElement( s );
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+void App::removeTickSignal( TickSignal* s )
+{
+	_tickSignalDar.removeElement( s );
+}
+#endif
+
 bool App::wasMousePressed( MouseCode code, Panel* )
 {
 	return _mousePressed[code];
