@@ -35,7 +35,7 @@ public:
 	Label( int textBufferLen, const char* text, int x, int y, int wide, int tall );
 #if VGUI_ABI_COMPAT_MODE != 1
 	Label( const Label& other );
-	~Label();
+	virtual ~Label() override;
 #endif
 
 	virtual void setImage( Image* image );

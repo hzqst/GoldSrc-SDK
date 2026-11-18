@@ -65,7 +65,13 @@ void VGuiWrap_SetRootPanelSize()
 
 void VGuiWrap_Shutdown()
 {
+#if VGUI_ABI_COMPAT_MODE != 1
+	// Deletes the whole panel tree, including the client's panels; the client
+	// DLL is still loaded here.
+	delete staticPanel;
+#else
 	::operator delete( staticPanel );
+#endif
 	staticPanel = NULL;
 
 	delete staticEngineSurface;

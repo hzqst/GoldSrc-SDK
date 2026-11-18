@@ -21,6 +21,10 @@ class Panel;
 class VGUIAPI InputSignal
 {
 public:
+#if VGUI_ABI_COMPAT_MODE != 1
+	// Panels delete their input signals through this interface.
+	virtual ~InputSignal() {}
+#endif
 	virtual void cursorMoved(int x,int y,Panel* panel)=0;
 	virtual void cursorEntered(Panel* panel)=0;
 	virtual void cursorExited(Panel* panel)=0;

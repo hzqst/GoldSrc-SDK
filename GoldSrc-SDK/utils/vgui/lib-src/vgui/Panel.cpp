@@ -14,6 +14,7 @@
 #include "VGUI_TreeFolder.h"
 
 #include <stdio.h>
+#include <string.h>
 
 using namespace vgui;
 
@@ -40,6 +41,91 @@ Panel::Panel( int x, int y, int wide, int tall )
 {
 	init( x, y, wide, tall );
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+Panel::Panel( const Panel& other )
+	: _childDar( 4 ),
+	  _inputSignalDar( 4 ),
+	  _repaintSignalDar( 4 ),
+	  _focusChangeSignalDar( 4 )
+{
+	init( other._pos[0], other._pos[1], other._size[0], other._size[1] );
+	*this = other;
+}
+
+Panel::~Panel()
+{
+	if ( _parent != NULL )
+		_parent->removeChild( this );
+
+	App* app = App::getInstance();
+	if ( app != NULL )
+		app->panelDeleted( this );
+
+	delete _border;
+	_border = NULL;
+
+	for ( int i = 0; i < _inputSignalDar.getCount(); ++i )
+		delete _inputSignalDar[i];
+	_inputSignalDar.removeAll();
+
+	// Detach every child first so that none of them removes itself from this
+	// half-destroyed panel.
+	Dar<Panel*> children( _childDar );
+	_childDar.removeAll();
+	for ( int i = 0; i < children.getCount(); ++i )
+	{
+		children[i]->_parent = NULL;
+		children[i]->_surfaceBase = NULL;
+	}
+	for ( int i = 0; i < children.getCount(); ++i )
+		delete children[i];
+}
+
+// Copies appearance and state only: the parent, children, border and signals
+// belong to one panel.
+Panel& Panel::operator=( const Panel& other )
+{
+	if ( this == &other )
+		return *this;
+
+	memcpy( _pos, other._pos, sizeof( _pos ) );
+	memcpy( _size, other._size, sizeof( _size ) );
+	memcpy( _loc, other._loc, sizeof( _loc ) );
+	memcpy( _minimumSize, other._minimumSize, sizeof( _minimumSize ) );
+	memcpy( _preferredSize, other._preferredSize, sizeof( _preferredSize ) );
+	memcpy( _clipRect, other._clipRect, sizeof( _clipRect ) );
+
+	_cursor = other._cursor;
+	_schemeCursor = other._schemeCursor;
+	_visible = other._visible;
+	_layout = other._layout;
+	_needsLayout = other._needsLayout;
+	_focusNavGroup = other._focusNavGroup;
+	_autoFocusNavEnabled = other._autoFocusNavEnabled;
+	_needsRepaint = other._needsRepaint;
+	_enabled = other._enabled;
+	_buildGroup = other._buildGroup;
+	_fgColor = other._fgColor;
+	_bgColor = other._bgColor;
+	_layoutInfo = other._layoutInfo;
+	_paintBorderEnabled = other._paintBorderEnabled;
+	_paintBackgroundEnabled = other._paintBackgroundEnabled;
+	_paintEnabled = other._paintEnabled;
+
+	return *this;
+}
+
+void* Panel::operator new( size_t size )
+{
+	return ::operator new( size );
+}
+
+void Panel::operator delete( void* memory )
+{
+	::operator delete( memory );
+}
+#endif
 
 void Panel::init( int x, int y, int wide, int tall )
 {
@@ -522,6 +608,12 @@ bool Panel::isBuildGroupEnabled()
 
 void Panel::removeAllChildren()
 {
+	for ( int i = 0; i < _childDar.getCount(); ++i )
+	{
+		_childDar[i]->_parent = NULL;
+		_childDar[i]->_surfaceBase = NULL;
+	}
+
 	_childDar.removeAll();
 }
 

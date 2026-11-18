@@ -54,6 +54,25 @@ TextEntry::TextEntry( const char* text, int x, int y, int wide, int tall )
 	addFocusChangeSignal( new FooDefaultTextEntrySignal( this ) );
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+TextEntry::~TextEntry()
+{
+	// A TextEntry is its own input signal; ~Panel must not delete it.
+	removeInputSignal( this );
+
+	// Panels do not own focus change signals; free the one the constructor added.
+	for ( int i = _focusChangeSignalDar.getCount() - 1; i >= 0; --i )
+	{
+		FooDefaultTextEntrySignal* signal = dynamic_cast<FooDefaultTextEntrySignal*>( _focusChangeSignalDar[i] );
+		if ( signal != NULL )
+		{
+			_focusChangeSignalDar.removeElementAt( i );
+			delete signal;
+		}
+	}
+}
+#endif
+
 void TextEntry::cursorMoved( int, int, Panel* )
 {
 }
