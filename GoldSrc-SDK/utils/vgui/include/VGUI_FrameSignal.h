@@ -25,6 +25,10 @@ public:
 #endif
 	virtual void closing(Frame* frame)=0;
 	virtual void minimizing(Frame* frame,bool toTray)=0;
+#if VGUI_ABI_COMPAT_MODE != 1
+	// Called while the frame is being deleted; it must not be used afterwards.
+	virtual void frameDeleted(Frame*) {}
+#endif
 };
 
 }

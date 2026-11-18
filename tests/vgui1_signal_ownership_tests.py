@@ -11,8 +11,7 @@ vgui1_panel_tests.py, twice: with VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll
 layout, nothing owns a signal) and with VGUI_ABI_COMPAT_MODE=0, where Button
 and TextEntry own their ActionSignals, Slider and ScrollBar their
 IntChangeSignals and HeaderPanel its ChangeSignals. The compatible build frees
-no panel, so its runs check memory errors only. TaskBar never frees the
-handlers it gives its frames, so task-bar-click checks memory errors only.
+no panel, so its runs check memory errors only.
 
 - scroll-bar-fires-once: a ScrollBar calls each of its IntChangeSignals once
   per change.
@@ -23,12 +22,15 @@ handlers it gives its frames, so task-bar-click checks memory errors only.
 - task-bar-click: clicking a TaskBar button shows its frame, and with
   VGUI_ABI_COMPAT_MODE=0 deleting the task bar removes its clock from the App's
   tick signals, and the frame can still signal closing and focus changes to
-  the handler after the task bar and its buttons are deleted.
+  the handler after the task bar and its buttons are deleted; the handler is
+  freed with the frame.
 With VGUI_ABI_COMPAT_MODE=0 only:
 - button-signals: deleting a Button deletes its action signals; a copy has
   none.
 - holder-signals: deleting a TextEntry, Slider, ScrollBar or HeaderPanel
   deletes its signals; a copied or assigned Slider has none.
+- task-bar-frame-deleted: deleting a frame removes its TaskBar button, and a
+  deleted copy of a frame does not.
 - internal-handlers: deleting a Frame, MessageBox, WizardPanel, ScrollPanel,
   ListPanel or a TablePanel and its HeaderPanel frees the handlers they add.
 """
@@ -278,6 +280,26 @@ static void Run(const std::string& test)
   delete header;
   Check(4 == deletedSignals, "header panel deleted its signal");
  }
+ else if (test == "task-bar-frame-deleted")
+ {
+  TaskBar* taskBar = new TaskBar( 0, 0, 200, 26 );
+  Frame* first = new Frame( 0, 0, 100, 100 );
+  Frame* second = new Frame( 0, 0, 100, 100 );
+  second->setVisible( false );
+  taskBar->addFrame( first );
+  taskBar->addFrame( second );
+  // A copy shares the frame signals.
+  Frame* copy = new Frame( *first );
+  delete copy;
+  Check(2 == taskBar->_taskButtonDar.getCount(), "deleted copy keeps the button");
+  delete first;
+  Check(1 == taskBar->_taskButtonDar.getCount() && 1 == taskBar->_frameDar.getCount(), "button removed");
+  Check(second == taskBar->_frameDar[0], "other frame kept");
+  PanelInput::click( taskBar->_taskButtonDar[0] );
+  Check(second->isVisible(), "other button shows its frame");
+  delete taskBar;
+  delete second;
+ }
  else if (test == "internal-handlers")
  {
   Panel* root = new Panel( 0, 0, 100, 100 );
@@ -317,11 +339,9 @@ int main(int argc, char** argv)
 '''
 
 SCENARIOS = ['scroll-bar-fires-once', 'tab-select', 'label-editor', 'task-bar-click']
-NONCOMPAT_SCENARIOS = ['button-signals', 'holder-signals', 'internal-handlers']
+NONCOMPAT_SCENARIOS = ['button-signals', 'holder-signals', 'task-bar-frame-deleted', 'internal-handlers']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
-# TaskBar never frees the handlers it gives its frames.
-LEAKING_SCENARIOS = {'task-bar-click'}
 
 
 def main():
@@ -342,7 +362,7 @@ def main():
                 # Without destructors the compatible build frees no panel; only
                 # check its memory errors.
                 env = dict(os.environ)
-                if mode == '1' or scenario in LEAKING_SCENARIOS:
+                if mode == '1':
                     env['ASAN_OPTIONS'] = 'detect_leaks=0:' + env.get('ASAN_OPTIONS', '')
                 result = subprocess.run([str(executable), scenario], env=env)
                 if result.returncode:

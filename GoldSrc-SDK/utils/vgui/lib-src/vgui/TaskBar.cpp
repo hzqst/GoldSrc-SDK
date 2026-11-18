@@ -53,8 +53,9 @@ protected:
 class FooTaskBarButtonHandler : public ActionSignal, public FrameSignal, public FocusChangeSignal
 {
 public:
-	FooTaskBarButtonHandler( Button* button, Frame* frame )
+	FooTaskBarButtonHandler( TaskBar* taskBar, Button* button, Frame* frame )
 	{
+		_taskBar = taskBar;
 		_button = button;
 		_frame = frame;
 	}
@@ -63,12 +64,16 @@ public:
 
 	virtual void closing( Frame* frame ) override;
 	virtual void minimizing( Frame* frame, bool toTray ) override;
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual void frameDeleted( Frame* frame ) override;
+#endif
 
 	virtual void focusChanged( bool lost, Panel* panel ) override;
 
 protected:
-	Button*	_button;
-	Frame*	_frame;
+	TaskBar*	_taskBar;
+	Button*		_button;
+	Frame*		_frame;
 
 	friend class FooTaskBarButtonSignal;
 };
@@ -78,17 +83,22 @@ protected:
 class FooTaskBarButtonSignal : public ActionSignalForwarder
 {
 public:
-	FooTaskBarButtonSignal( FooTaskBarButtonHandler* handler ) : ActionSignalForwarder( handler ), _handler( handler ) {}
+	FooTaskBarButtonSignal( FooTaskBarButtonHandler* handler ) : ActionSignalForwarder( handler )
+	{
+#if VGUI_ABI_COMPAT_MODE != 1
+		_handler = handler;
+#endif
+	}
 
 #if VGUI_ABI_COMPAT_MODE != 1
 	virtual ~FooTaskBarButtonSignal() override
 	{
 		_handler->_button = NULL;
 	}
-#endif
 
 private:
 	FooTaskBarButtonHandler*	_handler;
+#endif
 };
 
 void FooClock::paintBackground()
@@ -163,6 +173,26 @@ void FooTaskBarButtonHandler::minimizing( Frame*, bool )
 	_frame->getApp()->requestFocus( NULL );
 }
 
+#if VGUI_ABI_COMPAT_MODE != 1
+// The handler lives as long as its frame. The button, while there is one, is a
+// child of the task bar, so the task bar is still there too.
+void FooTaskBarButtonHandler::frameDeleted( Frame* frame )
+{
+	// Frame copies share the frame signals.
+	if ( frame != _frame )
+	{
+		return;
+	}
+
+	if ( _button != NULL )
+	{
+		_taskBar->removeFrame( _frame );
+	}
+
+	delete this;
+}
+#endif
+
 void FooTaskBarButtonHandler::focusChanged( bool lost, Panel* )
 {
 	if ( _button != NULL )
@@ -197,7 +227,7 @@ void TaskBar::addFrame( Frame* frame )
 	_frameDar.addElement( frame );
 	frame->getTitle( buf, 256 );
 	button = new Button( buf, 2, 2 );
-	handler = new FooTaskBarButtonHandler( button, frame );
+	handler = new FooTaskBarButtonHandler( this, button, frame );
 	button->setParent( this );
 	// The button deletes its action signals; the frame keeps the handler.
 	button->addActionSignal( new FooTaskBarButtonSignal( handler ) );
@@ -206,6 +236,24 @@ void TaskBar::addFrame( Frame* frame )
 	_taskButtonDar.addElement( button );
 	invalidateLayout( false );
 }
+
+#if VGUI_ABI_COMPAT_MODE != 1
+void TaskBar::removeFrame( Frame* frame )
+{
+	for ( int i = 0; i < _frameDar.getCount(); ++i )
+	{
+		if ( _frameDar[i] == frame )
+		{
+			Button* button = _taskButtonDar[i];
+			_frameDar.removeElementAt( i );
+			_taskButtonDar.removeElementAt( i );
+			delete button;
+			invalidateLayout( false );
+			return;
+		}
+	}
+}
+#endif
 
 void TaskBar::performLayout()
 {
