@@ -26,7 +26,6 @@
 #include "netadr.h"
 #include "../engine/controls.h"
 
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -432,16 +431,20 @@ static void SetServerLastPlayed( KeyValues *kv, uint32 ulTimeLastPlayed )
 	if ( !now )
 		return;
 
-	char buf[64];
-	strftime( buf, sizeof( buf ), "%a %d %b %I:%M%p", now );
+	// format wide text, so a multibyte locale date is not read back as UTF-8
+	wchar_t buf[64];
+	size_t len = wcsftime( buf, sizeof( buf ) / sizeof( buf[0] ), L"%a %d %b %I:%M%p", now );
+	if ( !len )
+		return;
 
-	// lowercase the trailing "HH:MMAM" part
-	for ( char *pch = buf + strlen( buf ) - 4; *pch; pch++ )
+	// lowercase a trailing English AM / PM; localized markers are kept
+	if ( len >= 2 && buf[len - 1] == L'M' && ( buf[len - 2] == L'A' || buf[len - 2] == L'P' ) )
 	{
-		*pch = tolower( (unsigned char)*pch );
+		buf[len - 2] += L'a' - L'A';
+		buf[len - 1] = L'm';
 	}
 
-	kv->SetString( "LastPlayed", buf );
+	kv->SetWString( "LastPlayed", buf );
 }
 
 //-----------------------------------------------------------------------------
