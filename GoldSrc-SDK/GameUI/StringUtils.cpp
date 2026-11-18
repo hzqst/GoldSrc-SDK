@@ -40,6 +40,11 @@ bool UTIL_CopyString( char* buffer, size_t bufferSize, const char* source )
 	return true;
 }
 
+bool UTIL_IsUnquotedCommandArgument( const char* text )
+{
+	return !strpbrk( text, ";\"\n\r" );
+}
+
 void UTIL_UppercaseASCII( char* text )
 {
 	for ( ; *text; text++ )

@@ -192,7 +192,7 @@ void SplitSaveComment( std::string& comment, std::string& elapsedTime )
 //-----------------------------------------------------------------------------
 bool FormatSaveGameCommand( char* buffer, size_t bufferSize, const char* command, const char* shortName )
 {
-	if ( strpbrk( shortName, ";\"\n\r" ) )
+	if ( !UTIL_IsUnquotedCommandArgument( shortName ) )
 		return false;
 
 	return UTIL_FormatString( buffer, bufferSize, "%s %s\n", command, shortName );

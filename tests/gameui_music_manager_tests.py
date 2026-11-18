@@ -74,7 +74,7 @@ static Engine g_engine;
 static Engine* engine = &g_engine;
 
 void Career_Printf(const char*, ...) {}
-bool UTIL_CopyString(char* buffer, size_t bufferSize, const char* source);
+#include "StringUtils.h"
 '''
 
 TESTS = r'''
@@ -114,6 +114,21 @@ static void PathThatDoesNotFitIsNotPlayed() {
   assert(std::string("cd playfile media/credits.mp3\n") == Engine::commands[0]);
  }
  puts("PASS: a path that does not fit in t_path is dropped instead of truncated");
+}
+
+static void PathThatCouldAddCommandsIsNotPlayed() {
+ for (const char* path : {"media/a.mp3;quit", "media/a.mp3\nquit", "media/a.mp3\rquit", "media/a\".mp3"}) {
+  g_playlist = {{"Splash", path}, {"Credits", "media/credits.mp3"}};
+  MusicManager music;
+  music.Init();
+  Play(music, TRACKTYPE_SPLASH, true);
+  assert(Engine::primed.empty());
+  assert(Engine::commands.empty());
+  Play(music, TRACKTYPE_CREDITS, false);
+  assert(1 == Engine::commands.size());
+  assert(std::string("cd playfile media/credits.mp3\n") == Engine::commands[0]);
+ }
+ puts("PASS: a path with a command separator, quote or line break is not played");
 }
 
 static void EveryTrackIsLoadedWithItsLoopingDefault() {
@@ -156,7 +171,7 @@ def main():
         'MusicManager::MusicManager(', 'MusicManager::~MusicManager(', 'void MusicManager::Reset(',
         'void MusicManager::Init(', 'void MusicManager::StartTrack(', 'void MusicManager::StopTrack('))
     code += TESTS
-    code += ('\nint main() { LongestPathIsPlayedWithoutTruncation(); PathThatDoesNotFitIsNotPlayed(); '
+    code += ('\nint main() { LongestPathIsPlayedWithoutTruncation(); PathThatDoesNotFitIsNotPlayed(); PathThatCouldAddCommandsIsNotPlayed(); '
              'EveryTrackIsLoadedWithItsLoopingDefault(); MissingTrackIsNotPlayed(); }\n')
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-music-manager-') as folder:
         path = Path(folder)
