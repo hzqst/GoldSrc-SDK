@@ -18,6 +18,8 @@ whose runs check memory errors only) and with VGUI_ABI_COMPAT_MODE=0.
   surface releases it on the surface that captured; a panel on no surface gets
   the capture without a native one.
 - capture-switch: capturing on another surface releases the first one.
+- repaint-all-attached: repaintAll on a panel on a surface still invalidates
+  the surface's top panel (#226).
 With VGUI_ABI_COMPAT_MODE=0 only:
 - captured-panel-deleted: deleting the capture and arena panel releases the
   native capture and the cursor clip.
@@ -82,7 +84,7 @@ static TestApp* app;
 class TestSurface : public SurfaceBase
 {
 public:
- TestSurface( Panel* embeddedPanel ) : SurfaceBase( embeddedPanel ), captures( 0 ), releases( 0 ) {}
+ TestSurface( Panel* embeddedPanel ) : SurfaceBase( embeddedPanel ), captures( 0 ), releases( 0 ), invalidated( NULL ) {}
  ~TestSurface() {}
 
  virtual void setTitle( const char* ) override {}
@@ -104,7 +106,7 @@ public:
  virtual void drawSetTextureRGBA( int, const char*, int, int ) override {}
  virtual void drawSetTexture( int ) override {}
  virtual void drawTexturedRect( int, int, int, int ) override {}
- virtual void invalidate( Panel* ) override {}
+ virtual void invalidate( Panel* panel ) override { invalidated = panel; }
  virtual void enableMouseCapture( bool state ) override { ++( state ? captures : releases ); }
  virtual void setCursor( Cursor* ) override {}
  virtual void swapBuffers() override {}
@@ -114,6 +116,7 @@ public:
 
  int captures;
  int releases;
+ Panel* invalidated;
 };
 
 // Deletes itself after it loses (or gets) the key focus.
@@ -222,6 +225,21 @@ static void Run(const std::string& test)
   delete otherRoot;
 #endif
  }
+ else if (test == "repaint-all-attached")
+ {
+  Panel* root = new Panel( 0, 0, 100, 100 );
+  TestSurface* surface = new TestSurface( root );
+  Panel* parent = new Panel( 0, 0, 50, 50 );
+  Panel* child = new Panel( 0, 0, 10, 10 );
+  parent->setParent( root );
+  child->setParent( parent );
+  child->repaintAll();
+  Check(root == surface->invalidated, "surface's top panel invalidated");
+  delete surface;
+#if VGUI_ABI_COMPAT_MODE != 1
+  delete root;
+#endif
+ }
 #if VGUI_ABI_COMPAT_MODE != 1
  else if (test == "captured-panel-deleted")
  {
@@ -286,7 +304,7 @@ int main(int argc, char** argv)
 }
 '''
 
-SCENARIOS = ['surface-deleted', 'capture-detached', 'capture-switch']
+SCENARIOS = ['surface-deleted', 'capture-detached', 'capture-switch', 'repaint-all-attached']
 NONCOMPAT_SCENARIOS = ['captured-panel-deleted', 'focus-deleted-in-callback']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}

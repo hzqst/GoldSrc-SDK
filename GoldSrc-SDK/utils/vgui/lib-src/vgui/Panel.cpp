@@ -254,9 +254,20 @@ void Panel::repaint()
 #endif
 }
 
+// A panel on no surface repaints the top of its own tree, which is painted in
+// full when the tree is next on a surface.
 void Panel::repaintAll()
 {
-	_surfaceBase->getPanel()->repaint();
+	if ( _surfaceBase != NULL )
+	{
+		_surfaceBase->getPanel()->repaint();
+		return;
+	}
+
+	Panel* root = this;
+	while ( root->_parent != NULL )
+		root = root->_parent;
+	root->repaint();
 }
 
 void Panel::getAbsExtents( int& x0, int& y0, int& x1, int& y1 )
