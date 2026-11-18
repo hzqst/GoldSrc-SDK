@@ -1071,7 +1071,7 @@ CCommandMenu* CTFViewport::CreateSubMenu( CommandButton* button, CCommandMenu* p
 
 	CImageLabel* arrow = new CImageLabel( "arrow", CMENU_SIZE_X - SUBMENU_SIZE_X, SUBMENU_SIZE_Y );
 	arrow->setParent( button );
-	arrow->addInputSignal( popup );
+	arrow->addInputSignal( new CMenuHandler_PopupSubMenuInput( button, menu ) );	// each panel owns its input signals
 	arrow->getPos( x, y );
 	arrow->setPos( CMENU_SIZE_X - arrow->getImageWide(), ( BUTTON_SIZE_Y - arrow->getImageTall() ) / 2 );
 	if ( !button->m_bNoHighlight )

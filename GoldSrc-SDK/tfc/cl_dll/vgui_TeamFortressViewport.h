@@ -24,6 +24,7 @@
 
 // custom scheme handling
 #include "vgui_SchemeManager.h"
+#include "vgui_defaultinputsignal.h"
 
 #define TF_DEFS_ONLY
 #ifdef _TFC
@@ -1294,12 +1295,12 @@ public:
 			// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(this);
+		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
 
 		pLabelOff = new CImageLabel( "unchecked", 0, 0 );
 		pLabelOff->setParent(this);
 		pLabelOff->setEnabled(true);
-		pLabelOff->addInputSignal(this);
+		pLabelOff->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
 
 		int textwide, texttall;
 		getTextSize( textwide, texttall);
@@ -1375,7 +1376,7 @@ public:
 		// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(this);
+		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
 
 
 		int textwide, texttall;
@@ -1465,12 +1466,12 @@ public:
 			// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(this);
+		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
 
 		pLabelOff = new CImageLabel( "unchecked", 0, 0 );
 		pLabelOff->setParent(this);
 		pLabelOff->setEnabled(true);
-		pLabelOff->addInputSignal(this);
+		pLabelOff->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
 
 		int textwide, texttall;
 		getTextSize( textwide, texttall);

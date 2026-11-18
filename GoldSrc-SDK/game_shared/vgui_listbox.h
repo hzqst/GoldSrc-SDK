@@ -40,6 +40,7 @@ public:
 
 	// Add an item to the listbox. This automatically sets the item's parent to the listbox 
 	// and resizes the item's width to fit within the listbox.
+	// The item must be allocated with new; the listbox deletes it in Term().
 	void			AddItem(Panel *pPanel);
 
 	// Get the number of items currently in the listbox.
@@ -103,12 +104,12 @@ protected:
 	// All the items..
 	LBItem			m_Items;
 
-	Panel			m_ItemsPanel;
+	Panel			*m_ItemsPanel;
 
 	int				m_ItemOffset;	// where we're scrolled to
-	Slider2			m_Slider;
-	ScrollBar2		m_ScrollBar;
-	ListBoxSignal	m_Signal;
+	Slider2			*m_Slider;
+	ScrollBar2		*m_ScrollBar;
+	ListBoxSignal	*m_Signal;
 
 	int				m_iScrollMax;
 };

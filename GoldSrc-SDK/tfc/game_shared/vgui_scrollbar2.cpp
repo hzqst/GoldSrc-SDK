@@ -61,11 +61,8 @@ public:
 //-----------------------------------------------------------------------------
 class ScrollBarButton : public Button
 {
-private:
-	LineBorder m_Border;
-
 public:
-	ScrollBarButton(const char *filename, int x, int y, int wide, int tall) : m_Border(Color(60, 60, 60, 0)), Button("", x, y, wide, tall)
+	ScrollBarButton(const char *filename, int x, int y, int wide, int tall) : Button("", x, y, wide, tall)
 	{
 		Image *image = vgui_LoadTGA(filename);
 		if (image)
@@ -74,7 +71,7 @@ public:
 			setImage(image);
 		}
 
-		setBorder(&m_Border);
+		setBorder(new LineBorder(Color(60, 60, 60, 0)));	// owned by the Panel
 	}
 
 	virtual void paintBackground()
@@ -207,12 +204,14 @@ bool ScrollBar2::hasFullRange()
 	return _slider->hasFullRange();
 }
 
-//LEAK: new and old slider will leak
 void ScrollBar2::setButton(Button* button,int index)
 {
 	if(_button[index]!=null)
 	{
 		removeChild(_button[index]);
+#if VGUI_ABI_COMPAT_MODE != 1
+		delete _button[index];	// this scrollbar owned it as a child
+#endif
 	}
 	_button[index]=button;
 	addChild(_button[index]);
@@ -229,12 +228,14 @@ Button* ScrollBar2::getButton(int index)
 	return _button[index];
 }
 
-//LEAK: new and old slider will leak
 void ScrollBar2::setSlider(Slider2 *slider)
 {
 	if(_slider!=null)
 	{
 		removeChild(_slider);
+#if VGUI_ABI_COMPAT_MODE != 1
+		delete _slider;	// this scrollbar owned it as a child
+#endif
 	}
 	_slider=slider;
 	addChild(_slider);
