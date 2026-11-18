@@ -91,10 +91,19 @@ goldsrc_add_module(vgui
 )
 
 if(TARGET vgui)
+	set(GOLDSRC_VGUI_IMPORTS_DEF "${CMAKE_CURRENT_SOURCE_DIR}/vgui_imports.def")
+	if(NOT GOLDSRC_VGUI_ABI_COMPAT_MODE)
+		# Exports the original vgui.dll does not have.
+		file(READ "${GOLDSRC_VGUI_IMPORTS_DEF}" GOLDSRC_VGUI_IMPORTS)
+		string(APPEND GOLDSRC_VGUI_IMPORTS "    ??1MiniApp@vgui@@UAE@XZ\n")
+		set(GOLDSRC_VGUI_IMPORTS_DEF "${CMAKE_CURRENT_BINARY_DIR}/vgui_imports.def")
+		file(WRITE "${GOLDSRC_VGUI_IMPORTS_DEF}" "${GOLDSRC_VGUI_IMPORTS}")
+	endif()
+
 	# Rebuild the import library from the names-only definition so that clients
 	# import by name, as the reference hw.dll and sw.dll do.
 	add_custom_command(TARGET vgui POST_BUILD
-		COMMAND "${CMAKE_AR}" /nologo /machine:x86 "/def:${CMAKE_CURRENT_SOURCE_DIR}/vgui_imports.def"
+		COMMAND "${CMAKE_AR}" /nologo /machine:x86 "/def:${GOLDSRC_VGUI_IMPORTS_DEF}"
 			"/out:$<TARGET_LINKER_FILE:vgui>"
 		COMMENT "Rebuilding the vgui import library from vgui_imports.def"
 		VERBATIM)

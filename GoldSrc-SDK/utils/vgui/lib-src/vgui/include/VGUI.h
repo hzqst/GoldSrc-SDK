@@ -5,6 +5,12 @@
 
 #define VGUI_RGBA_BYTES	4
 
+// 1 keeps the class layouts, vtables and exports of the original vgui.dll.
+// Other values allow ABI-breaking fixes such as virtual destructors.
+#ifndef VGUI_ABI_COMPAT_MODE
+#define VGUI_ABI_COMPAT_MODE	1
+#endif
+
 #if defined( _WIN32 )
 #if defined( VGUI_EXPORTS )
 #define VGUIAPI __declspec( dllexport )

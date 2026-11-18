@@ -12,6 +12,10 @@ class VGUIAPI MiniApp
 {
 public:
 	MiniApp();
+	MiniApp( const MiniApp& other );
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual ~MiniApp();
+#endif
 
 	virtual void getName( char* name, int nameLen );
 	virtual Frame* createInstance() = 0;
@@ -23,7 +27,7 @@ private:
 	char*	_name;
 
 public:
-	MiniApp& operator=( const MiniApp& ) = default;
+	MiniApp& operator=( const MiniApp& other );
 };
 
 }
