@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 #include <vector>
 
 #include "buildslave_assert.h"
@@ -37,8 +38,7 @@
 #define SAVEGAME_HEADER	( 'J' | ( 'S' << 8 ) | ( 'A' << 16 ) | ( 'V' << 24 ) )
 #define SAVEGAME_VERSION	113
 #define MAX_SAVE_TOKENS	0x02000000
-#define SAVEGAME_MAP_NAME_SIZE	32
-#define SAVEGAME_COMMENT_SIZE	80
+#define SAVEGAME_ELAPSED_TIME_SIZE	5	// "MM:SS" at the end of the comment
 #define SAVEGAME_HEADER_SIZE	( 5 * sizeof( int ) )	// tag, version, size, tokenCount, tokenSize
 
 #ifdef _WIN32
@@ -73,7 +73,7 @@ static const char* SaveTokenAt( const std::vector<const char*>& tokenList, int t
 	return tokenList[token];
 }
 
-int SaveReadNameAndComment( FileHandle_t file, char* name, char* comment )
+int SaveReadNameAndComment( FileHandle_t file, std::string& name, std::string& comment )
 {
 	int tag;
 	if ( !SaveReadExact( file, &tag, sizeof( tag ) ) || tag != SAVEGAME_HEADER )
@@ -82,8 +82,8 @@ int SaveReadNameAndComment( FileHandle_t file, char* name, char* comment )
 	if ( !SaveReadExact( file, &tag, sizeof( tag ) ) || tag != SAVEGAME_VERSION )	// Enforce version for now
 		return 0;
 
-	name[0] = 0;
-	comment[0] = 0;
+	name.clear();
+	comment.clear();
 
 	int size;
 	int tokenCount;
@@ -155,19 +155,35 @@ int SaveReadNameAndComment( FileHandle_t file, char* name, char* comment )
 		data += sizeof( short );
 		if ( !fieldName || fieldSize < 0 || fieldSize > end - data )
 			return 0;
+		// The text ends at the first NUL in the field or at the end of the field
+		const char* fieldEnd = std::find( data, data + fieldSize, '\0' );
 		if ( !stricmp( fieldName, "comment" ) )
-			strncpy( comment, data, fieldSize > SAVEGAME_COMMENT_SIZE ? SAVEGAME_COMMENT_SIZE : fieldSize );
+			comment.assign( data, fieldEnd );
 		else if ( !stricmp( fieldName, "mapName" ) )
-			strncpy( name, data, fieldSize > SAVEGAME_MAP_NAME_SIZE ? SAVEGAME_MAP_NAME_SIZE : fieldSize );
+			name.assign( data, fieldEnd );
 		data += fieldSize;
 	}
 
-	name[SAVEGAME_MAP_NAME_SIZE - 1] = 0;
-	comment[SAVEGAME_COMMENT_SIZE - 1] = 0;
-
-	if ( strlen( name ) > 0 && strlen( comment ) > 0 )
+	if ( !name.empty() && !comment.empty() )
 		return 1;
 	return 0;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: moves the elapsed time at the end of a save comment into elapsedTime
+//          and drops the spaces before it, "??" when the comment is too short
+//-----------------------------------------------------------------------------
+void SplitSaveComment( std::string& comment, std::string& elapsedTime )
+{
+	elapsedTime = "??";
+	if ( comment.size() <= SAVEGAME_ELAPSED_TIME_SIZE )
+		return;
+
+	elapsedTime = comment.substr( comment.size() - SAVEGAME_ELAPSED_TIME_SIZE );
+	comment.erase( comment.size() - SAVEGAME_ELAPSED_TIME_SIZE );
+	// The first character is kept even when it is a space
+	size_t last = comment.find_last_not_of( ' ' );
+	comment.erase( last == std::string::npos ? 1 : last + 1 );
 }
 
 //-----------------------------------------------------------------------------
@@ -271,28 +287,19 @@ bool CSaveGameDialog::ParseSaveData( const char* filename, const char* shortName
 	if ( !file )
 		return false;
 
-	char mapName[SAVEGAME_MAP_NAME_SIZE];
-	char comment[SAVEGAME_COMMENT_SIZE];
+	std::string mapName;
+	std::string comment;
 	int valid = SaveReadNameAndComment( file, mapName, comment );
 	vgui2::filesystem()->Close( file );
 	if ( !valid )
 		return false;
 
-	data->SetString( "Map", mapName );
+	data->SetString( "Map", mapName.c_str() );
 	data->SetInt( "Quick", strstr( filename, "quick" ) != NULL );
 	data->SetInt( "Autosave", strstr( filename, "autosave" ) != NULL );
 
-	char elapsedTime[32];
-	sprintf( elapsedTime, "??" );
-	int length = (int)strlen( comment );
-	if ( length > 5 )
-	{
-		strncpy( elapsedTime, comment + length - 5, 5 );
-		elapsedTime[5] = 0;
-		comment[length - 5] = 0;
-		for ( int i = length - 6; i >= 1 && comment[i] == ' '; i-- )
-			comment[i] = 0;
-	}
+	std::string elapsedTime;
+	SplitSaveComment( comment, elapsedTime );
 
 	// calculate the file name to print
 	const char* type = NULL;
@@ -301,8 +308,8 @@ bool CSaveGameDialog::ParseSaveData( const char* filename, const char* shortName
 	else if ( strstr( filename, "autosave" ) )
 		type = "#GameUI_AutoSave";
 	data->SetString( "Type", type );
-	data->SetString( "Game", comment );
-	data->SetString( "Elapsed Time", elapsedTime );
+	data->SetString( "Game", comment.c_str() );
+	data->SetString( "Elapsed Time", elapsedTime.c_str() );
 
 	char fileTime[32];
 	long timestamp = vgui2::filesystem()->GetFileTime( filename );

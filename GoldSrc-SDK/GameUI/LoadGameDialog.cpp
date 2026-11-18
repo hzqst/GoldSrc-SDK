@@ -123,25 +123,16 @@ bool CLoadGameDialog::ParseSaveData( const char* filename, const char* shortName
 	if ( !file )
 		return false;
 
-	char mapName[32];
-	char comment[80];
+	std::string mapName;
+	std::string comment;
 	int valid = SaveReadNameAndComment( file, mapName, comment );
 	vgui2::filesystem()->Close( file );
 	if ( !valid )
 		return false;
 
-	data->SetString( "Map", mapName );
-	int commentLength = (int)strlen( comment );
-	char elapsedTime[32];
-	sprintf( elapsedTime, "??" );
-	if ( commentLength > 5 )
-	{
-		strncpy( elapsedTime, comment + commentLength - 5, 5 );
-		elapsedTime[5] = 0;
-		comment[commentLength - 5] = 0;
-		for ( int i = commentLength - 6; i >= 1 && comment[i] == ' '; i-- )
-			comment[i] = 0;
-	}
+	data->SetString( "Map", mapName.c_str() );
+	std::string elapsedTime;
+	SplitSaveComment( comment, elapsedTime );
 
 	// calculate the file name to print
 	const char* type = NULL;
@@ -151,8 +142,8 @@ bool CLoadGameDialog::ParseSaveData( const char* filename, const char* shortName
 		type = "#GameUI_AutoSave";
 
 	data->SetString( "Type", type );
-	data->SetString( "Game", comment );
-	data->SetString( "Elapsed Time", elapsedTime );
+	data->SetString( "Game", comment.c_str() );
+	data->SetString( "Elapsed Time", elapsedTime.c_str() );
 
 	long fileTime = vgui2::filesystem()->GetFileModificationTime( filename );
 	char timeText[32];

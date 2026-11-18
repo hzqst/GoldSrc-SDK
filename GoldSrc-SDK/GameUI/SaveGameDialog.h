@@ -10,6 +10,8 @@
 #include "TaskFrame.h"
 #include "filesystem.h"
 
+#include <string>
+
 class KeyValues;
 
 namespace vgui2
@@ -37,7 +39,8 @@ private:
 	vgui2::ListPanel* m_pGameList;
 };
 
-int	SaveReadNameAndComment( FileHandle_t file, char* name, char* comment );
+int	SaveReadNameAndComment( FileHandle_t file, std::string& name, std::string& comment );
+void	SplitSaveComment( std::string& comment, std::string& elapsedTime );
 bool	FormatSaveGameCommand( char* buffer, size_t bufferSize, const char* command, const char* shortName );
 int	TimeStampSortFunc( vgui2::ListPanel* panel, const vgui2::ListPanelItem& first,
 		const vgui2::ListPanelItem& second );
