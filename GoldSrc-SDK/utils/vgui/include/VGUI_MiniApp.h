@@ -19,6 +19,15 @@ class VGUIAPI MiniApp
 {
 public:
 	MiniApp();
+#if VGUI_ABI_COMPAT_MODE != 1
+	virtual ~MiniApp();
+#endif
+#ifdef _WIN32
+	// vgui.dll exports these and copies the name; the prebuilt Linux vgui.so
+	// does not export them.
+	MiniApp(const MiniApp& other);
+	MiniApp& operator=(const MiniApp& other);
+#endif
 public:
 	virtual void   getName(char* buf,int bufLen);
 	virtual Frame* createInstance()=0;

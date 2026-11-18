@@ -77,6 +77,12 @@
 //		then App can come along later and fire all the signals
 //TODO: Change all method naming to starting with a capital letter.
 
+// 1 keeps the class layouts, vtables and exports of the original vgui.dll.
+// Other values allow ABI-breaking fixes such as virtual destructors.
+#ifndef VGUI_ABI_COMPAT_MODE
+#define VGUI_ABI_COMPAT_MODE 1
+#endif
+
 #ifdef _WIN32
 # define VGUIAPI __declspec( dllexport )
 #else

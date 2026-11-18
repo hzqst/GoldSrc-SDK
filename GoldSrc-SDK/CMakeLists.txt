@@ -18,6 +18,17 @@ list(APPEND CMAKE_MODULE_PATH "${GOLDSRC_ROOT}/cmake")
 
 option(GOLDSRC_BUILD_UTILS "Build the SDK utilities" ON)
 option(GOLDSRC_BUILD_TESTS "Build and register the regression tests in ../tests" OFF)
+option(GOLDSRC_VGUI_ABI_COMPAT_MODE "Keep VGUI1 binary compatible with the original vgui.dll" ON)
+
+if(GOLDSRC_VGUI_ABI_COMPAT_MODE)
+	add_compile_definitions(VGUI_ABI_COMPAT_MODE=1)
+else()
+	if(NOT WIN32)
+		message(FATAL_ERROR "GOLDSRC_VGUI_ABI_COMPAT_MODE=OFF needs vgui built from source, "
+			"but Linux links the prebuilt linux/release/vgui.so")
+	endif()
+	add_compile_definitions(VGUI_ABI_COMPAT_MODE=0)
+endif()
 
 include(GoldSrcPlatform)
 include(GoldSrcTargets)
