@@ -431,22 +431,19 @@ CDialogGameInfo *CServerBrowserDialog::JoinGame( int serverIP, int serverPort )
 //-----------------------------------------------------------------------------
 CDialogGameInfo *CServerBrowserDialog::JoinGame( IGameList *gameList, unsigned int serverIndex, bool hltvOnly )
 {
-	// open the game info dialog, then mark it to attempt to connect right away
-	CDialogGameInfo *gameDialog = NULL;
-
 	serverdisplay_t *pServer = gameList->GetServer( serverIndex );
-	if ( pServer )
-	{
-		gameDialog = new CDialogGameInfo( NULL, pServer->m_netAdr.GetIP(), pServer->m_netAdr.GetQueryPort(), pServer->m_netAdr.GetConnectionPort(), hltvOnly );
-		gameDialog->SetParent( GetVParent() );
-		gameDialog->AddActionSignalTarget( this );
-		gameDialog->Run( NULL );
+	if ( !pServer )
+		return NULL;
 
-		int i = m_GameInfoDialogs.AddToTail();
-		m_GameInfoDialogs[i] = gameDialog;
-	}
+	// open the game info dialog, then mark it to attempt to connect right away
+	CDialogGameInfo *gameDialog = new CDialogGameInfo( NULL, pServer->m_netAdr.GetIP(), pServer->m_netAdr.GetQueryPort(), pServer->m_netAdr.GetConnectionPort(), hltvOnly );
+	gameDialog->SetParent( GetVParent() );
+	gameDialog->AddActionSignalTarget( this );
+	gameDialog->Run( NULL );
 
-	// note: this is also reached when the server could not be found
+	int i = m_GameInfoDialogs.AddToTail();
+	m_GameInfoDialogs[i] = gameDialog;
+
 	gameDialog->Connect();
 	return gameDialog;
 }
