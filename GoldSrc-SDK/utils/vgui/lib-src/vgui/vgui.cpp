@@ -6,46 +6,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void* ( *staticMalloc )( unsigned int ) = malloc;
-static void ( *staticFree )( void* ) = free;
-
-void* operator new( size_t size )
+// The global new / delete are the CRT's. These hooks are not exported and are
+// kept only as declared entry points: switching the allocator after anything was
+// allocated would free those blocks with the wrong function.
+void vgui_setMalloc( void* ( * )( unsigned int ) )
 {
-	return staticMalloc( size );
 }
 
-void operator delete( void* memblock )
+void vgui_setFree( void ( * )( void* ) )
 {
-	staticFree( memblock );
-}
-
-void operator delete( void* memblock, size_t ) noexcept
-{
-	staticFree( memblock );
-}
-
-void vgui_setMalloc( void* ( *theMalloc )( unsigned int ) )
-{
-	if ( theMalloc != NULL )
-	{
-		staticMalloc = theMalloc;
-	}
-	else
-	{
-		staticMalloc = malloc;
-	}
-}
-
-void vgui_setFree( void ( *theFree )( void* ) )
-{
-	if ( theFree != NULL )
-	{
-		staticFree = theFree;
-	}
-	else
-	{
-		staticFree = free;
-	}
 }
 
 namespace vgui
