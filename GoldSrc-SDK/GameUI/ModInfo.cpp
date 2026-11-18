@@ -6,6 +6,7 @@
 //=============================================================================
 #include "ModInfo.h"
 #include "GameUI_Interface.h"
+#include "StringUtils.h"
 
 #include "vgui/KeyValues.h"
 #include "filesystem.h"
@@ -159,9 +160,11 @@ void CModInfo::LoadGameInfoFromBuffer( const char* buffer, int )
 		if ( !token[0] )
 			break;
 
-		strcpy( key, token );
+		bool keyCopied = UTIL_CopyString( key, sizeof( key ), token );
 		cursor = engine->COM_ParseFile( cursor, token );
-		strcpy( value, token );
+		// Skip pairs that do not fit instead of storing a truncated key or value
+		if ( !keyCopied || !UTIL_CopyString( value, sizeof( value ), token ) )
+			continue;
 		m_pModData->SetString( key, value );
 	}
 }
