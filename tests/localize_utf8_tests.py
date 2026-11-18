@@ -1,4 +1,4 @@
-"""Exercise the production wide-to-UTF-8 conversion with exact and short buffers."""
+"""Exercise the production wide/UTF-8 conversions with exact, short and invalid input."""
 from pathlib import Path
 import subprocess
 import sys
@@ -22,9 +22,14 @@ def main():
 #include <cassert>
 #include <cstring>
 #include <cwchar>
-struct CLocalizedStringTable { int ConvertUnicodeToANSI(const wchar_t*, char*, int); };
+struct CLocalizedStringTable {
+ int ConvertANSIToUnicode(const char*, wchar_t*, int);
+ int ConvertUnicodeToANSI(const wchar_t*, char*, int);
+};
 '''
-    for name in ('static int DecodeWideCodePoint(', 'static int EncodeUTF8CodePoint(',
+    for name in ('static int DecodeUTF8CodePoint(', 'static int EncodeWideCodePoint(',
+                 'int CLocalizedStringTable::ConvertANSIToUnicode(',
+                 'static int DecodeWideCodePoint(', 'static int EncodeUTF8CodePoint(',
                  'int CLocalizedStringTable::ConvertUnicodeToANSI('):
         code += function(source, name) + '\n'
     code += r'''
@@ -38,7 +43,66 @@ static void check(const wchar_t* input, int size, int expectedResult, const char
  assert(0 == std::strcmp(expectedText, buffer));
 }
 
+// same as check, for UTF-8 input; size counts wide characters
+static void checkWide(const char* input, int size, int expectedResult, const wchar_t* expectedText) {
+ wchar_t buffer[64];
+ for (wchar_t& unit : buffer) unit = L'x';
+ assert(expectedResult == table.ConvertANSIToUnicode(input, buffer, size * (int)sizeof(wchar_t)));
+ assert(0 == std::wcscmp(expectedText, buffer));
+}
+
+static void testANSIToUnicode() {
+ const int pairUnits = sizeof(wchar_t) == 2 ? 2 : 1;
+
+ // length query counts wide characters including the terminator and never touches the buffer
+ assert(1 == table.ConvertANSIToUnicode("", nullptr, 0));
+ assert(6 == table.ConvertANSIToUnicode("hello", nullptr, 0));
+ assert(2 == table.ConvertANSIToUnicode("\xE4\xB8\xAD", nullptr, 0));
+ assert(1 + pairUnits == table.ConvertANSIToUnicode("\xF0\x9F\x98\x80", nullptr, 0));
+ wchar_t untouched[2] = {L'x', L'x'};
+ assert(6 == table.ConvertANSIToUnicode("hello", untouched, (int)sizeof(wchar_t) - 1));
+ assert(L'x' == untouched[0]);
+ assert(0 == table.ConvertANSIToUnicode(nullptr, nullptr, 0));
+
+ // fits exactly, one wide character short cuts at a whole character
+ checkWide("hello", 6, 6, L"hello");
+ checkWide("hello", 5, 0, L"hell");
+ checkWide("hello", 1, 0, L"");
+ checkWide("", 1, 1, L"");
+ checkWide(nullptr, 8, 0, L"");
+ wchar_t odd[4];
+ for (wchar_t& unit : odd) unit = L'x';
+ assert(0 == table.ConvertANSIToUnicode("hi", odd, 3 * (int)sizeof(wchar_t) - 1));
+ assert(0 == std::wcscmp(L"h", odd));
+
+ // multibyte characters, and supplementary characters are never split into half a pair
+ checkWide("a\xC3\xA9\xE4\xB8\xAD", 4, 4, L"a\u00E9\u4E2D");
+ checkWide("a\xF0\x9F\x98\x80", 1 + pairUnits, 0, L"a");
+ checkWide("a\xF0\x9F\x98\x80", 2 + pairUnits, 2 + pairUnits, L"a\U0001F600");
+
+ // invalid input becomes U+FFFD, one per maximal subpart, and the terminator is never consumed
+ checkWide("\x80" "a", 8, 3, L"\uFFFDa");
+ checkWide("\xE4\xB8" "a", 8, 3, L"\uFFFDa");
+ checkWide("a\xE4\xB8", 8, 3, L"a\uFFFD");
+ checkWide("\xC0\xAF", 8, 3, L"\uFFFD\uFFFD");
+ checkWide("\xE0\x80\xAF", 8, 4, L"\uFFFD\uFFFD\uFFFD");
+ checkWide("\xED\xA0\x80", 8, 4, L"\uFFFD\uFFFD\uFFFD");
+ checkWide("\xF4\x90\x80\x80", 8, 5, L"\uFFFD\uFFFD\uFFFD\uFFFD");
+ checkWide("\xF5\xFF", 8, 3, L"\uFFFD\uFFFD");
+ checkWide("\xEF\xBF\xBF\xF4\x8F\xBF\xBF", 8, 2 + pairUnits, L"\uFFFF\U0010FFFF");
+
+ // a round trip through both conversions keeps the text
+ const wchar_t original[] = L"a\u00E9\u4E2D\U0001F600";
+ char utf8[16];
+ wchar_t wide[8];
+ assert(11 == table.ConvertUnicodeToANSI(original, utf8, sizeof(utf8)));
+ assert(3 + pairUnits + 1 == table.ConvertANSIToUnicode(utf8, wide, sizeof(wide)));
+ assert(0 == std::wcscmp(original, wide));
+}
+
 int main() {
+ testANSIToUnicode();
+
  // length query includes the terminator and never touches the buffer
  assert(1 == table.ConvertUnicodeToANSI(L"", nullptr, 0));
  assert(6 == table.ConvertUnicodeToANSI(L"hello", nullptr, 0));
@@ -81,7 +145,7 @@ int main() {
         (path / 'test.cpp').write_text(code, encoding='utf-8')
         executable = compile_program([path / 'test.cpp'], path / 'test', sanitizers=['address', 'undefined'])
         subprocess.run([str(executable)], check=True)
-    print('PASS: UTF-8 length query, exact fit and whole-character truncation')
+    print('PASS: wide and UTF-8 length queries, exact fit, whole-character truncation and invalid input')
 
 
 if __name__ == '__main__':

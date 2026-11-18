@@ -488,29 +488,153 @@ StringIndex_t CLocalizedStringTable::GetNextStringIndex( StringIndex_t index )
 	return m_Lookup.NextInorder( index );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: reads one code point from a UTF-8 string, returns the bytes used
+//			invalid sequences become U+FFFD, one per maximal subpart
+//-----------------------------------------------------------------------------
+static int DecodeUTF8CodePoint( const char* ansi, unsigned int* codePoint )
+{
+	const unsigned char* bytes = (const unsigned char*)ansi;
+	unsigned int first = bytes[0];
+	unsigned int value;
+	unsigned int lower = 0x80;
+	unsigned int upper = 0xBF;
+	int length;
+
+	if ( first < 0x80 )
+	{
+		*codePoint = first;
+		return 1;
+	}
+
+	if ( first >= 0xC2 && first <= 0xDF )
+	{
+		length = 2;
+		value = first & 0x1F;
+	}
+	else if ( first >= 0xE0 && first <= 0xEF )
+	{
+		length = 3;
+		value = first & 0x0F;
+
+		// reject overlong forms and encoded surrogates
+		if ( first == 0xE0 )
+		{
+			lower = 0xA0;
+		}
+		else if ( first == 0xED )
+		{
+			upper = 0x9F;
+		}
+	}
+	else if ( first >= 0xF0 && first <= 0xF4 )
+	{
+		length = 4;
+		value = first & 0x07;
+
+		// reject overlong forms and values above U+10FFFF
+		if ( first == 0xF0 )
+		{
+			lower = 0x90;
+		}
+		else if ( first == 0xF4 )
+		{
+			upper = 0x8F;
+		}
+	}
+	else
+	{
+		*codePoint = 0xFFFD;
+		return 1;
+	}
+
+	for ( int i = 1; i < length; i++ )
+	{
+		unsigned int next = bytes[i];
+
+		// a terminator also lands here, so it is never consumed
+		if ( next < lower || next > upper )
+		{
+			*codePoint = 0xFFFD;
+			return i;
+		}
+
+		value = ( value << 6 ) | ( next & 0x3F );
+		lower = 0x80;
+		upper = 0xBF;
+	}
+
+	*codePoint = value;
+	return length;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: writes one code point as wide units, returns the number of units
+//-----------------------------------------------------------------------------
+static int EncodeWideCodePoint( unsigned int codePoint, wchar_t* output )
+{
+	if ( sizeof( wchar_t ) == 2 && codePoint >= 0x10000 )
+	{
+		codePoint -= 0x10000;
+		output[0] = (wchar_t)( 0xD800 + ( codePoint >> 10 ) );
+		output[1] = (wchar_t)( 0xDC00 + ( codePoint & 0x3FF ) );
+		return 2;
+	}
+
+	output[0] = (wchar_t)codePoint;
+	return 1;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: converts from UTF-8
+//			returns the wide characters written including the terminator
+//			a null buffer or one smaller than a wide character only returns the wide characters required
+//			if the text does not fit, it is cut at a whole character and 0 is returned
+//-----------------------------------------------------------------------------
 int CLocalizedStringTable::ConvertANSIToUnicode( const char* ansi, wchar_t* unicode,
 	int unicodeBufferSizeInBytes )
 {
-#ifdef _WIN32
-	int result;
+	int capacity = ( unicode && unicodeBufferSizeInBytes > 0 ) ? unicodeBufferSizeInBytes / (int)sizeof( wchar_t ) : 0;
+	bool query = capacity <= 0;
+	int written = 0;
 
-	result = MultiByteToWideChar( CP_UTF8, 0, ansi, -1, unicode, unicodeBufferSizeInBytes / sizeof( wchar_t ) );
-	unicode[unicodeBufferSizeInBytes / sizeof( wchar_t ) - 1] = 0;
-	return result;
-#else
-	unsigned int maxChars;
-	int result;
-
-	if ( !ansi || !unicode )
+	if ( !ansi )
 	{
-		return -1;
+		if ( !query )
+		{
+			unicode[0] = 0;
+		}
+		return 0;
 	}
 
-	maxChars = (unsigned int)unicodeBufferSizeInBytes >> 2;
-	result = (int)mbstowcs( unicode, ansi, maxChars );
-	unicode[maxChars - 1] = 0;
-	return result;
-#endif
+	while ( *ansi )
+	{
+		unsigned int codePoint;
+		wchar_t encoded[2];
+		int bytes = DecodeUTF8CodePoint( ansi, &codePoint );
+		int units = EncodeWideCodePoint( codePoint, encoded );
+
+		if ( !query )
+		{
+			if ( written + units > capacity - 1 )
+			{
+				unicode[written] = 0;
+				return 0;
+			}
+
+			memcpy( unicode + written, encoded, units * sizeof( wchar_t ) );
+		}
+
+		written += units;
+		ansi += bytes;
+	}
+
+	if ( !query )
+	{
+		unicode[written] = 0;
+	}
+
+	return written + 1;
 }
 
 //-----------------------------------------------------------------------------
