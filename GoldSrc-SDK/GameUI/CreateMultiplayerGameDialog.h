@@ -26,11 +26,14 @@ public:
 	~CCreateMultiplayerGameDialog() override;
 
 protected:
+	void OnCommand( const char* command ) override;
 	void OnOK() override;
 	void OnClose() override;
 	void SetTitle( const char* title, bool surfaceTitle ) override;
 
 private:
+	bool StartServer();
+
 	CCreateMultiplayerGameServerPage*		m_pServerPage;
 	CCreateMultiplayerGameGameplayPage*	m_pGameplayPage;
 	CCreateMultiplayerGameBotPage*		m_pBotPage;
