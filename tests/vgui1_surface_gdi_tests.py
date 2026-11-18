@@ -1,4 +1,4 @@
-"""Compile the production VGUI1 Win32 Surface GDI resource handling (#242, #295, #298).
+"""Compile the production VGUI1 Win32 Surface GDI resource handling (#241, #242, #295, #298).
 
 Run: python tests/vgui1_surface_gdi_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -33,6 +33,10 @@ and a bitmap cannot be selected into a second DC.
 - destroy-before-context: destroying a surface without a context releases
   everything it created.
 - destroy-fullscreen: destroying a fullscreen surface restores the display mode.
+- create-window-fails, create-region-fails, create-dc-fails, get-dc-fails: a
+  refused window, clip region, memory DC or window DC makes createPlat return
+  false without taking the screen DC, and destroying the surface releases what
+  was created.
 """
 from pathlib import Path
 import re
@@ -126,6 +130,9 @@ static bool failCreateBitmap = false;
 static bool failCreateDC = false;
 static bool failSelect = false;
 static bool failCreateDIB = false;
+static bool failCreateWindow = false;
+static bool failCreateRegion = false;
+static bool failGetDC = false;
 static int blits = 0;
 static std::size_t lastBlitSource = 0;
 static int displayRestores = 0;
@@ -254,6 +261,7 @@ static BOOL DeleteDC(HDC dc)
 
 static HRGN CreateRectRgn(int, int, int, int)
 {
+ if (failCreateRegion) return NULL;
  return reinterpret_cast<HRGN>(Add(GDI_REGION, false, 0, 0));
 }
 
@@ -283,6 +291,7 @@ static unsigned short RegisterClassA(const WNDCLASSA* windowClass)
 static HWND CreateWindowExA(DWORD, const char*, const char*, DWORD, int, int, int wide, int tall, HWND, void*,
  HINSTANCE, void*)
 {
+ if (failCreateWindow) return NULL;
  return reinterpret_cast<HWND>(Add(GDI_WINDOW, false, wide, tall));
 }
 
@@ -308,6 +317,7 @@ static BOOL DestroyWindow(HWND window)
 static HDC GetDC(HWND window)
 {
  Check(Find(window, GDI_WINDOW) != NULL, "DC of a live window");
+ if (failGetDC) return NULL;
  return CreateCompatibleDC(NULL);
 }
 
@@ -364,13 +374,14 @@ public:
  {
   _panel._wide = 0;
   _panel._tall = 0;
-  createPlat();
+  _created = createPlat();
  }
  ~Surface();
  bool createPlat();
  Panel* getPanel() { return &_panel; }
  void setSize(int wide, int tall) { _panel._wide = wide; _panel._tall = tall; }
  SurfacePlat* plat() { return _plat; }
+ bool created() const { return _created; }
  bool recreateContext();
  void drawSetTexture(int id);
  void drawSetTextureRGBA(int id, const char* rgba, int wide, int tall);
@@ -378,6 +389,7 @@ public:
 protected:
  Panel _panel;
  SurfacePlat* _plat;
+ bool _created;
 };
 '''
 
@@ -431,6 +443,18 @@ static void CheckReleased(int sharedTextures)
  Check(livePlats == 1, "SurfacePlat deleted");
  Check(destroyedAttachedWindows == 0, "window detached before it is destroyed");
  Check(failedDeletes == 0, "every delete succeeded");
+}
+
+// Creates and destroys a surface while flag refuses one createPlat resource.
+static void CheckCreateFails(bool& flag)
+{
+ flag = true;
+ Surface* failed = new Surface();
+ flag = false;
+ Check(!failed->created(), "createPlat reports the failure");
+ if (failed->plat()->window == NULL) Check(failed->plat()->windowDC == NULL, "no screen DC without a window");
+ delete failed;
+ CheckReleased(0);
 }
 
 static void Run(const std::string& test)
@@ -601,6 +625,10 @@ static void Run(const std::string& test)
   Check(displayRestores == 1, "display mode restored once");
   CheckReleased(0);
  }
+ else if (test == "create-window-fails") CheckCreateFails(failCreateWindow);
+ else if (test == "create-region-fails") CheckCreateFails(failCreateRegion);
+ else if (test == "create-dc-fails") CheckCreateFails(failCreateDC);
+ else if (test == "get-dc-fails") CheckCreateFails(failGetDC);
  else Check(false, "unknown scenario");
 }
 
@@ -653,7 +681,8 @@ def main():
     scenarios = ['resize-cycle', 'texture-dc-reused', 'within-spare', 'minimum-size',
                  'bitmap-create-fails', 'select-fails', 'texture-dc-fails', 'texture-reupload',
                  'texture-selection-restored', 'texture-two-surfaces', 'texture-create-fails',
-                 'destroy-releases', 'destroy-before-context', 'destroy-fullscreen']
+                 'destroy-releases', 'destroy-before-context', 'destroy-fullscreen',
+                 'create-window-fails', 'create-region-fails', 'create-dc-fails', 'get-dc-fails']
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-gdi-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)

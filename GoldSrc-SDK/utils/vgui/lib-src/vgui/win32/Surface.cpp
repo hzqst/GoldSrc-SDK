@@ -194,20 +194,36 @@ Surface::~Surface()
 		ChangeDisplaySettingsA( NULL, 0 );
 	}
 	// Messages sent while the window is destroyed must not reach this Surface.
-	SetWindowLongPtrA( _plat->window, GWLP_USERDATA, 0 );
+	if ( _plat->window != NULL )
+	{
+		SetWindowLongPtrA( _plat->window, GWLP_USERDATA, 0 );
+	}
 	// Deleting the DCs deselects the backing bitmap and fonts, so the bitmap can be deleted after.
 	if ( _plat->textureDC != NULL )
 	{
 		DeleteDC( _plat->textureDC );
 	}
-	DeleteDC( _plat->drawDC );
+	if ( _plat->drawDC != NULL )
+	{
+		DeleteDC( _plat->drawDC );
+	}
 	if ( _plat->bitmap != NULL )
 	{
 		DeleteObject( _plat->bitmap );
 	}
-	DeleteObject( _plat->clip );
-	ReleaseDC( _plat->window, _plat->windowDC );
-	DestroyWindow( _plat->window );
+	if ( _plat->clip != NULL )
+	{
+		DeleteObject( _plat->clip );
+	}
+	// createPlat only takes the window DC of a created window.
+	if ( _plat->windowDC != NULL )
+	{
+		ReleaseDC( _plat->window, _plat->windowDC );
+	}
+	if ( _plat->window != NULL )
+	{
+		DestroyWindow( _plat->window );
+	}
 	delete _plat;
 	_plat = NULL;
 }
@@ -229,16 +245,21 @@ bool Surface::createPlat()
 	const int initialClipSize = 64;
 	_plat->clip = CreateRectRgn( 0, 0, initialClipSize, initialClipSize );
 	_plat->drawDC = CreateCompatibleDC( NULL );
-	_plat->windowDC = GetDC( _plat->window );
+	// GetDC( NULL ) would return the screen DC, so a window that failed to create gets no window DC.
+	_plat->windowDC = _plat->window != NULL ? GetDC( _plat->window ) : NULL;
 	_plat->textureDC = NULL;
 	_plat->bitmap = NULL;
 	_plat->bitmapSize[0] = 0;
 	_plat->bitmapSize[1] = 0;
 	_plat->isFullscreen = false;
 	SetBkMode( _plat->drawDC, TRANSPARENT );
-	SetWindowLongPtrA( _plat->window, GWLP_USERDATA, (LONG_PTR)this );
+	if ( _plat->window != NULL )
+	{
+		SetWindowLongPtrA( _plat->window, GWLP_USERDATA, (LONG_PTR)this );
+	}
 	SetTextAlign( _plat->drawDC, TA_UPDATECP );
-	return true;
+	// A partially created SurfacePlat is kept, with NULL for what failed, so ~Surface releases the rest.
+	return _plat->window != NULL && _plat->clip != NULL && _plat->drawDC != NULL && _plat->windowDC != NULL;
 }
 
 bool Surface::recreateContext()
