@@ -24,6 +24,11 @@ whose runs check memory errors only) and with VGUI_ABI_COMPAT_MODE=0.
   VGuiWrap_Shutdown does (with VGUI_ABI_COMPAT_MODE=1 the root is only freed),
   does not touch the root; otherwise the surface loses its root and App stops
   ticking it (#224).
+- surface-copy-detached: a copied surface has no root or emulated cursor, App
+  does not tick it, and deleting it keeps App's key focus and arena; the
+  original keeps its root and emulated cursor (#437).
+- surface-assign-keeps-root: an assigned surface keeps its own root and
+  emulated cursor (#437).
 With VGUI_ABI_COMPAT_MODE=0 only:
 - captured-panel-deleted: deleting the capture and arena panel releases the
   native capture and the cursor clip.
@@ -85,6 +90,7 @@ public:
 
  Panel* keyFocus() { return _keyFocus; }
  Panel* mouseCapture() { return _mouseCapture; }
+ bool ticks( SurfaceBase* surfaceBase ) { return _surfaceBaseDar.hasElement( surfaceBase ); }
 };
 
 static TestApp* app;
@@ -264,6 +270,55 @@ static void Run(const std::string& test)
 #endif
   delete surface;
  }
+ else if (test == "surface-copy-detached")
+ {
+  Panel* root = new Panel( 0, 0, 100, 100 );
+  TestSurface* surface = new TestSurface( root );
+  Panel* focused = new Panel( 0, 0, 10, 10 );
+  focused->setParent( root );
+  Focus(focused);
+  app->setMouseArena( focused );
+  TestSurface* copy = new TestSurface( *surface );
+  Check(NULL == copy->getPanel(), "the copy has no root");
+  Check(!app->ticks( copy ), "App does not tick the copy");
+  Check(surface == root->getSurfaceBase(), "the root stays on the original");
+  copy->setEmulatedCursorVisible( true );
+  copy->setEmulatedCursorPos( 1, 1 );
+  app->externalTick();
+  delete copy;
+  Check(focused == app->keyFocus(), "key focus kept");
+  Check(0 == arenaReleases, "arena kept");
+  Check(app->ticks( surface ), "App still ticks the original");
+#if VGUI_ABI_COMPAT_MODE != 1
+  Check(2 == root->getChildCount(), "the original keeps its emulated cursor");
+#endif
+  surface->setEmulatedCursorPos( 1, 1 );
+  delete surface;
+#if VGUI_ABI_COMPAT_MODE != 1
+  delete root;
+#endif
+ }
+ else if (test == "surface-assign-keeps-root")
+ {
+  Panel* root = new Panel( 0, 0, 100, 100 );
+  TestSurface* surface = new TestSurface( root );
+  Panel* otherRoot = new Panel( 0, 0, 100, 100 );
+  TestSurface* otherSurface = new TestSurface( otherRoot );
+  *otherSurface = *surface;
+  Check(otherRoot == otherSurface->getPanel(), "the assigned surface keeps its root");
+  Check(otherSurface == otherRoot->getSurfaceBase(), "its root stays on it");
+  delete surface;
+  Check(otherRoot == otherSurface->getPanel(), "deleting the source keeps the root");
+#if VGUI_ABI_COMPAT_MODE != 1
+  Check(1 == otherRoot->getChildCount(), "the assigned surface keeps its emulated cursor");
+#endif
+  otherSurface->setEmulatedCursorPos( 1, 1 );
+  delete otherSurface;
+#if VGUI_ABI_COMPAT_MODE != 1
+  delete root;
+  delete otherRoot;
+#endif
+ }
 #if VGUI_ABI_COMPAT_MODE != 1
  else if (test == "surface-deleted-first")
  {
@@ -363,7 +418,8 @@ int main(int argc, char** argv)
 }
 '''
 
-SCENARIOS = ['surface-deleted', 'capture-detached', 'capture-switch', 'repaint-all-attached', 'root-deleted-first']
+SCENARIOS = ['surface-deleted', 'capture-detached', 'capture-switch', 'repaint-all-attached', 'root-deleted-first',
+             'surface-copy-detached', 'surface-assign-keeps-root']
 NONCOMPAT_SCENARIOS = ['captured-panel-deleted', 'focus-deleted-in-callback', 'surface-deleted-first',
                        'moved-root']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.

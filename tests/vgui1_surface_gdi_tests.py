@@ -5,8 +5,8 @@ Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
-Surface::createPlat, ~Surface, recreateContext, popMakeCurrent and the texture
-methods are extracted as-is and run against stub Win32 / GDI calls that track live windows,
+Surface::createPlat, ~Surface, recreateContext, popMakeCurrent, the texture
+methods, and the copy constructor and operator= from Surface.cpp are extracted as-is and run against stub Win32 / GDI calls that track live windows,
 objects and DC selections. As in GDI,
 deleting an object that is still selected into a DC fails and leaves it alive,
 and a bitmap cannot be selected into a second DC.
@@ -33,6 +33,9 @@ and a bitmap cannot be selected into a second DC.
 - destroy-before-context: destroying a surface without a context releases
   everything it created.
 - destroy-fullscreen: destroying a fullscreen surface restores the display mode.
+- copy-owns-nothing: a copied surface has no window, and destroying it leaves
+  the original's window and GDI objects alone (#437).
+- assign-keeps-window: an assigned surface keeps its own window (#437).
 - pop-deselects-font: popMakeCurrent selects the stock font into the draw DC,
   so the font a paint selected can be deleted.
 - create-window-fails, create-region-fails, create-dc-fails, get-dc-fails: a
@@ -404,7 +407,17 @@ struct SurfacePlat
  bool isFullscreen;
 };
 
-class Surface
+// The SurfaceBase copy is covered by vgui1_surface_mode_info_tests.py and
+// vgui1_app_focus_tests.py.
+class SurfaceBase
+{
+public:
+ SurfaceBase() {}
+ SurfaceBase(const SurfaceBase&) {}
+ SurfaceBase& operator=(const SurfaceBase&) { return *this; }
+};
+
+class Surface : public SurfaceBase
 {
 public:
  // Surface::Surface calls createPlat; the tests call recreateContext themselves.
@@ -414,6 +427,8 @@ public:
   _panel._tall = 0;
   _created = createPlat();
  }
+ Surface(const Surface& other);
+ Surface& operator=(const Surface& other);
  ~Surface();
  bool createPlat();
  Panel* getPanel() { return &_panel; }
@@ -677,6 +692,29 @@ static void Run(const std::string& test)
   Check(displayRestores == 1, "display mode restored once");
   CheckReleased(0);
  }
+ else if (test == "copy-owns-nothing")
+ {
+  Surface* original = new Surface();
+  original->setSize(SMALL_SIZE[0], SMALL_SIZE[1]);
+  Check(original->recreateContext(), "context");
+  Surface* copy = new Surface(*original);
+  Check(copy->plat() == NULL, "the copy has no window");
+  delete copy;
+  Check(LiveCount(GDI_WINDOW) == 2 && livePlats == 2, "the original keeps its window");
+  delete original;
+  CheckReleased(0);
+ }
+ else if (test == "assign-keeps-window")
+ {
+  Surface* source = new Surface();
+  Surface* target = new Surface();
+  SurfacePlat* plat = target->plat();
+  *target = *source;
+  Check(target->plat() == plat, "the assigned surface keeps its window");
+  delete source;
+  delete target;
+  CheckReleased(0);
+ }
  else if (test == "create-window-fails") CheckCreateFails(failCreateWindow);
  else if (test == "create-region-fails") CheckCreateFails(failCreateRegion);
  else if (test == "create-dc-fails") CheckCreateFails(failCreateDC);
@@ -712,6 +750,7 @@ def methods(source, signatures):
 
 def main():
     surface = (VGUI / 'win32/Surface.cpp').read_text()
+    common_surface = (VGUI / 'Surface.cpp').read_text()
     program = '\n'.join([
         define(surface, 'BITMAP_SPARE_PIXELS'),
         define((VGUI / 'include/VGUI.h').read_text(), 'VGUI_RGBA_BYTES'),
@@ -728,13 +767,17 @@ def main():
             'void Surface::drawSetTexture(',
             'void Surface::drawSetTextureRGBA(',
             'void Surface::drawTexturedRect(')),
+        methods(common_surface, (
+            'Surface::Surface( const Surface& other )',
+            'Surface& Surface::operator=(')),
         TESTS,
     ])
 
     scenarios = ['pop-deselects-font', 'resize-cycle', 'texture-dc-reused', 'within-spare', 'minimum-size',
                  'bitmap-create-fails', 'select-fails', 'texture-dc-fails', 'texture-reupload',
                  'texture-selection-restored', 'texture-two-surfaces', 'texture-create-fails',
-                 'destroy-releases', 'destroy-before-context', 'destroy-fullscreen',
+                 'destroy-releases', 'destroy-before-context', 'destroy-fullscreen', 'copy-owns-nothing',
+                 'assign-keeps-window',
                  'create-window-fails', 'create-region-fails', 'create-dc-fails', 'get-dc-fails']
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-gdi-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'

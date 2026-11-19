@@ -22,6 +22,8 @@ class VGUIAPI Surface : public SurfaceBase
 {
 public:
 	Surface(Panel* embeddedPanel);
+	Surface(const Surface& other);
+	Surface& operator=(const Surface& other);
 public:
 	virtual void setTitle(const char* title);
 	virtual bool setFullscreenMode(int wide,int tall,int bpp);
