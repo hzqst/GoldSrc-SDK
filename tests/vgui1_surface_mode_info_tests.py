@@ -5,8 +5,8 @@ Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
 AddressSanitizer (including leak checks where supported) is enabled when the
 compiler supports it.
 
-The mode-info methods and destructor are extracted from SurfaceBase.cpp and run
-against the real VGUI_Dar.h. strdup/_strdup and free are counted, so each
+The mode-info methods, the copy constructor, operator= and the destructor are
+extracted from SurfaceBase.cpp and run against the real VGUI_Dar.h. strdup/_strdup and free are counted, so each
 scenario checks that every mode name addModeInfo allocated is freed.
 
 - empty-reset: resetModeInfo on an empty list keeps it empty.
@@ -15,6 +15,10 @@ scenario checks that every mode name addModeInfo allocated is freed.
   not grow the number of live names, and the reused slots read back correctly.
 - destroy-frees: destroying the surface frees the remaining names.
 - double-reset: a second resetModeInfo does not free a name twice.
+- copy-independent: a copy-constructed surface has mode names of its own, so
+  both surfaces free their names once and the copy outlives the original.
+- assign-independent: operator= copies the names and frees the ones it replaces.
+- self-assign: assigning a surface to itself keeps its names.
 """
 from pathlib import Path
 import subprocess
@@ -85,16 +89,28 @@ public:
  void surfaceBaseDeleted(class SurfaceBase*) {}
 };
 
+class Cursor;
+class ImagePanel;
+class Panel;
+
 class SurfaceBase
 {
 public:
+ SurfaceBase() : _needsSwap(true), _app(NULL), _embeddedPanel(NULL), _emulatedCursor(NULL), _currentCursor(NULL) {}
+ SurfaceBase(const SurfaceBase& other);
+ SurfaceBase& operator=(const SurfaceBase& other);
  ~SurfaceBase();
  void resetModeInfo();
  int getModeInfoCount();
  bool getModeInfo(int index, int& wide, int& tall, int& bpp);
  void addModeInfo(int wide, int tall, int bpp);
 private:
+ bool _needsSwap;
+ App* _app;
+ Panel* _embeddedPanel;
  Dar<char*> _modeInfoDar;
+ ImagePanel* _emulatedCursor;
+ Cursor* _currentCursor;
 };
 
 }
@@ -111,6 +127,13 @@ static void Enumerate(SurfaceBase& surface)
  surface.resetModeInfo();
  surface.addModeInfo(640, 480, 16);
  surface.addModeInfo(800, 600, 16);
+}
+
+static void CheckMode(SurfaceBase& surface, int index, int wide, int tall, int bpp, const char* message)
+{
+ int modeWide = 0, modeTall = 0, modeBpp = 0;
+ Check(surface.getModeInfo(index, modeWide, modeTall, modeBpp), message);
+ Check(wide == modeWide && tall == modeTall && bpp == modeBpp, message);
 }
 
 static void Run(const std::string& test)
@@ -155,6 +178,42 @@ static void Run(const std::string& test)
   surface->resetModeInfo();
   Check(liveNames == 0, "names freed once");
  }
+ else if (test == "copy-independent")
+ {
+  Enumerate(*surface);
+  SurfaceBase* copy = new SurfaceBase(*surface);
+  Check(liveNames == 4, "the copy has names of its own");
+  Check(copy->getModeInfoCount() == 2, "the copy lists two modes");
+  delete surface;
+  surface = NULL;
+  Check(liveNames == 2, "the original frees only its names");
+  CheckMode(*copy, 0, 640, 480, 16, "the copy reads the first mode");
+  CheckMode(*copy, 1, 800, 600, 16, "the copy reads the second mode");
+  delete copy;
+ }
+ else if (test == "assign-independent")
+ {
+  Enumerate(*surface);
+  SurfaceBase* copy = new SurfaceBase();
+  copy->addModeInfo(1024, 768, 32);
+  copy->addModeInfo(1280, 1024, 32);
+  copy->addModeInfo(1600, 1200, 32);
+  *copy = *surface;
+  Check(liveNames == 4, "the replaced names are freed");
+  Check(copy->getModeInfoCount() == 2, "the copy lists two modes");
+  surface->resetModeInfo();
+  Check(liveNames == 2, "resetting the original keeps the copied names");
+  CheckMode(*copy, 1, 800, 600, 16, "the copy reads the second mode");
+  delete copy;
+ }
+ else if (test == "self-assign")
+ {
+  Enumerate(*surface);
+  SurfaceBase& alias = *surface;
+  *surface = alias;
+  Check(liveNames == 2, "names kept once");
+  CheckMode(*surface, 0, 640, 480, 16, "the first mode reads back");
+ }
  else Check(false, "unknown scenario");
  delete surface;
  Check(liveNames == 0, "destroying the surface frees the names");
@@ -181,6 +240,10 @@ int main(int argc, char** argv)
 def surface_methods(source):
     return '\n'.join(block(source, signature, '\n}\n') for signature in (
         'void freeModeInfo(',
+        'char* copyModeName(',
+        'void copyModeInfo(',
+        'SurfaceBase::SurfaceBase( const SurfaceBase& other )',
+        'SurfaceBase& SurfaceBase::operator=(',
         'SurfaceBase::~SurfaceBase()',
         'void SurfaceBase::resetModeInfo()',
         'int SurfaceBase::getModeInfoCount()',
@@ -192,7 +255,8 @@ def main():
     source = (VGUI / 'SurfaceBase.cpp').read_text()
     program = '\n'.join([PRELUDE, surface_methods(source), TESTS])
 
-    scenarios = ['empty-reset', 'reset-frees', 'repeat-enumerate', 'destroy-frees', 'double-reset']
+    scenarios = ['empty-reset', 'reset-frees', 'repeat-enumerate', 'destroy-frees', 'double-reset', 'copy-independent',
+                 'assign-independent', 'self-assign']
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-mode-info-') as folder:
         source_file, executable = Path(folder) / 'test.cpp', Path(folder) / 'test.exe'
         source_file.write_text(program)

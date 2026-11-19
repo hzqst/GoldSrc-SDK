@@ -24,6 +24,8 @@ class VGUIAPI SurfaceBase
 {
 public:
 	SurfaceBase(Panel* embeddedPanel);
+	SurfaceBase(const SurfaceBase& other);
+	SurfaceBase& operator=(const SurfaceBase& other);
 protected:
 	~SurfaceBase();
 public:

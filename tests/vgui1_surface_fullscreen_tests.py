@@ -235,6 +235,7 @@ def main():
         PRELUDE,
         methods(surface_base, (
             'void freeModeInfo(',
+            'char* copyModeName(',
             'SurfaceBase::~SurfaceBase()',
             'void SurfaceBase::resetModeInfo()',
             'int SurfaceBase::getModeInfoCount()',
