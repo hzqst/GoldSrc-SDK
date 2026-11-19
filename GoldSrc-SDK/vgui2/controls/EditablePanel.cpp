@@ -441,7 +441,11 @@ Panel* EditablePanel::HasHotkey( wchar_t key )
 
 	for ( int i = 0; i < GetChildCount(); i++ )
 	{
-		Panel* hot = GetChild( i )->HasHotkey( key );
+		Panel* child = GetChild( i );
+		if ( !child )
+			continue;
+
+		Panel* hot = child->HasHotkey( key );
 		if ( hot && hot->IsVisible() && hot->IsEnabled() )
 			return hot;
 	}

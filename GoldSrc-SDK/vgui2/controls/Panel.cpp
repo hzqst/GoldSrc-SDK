@@ -261,7 +261,11 @@ void Panel::InternalMove()
 {
 	OnMove();
 	for ( int index = 0; index < GetChildCount(); ++index )
-		GetChild( index )->OnMove();
+	{
+		Panel* child = GetChild( index );
+		if ( child )
+			child->OnMove();
+	}
 }
 
 void Panel::GetSize( int& width, int& height )
@@ -337,7 +341,9 @@ void Panel::InvalidateLayout( bool layoutNow, bool reloadScheme )
 			VPANEL handle = GetVPanel();
 			if ( index >= panel->GetChildCount( handle ) )
 				break;
-			GetChild( index )->InvalidateLayout( layoutNow, true );
+			Panel* child = GetChild( index );
+			if ( child )
+				child->InvalidateLayout( layoutNow, true );
 		}
 		PerformApplySchemeSettings();
 	}
@@ -666,13 +672,16 @@ Panel* Panel::FindChildByName( const char* childName, bool recurseDown )
 	{
 		if ( index >= GetChildCount() )
 			return nullptr;
-		if ( _stricmp( GetChild( index )->GetName(), childName ) == 0 )
-			return GetChild( index );
+		Panel* child = GetChild( index );
+		if ( !child )
+			continue;
+		if ( _stricmp( child->GetName(), childName ) == 0 )
+			return child;
 		if ( recurseDown )
 		{
-			Panel* child = GetChild( index )->FindChildByName( childName, recurseDown );
-			if ( child )
-				return child;
+			Panel* found = child->FindChildByName( childName, recurseDown );
+			if ( found )
+				return found;
 		}
 	}
 }
@@ -806,7 +815,9 @@ void Panel::SetKeyBoardInputEnabled( bool state )
 		handle = GetVPanel();
 		if ( index >= panel->GetChildCount( handle ) )
 			break;
-		GetChild( index )->SetKeyBoardInputEnabled( state );
+		Panel* child = GetChild( index );
+		if ( child )
+			child->SetKeyBoardInputEnabled( state );
 	}
 }
 
