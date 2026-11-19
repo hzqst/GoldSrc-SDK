@@ -247,6 +247,7 @@ bool UpdateLogoWAD( void* dib, int dibSize, int red, int green, int blue )
 	int lumpSize = GrabMip( (BITMAPINFO*)dib, dibSize, lump, name, color, &width, &height );
 	if ( !lumpSize )
 	{
+		free( lump );
 		return false;
 	}
 
