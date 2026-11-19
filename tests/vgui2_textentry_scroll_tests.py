@@ -1,4 +1,4 @@
-"""Exercise the production VGUI2 TextEntry display line count, vertical scroll bar layout and start line with the production ScrollBarSlider value clamping.
+"""Exercise the production VGUI2 TextEntry display line count, vertical scroll bar layout, start line and page keys with the production ScrollBarSlider value clamping.
 
 Run: python tests/vgui2_textentry_scroll_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -91,12 +91,59 @@ public:
  bool enabled = false;
 };
 
-// only the members the vertical scroll bar layout, the start line and the cursor line use
-class TextEntry {
+enum KeyCode {
+ KEY_A = 1, KEY_C, KEY_V, KEY_X, KEY_Z, KEY_INSERT, KEY_DELETE, KEY_HOME, KEY_END, KEY_PAGEUP, KEY_PAGEDOWN,
+ KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_ENTER, KEY_BACKSPACE, KEY_TAB, KEY_ESCAPE,
+ KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12,
+ KEY_LSHIFT, KEY_RSHIFT, KEY_LCONTROL, KEY_RCONTROL, KEY_LALT, KEY_RALT, KEY_LWIN, KEY_RWIN
+};
+
+// no modifier is held
+struct Input { bool IsKeyDown(KeyCode) { return false; } };
+static Input theInput;
+static Input* input() { return &theInput; }
+
+class KeyValues {
+public:
+ KeyValues(const char*) {}
+ KeyValues(const char*, const char*, const char*) {}
+};
+
+struct Panel { virtual void OnKeyCodeTyped(KeyCode) { ++chained; } int chained = 0; };
+
+// only the members the vertical scroll bar layout, the start line, the cursor line and the key handling use
+class TextEntry : public Panel {
 public:
  void LayoutVerticalScrollBarSlider();
  int GetStartDrawIndex(int& lineBreakIndexIndex);
  int GetCursorLine();
+ void OnKeyCodeTyped(KeyCode code) override;
+ // the page keys move the cursor a line at a time, the other edits are not under test
+ void GotoUp() { ++ups; }
+ void GotoDown() { ++downs; }
+ void GotoLeft() {}
+ void GotoRight() {}
+ void GotoWordLeft() {}
+ void GotoWordRight() {}
+ void GotoFirstOfLine() {}
+ void GotoEndOfLine() {}
+ void GotoTextStart() {}
+ void GotoTextEnd() {}
+ void SelectAllText(bool) {}
+ void CopySelected() {}
+ void Paste() {}
+ void DeleteSelected() {}
+ void Undo() {}
+ void SaveUndoState() {}
+ void Backspace() {}
+ void Delete() {}
+ void InsertChar(wchar_t) {}
+ void FireActionSignal() {}
+ void PostActionSignal(KeyValues* message) { delete message; }
+ bool GetSelectedRange(int& start, int& end) { start = end = 0; return false; }
+ int ups = 0, downs = 0;
+ int _select[2] = {0, 0};
+ bool _cursorIsAtEnd = false, _dataChanged = false, _catchEnterKey = false, _sendNewLines = false;
  void GetSize(int& wide, int& tall) { wide = GetWide(); tall = height; }
  void GetInset(int& left, int& top, int& right, int& bottom) { left = top = right = bottom = 0; }
  int GetWide() { return 200; }
@@ -189,10 +236,42 @@ static void ASingleLineDisablesTheScrollBar() {
  puts("PASS: a single line disables the scroll bar and starts at the first line at any height");
 }
 
+static void ThePageKeysMoveAPageOfLinesAtAnyHeight() {
+ for (int scrollBar = 0; scrollBar < 2; ++scrollBar) {
+  for (int height = 0; height <= VISIBLE_LINES * LINE_TALL + LINE_TALL / 2; ++height) {
+   // a height below one line, also no height, pages one line like the scroll window
+   int page = height < LINE_TALL ? 1 : height / LINE_TALL;
+   Fixture f(LINE_COUNT, scrollBar != 0);
+   f.Layout(height);
+   f.text.OnKeyCodeTyped(vgui2::KEY_PAGEUP);
+   Require(page == f.text.ups, "page up moves the cursor up a page of lines");
+   f.text.OnKeyCodeTyped(vgui2::KEY_PAGEDOWN);
+   Require(page == f.text.downs, "page down moves the cursor down a page of lines");
+   assert(0 == f.text.chained);
+  }
+ }
+ puts("PASS: with or without a scroll bar, page up and page down move a page of lines, one line below one line of height");
+}
+
+static void ASingleLineEntryDoesNotMoveOnThePageKeys() {
+ for (int height = 0; height <= LINE_TALL; ++height) {
+  Fixture f(1, true);
+  f.text._multiline = false;
+  f.Layout(height);
+  f.text.OnKeyCodeTyped(vgui2::KEY_PAGEUP);
+  f.text.OnKeyCodeTyped(vgui2::KEY_PAGEDOWN);
+  assert(0 == f.text.ups && 0 == f.text.downs);
+ }
+ puts("PASS: a single line entry does not move the cursor on page up or page down");
+}
+
 int main() {
+ setvbuf(stdout, nullptr, _IONBF, 0);
  ShortHeightsWithAScrollBarStartAtTheCursorLine();
  ShortHeightsWithoutAScrollBarStartAtTheCursorLine();
  ASingleLineDisablesTheScrollBar();
+ ThePageKeysMoveAPageOfLinesAtAnyHeight();
+ ASingleLineEntryDoesNotMoveOnThePageKeys();
 }
 '''
 
@@ -206,7 +285,7 @@ def main():
     code += ''.join(function(text_entry, signature) + '\n' for signature in (
         'static int getDisplayLines( vgui2::HFont font, int tall )',
         'void TextEntry::LayoutVerticalScrollBarSlider()', 'int TextEntry::GetStartDrawIndex( int& lineBreakIndexIndex )',
-        'int TextEntry::GetCursorLine()'))
+        'int TextEntry::GetCursorLine()', 'void TextEntry::OnKeyCodeTyped( KeyCode code )'))
     code += TESTS
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui2-textentry-scroll-') as folder:
         folder = Path(folder)

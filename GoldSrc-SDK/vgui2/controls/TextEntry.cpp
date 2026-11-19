@@ -68,6 +68,7 @@ int getCharWidth( vgui2::HFont font, wchar_t ch )
 //-----------------------------------------------------------------------------
 // Purpose: return how many lines fit in a height, at least one, since a height
 //			shorter than one line (also no height) would let the start line pass the last line break
+//			and leave the page keys moving no line
 //-----------------------------------------------------------------------------
 static int getDisplayLines( vgui2::HFont font, int tall )
 {
@@ -2777,7 +2778,7 @@ void TextEntry::OnKeyCodeTyped( KeyCode code )
 			int value = _vertScrollBar != NULL ? _vertScrollBar->GetValue() : 0;
 			if ( _multiline )
 			{
-				int lines = GetTall() / ( surface()->GetFontTall( _font ) + 1 );
+				int lines = getDisplayLines( _font, GetTall() );
 				for ( int i = 0; i < lines; ++i )
 					GotoUp();
 			}
@@ -2796,7 +2797,7 @@ void TextEntry::OnKeyCodeTyped( KeyCode code )
 			int value = _vertScrollBar != NULL ? _vertScrollBar->GetValue() : 0;
 			if ( _multiline )
 			{
-				int lines = GetTall() / ( surface()->GetFontTall( _font ) + 1 );
+				int lines = getDisplayLines( _font, GetTall() );
 				for ( int i = 0; i < lines; ++i )
 					GotoDown();
 			}
