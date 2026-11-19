@@ -188,7 +188,7 @@ public:
 	~CGameMenuItem() override;
 
 	void SetText( const char* text ) override;
-	void SetText( const wchar_t* text ) override;
+	void SetText( const wchar_t* text, bool bClearUnlocalizedSymbol = false ) override;
 	void ShowHelpText( bool state );
 	void SetHelpText( const char* text );
 	void SetRightAlignedText( bool state );
@@ -364,10 +364,10 @@ void CGameMenuItem::SetText( const char* text )
 	m_pHighlight->InvalidateLayout( true, false );
 }
 
-void CGameMenuItem::SetText( const wchar_t* text )
+void CGameMenuItem::SetText( const wchar_t* text, bool bClearUnlocalizedSymbol )
 {
-	vgui2::Label::SetText( text );
-	m_pHighlight->SetText( text );
+	vgui2::Label::SetText( text, bClearUnlocalizedSymbol );
+	m_pHighlight->SetText( text, bClearUnlocalizedSymbol );
 	m_pHighlight->InvalidateLayout( true, false );
 }
 

@@ -319,9 +319,9 @@ void Label::SetText( const char* text )
 //-----------------------------------------------------------------------------
 // Purpose: Set unicode text directly
 //-----------------------------------------------------------------------------
-void Label::SetText( const wchar_t* text )
+void Label::SetText( const wchar_t* text, bool bClearUnlocalizedSymbol )
 {
-	_textImage->SetText( text );
+	_textImage->SetText( text, bClearUnlocalizedSymbol );
 	wchar_t hotkey = CalculateHotkey( text );
 	SetHotkey( hotkey );
 	InvalidateLayout( false, false );
@@ -693,7 +693,7 @@ void Label::OnSetText( KeyValues* params )
 	if ( text->GetDataType( NULL ) == KeyValues::TYPE_STRING )
 		SetText( text->GetString( NULL, "" ) );
 	else if ( text->GetDataType( NULL ) == KeyValues::TYPE_WSTRING )
-		SetText( text->GetWString( NULL, L"" ) );
+		SetText( text->GetWString( NULL, L"" ), true );
 }
 
 void Label::OnDialogVariablesChanged( KeyValues* dialogVariables )
@@ -1163,7 +1163,7 @@ bool Label::RequestInfo( KeyValues* output )
 		return Panel::RequestInfo( output );
 
 	wchar_t text[256];
-	_textImage->GetText( text, 255 );
+	_textImage->GetText( text, sizeof( text ) / sizeof( text[0] ) );
 	output->SetWString( "text", text );
 	return true;
 }

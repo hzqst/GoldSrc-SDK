@@ -30,7 +30,8 @@ public:
 
 	// takes the string and looks it up in the localization file to convert it to unicode
 	virtual void SetText( const char* text );
-	virtual void SetText( const wchar_t* text );
+	// bClearUnlocalizedSymbol drops the localized token the text came from; keep it when refreshing the localized text
+	virtual void SetText( const wchar_t* text, bool bClearUnlocalizedSymbol = false );
 	// get the full text in the image
 	virtual void GetText( char* buffer, int bufferSize );
 	virtual void GetText( wchar_t* buffer, int bufferSize );

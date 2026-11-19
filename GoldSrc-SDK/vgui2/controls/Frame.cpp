@@ -1197,7 +1197,7 @@ void Frame::GetSettings( KeyValues* settings )
 	if ( _title != nullptr )
 	{
 		char title[256];
-		_title->GetUnlocalizedText( title, 255 );
+		_title->GetUnlocalizedText( title, sizeof( title ) );
 		if ( title[0] != '\0' )
 			settings->SetString( "title", title );
 	}
