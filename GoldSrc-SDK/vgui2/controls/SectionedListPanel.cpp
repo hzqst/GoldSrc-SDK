@@ -77,6 +77,11 @@ public:
 		MakeReadyForUse();
 	}
 
+	~CSectionHeader() override
+	{
+		FreeTextImages();
+	}
+
 	void SetColor( Color color )
 	{
 		m_SectionDividerColor = color;
@@ -89,9 +94,19 @@ protected:
 	void PerformLayout() override;
 
 private:
+	// frees the column text images this header created
+	void FreeTextImages()
+	{
+		ClearImages();
+		for ( int i = 0; i < m_TextImages.Count(); i++ )
+			delete m_TextImages[i];
+		m_TextImages.RemoveAll();
+	}
+
 	int					m_iSectionID;
 	Color				m_SectionDividerColor;
 	SectionedListPanel*	m_pListPanel;
+	CUtlVector<TextImage*>	m_TextImages;
 };
 
 //-----------------------------------------------------------------------------
@@ -897,12 +912,15 @@ void CSectionHeader::PerformLayout()
 	int count = m_pListPanel->GetColumnCountBySection( m_iSectionID );
 	if ( count != GetImageCount() )
 	{
+		// rebuild the column images, the old ones are freed first
+		FreeTextImages();
 		for ( int i = 0; i < count; i++ )
 		{
 			TextImage* image = NULL;
 			if ( !( m_pListPanel->GetColumnFlagsBySection( m_iSectionID, i ) & SectionedListPanel::COLUMN_HEADER_IMAGE ) )
 			{
 				image = new TextImage( "" );
+				m_TextImages.AddToTail( image );
 				image->SetFont( GetFont() );
 				HFont font = m_pListPanel->GetColumnFallbackFontBySection( m_iSectionID, i );
 				if ( font )
