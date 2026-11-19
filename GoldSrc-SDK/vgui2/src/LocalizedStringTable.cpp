@@ -327,8 +327,9 @@ void CLocalizedStringTable::ConstructString( wchar_t* unicodeOutput, int unicode
 	wchar_t* outputPos;
 	int remaining;
 	wchar_t ch;
+	int capacity = unicodeBufferSizeInBytes > 0 ? unicodeBufferSizeInBytes / (int)sizeof( wchar_t ) : 0;
 
-	if ( unicodeBufferSizeInBytes <= 0 )
+	if ( capacity <= 0 )
 	{
 		return;
 	}
@@ -337,11 +338,13 @@ void CLocalizedStringTable::ConstructString( wchar_t* unicodeOutput, int unicode
 	searchPos = GetValueByIndex( unlocalizedTextSymbol );
 	if ( !searchPos )
 	{
-		wcsncpy( unicodeOutput, L"[unknown string]", (unsigned int)unicodeBufferSizeInBytes / sizeof( wchar_t ) );
+		wcsncpy( unicodeOutput, L"[unknown string]", capacity - 1 );
+		unicodeOutput[capacity - 1] = 0;
 		return;
 	}
 
-	remaining = (int)( (unsigned int)unicodeBufferSizeInBytes / sizeof( wchar_t ) );
+	// keep the last character for the terminator
+	remaining = capacity - 1;
 	outputPos = unicodeOutput;
 
 	while ( 1 )
@@ -759,7 +762,12 @@ static void ConstructStringFromArgs( wchar_t* unicodeOutput, int unicodeBufferSi
 	wchar_t* outputPos;
 	int formatLength;
 
-	unicodeBufferSize = (int)( (unsigned int)unicodeBufferSizeInBytes / sizeof( wchar_t ) );
+	unicodeBufferSize = unicodeBufferSizeInBytes > 0 ? unicodeBufferSizeInBytes / (int)sizeof( wchar_t ) : 0;
+	if ( unicodeBufferSize <= 0 )
+	{
+		return;
+	}
+
 	searchPos = formatString;
 	outputPos = unicodeOutput;
 	formatLength = (int)wcslen( formatString );
@@ -805,7 +813,7 @@ static void ConstructStringFromArgs( wchar_t* unicodeOutput, int unicodeBufferSi
 					}
 
 					paramSize = (int)wcslen( param );
-					if ( unicodeBufferSize < paramSize )
+					if ( paramSize > unicodeBufferSize - 1 )
 					{
 						paramSize = unicodeBufferSize - 1;
 					}

@@ -251,12 +251,18 @@ void CLoadingDialog::DisplayGenericError( const char* failureReason, const char*
 		wchar_t message[512];
 		const wchar_t* localized = extendedReason[0] == '#' ? vgui2::localize()->Find( extendedReason ) : NULL;
 		if ( localized )
-			wcsncpy( compositeReason, localized, sizeof( compositeReason ) / sizeof( compositeReason[0] ) );
+		{
+			wcsncpy( compositeReason, localized, sizeof( compositeReason ) / sizeof( compositeReason[0] ) - 1 );
+			compositeReason[sizeof( compositeReason ) / sizeof( compositeReason[0] ) - 1] = 0;
+		}
 		else
 			vgui2::localize()->ConvertANSIToUnicode( extendedReason, compositeReason, sizeof( compositeReason ) );
 		localized = failureReason[0] == '#' ? vgui2::localize()->Find( failureReason ) : NULL;
 		if ( localized )
-			wcsncpy( format, localized, sizeof( format ) / sizeof( format[0] ) );
+		{
+			wcsncpy( format, localized, sizeof( format ) / sizeof( format[0] ) - 1 );
+			format[sizeof( format ) / sizeof( format[0] ) - 1] = 0;
+		}
 		else
 			vgui2::localize()->ConvertANSIToUnicode( failureReason, format, sizeof( format ) );
 		vgui2::localize()->ConstructString( message, sizeof( message ), format, 1, compositeReason );

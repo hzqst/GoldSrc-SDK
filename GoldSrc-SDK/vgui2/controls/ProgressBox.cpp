@@ -49,20 +49,29 @@ ProgressBox::ProgressBox( const char* title, const char* info, const char* text,
 {
 	const wchar_t* localized = localize()->Find( title );
 	if ( localized )
-		std::wcsncpy( m_wszTitle, localized, sizeof( m_wszTitle ) / sizeof( m_wszTitle[0] ) );
+	{
+		std::wcsncpy( m_wszTitle, localized, sizeof( m_wszTitle ) / sizeof( m_wszTitle[0] ) - 1 );
+		m_wszTitle[sizeof( m_wszTitle ) / sizeof( m_wszTitle[0] ) - 1] = 0;
+	}
 	else
 		localize()->ConvertANSIToUnicode( title, m_wszTitle, sizeof( m_wszTitle ) );
 
 	m_pMessageLabel = new Label( this, nullptr, text );
 	localized = localize()->Find( info );
 	if ( localized )
-		std::wcsncpy( m_wszInfo, localized, sizeof( m_wszInfo ) / sizeof( m_wszInfo[0] ) );
+	{
+		std::wcsncpy( m_wszInfo, localized, sizeof( m_wszInfo ) / sizeof( m_wszInfo[0] ) - 1 );
+		m_wszInfo[sizeof( m_wszInfo ) / sizeof( m_wszInfo[0] ) - 1] = 0;
+	}
 	else
 		m_wszInfo[0] = L'\0';
 
 	localized = localize()->Find( text );
 	if ( localized )
-		std::wcsncpy( m_wszText, localized, sizeof( m_wszText ) / sizeof( m_wszText[0] ) );
+	{
+		std::wcsncpy( m_wszText, localized, sizeof( m_wszText ) / sizeof( m_wszText[0] ) - 1 );
+		m_wszText[sizeof( m_wszText ) / sizeof( m_wszText[0] ) - 1] = 0;
+	}
 	else
 		m_wszText[0] = L'\0';
 

@@ -205,13 +205,17 @@ bool CCareerUITask::IsMaxRoundTime() const
 void ConstructStringWithReordering( wchar_t* output, int bufferSizeInBytes,
 	wchar_t* formatString, int numFormatParameters, ... )
 {
+	int capacity = bufferSizeInBytes > 0 ? bufferSizeInBytes / (int)sizeof( wchar_t ) : 0;
+	if ( capacity <= 0 )
+		return;
 	if ( !formatString )
 	{
 		output[0] = 0;
 		return;
 	}
 
-	int remaining = (unsigned int)bufferSizeInBytes / sizeof( wchar_t );
+	// keep the last character for the terminator
+	int remaining = capacity - 1;
 	const wchar_t** parameters = new const wchar_t*[numFormatParameters];
 	va_list args;
 	va_start( args, numFormatParameters );
@@ -228,8 +232,12 @@ void ConstructStringWithReordering( wchar_t* output, int bufferSizeInBytes,
 		cursor = wcsstr( cursor, L"%s" );
 		if ( !cursor )
 			break;
-		if ( cursor[2] < L'0' || cursor[2] > L'9' )
+		// only %s1 to %s9 are parameters; step over anything else
+		if ( cursor[2] < L'1' || cursor[2] > L'9' )
+		{
+			cursor += 2;
 			continue;
+		}
 
 		int index = cursor[2] - L'1';
 		if ( index < numFormatParameters )
@@ -256,18 +264,15 @@ void ConstructStringWithReordering( wchar_t* output, int bufferSizeInBytes,
 		wchar_t unicodeSearch[4];
 		vgui2::localize()->ConvertANSIToUnicode( search, unicodeSearch, sizeof( unicodeSearch ) );
 		const wchar_t* found = wcsstr( source, unicodeSearch );
-		int count = found ? (int)( found - source ) : (int)wcslen( source ) + 1;
+		int count = found ? (int)( found - source ) : (int)wcslen( source );
 		if ( count > remaining )
 			count = remaining;
 		wcsncpy( dest, source, count );
-		if ( !found )
-		{
-			dest[remaining - 1] = 0;
-			break;
-		}
 		dest += count;
-		source += count;
 		remaining -= count;
+		if ( !found || remaining <= 0 )
+			break;
+		source += count;
 		if ( i < numFormatParameters )
 		{
 			const wchar_t* parameter = parameters[i];
@@ -282,6 +287,7 @@ void ConstructStringWithReordering( wchar_t* output, int bufferSizeInBytes,
 			remaining -= count;
 		}
 	}
+	*dest = 0;
 	delete[] format;
 	delete[] parameters;
 }

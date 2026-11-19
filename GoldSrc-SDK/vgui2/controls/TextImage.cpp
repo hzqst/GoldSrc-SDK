@@ -88,7 +88,10 @@ void TextImage::GetText( char* buffer, int bufferSize )
 
 void TextImage::GetText( wchar_t* buffer, int bufferLength )
 {
-	wcsncpy( buffer, _utext, bufferLength );
+	if ( bufferLength <= 0 )
+		return;
+	wcsncpy( buffer, _utext, bufferLength - 1 );
+	buffer[bufferLength - 1] = 0;
 }
 
 void TextImage::SetWrap( bool state )
