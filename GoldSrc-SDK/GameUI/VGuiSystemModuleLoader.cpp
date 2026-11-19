@@ -229,11 +229,20 @@ bool CVGuiSystemModuleLoader::LoadPlatformModules( CreateInterfaceFn* factories,
 		}
 
 		CreateInterfaceFn factory = Sys_GetFactory( module );
+		if ( !factory )
+		{
+			vgui2::ivgui()->DPrintf2( "Platform Error: module '%s' has no CreateInterface export, not loading\n", data->GetString( "dll" ) );
+			Sys_UnloadModule( module );
+			success = false;
+			continue;
+		}
+
 		IVGuiModule* moduleInterface = (IVGuiModule*)factory( interfaceName, NULL );
 		if ( !moduleInterface )
 		{
 			vgui2::ivgui()->DPrintf2( "Platform Error: module version ('%s, %s) invalid, not loading\n",
 				data->GetString( "dll" ), data->GetString( "interface" ) );
+			Sys_UnloadModule( module );
 			success = false;
 			continue;
 		}
