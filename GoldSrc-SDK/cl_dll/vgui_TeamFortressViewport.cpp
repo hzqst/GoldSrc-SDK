@@ -1830,7 +1830,7 @@ CMenuPanel* TeamFortressViewport::CreateTextWindow( int iTextToShow )
 		{
 			sprintf(sz, "classes/long_%s.txt", sTFClassSelection[ g_iPlayerClass ]);
 		}
-		char *pfile = (char*)gEngfuncs.COM_LoadFile( sz, 5, NULL );
+		pfile = (char*)gEngfuncs.COM_LoadFile( sz, 5, NULL );
 		if (pfile)
 		{
 			cText = pfile;
