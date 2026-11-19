@@ -40,6 +40,26 @@ void freeModeInfo( Dar<char*>& modeInfoDar )
 	modeInfoDar.removeAll();
 }
 
+char* copyModeName( const char* text )
+{
+#if defined( _WIN32 )
+	return _strdup( text );
+#else
+	return strdup( text );
+#endif
+}
+
+// A copy owns names of its own, as the destructor frees them.
+void copyModeInfo( Dar<char*>& modeInfoDar, const Dar<char*>& otherModeInfoDar )
+{
+	freeModeInfo( modeInfoDar );
+	modeInfoDar = otherModeInfoDar;
+	for ( int i = 0; i < modeInfoDar.getCount(); ++i )
+	{
+		modeInfoDar.setElementAt( copyModeName( modeInfoDar[i] ), i );
+	}
+}
+
 }
 
 #if defined( _MSC_VER )
@@ -55,6 +75,33 @@ SurfaceBase::SurfaceBase( Panel* embeddedPanel )
 	_embeddedPanel->setSurfaceBaseTraverse( this );
 	App::getInstance()->surfaceBaseCreated( this );
 	_emulatedCursor->setParent( _embeddedPanel );
+}
+
+// Like the original memberwise copy, except for the mode names.
+SurfaceBase::SurfaceBase( const SurfaceBase& other )
+{
+	_needsSwap = other._needsSwap;
+	_app = other._app;
+	_embeddedPanel = other._embeddedPanel;
+	_emulatedCursor = other._emulatedCursor;
+	_currentCursor = other._currentCursor;
+	copyModeInfo( _modeInfoDar, other._modeInfoDar );
+}
+
+SurfaceBase& SurfaceBase::operator=( const SurfaceBase& other )
+{
+	if ( this == &other )
+	{
+		return *this;
+	}
+
+	_needsSwap = other._needsSwap;
+	_app = other._app;
+	_embeddedPanel = other._embeddedPanel;
+	_emulatedCursor = other._emulatedCursor;
+	_currentCursor = other._currentCursor;
+	copyModeInfo( _modeInfoDar, other._modeInfoDar );
+	return *this;
 }
 
 SurfaceBase::~SurfaceBase()
@@ -144,9 +191,5 @@ void SurfaceBase::addModeInfo( int wide, int tall, int bpp )
 	char text[256];
 
 	snprintf( text, sizeof( text ), "%dx%dx%d", wide, tall, bpp );
-#if defined( _WIN32 )
-	_modeInfoDar.addElement( _strdup( text ) );
-#else
-	_modeInfoDar.addElement( strdup( text ) );
-#endif
+	_modeInfoDar.addElement( copyModeName( text ) );
 }

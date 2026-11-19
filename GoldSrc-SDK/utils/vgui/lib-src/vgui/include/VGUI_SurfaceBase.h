@@ -18,6 +18,8 @@ class VGUIAPI SurfaceBase
 
 public:
 	SurfaceBase( Panel* embeddedPanel );
+	SurfaceBase( const SurfaceBase& other );
+	SurfaceBase& operator=( const SurfaceBase& other );
 
 #if defined( _WIN32 )
 protected:
