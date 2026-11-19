@@ -1106,8 +1106,11 @@ void Label::GetSettings( KeyValues* settings )
 	// panel settings
 	Panel::GetSettings( settings );
 	// label settings
-	char buffer[256];
-	_textImage->GetUnlocalizedText( buffer, 255 );
+	// holds any labelText ApplySettings accepts: TextImage::SetText keeps up to 1023 wide characters, each at most 4 UTF-8 bytes
+	constexpr int LABEL_TEXT_WIDE_CHARACTERS = 1023;
+	constexpr int UTF8_BYTES_PER_WIDE_CHARACTER = 4;
+	char buffer[LABEL_TEXT_WIDE_CHARACTERS * UTF8_BYTES_PER_WIDE_CHARACTER + 1];
+	_textImage->GetUnlocalizedText( buffer, sizeof( buffer ) );
 	const char* text = _strnicmp( buffer, "#var_", 5 ) == 0 ? buffer + 5 : buffer;
 	settings->SetString( "labelText", text );
 	const char* alignment;
