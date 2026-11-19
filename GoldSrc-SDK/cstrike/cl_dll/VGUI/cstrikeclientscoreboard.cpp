@@ -704,11 +704,12 @@ void CCSClientScoreBoardDialog::ApplySchemeSettings( vgui2::IScheme* scheme )
 	m_pTopRightBorderPanel->m_bgColor = m_borderColor;
 	m_pBottomLeftBorderPanel->m_bgColor = m_borderColor;
 	m_pBottomRightBorderPanel->m_bgColor = m_borderColor;
-	if ( m_pImageList )
-		delete m_pImageList;
+	// the player list items show images of the old list, so they drop them before it is deleted
+	vgui2::ImageList* oldImageList = m_pImageList;
 	m_pImageList = new vgui2::ImageList( false );
 	memset( m_iImageAvatars, 0, sizeof( m_iImageAvatars ) );
 	m_pPlayerList->SetImageList( m_pImageList, false );
+	delete oldImageList;
 }
 
 void CCSClientScoreBoardDialog::UpdatePlayerInfo()
