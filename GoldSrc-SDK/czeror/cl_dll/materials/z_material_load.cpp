@@ -313,6 +313,9 @@ bool MAT_SetDefaults( int type, materials_t* material )
 	if ( !file )
 		return false;
 
+	// file moves through the buffer while parsing, so keep its start to free it
+	char* fileStart = file;
+
 	while ( ( file = gEngfuncs.COM_ParseFile( file, token ) ) != NULL )
 	{
 		if ( !_stricmp( token, "debris" ) )
@@ -321,6 +324,7 @@ bool MAT_SetDefaults( int type, materials_t* material )
 			if ( _stricmp( token, "{" ) )
 			{
 				gEngfuncs.Con_Printf( "Error parsing material file %s. ( expected { )\n", materialName );
+				gEngfuncs.COM_FreeFile( fileStart );
 				return false;
 			}
 
@@ -342,6 +346,7 @@ bool MAT_SetDefaults( int type, materials_t* material )
 					_stricmp( property, "color" ) && _stricmp( property, "damping_time" ) && _stricmp( property, "allow" ) )
 				{
 					gEngfuncs.Con_Printf( "Error parsing material file %s. ( %s unknown )\n", materialName, property );
+					gEngfuncs.COM_FreeFile( fileStart );
 					return false;
 				}
 
@@ -397,6 +402,7 @@ bool MAT_SetDefaults( int type, materials_t* material )
 				else
 				{
 					gEngfuncs.Con_Printf( "Error parsing material file %s. ( %s unknown )\n", materialName, property );
+					gEngfuncs.COM_FreeFile( fileStart );
 					return false;
 				}
 			}
@@ -409,6 +415,7 @@ bool MAT_SetDefaults( int type, materials_t* material )
 			if ( _stricmp( token, "{" ) )
 			{
 				gEngfuncs.Con_DPrintf( "Error parsing material file %s. ( expected { )\n", materialName );
+				gEngfuncs.COM_FreeFile( fileStart );
 				return false;
 			}
 
@@ -427,6 +434,7 @@ bool MAT_SetDefaults( int type, materials_t* material )
 				if ( !known )
 				{
 					gEngfuncs.Con_DPrintf( "Error parsing material file %s. ( %s unknown )\n", materialName, property );
+					gEngfuncs.COM_FreeFile( fileStart );
 					return false;
 				}
 				file = gEngfuncs.COM_ParseFile( file, token );
@@ -460,6 +468,7 @@ bool MAT_SetDefaults( int type, materials_t* material )
 				else
 				{
 					gEngfuncs.Con_DPrintf( "Error parsing material file %s. ( %s unknown )\n", materialName, property );
+					gEngfuncs.COM_FreeFile( fileStart );
 					return false;
 				}
 			}
@@ -481,7 +490,7 @@ bool MAT_SetDefaults( int type, materials_t* material )
 	case 12: material->m_chMaterialType = 'W'; break;
 	default: material->m_chMaterialType = PM_FindTextureType( material->m_szOriginalName ); break;
 	}
-	gEngfuncs.COM_FreeFile( file );
+	gEngfuncs.COM_FreeFile( fileStart );
 	return true;
 }
 
@@ -734,10 +743,12 @@ void LoadLevelMaterials()
 	gEngfuncs.pfnAddCommand( "mat_reload", MAT_FlushAndReload );
 	CMaterialSystem* defaults = new CMaterialSystem;
 	g_pMaterialSystemPointer = defaults;
+	// LoadMaterialFromNameList moves g_PFile through the file, so keep the start of each file to free it
 	g_PFile = (char*)gEngfuncs.COM_LoadFile( "materials/czero.mat", 5, NULL );
+	char* defaultsFile = g_PFile;
 	LoadTextureLump( (char*)gEngfuncs.pfnGetLevelName() );
 	LoadMaterialFromNameList();
-	gEngfuncs.COM_FreeFile( g_PFile );
+	gEngfuncs.COM_FreeFile( defaultsFile );
 	g_PFile = NULL;
 
 	char currentLevel[32], filename[128];
@@ -746,12 +757,13 @@ void LoadLevelMaterials()
 	g_PFile = (char*)gEngfuncs.COM_LoadFile( filename, 5, NULL );
 	if ( !g_PFile && mat_autocreate->value == 1.0f )
 		CreateMaterialFile( currentLevel );
+	char* levelFile = g_PFile;
 
 	g_pMaterialSystemPointer = &g_pMaterialSystem;
 	g_pMaterialSystem.ClearMaterials();
 	LoadMaterialFromNameList();
 	g_pMaterialSystemPointer->CopyMaterials( defaults );
-	gEngfuncs.COM_FreeFile( g_PFile );
+	gEngfuncs.COM_FreeFile( levelFile );
 	g_PFile = NULL;
 
 	if ( mat_autocreate->value == 1.0f )
