@@ -15,6 +15,10 @@ class ButtonController;
 
 class VGUIAPI Button : public Label
 {
+#if VGUI_ABI_COMPAT_MODE != 1
+	friend class ButtonGroup;
+#endif
+
 public:
 	Button( const char* text, int x, int y, int wide, int tall );
 	Button( const char* text, int x, int y );

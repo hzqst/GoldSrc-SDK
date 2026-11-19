@@ -30,7 +30,8 @@ With VGUI_ABI_COMPAT_MODE=0 only:
   also after setImage replaced it; a copy has its own image.
 - wizard-page: deleting a WizardPage frees its texts; a copy has its own.
 - frame: deleting a Frame frees its title; a copy has its own.
-- tab-panel: deleting a TabPanel frees its ButtonGroup; a copy has its own.
+- tab-panel: deleting a TabPanel frees its ButtonGroup, before ~Panel deletes
+  the tabs in it (#221); a copy has its own.
 - table-panel: deleting a TablePanel frees its fake input panel; a copy has
   its own.
 """
@@ -47,7 +48,7 @@ from vgui1_panel_tests import VGUI, function, vgui1_sources
 
 WIDGETS = ['TextPanel.cpp', 'TextGrid.cpp', 'EditPanel.cpp', 'CheckButton.cpp', 'RadioButton.cpp',
            'WizardPanel.cpp', 'Frame.cpp', 'Menu.cpp', 'ListPanel.cpp', 'TabPanel.cpp', 'TablePanel.cpp',
-           'StackLayout.cpp', 'ScrollBar.cpp', 'Slider.cpp', 'ButtonGroup.cpp', 'RaisedBorder.cpp', 'HeaderPanel.cpp',
+           'StackLayout.cpp', 'ScrollBar.cpp', 'Slider.cpp', 'RaisedBorder.cpp', 'HeaderPanel.cpp',
            'LoweredBorder.cpp', 'TaskBar.cpp', 'ConfigWizard.cpp']
 
 TESTS = r'''
