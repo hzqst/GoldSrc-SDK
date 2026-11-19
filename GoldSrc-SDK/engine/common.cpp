@@ -299,7 +299,10 @@ void COM_InitArgv( int argc, char** argv )
 
 void Q_strcpy( char* destination, const char* source )
 {
-	while ( destination && source && *source )
+	if ( !destination )
+		return;
+
+	while ( source && *source )
 	{
 		*destination++ = *source++;
 	}
@@ -308,11 +311,11 @@ void Q_strcpy( char* destination, const char* source )
 
 void Q_strcat( char* destination, const char* source )
 {
-	if ( destination )
-	{
-		while ( *destination )
-			++destination;
-	}
+	if ( !destination )
+		return;
+
+	while ( *destination )
+		++destination;
 
 	Q_strcpy( destination, source );
 }
