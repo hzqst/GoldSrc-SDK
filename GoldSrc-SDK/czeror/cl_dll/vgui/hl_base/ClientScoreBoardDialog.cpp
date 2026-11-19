@@ -216,7 +216,8 @@ void CClientScoreBoardDialog::ApplySchemeSettings( vgui2::IScheme* scheme )
 		images->GetImage( i )->GetSize( wide, tall );
 		images->GetImage( i )->SetSize( vgui2::scheme()->GetProportionalScaledValue( wide ), vgui2::scheme()->GetProportionalScaledValue( tall ) );
 	}
-	m_pPlayerList->SetImageList( images, false );
+	// a new list is made on every scheme change, the player list deletes it when it is replaced or destroyed
+	m_pPlayerList->SetImageList( images, true );
 	m_pPlayerList->SetVisible( true );
 }
 
