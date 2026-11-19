@@ -214,80 +214,40 @@ void ConstructStringWithReordering( wchar_t* output, int bufferSizeInBytes,
 		return;
 	}
 
-	// keep the last character for the terminator
-	int remaining = capacity - 1;
 	const wchar_t** parameters = new const wchar_t*[numFormatParameters];
 	va_list args;
 	va_start( args, numFormatParameters );
 	for ( int i = 0; i < numFormatParameters; ++i )
 		parameters[i] = va_arg( args, const wchar_t* );
 	va_end( args );
-	wchar_t* format = new wchar_t[wcslen( formatString ) + 1];
-	wcscpy( format, formatString );
 
-	wchar_t* cursor = format;
-	int ordered = 0;
-	while ( cursor && ordered < numFormatParameters )
+	// keep the last character for the terminator
+	int remaining = capacity - 1;
+	const wchar_t* source = formatString;
+	wchar_t* dest = output;
+	while ( *source && remaining > 0 )
 	{
-		cursor = wcsstr( cursor, L"%s" );
-		if ( !cursor )
-			break;
-		// only %s1 to %s9 are parameters; step over anything else
-		if ( cursor[2] < L'1' || cursor[2] > L'9' )
+		// %s1 to %s9 take their own parameter in any order and any number of times; anything else is text
+		bool placeholder = source[0] == L'%' && source[1] == L's' && source[2] >= L'1' && source[2] <= L'9';
+		int index = placeholder ? source[2] - L'1' : numFormatParameters;
+		if ( index >= numFormatParameters )
 		{
-			cursor += 2;
+			*dest++ = *source++;
+			--remaining;
 			continue;
 		}
 
-		int index = cursor[2] - L'1';
-		if ( index < numFormatParameters )
-		{
-			const wchar_t* parameter = parameters[ordered];
-			parameters[ordered] = parameters[index];
-			parameters[index] = parameter;
-			wchar_t originalIndex = cursor[2];
-			cursor[2] = (wchar_t)( L'1' + ordered );
-			wchar_t search[4] = { L'%', L's', cursor[2], 0 };
-			wchar_t* repeated = wcsstr( cursor + 3, search );
-			if ( repeated )
-				repeated[2] = originalIndex;
-			++ordered;
-		}
-		cursor += 3;
-	}
-
-	const wchar_t* source = format;
-	wchar_t* dest = output;
-	for ( int i = 0; ; ++i )
-	{
-		char search[4] = { '%', 's', (char)( '1' + i ), 0 };
-		wchar_t unicodeSearch[4];
-		vgui2::localize()->ConvertANSIToUnicode( search, unicodeSearch, sizeof( unicodeSearch ) );
-		const wchar_t* found = wcsstr( source, unicodeSearch );
-		int count = found ? (int)( found - source ) : (int)wcslen( source );
+		const wchar_t* parameter = parameters[index];
+		if ( !parameter )
+			break;
+		int count = (int)wcslen( parameter );
 		if ( count > remaining )
 			count = remaining;
-		wcsncpy( dest, source, count );
+		wcsncpy( dest, parameter, count );
 		dest += count;
 		remaining -= count;
-		if ( !found || remaining <= 0 )
-			break;
-		source += count;
-		if ( i < numFormatParameters )
-		{
-			const wchar_t* parameter = parameters[i];
-			if ( !parameter )
-				break;
-			count = (int)wcslen( parameter );
-			if ( count > remaining )
-				count = remaining;
-			wcsncpy( dest, parameter, count );
-			dest += count;
-			source += 3;
-			remaining -= count;
-		}
+		source += 3;
 	}
 	*dest = 0;
-	delete[] format;
 	delete[] parameters;
 }
