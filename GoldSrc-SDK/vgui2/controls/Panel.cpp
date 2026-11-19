@@ -870,7 +870,8 @@ void Panel::SetProportional( bool state )
 			if ( index >= panel->GetChildCount( handle ) )
 				break;
 			Panel* child = GetChild( index );
-			child->SetProportional( IsProportional() );
+			if ( child )
+				child->SetProportional( IsProportional() );
 		}
 	}
 	InvalidateLayout( false, false );
@@ -2072,7 +2073,7 @@ Panel* Panel::FindSiblingByName( const char* siblingName )
 		VPANEL sibling = ipanel()->GetChild( parent, index );
 		Panel* panel = ipanel()->GetPanel( sibling, GetControlsModuleName() );
 #endif
-		if ( _stricmp( panel->GetName(), siblingName ) == 0 )
+		if ( panel && _stricmp( panel->GetName(), siblingName ) == 0 )
 			return panel;
 	}
 	return nullptr;

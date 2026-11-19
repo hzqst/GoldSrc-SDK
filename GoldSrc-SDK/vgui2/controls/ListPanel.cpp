@@ -187,7 +187,7 @@ void Dragger::SetMovable( bool state )
 void Dragger::OnMouseDoublePressed( MouseCode )
 {
 	if ( m_bMovable )
-		PostMessage( GetParent(), new KeyValues( "ResizeColumnToContents", "column", m_iDragger ), 0.0f );
+		PostMessage( GetVParent(), new KeyValues( "ResizeColumnToContents", "column", m_iDragger ), 0.0f );
 }
 
 //-----------------------------------------------------------------------------

@@ -764,6 +764,9 @@ void Menu::OnCursorEnteredMenuItem( int VPanel )
 		IPanel* panels = ipanel();
 		const char* module = GetModuleName();
 		MenuItem* item = static_cast<MenuItem*>( panels->GetPanel( VPanel, module ) );
+		if ( !item )
+			return;
+
 		// arm the menu
 		item->ArmItem();
 		item->OpenCascadeMenu();
@@ -782,7 +785,8 @@ void Menu::OnCursorExitedMenuItem( int VPanel )
 		IPanel* panels = ipanel();
 		const char* module = GetModuleName();
 		MenuItem* item = static_cast<MenuItem*>( panels->GetPanel( VPanel, module ) );
-		item->DisarmItem();
+		if ( item )
+			item->DisarmItem();
 	}
 }
 

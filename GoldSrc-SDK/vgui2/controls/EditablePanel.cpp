@@ -104,7 +104,7 @@ void EditablePanel::ApplyUserConfigSettings( KeyValues* userConfig )
 	for ( int i = 0; i < GetChildCount(); i++ )
 	{
 		Panel* child = GetChild( i );
-		if ( !child->HasUserConfigSettings() )
+		if ( !child || !child->HasUserConfigSettings() )
 			continue;
 
 		const char* name = child->GetName();
@@ -121,7 +121,7 @@ void EditablePanel::GetUserConfigSettings( KeyValues* userConfig )
 	for ( int i = 0; i < GetChildCount(); i++ )
 	{
 		Panel* child = GetChild( i );
-		if ( !child->HasUserConfigSettings() )
+		if ( !child || !child->HasUserConfigSettings() )
 			continue;
 
 		const char* name = child->GetName();

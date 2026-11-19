@@ -43,6 +43,19 @@ FocusNavGroup::~FocusNavGroup()
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: returns the tab position of a visible, enabled child, 0 if it can't take the focus
+//			a child of another controls module has no Panel here, so it is read through the VPANEL
+//-----------------------------------------------------------------------------
+static int GetTabbableChildPosition( VPANEL child )
+{
+	Panel* panel = ipanel()->GetPanel( child, GetControlsModuleName() );
+	if ( panel )
+		return panel->IsVisible() && panel->IsEnabled() ? panel->GetTabPosition() : 0;
+
+	return ipanel()->IsVisible( child ) && ipanel()->IsEnabled( child ) ? ipanel()->GetTabPosition( child ) : 0;
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 // Output : Panel
 //-----------------------------------------------------------------------------
@@ -167,7 +180,7 @@ bool FocusNavGroup::RequestFocusPrev( VPANEL panel )
 
 	bool found = false;
 	bool repeat = true;
-	Panel* best = NULL;
+	VPANEL best = 0;
 	while ( 1 )
 	{
 		newPosition--;
@@ -178,11 +191,10 @@ bool FocusNavGroup::RequestFocusPrev( VPANEL panel )
 			// look for the next tab position
 			for ( int i = 0; i < _mainPanel->GetChildCount(); i++ )
 			{
-				Panel* child = _mainPanel->GetChild( i );
-				if ( !child || !child->IsVisible() || !child->IsEnabled() || !child->GetTabPosition() )
+				VPANEL child = ipanel()->GetChild( _mainPanel->GetVPanel(), i );
+				int tabPosition = GetTabbableChildPosition( child );
+				if ( !tabPosition )
 					continue;
-
-				int tabPosition = child->GetTabPosition();
 				if ( tabPosition == newPosition )
 				{
 					best = child;
@@ -221,13 +233,13 @@ bool FocusNavGroup::RequestFocusPrev( VPANEL panel )
 
 	if ( best )
 	{
-		_currentFocus.Set( best->GetVPanel() );
-		best->RequestFocus( -1 );
+		_currentFocus.Set( best );
+		ipanel()->RequestFocus( best, -1 );
 		found = true;
 
-		if ( CanButtonBeDefault( best->GetVPanel() ) )
+		if ( CanButtonBeDefault( best ) )
 		{
-			SetCurrentDefaultButton( best->GetVPanel(), true );
+			SetCurrentDefaultButton( best, true );
 		}
 		else if ( _defaultButton.Get() )
 		{
@@ -262,7 +274,7 @@ bool FocusNavGroup::RequestFocusNext( VPANEL panel )
 
 	bool found = false;
 	bool repeat = true;
-	Panel* best = NULL;
+	VPANEL best = 0;
 	while ( 1 )
 	{
 		newPosition++;
@@ -271,11 +283,10 @@ bool FocusNavGroup::RequestFocusNext( VPANEL panel )
 		// look for the next tab position
 		for ( int i = 0; i < _mainPanel->GetChildCount(); i++ )
 		{
-			Panel* child = _mainPanel->GetChild( i );
-			if ( !child || !child->IsVisible() || !child->IsEnabled() || !child->GetTabPosition() )
+			VPANEL child = ipanel()->GetChild( _mainPanel->GetVPanel(), i );
+			int tabPosition = GetTabbableChildPosition( child );
+			if ( !tabPosition )
 				continue;
-
-			int tabPosition = child->GetTabPosition();
 			if ( tabPosition == newPosition )
 			{
 				best = child;
@@ -313,13 +324,13 @@ bool FocusNavGroup::RequestFocusNext( VPANEL panel )
 
 	if ( best )
 	{
-		_currentFocus.Set( best->GetVPanel() );
-		best->RequestFocus( 1 );
+		_currentFocus.Set( best );
+		ipanel()->RequestFocus( best, 1 );
 		found = true;
 
-		if ( CanButtonBeDefault( best->GetVPanel() ) )
+		if ( CanButtonBeDefault( best ) )
 		{
-			SetCurrentDefaultButton( best->GetVPanel(), true );
+			SetCurrentDefaultButton( best, true );
 		}
 		else if ( _defaultButton.Get() )
 		{
