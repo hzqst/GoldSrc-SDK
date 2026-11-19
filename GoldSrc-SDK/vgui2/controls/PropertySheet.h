@@ -40,6 +40,8 @@ public:
 	virtual void SetActivePage( Panel* page );
 	// sets the width, in pixels, of the page tab buttons.
 	virtual void SetTabWidth( int pixels );
+	// returns the width, in pixels, the page tab buttons take side by side, 0 when the tabs are hidden
+	int GetTabsWide();
 	// Gets a pointer to the currently active page.
 	virtual Panel* GetActivePage();
 	virtual void ResetAllData();

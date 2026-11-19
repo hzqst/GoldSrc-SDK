@@ -15,7 +15,9 @@
 #include "Button.h"
 #include "FocusNavGroup.h"
 #include "PropertySheet.h"
+#include "vgui/ISurface.h"
 #include "vgui/KeyValues.h"
+#include "vgui_controls/Controls.h"
 
 #include <string.h>
 
@@ -211,8 +213,32 @@ bool PropertyDialog::IsApplyButtonEnabled()
 //-----------------------------------------------------------------------------
 void PropertyDialog::PerformLayout()
 {
-	Frame::PerformLayout();
 	int x, y, wide, tall;
+	GetClientArea( x, y, wide, tall );
+
+	// widen the dialog until the sheet shows all its tabs, as far as the workspace allows,
+	// before the frame lays out its title bar and buttons for the width
+	int tabsWide = _propertySheet->GetTabsWide();
+	if ( tabsWide > wide )
+	{
+		int workspaceX, workspaceY, workspaceWide, workspaceTall;
+		surface()->GetWorkspaceBounds( workspaceX, workspaceY, workspaceWide, workspaceTall );
+		int dialogX, dialogY, dialogWide, dialogTall;
+		GetBounds( dialogX, dialogY, dialogWide, dialogTall );
+		int neededWide = dialogWide + tabsWide - wide;
+		if ( neededWide > workspaceWide )
+			neededWide = workspaceWide;
+		if ( neededWide > dialogWide )
+		{
+			if ( dialogX + neededWide > workspaceX + workspaceWide )
+				dialogX = workspaceX + workspaceWide - neededWide;
+			if ( dialogX < workspaceX )
+				dialogX = workspaceX;
+			SetBounds( dialogX, dialogY, neededWide, dialogTall );
+		}
+	}
+
+	Frame::PerformLayout();
 	GetClientArea( x, y, wide, tall );
 	_propertySheet->SetBounds( x, y, wide, tall - GetProportionalScaledValue( 32 ) );
 

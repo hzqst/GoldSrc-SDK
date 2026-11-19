@@ -235,6 +235,21 @@ void PropertySheet::SetTabWidth( int pixels )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: returns the width the tabs take as PerformLayout places them, 1 pixel apart
+//-----------------------------------------------------------------------------
+int PropertySheet::GetTabsWide()
+{
+	if ( !_showTabs )
+		return 0;
+
+	int tabsWide = 0;
+	int count = _pageTabs.GetCount();
+	for ( int i = 0; i < count; i++ )
+		tabsWide += _pageTabs[i]->GetWide() + 1;
+	return count > 0 ? tabsWide - 1 : 0;
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: gets a pointer to the currently active page
 // Output : Panel
 //-----------------------------------------------------------------------------
