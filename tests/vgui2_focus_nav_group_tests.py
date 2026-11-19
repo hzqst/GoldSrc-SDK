@@ -1,4 +1,4 @@
-"""Exercise the production VGUI2 focus restore of EditablePanel and WizardPanel through FocusNavGroup, with the focused child of this module, of another module and deleted.
+"""Exercise the production VGUI2 focus restore of EditablePanel and WizardPanel through FocusNavGroup, with the focused child of this module, of another module and deleted, and the FocusNavGroup tab navigation over children of both modules.
 
 Run: python tests/vgui2_focus_nav_group_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -24,6 +24,7 @@ STUBS = r'''
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <map>
 #include <vector>
 
@@ -31,6 +32,12 @@ STUBS = r'''
 #define _stricmp strcasecmp
 #include <strings.h>
 #endif
+
+static void Require(bool condition, const char* message) {
+ if (condition) return;
+ printf("FAIL: %s\n", message);
+ exit(1);
+}
 
 namespace vgui2 {
 typedef uintptr_t VPANEL;
@@ -47,7 +54,11 @@ public:
  Panel* GetPanel(VPANEL panel, const char* moduleName) {
   return _stricmp(nodes[panel].module, moduleName) ? nullptr : nodes[panel].panel;
  }
+ int GetChildCount(VPANEL panel);
+ VPANEL GetChild(VPANEL panel, int index);
+ int GetTabPosition(VPANEL panel);
  void RequestFocus(VPANEL panel, int direction);
+ bool RequestFocusPrev(VPANEL panel, VPANEL existing) { return false; }
  bool RequestFocusNext(VPANEL panel, VPANEL existing);
  VPANEL GetCurrentKeyFocus(VPANEL panel);
  bool IsPopup(VPANEL panel);
@@ -59,6 +70,19 @@ static IPanel panels;
 static IPanel* ipanel() { return &panels; }
 static char controlsModule[] = "GameUI";
 static char* GetControlsModuleName() { return controlsModule; }
+
+// only the members the tab navigation uses
+class KeyValues {
+public:
+ KeyValues(const char*) {}
+ void deleteThis() { delete this; }
+};
+struct IVGui { void PostMessage(VPANEL, KeyValues* message, VPANEL, float) { message->deleteThis(); } };
+static IVGui gui;
+static IVGui* ivgui() { return &gui; }
+struct ISurface { VPANEL GetEmbeddedPanel() { return 0; } };
+static ISurface theSurface;
+static ISurface* surface() { return &theSurface; }
 
 // a deleted panel leaves the map, then the handle gives NULL like VPanelHandle
 class VPanelHandle {
@@ -81,7 +105,7 @@ public:
  virtual ~Panel() {}
  void AddChild(Panel* child) { children.push_back(child); }
  void Delete() { panels.nodes.erase(_vpanel); }
- virtual void RequestFocus(int) { ++focusRequests; }
+ virtual void RequestFocus(int direction) { ++focusRequests; focusDirection = direction; }
  virtual bool RequestFocusNext(VPANEL) { ++nextRequests; return true; }
  virtual void OnSetFocus() { ++setFocusCalls; }
  virtual void OnKillFocus() {}
@@ -91,15 +115,20 @@ public:
  virtual bool IsVisible() { return visible; }
  int GetTabPosition() { return tabPosition; }
  int GetChildCount() { return static_cast<int>(children.size()); }
- Panel* GetChild(int index) { return children[index]; }
+ // resolves the child in this module like Panel::GetChild
+ Panel* GetChild(int index) { return panels.GetPanel(children[index]->GetVPanel(), controlsModule); }
  VPANEL GetVPanel() { return _vpanel; }
+ VPANEL GetVParent() { return 0; }
  VPANEL _vpanel;
  std::vector<Panel*> children;
  int tabPosition;
  bool popup = false, enabled = true, visible = true;
- int focusRequests = 0, nextRequests = 0, setFocusCalls = 0;
+ int focusRequests = 0, focusDirection = 0, nextRequests = 0, setFocusCalls = 0;
 };
 
+int IPanel::GetChildCount(VPANEL panel) { return nodes[panel].panel->GetChildCount(); }
+VPANEL IPanel::GetChild(VPANEL panel, int index) { return nodes[panel].panel->children[index]->GetVPanel(); }
+int IPanel::GetTabPosition(VPANEL panel) { return nodes[panel].panel->GetTabPosition(); }
 void IPanel::RequestFocus(VPANEL panel, int direction) { nodes[panel].panel->RequestFocus(direction); }
 bool IPanel::RequestFocusNext(VPANEL panel, VPANEL existing) { return nodes[panel].panel->RequestFocusNext(existing); }
 VPANEL IPanel::GetCurrentKeyFocus(VPANEL panel) { return nodes[panel].panel->GetCurrentKeyFocus(); }
@@ -122,8 +151,14 @@ public:
  Panel* GetDefaultPanel();
  Panel* GetCurrentFocus();
  VPANEL GetCurrentFocusVPanel();
+ bool RequestFocusPrev(VPANEL panel);
+ bool RequestFocusNext(VPANEL panel);
+ bool CanButtonBeDefault(VPANEL) { return false; }
+ void SetCurrentDefaultButton(VPANEL, bool) {}
+ VPanelHandle _defaultButton;
  VPanelHandle _currentFocus;
  Panel* _mainPanel;
+ bool _topLevelFocus = true;
 };
 
 class EditablePanel : public Panel {
@@ -232,7 +267,51 @@ static void WizardPanelResetsTheFocusOfAnotherModule() {
  puts("PASS: WizardPanel resets the key focus of its child of another module, moves on when disabled and skips it once deleted");
 }
 
+// tabs from the current focus and returns the panel given the focus
+template <class Page> static Panel* Tab(Scene<Page>& scene, bool next, Panel* from) {
+ VPANEL panel = from ? from->GetVPanel() : 0;
+ FocusNavGroup& group = scene.page.m_NavGroup;
+ Require(next ? group.RequestFocusNext(panel) : group.RequestFocusPrev(panel), "tabbing finds a child");
+ for (Panel* child : scene.page.children)
+  if (child->GetVPanel() == group.GetCurrentFocusVPanel()) return child;
+ return nullptr;
+}
+
+static void TabReachesTheChildOfAnotherModule() {
+ Scene<EditablePanel> scene;
+ assert(&scene.first == Tab(scene, true, nullptr));
+ assert(&scene.local == Tab(scene, true, &scene.first));
+ assert(&scene.foreign == Tab(scene, true, &scene.local));
+ assert(1 == scene.foreign.focusRequests);
+ assert(1 == scene.foreign.focusDirection);
+ assert(&scene.first == Tab(scene, true, &scene.foreign));
+ assert(&scene.foreign == Tab(scene, false, &scene.first));
+ assert(2 == scene.foreign.focusRequests);
+ assert(-1 == scene.foreign.focusDirection);
+ assert(&scene.local == Tab(scene, false, &scene.foreign));
+ puts("PASS: FocusNavGroup tabs forward and back onto the child of another module in tab order and wraps around");
+}
+
+static void TabSkipsAChildThatCannotTakeTheFocus() {
+ Scene<EditablePanel> scene;
+ scene.foreign.enabled = false;
+ assert(&scene.first == Tab(scene, true, &scene.local));
+ assert(&scene.local == Tab(scene, false, &scene.first));
+ scene.foreign.enabled = true;
+ scene.foreign.visible = false;
+ assert(&scene.first == Tab(scene, true, &scene.local));
+ scene.foreign.visible = true;
+ scene.local.enabled = false;
+ int localFocusRequests = scene.local.focusRequests;
+ assert(&scene.foreign == Tab(scene, true, &scene.first));
+ assert(&scene.first == Tab(scene, false, &scene.foreign));
+ assert(localFocusRequests == scene.local.focusRequests);
+ puts("PASS: FocusNavGroup tabbing skips a disabled or hidden child of either module");
+}
+
 int main() {
+ TabReachesTheChildOfAnotherModule();
+ TabSkipsAChildThatCannotTakeTheFocus();
  TheChildOfThisModuleGetsTheFocusBack();
  TheChildOfAnotherModuleGetsTheFocusBack();
  ADeletedChildFallsBackToTheDefaultPanel();
@@ -246,7 +325,8 @@ def main():
     controls = ROOT / 'vgui2/controls'
     sources = {
         'FocusNavGroup.cpp': ('Panel* FocusNavGroup::GetDefaultPanel()', 'Panel* FocusNavGroup::GetCurrentFocus()',
-                              'VPANEL FocusNavGroup::GetCurrentFocusVPanel()'),
+                              'VPANEL FocusNavGroup::GetCurrentFocusVPanel()', 'static int GetTabbableChildPosition( VPANEL child )',
+                              'bool FocusNavGroup::RequestFocusPrev( VPANEL panel )', 'bool FocusNavGroup::RequestFocusNext( VPANEL panel )'),
         'EditablePanel.cpp': ('void EditablePanel::OnSetFocus()', 'VPANEL EditablePanel::GetCurrentKeyFocus()'),
         'WizardPanel.cpp': ('void WizardPanel::ResetKeyFocus()',),
     }
