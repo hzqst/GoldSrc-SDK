@@ -489,18 +489,19 @@ bool EditablePanel::RequestFocusPrev( VPANEL panel )
 //-----------------------------------------------------------------------------
 void EditablePanel::OnSetFocus()
 {
-	Panel* focus = m_NavGroup.GetCurrentFocus();
-	if ( focus && focus != this )
+	// forward through the VPANEL, the focused panel may belong to another controls module
+	VPANEL focus = m_NavGroup.GetCurrentFocusVPanel();
+	if ( focus && focus != GetVPanel() )
 	{
-		focus->RequestFocus( 0 );
+		ipanel()->RequestFocus( focus, 0 );
 	}
 	else
 	{
-		focus = m_NavGroup.GetDefaultPanel();
-		if ( focus )
+		Panel* defaultPanel = m_NavGroup.GetDefaultPanel();
+		if ( defaultPanel )
 		{
-			focus->RequestFocus( 0 );
-			focus->OnSetFocus();
+			defaultPanel->RequestFocus( 0 );
+			defaultPanel->OnSetFocus();
 		}
 	}
 
@@ -519,17 +520,17 @@ void EditablePanel::OnRequestFocus( VPANEL subFocus, VPANEL defaultPanel )
 //-----------------------------------------------------------------------------
 VPANEL EditablePanel::GetCurrentKeyFocus()
 {
-	Panel* focus = m_NavGroup.GetCurrentFocus();
-	if ( focus == this )
+	VPANEL focus = m_NavGroup.GetCurrentFocusVPanel();
+	if ( focus == GetVPanel() )
 		return 0;
 
-	if ( !focus || focus->IsPopup() )
+	if ( !focus || ipanel()->IsPopup( focus ) )
 		return Panel::GetCurrentKeyFocus();
 
 	// chain down the editpanel hierarchy
-	VPANEL subFocus = focus->GetCurrentKeyFocus();
+	VPANEL subFocus = ipanel()->GetCurrentKeyFocus( focus );
 	if ( !subFocus )
-		return focus->GetVPanel();
+		return focus;
 	return subFocus;
 }
 
