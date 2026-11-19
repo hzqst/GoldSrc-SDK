@@ -35,6 +35,7 @@ def function_prefix(source, signature, end):
 
 STUBS = r'''
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
