@@ -174,13 +174,26 @@ static ExtraPlayerInfo g_PlayerExtraInfo[MAX_PLAYERS + 1];
 struct cl_entity_t { int index; };
 static cl_entity_t localPlayer = {3};
 static std::string menuText;
+static bool menuExists = true;
+static char* loadedFile = nullptr;
+static int wrongFrees = 0;
 static int maxClients = 0;
 struct EngineStub {
  int GetMaxClients() { return maxClients; }
  cl_entity_t* GetLocalPlayer() { return &localPlayer; }
- // the menu text stays owned by the test
- void* COM_LoadFile(const char*, int, int*) { return &menuText[0]; }
- void COM_FreeFile(void*) {}
+ void* COM_LoadFile(const char*, int, int*) {
+  if (!menuExists) return nullptr;
+  loadedFile = new char[menuText.size() + 1];
+  memcpy(loadedFile, menuText.c_str(), menuText.size() + 1);
+  return loadedFile;
+ }
+ // frees only the buffer COM_LoadFile returned, and counts any other pointer instead of corrupting the heap
+ void COM_FreeFile(void* file) {
+  if (!file) return;
+  if (file != loadedFile) { ++wrongFrees; return; }
+  delete[] loadedFile;
+  loadedFile = nullptr;
+ }
  void Con_DPrintf(const char*, ...) {}
  // whitespace separated tokens or quoted strings, and NULL with an empty token at the end
  char* COM_ParseFile(char* data, char* token) {
@@ -256,6 +269,11 @@ static void CzerorPlayerListKeepsOnlyTheComboBoxCopies() {
  puts("PASS: updating the Condition Zero spectator player list frees each source KeyValues");
 }
 
+static void DestroyMenus() {
+ for (Menu* menu : menus) delete menu;
+ menus.clear();
+}
+
 static void CommandMenuKeepsTheCommandsAndUserDataCopies() {
  using namespace czeror;
  menuText = "\"1\" \"Plain\" \"say plain\"\n"
@@ -269,6 +287,7 @@ static void CommandMenuKeepsTheCommandsAndUserDataCopies() {
  Panel parent;
  char menuFile[] = "commandmenu.txt";
  Menu* root = CreateCommandMenu(menuFile, 1, &parent);
+ assert(!loadedFile && 0 == wrongFrees);
  // each command item holds the command it took over and its own user data copy
  assert(5 == root->GetItemCount() && 10 == liveKeyValues);
  MenuItem* dust = root->GetMenuItem(1);
@@ -278,10 +297,35 @@ static void CommandMenuKeepsTheCommandsAndUserDataCopies() {
  assert(std::string("team_cmd") == root->GetMenuItem(3)->m_userData->GetString("command"));
  Menu* sub = root->GetMenuItem(4)->m_cascade;
  assert(sub && 1 == sub->GetItemCount() && std::string("inner_cmd") == sub->GetMenuItem(0)->m_userData->GetString("command"));
- for (Menu* menu : menus) delete menu;
- menus.clear();
+ DestroyMenus();
  assert(0 == liveKeyValues);
  puts("PASS: building the Condition Zero command menu frees each source user data KeyValues after the menu copies it");
+ puts("PASS: building the Condition Zero command menu frees the loaded menu file");
+}
+
+static void CommandMenuStoppedByAnEmptyTokenFreesTheMenuFile() {
+ using namespace czeror;
+ // parsing stops at the empty token, in the middle of the file
+ menuText = "\"1\" \"Plain\" \"say plain\"\n\"\"\n\"2\" \"After\" \"say after\"\n";
+ Panel parent;
+ char menuFile[] = "commandmenu.txt";
+ Menu* root = CreateCommandMenu(menuFile, 1, &parent);
+ assert(1 == root->GetItemCount());
+ assert(!loadedFile && 0 == wrongFrees);
+ DestroyMenus();
+ puts("PASS: a command menu that stops at an empty token frees the loaded menu file and not the parse position");
+}
+
+static void MissingCommandMenuFileBuildsAnEmptyMenu() {
+ using namespace czeror;
+ menuExists = false;
+ Panel parent;
+ char menuFile[] = "missing.txt";
+ Menu* root = CreateCommandMenu(menuFile, 1, &parent);
+ assert(0 == root->GetItemCount() && 0 == wrongFrees);
+ DestroyMenus();
+ menuExists = true;
+ puts("PASS: a missing command menu file builds an empty menu");
 }
 '''
 
@@ -298,7 +342,8 @@ def main():
     code += function(command_menu, 'Menu* CreateCommandMenu(') + '\n}\n'
     code += TESTS
     code += ('\nint main() { GameControlsPlayerListKeepsOnlyTheComboBoxCopies(); CzerorPlayerListKeepsOnlyTheComboBoxCopies(); '
-             'CommandMenuKeepsTheCommandsAndUserDataCopies(); }\n')
+             'CommandMenuKeepsTheCommandsAndUserDataCopies(); CommandMenuStoppedByAnEmptyTokenFreesTheMenuFile(); '
+             'MissingCommandMenuFileBuildsAnEmptyMenu(); }\n')
     with tempfile.TemporaryDirectory(prefix='goldsrc-spectator-command-menu-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code, encoding='utf-8')

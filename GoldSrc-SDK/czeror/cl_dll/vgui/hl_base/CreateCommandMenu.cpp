@@ -128,6 +128,6 @@ Menu* CreateCommandMenu( char* menuFile, int playerTeam, Panel* parent )
 		}
 		data = gEngfuncs.COM_ParseFile( data, token );
 	}
-	gEngfuncs.COM_FreeFile( data );
+	gEngfuncs.COM_FreeFile( file );
 	return root;
 }
