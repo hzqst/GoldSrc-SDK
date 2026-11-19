@@ -115,6 +115,7 @@ void CChangeGameDialog::LoadModList()
 							itemData->SetString( "ModName", modInfo.GetGameDescription() );
 							itemData->SetString( "ModDir", wfd.cFileName );
 							m_pModList->AddItem( itemData, 0, false, false );
+							itemData->deleteThis();
 						}
 					}
 

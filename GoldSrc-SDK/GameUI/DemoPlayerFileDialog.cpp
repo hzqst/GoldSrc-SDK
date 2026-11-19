@@ -55,6 +55,7 @@ void CDemoPlayerFileDialog::LoadDemoList()
 	{
 		KeyValues* data = new KeyValues( "data", "demoname", demoNames[index].String() );
 		m_pDemoList->AddItem( data, 0, false, false );
+		data->deleteThis();
 	}
 	demoNames.RemoveAll();
 	if ( m_pDemoList->GetItemCount() > 0 )
