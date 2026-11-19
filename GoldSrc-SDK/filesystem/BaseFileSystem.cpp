@@ -503,13 +503,13 @@ void CBaseFileSystem::Close( FileHandle_t file )
 	if ( !fh->m_pFile )
 	{
 		Warning( FILESYSTEM_WARNING, "FS:  Tried to Close NULL file pointer inside valid file handle!\n" );
+		delete fh;
 		return;
 	}
 
-	if ( m_PackFileHandles.Find( fh->m_pFile ) != -1 )
-		return;
-
-	Trace_FClose( fh->m_pFile );
+	// Pack entries share the pack's FILE*; only the pack's own handle closes it
+	if ( !fh->m_bPack && m_PackFileHandles.Find( fh->m_pFile ) == -1 )
+		Trace_FClose( fh->m_pFile );
 	fh->m_pFile = NULL;
 
 	delete fh;

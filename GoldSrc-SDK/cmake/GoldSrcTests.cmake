@@ -22,6 +22,7 @@ foreach(name IN ITEMS
 		dedicated_mod_list
 		dod_vgui2print
 		engine_font_fallback
+		filesystem_pack_close
 		game_controls
 		gameui_career_command
 		gameui_career_difficulty
