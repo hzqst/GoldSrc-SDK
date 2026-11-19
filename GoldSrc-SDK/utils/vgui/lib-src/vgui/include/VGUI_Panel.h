@@ -30,6 +30,7 @@ class VGUIAPI Panel
 	friend class Image;
 	friend class Border;
 #if VGUI_ABI_COMPAT_MODE != 1
+	friend class BuildGroup;
 	friend class FocusNavGroup;
 #endif
 

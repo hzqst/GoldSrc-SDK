@@ -7,7 +7,7 @@ compiler supports it; without it only the value checks run.
 
 Cursor, DefaultCursor, Bitmap, BitmapTGA and BuildGroup are built with the
 VGUI1 sources and platform stubs from vgui1_panel_tests.py, without its Cursor
-stub, and vgui_strdup and vgui_printf from vgui.cpp, twice: with
+stub, twice: with
 VGUI_ABI_COMPAT_MODE=1 (the original vgui.dll layout, no destructors) and with
 VGUI_ABI_COMPAT_MODE=0, where a default Cursor owns the bitmap it makes, a
 Bitmap owns its pixels, a Scheme and a BuildGroup own the cursors they make,
@@ -37,9 +37,10 @@ With VGUI_ABI_COMPAT_MODE=0 only:
   where the other shows its own, and the other's given ones; assignment frees
   none, and all are freed once.
 - build-group-delete: deleting a BuildGroup frees its cursors and panel
-  names and leaves its panels alone.
-- build-group-copy: a copied or assigned BuildGroup has its own cursors and
-  panel names, and all are freed once.
+  names and leaves its panels alone, without a group (#222).
+- build-group-copy: a copied or assigned BuildGroup has its own cursors; a
+  copy starts with no panels and an assigned group keeps its own panels and
+  names (#222). All are freed once.
 - app-reset-restores: App::reset gives back the App's own scheme with the
   colors, fonts and cursors its constructor set, allocating nothing, so the
   cursor override still points to a live cursor.
@@ -58,12 +59,12 @@ import tempfile
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cxx_toolchain import compile_program
-from vgui1_panel_tests import VGUI, function, vgui1_sources
+from vgui1_panel_tests import VGUI, vgui1_sources
 
 CURSOR_STUB = '''// A default cursor without a bitmap, which ~Cursor can free.
 Cursor::Cursor( DefaultCursor dc ) { privateInit( NULL, 0, 0 ); _dc = dc; }
 '''
-SOURCES = ['DefaultCursor.cpp', 'Bitmap.cpp', 'BitmapTGA.cpp', 'DataInputStream.cpp', 'BuildGroup.cpp']
+SOURCES = ['DefaultCursor.cpp', 'Bitmap.cpp', 'BitmapTGA.cpp', 'DataInputStream.cpp']
 
 TESTS = r'''
 #include <cstdarg>
@@ -439,7 +440,7 @@ static void Run(const char* scenario)
   panel.setBuildGroup( group, "panel" );
   Check(1 == group->_panelNameDar.getCount(), "panel name kept");
   delete group;
-  panel._buildGroup = NULL;
+  Check(NULL == panel._buildGroup, "the deleted group left its panel without a group");
   Check(panelBaseline == liveBlocks, "build group cursors and names freed");
  }
  else if (!std::strcmp(scenario, "build-group-copy"))
@@ -453,16 +454,19 @@ static void Run(const char* scenario)
    Check(copy._cursor_sizeall != NULL && copy._cursor_sizeall != original._cursor_sizeall,
          "copy has its own cursors");
    Check(Cursor::dc_sizeall == copy._cursor_sizeall->getDefaultCursor(), "copy cursor kind");
-   Check(1 == copy._panelNameDar.getCount() && copy._panelNameDar[0] != original._panelNameDar[0]
-         && 0 == strcmp( "panel", copy._panelNameDar[0] ), "copy has its own panel names");
-   Check(1 == copy._panelDar.getCount() && &panel == copy._panelDar[0], "copy lists the same panels");
+   // The other group's panels point to it (#222).
+   Check(0 == copy._panelDar.getCount() && 0 == copy._panelNameDar.getCount() && NULL == copy._currentPanel,
+         "copy starts with no panels");
 
    BuildGroup assigned;
+   Panel own;
+   own.setBuildGroup( &assigned, "own" );
    Cursor* ownCursor = assigned._cursor_sizewe;
    assigned = original;
    Check(ownCursor == assigned._cursor_sizewe, "assigned group keeps its own cursors");
-   Check(1 == assigned._panelNameDar.getCount() && assigned._panelNameDar[0] != original._panelNameDar[0],
-         "assigned group has its own panel names");
+   Check(1 == assigned._panelDar.getCount() && &own == assigned._panelDar[0]
+         && 0 == strcmp( "own", assigned._panelNameDar[0] ), "assigned group keeps its own panels and names");
+   Check(1 == original._panelDar.getCount() && &panel == original._panelDar[0], "the other group keeps its panels");
    assigned = copy;
    Check(1 == assigned._panelNameDar.getCount(), "assigned again");
 
@@ -470,7 +474,6 @@ static void Run(const char* scenario)
    assigned = alias;
    Check(ownCursor == assigned._cursor_sizewe && 1 == assigned._panelNameDar.getCount(),
          "self assignment keeps the cursors and names");
-   panel._buildGroup = NULL;
   }
   Check(baseline == liveBlocks, "copied build groups freed once");
  }
@@ -570,9 +573,7 @@ def main():
     failed = []
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-cursor-') as folder:
         test_file = Path(folder) / 'test.cpp'
-        vgui = (VGUI / 'vgui.cpp').read_text()
-        helpers = function(vgui, 'char* vgui_strdup(') + '\n' + function(vgui, 'int vgui_printf(')
-        test_file.write_text(TESTS + '\nnamespace vgui\n{\n' + helpers + '\n}\n')
+        test_file.write_text(TESTS)
         sources = vgui1_sources(folder)
         # The real default Cursor constructor replaces the stub.
         stubs_file = sources[0]

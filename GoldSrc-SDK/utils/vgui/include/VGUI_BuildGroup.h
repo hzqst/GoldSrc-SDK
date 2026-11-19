@@ -44,8 +44,9 @@ private:
 public:
 	BuildGroup();
 #if VGUI_ABI_COMPAT_MODE != 1
-	// A BuildGroup owns its cursors and panel names; a copy gets its own.
-	// Its panels and change signals are not owned.
+	// A BuildGroup owns its cursors and panel names; a copy gets its own
+	// cursors. Its panels and change signals are not owned. A copy starts
+	// with no panels, and an assigned group keeps its own.
 	BuildGroup(const BuildGroup& other);
 	virtual ~BuildGroup();
 	BuildGroup& operator=(const BuildGroup& other);
@@ -64,6 +65,9 @@ public:
 private:
 	virtual void applySnap(Panel* panel);
 	virtual void fireCurrentPanelChangeSignal();
+#if VGUI_ABI_COMPAT_MODE != 1
+	void         panelRemoved(Panel* panel);
+#endif
 protected:
 	friend class Panel;
 	virtual void    panelAdded(Panel* panel,const char* panelName);
