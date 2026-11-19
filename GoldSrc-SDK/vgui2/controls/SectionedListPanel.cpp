@@ -47,6 +47,18 @@ static const int CONTENT_INSET_BASE = 5;
 static const int SECTION_GAP_BASE = 8;
 
 //-----------------------------------------------------------------------------
+// Purpose: clears the image list of a label and frees the text images it created,
+//			the image list does not own its images
+//-----------------------------------------------------------------------------
+static void FreeTextImages( Label* label, CUtlVector<TextImage*>& textImages )
+{
+	label->ClearImages();
+	for ( int i = 0; i < textImages.Count(); i++ )
+		delete textImages[i];
+	textImages.RemoveAll();
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: header label that seperates and names each section
 //-----------------------------------------------------------------------------
 class CSectionHeader : public Label
@@ -77,6 +89,11 @@ public:
 		MakeReadyForUse();
 	}
 
+	~CSectionHeader() override
+	{
+		FreeTextImages( this, m_TextImages );
+	}
+
 	void SetColor( Color color )
 	{
 		m_SectionDividerColor = color;
@@ -92,6 +109,7 @@ private:
 	int					m_iSectionID;
 	Color				m_SectionDividerColor;
 	SectionedListPanel*	m_pListPanel;
+	CUtlVector<TextImage*>	m_TextImages;
 };
 
 //-----------------------------------------------------------------------------
@@ -116,7 +134,7 @@ public:
 	{
 		if ( m_pData )
 			m_pData->deleteThis();
-		SetSectionID( -1 );
+		FreeTextImages( this, m_TextImages );
 	}
 
 	void Clear()
@@ -126,7 +144,8 @@ public:
 		m_iSectionID = -1;
 		SetPaintBackgroundEnabled( false );
 		SetTextImageIndex( -1 );
-		ClearImages();
+		// a recycled item has no section, so its text images are freed here
+		FreeTextImages( this, m_TextImages );
 	}
 
 	int GetID() { return m_iID; }
@@ -137,10 +156,7 @@ public:
 		if ( sectionID != m_iSectionID )
 		{
 			// free any existing textimage list 
-			ClearImages();
-			for ( int i = 0; i < m_TextImages.Count(); i++ )
-				delete m_TextImages[i];
-			m_TextImages.RemoveAll();
+			FreeTextImages( this, m_TextImages );
 			InvalidateLayout( false, false );
 		}
 		m_iSectionID = sectionID;
@@ -897,12 +913,15 @@ void CSectionHeader::PerformLayout()
 	int count = m_pListPanel->GetColumnCountBySection( m_iSectionID );
 	if ( count != GetImageCount() )
 	{
+		// rebuild the column images, the old ones are freed first
+		FreeTextImages( this, m_TextImages );
 		for ( int i = 0; i < count; i++ )
 		{
 			TextImage* image = NULL;
 			if ( !( m_pListPanel->GetColumnFlagsBySection( m_iSectionID, i ) & SectionedListPanel::COLUMN_HEADER_IMAGE ) )
 			{
 				image = new TextImage( "" );
+				m_TextImages.AddToTail( image );
 				image->SetFont( GetFont() );
 				HFont font = m_pListPanel->GetColumnFallbackFontBySection( m_iSectionID, i );
 				if ( font )
@@ -1002,6 +1021,8 @@ void CItemButton::PerformLayout()
 	}
 	if ( count != GetImageCount() )
 	{
+		// rebuild the column images, the old ones are freed first
+		FreeTextImages( this, m_TextImages );
 		for ( int i = 0; i < count; i++ )
 		{
 			if ( m_pListPanel->GetColumnFlagsBySection( m_iSectionID, i ) & SectionedListPanel::COLUMN_IMAGE )
