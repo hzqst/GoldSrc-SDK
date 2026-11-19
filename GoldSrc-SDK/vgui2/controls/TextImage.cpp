@@ -132,6 +132,7 @@ TextImage::TextImage( const wchar_t* text )
 	m_LineBreaks.RemoveAll();
 	m_bUseFallbackFont = false;
 	m_bRenderUsingFallbackFont = false;
+	m_pwszEllipsesPosition = NULL;
 	TextImage::SetText( text );
 }
 
@@ -171,19 +172,19 @@ void TextImage::SetText( const wchar_t* text )
 		text = L"";
 
 	// reallocate the buffer if necessary
-	_textLen = (short)wcslen( text );
+	_textLen = wcslen( text );
 	if ( _textLen >= _textBufferLen )
 	{
 		if ( _utext )
 			delete[] _utext;
 
-		_textBufferLen = (short)( _textLen + 1 );
+		_textBufferLen = _textLen + 1;
 		_utext = new wchar_t[_textBufferLen];
 	}
 
 	m_LineBreaks.RemoveAll();
-	// store the text as unicode
-	wcscpy( _utext, text );
+	// store the text as unicode, with its terminator
+	wmemcpy( _utext, text, _textLen + 1 );
 
 	m_bRecalculateTruncation = true;
 	if ( m_bWrap )
