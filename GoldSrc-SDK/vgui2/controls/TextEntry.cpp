@@ -65,6 +65,16 @@ int getCharWidth( vgui2::HFont font, wchar_t ch )
 	return a + b + c;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: return how many lines fit in a height, at least one, since a height
+//			shorter than one line (also no height) would let the start line pass the last line break
+//-----------------------------------------------------------------------------
+static int getDisplayLines( vgui2::HFont font, int tall )
+{
+	int displayLines = tall / ( vgui2::surface()->GetFontTall( font ) + DRAW_OFFSET_Y );
+	return displayLines > 0 ? displayLines : 1;
+}
+
 namespace vgui2
 {
 void TextEntry::ChainToMap()
@@ -571,7 +581,7 @@ void TextEntry::LayoutVerticalScrollBarSlider()
 	_vertScrollBar->SetSize( _scrollBarSize, tall - ib - ir );
 
 	// calculate how many lines we can fully display
-	int displayLines = tall / ( surface()->GetFontTall( _font ) + DRAW_OFFSET_Y );
+	int displayLines = getDisplayLines( _font, tall );
 	int numLines = m_LineBreaks.Count();
 	if ( displayLines < numLines )
 	{
@@ -1147,7 +1157,7 @@ int TextEntry::GetStartDrawIndex( int& lineBreakIndexIndex )
 	else
 	{
 		int numLines = m_LineBreaks.Count();
-		int displayLines = GetTall() / ( surface()->GetFontTall( _font ) + DRAW_OFFSET_Y );
+		int displayLines = getDisplayLines( _font, GetTall() );
 		if ( displayLines < numLines )
 		{
 			int cursorLine = GetCursorLine();
