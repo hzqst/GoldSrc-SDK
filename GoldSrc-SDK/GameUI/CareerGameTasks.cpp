@@ -92,16 +92,16 @@ CCareerUITask::CCareerUITask( const char* taskName )
 
 	// A task id that does not fit is treated as a missing localization string
 	wchar_t taskText[512];
-	ConstructStringWithReordering( taskText, 512, taskIdFormatted ? vgui2::localize()->Find( taskId ) : NULL,
-		2, weaponName, repeat );
+	ConstructStringWithReordering( taskText, sizeof( taskText ),
+		taskIdFormatted ? vgui2::localize()->Find( taskId ) : NULL, 2, weaponName, repeat );
 	if ( m_inarow )
 	{
-		vgui2::localize()->ConstructString( m_localizedName, 512,
+		vgui2::localize()->ConstructString( m_localizedName, sizeof( m_localizedName ),
 			vgui2::localize()->Find( "#Career_Task_inarow" ), 1, taskText );
 	}
 	else if ( m_survive )
 	{
-		vgui2::localize()->ConstructString( m_localizedName, 512,
+		vgui2::localize()->ConstructString( m_localizedName, sizeof( m_localizedName ),
 			vgui2::localize()->Find( "#Career_Task_survive" ), 1, taskText );
 	}
 	else
