@@ -483,7 +483,7 @@ void ComboBox::DoClick()
 
 		if ( !wcscmp( menuItemName, name ) )
 		{
-			m_pDropDown->SetCurrentlyHighlightedItem( i );
+			m_pDropDown->SetCurrentlyHighlightedItem( m_pDropDown->GetMenuID( i ) );
 			break;
 		}
 	}
@@ -558,7 +558,7 @@ void ComboBox::MoveAlongMenuItemList( int direction )
 	m_pDropDown->GetMenuItem( m_pDropDown->GetMenuID( newItem ) )->GetText( menuItemName, 255 );
 	OnSetText( menuItemName );
 	SelectAllText( false );
-	m_pDropDown->ActivateItem( newItem );
+	m_pDropDown->ActivateItemByRow( newItem );
 }
 
 //-----------------------------------------------------------------------------
@@ -759,41 +759,43 @@ void ComboBox::OnKeyTyped( wchar_t unichar )
 		return;
 	}
 
-	int itemToSelect = m_pDropDown->GetActiveItem();
-	if ( itemToSelect < 0 )
-		itemToSelect = 0;
-
-	int i = itemToSelect + 1;
-	if ( i >= m_pDropDown->GetItemCount() )
-		i = 0;
-
-	wchar_t menuItemName[255];
-
-	while ( i != itemToSelect )
-	{
-		m_pDropDown->GetMenuItem( m_pDropDown->GetMenuID( i ) )->GetText( menuItemName, 254 );
-
-		if ( towlower( menuItemName[0] ) == towlower( unichar ) )
-		{
-			itemToSelect = i;
-			break;
-		}
-
-		i++;
-		if ( i >= m_pDropDown->GetItemCount() )
-			i = 0;
-	}
-
-	if ( itemToSelect >= m_pDropDown->GetItemCount() )
+	int count = m_pDropDown->GetItemCount();
+	if ( count <= 0 )
 	{
 		TextEntry::OnKeyTyped( unichar );
 		return;
 	}
 
-	m_pDropDown->GetMenuItem( m_pDropDown->GetMenuID( itemToSelect ) )->GetText( menuItemName, 255 );
-	OnSetText( menuItemName );
-	SelectAllText( false );
-	m_pDropDown->ActivateItem( itemToSelect );
+	// the active item is an item ID, the search walks rows
+	int activeItemID = m_pDropDown->GetActiveItem();
+	int activeRow = -1;
+	for ( int row = 0; row < count; row++ )
+	{
+		if ( m_pDropDown->GetMenuID( row ) == activeItemID )
+		{
+			activeRow = row;
+			break;
+		}
+	}
+
+	// start after the active row and check it last, so each row is visited once
+	wchar_t menuItemName[255];
+	for ( int step = 1; step <= count; step++ )
+	{
+		int row = ( activeRow + step ) % count;
+		MenuItem* item = m_pDropDown->GetMenuItem( m_pDropDown->GetMenuID( row ) );
+		if ( !item )
+			continue;
+
+		item->GetText( menuItemName, 254 );
+		if ( towlower( menuItemName[0] ) == towlower( unichar ) )
+		{
+			OnSetText( menuItemName );
+			SelectAllText( false );
+			m_pDropDown->ActivateItemByRow( row );
+			return;
+		}
+	}
 }
 
 }

@@ -509,6 +509,9 @@ void Menu::DeleteAllItems()
 
 	m_MenuItems.RemoveAll();
 	m_SortedItems.RemoveAll();
+	// the deleted items can no longer be highlighted or active, and their IDs may be reused
+	m_iCurrentlySelectedItemID = -1;
+	m_iActivatedItem = m_MenuItems.InvalidIndex();
 	InvalidateLayout( false, false );
 }
 
