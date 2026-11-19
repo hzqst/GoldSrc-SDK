@@ -44,7 +44,7 @@ import tempfile
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cxx_toolchain import compile_program
-from vgui1_panel_tests import VGUI, function, vgui1_sources
+from vgui1_panel_tests import VGUI, vgui1_sources
 
 WIDGETS = ['TextPanel.cpp', 'TextGrid.cpp', 'EditPanel.cpp', 'CheckButton.cpp', 'RadioButton.cpp',
            'WizardPanel.cpp', 'Frame.cpp', 'Menu.cpp', 'ListPanel.cpp', 'TabPanel.cpp', 'TablePanel.cpp',
@@ -449,8 +449,7 @@ def main():
     failed = []
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-widget-') as folder:
         test_file = Path(folder) / 'test.cpp'
-        strdup = function((VGUI / 'vgui.cpp').read_text(), 'char* vgui_strdup(')
-        test_file.write_text(TESTS + '\nnamespace vgui\n{\n' + strdup + '\n}\n')
+        test_file.write_text(TESTS)
         sources = [test_file] + vgui1_sources(folder) + [VGUI / name for name in WIDGETS]
         for mode, scenarios in MODES.items():
             executable = Path(folder) / f'test-compat{mode}.exe'

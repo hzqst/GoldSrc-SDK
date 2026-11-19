@@ -11,8 +11,8 @@ destructors) and with VGUI_ABI_COMPAT_MODE=0 (a Panel owns its border, its
 input signals and its children). The platform half of App, the platform Font
 and Cursor constructors and Font_Reset are stubbed. TextImage.cpp is compiled
 from its source text with the scheme font lookup replaced by NULL, and
-vgui_strcpy is extracted from vgui.cpp, whose remaining code only builds for
-32-bit targets.
+vgui_strcpy, vgui_strdup and vgui_printf are extracted from vgui.cpp, whose
+remaining code only builds for 32-bit targets.
 
 - remove-all-detaches: removeAllChildren clears each child's parent and takes
   each child's whole tree off the surface, without calling a removeChild
@@ -55,12 +55,16 @@ FONT_LOOKUP = 'return App::getInstance()->getScheme()->getFont( _schemeFont );'
 SOURCES = ['Panel.cpp', 'App.cpp', 'Label.cpp', 'Image.cpp', 'Color.cpp', 'Button.cpp', 'ToggleButton.cpp',
            'TextEntry.cpp', 'Border.cpp', 'LineBorder.cpp', 'Scheme.cpp', 'Font.cpp', 'Cursor.cpp', 'FlowLayout.cpp',
            'Layout.cpp', 'TreeFolder.cpp', 'FocusNavGroup.cpp',
-           'ButtonGroup.cpp']
+           'ButtonGroup.cpp', 'BuildGroup.cpp']
 
 
 # The platform half of App (win32/App.cpp), the platform Font and Cursor code
 # and Font_Reset, for tests that build the VGUI1 sources without a platform.
 PLATFORM_STUBS = r'''
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "VGUI_App.h"
 #include "VGUI_Cursor.h"
 #include "VGUI_Font.h"
@@ -434,10 +438,12 @@ def vgui1_sources(folder):
     if FONT_LOOKUP not in text_image:
         raise SystemExit('TextImage::getFont no longer matches: ' + FONT_LOOKUP)
     text_image = text_image.replace(FONT_LOOKUP, 'return NULL;')
-    strcpy = function((VGUI / 'vgui.cpp').read_text(), 'void vgui_strcpy(')
+    vgui = (VGUI / 'vgui.cpp').read_text()
+    helpers = '\n'.join(function(vgui, signature)
+                        for signature in ('void vgui_strcpy(', 'char* vgui_strdup(', 'int vgui_printf('))
 
     stubs_file = Path(folder) / 'vgui1_stubs.cpp'
-    stubs_file.write_text(PLATFORM_STUBS + '\nnamespace vgui\n{\n' + strcpy + '\n}\n')
+    stubs_file.write_text(PLATFORM_STUBS + '\nnamespace vgui\n{\n' + helpers + '\n}\n')
     text_image_file = Path(folder) / 'TextImage.cpp'
     text_image_file.write_text(text_image)
     return [stubs_file, text_image_file] + [VGUI / name for name in SOURCES]

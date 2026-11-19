@@ -49,7 +49,7 @@ import tempfile
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cxx_toolchain import compile_program
-from vgui1_panel_tests import VGUI, function, vgui1_sources
+from vgui1_panel_tests import VGUI, vgui1_sources
 from vgui1_widget_ownership_tests import ACCESS_DEFINES, WIDGETS
 
 HOLDERS = ['ScrollPanel.cpp', 'MessageBox.cpp']
@@ -423,8 +423,7 @@ def main():
     failed = []
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui1-signal-') as folder:
         test_file = Path(folder) / 'test.cpp'
-        strdup = function((VGUI / 'vgui.cpp').read_text(), 'char* vgui_strdup(')
-        test_file.write_text(TESTS + '\nnamespace vgui\n{\n' + strdup + '\n}\n')
+        test_file.write_text(TESTS)
         sources = ([test_file] + vgui1_sources(folder) + [VGUI / name for name in WIDGETS]
                    + [VGUI / name for name in HOLDERS])
         for mode, scenarios in MODES.items():

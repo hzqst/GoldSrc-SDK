@@ -83,6 +83,9 @@ Panel::~Panel()
 	if ( _focusNavGroup != NULL )
 		_focusNavGroup->removePanel( this );
 
+	if ( _buildGroup != NULL )
+		_buildGroup->panelRemoved( this );
+
 	delete _border;
 	_border = NULL;
 
@@ -103,8 +106,8 @@ Panel::~Panel()
 		delete children[i];
 }
 
-// Copies appearance and state only: the parent, children, border and signals
-// belong to one panel.
+// Copies appearance and state only: the parent, children, border, signals and
+// BuildGroup belong to one panel, so a copy is in no BuildGroup.
 Panel& Panel::operator=( const Panel& other )
 {
 	if ( this == &other )
@@ -126,7 +129,6 @@ Panel& Panel::operator=( const Panel& other )
 	_autoFocusNavEnabled = other._autoFocusNavEnabled;
 	_needsRepaint = other._needsRepaint;
 	_enabled = other._enabled;
-	_buildGroup = other._buildGroup;
 	_fgColor = other._fgColor;
 	_bgColor = other._bgColor;
 	_layoutInfo = other._layoutInfo;
@@ -634,8 +636,16 @@ void Panel::setEnabled( bool state )
 
 void Panel::setBuildGroup( BuildGroup* buildGroup, const char* panelPersistanceName )
 {
+#if VGUI_ABI_COMPAT_MODE != 1
+	// Also for the same group, which then lists the panel once, with the new
+	// name. With VGUI_ABI_COMPAT_MODE == 1 a deleted group does not clear
+	// _buildGroup, so the old group may be gone and is not touched.
+	if ( _buildGroup != NULL )
+		_buildGroup->panelRemoved( this );
+#endif
 	_buildGroup = buildGroup;
-	buildGroup->panelAdded( this, panelPersistanceName );
+	if ( buildGroup != NULL )
+		buildGroup->panelAdded( this, panelPersistanceName );
 }
 
 bool Panel::isBuildGroupEnabled()
