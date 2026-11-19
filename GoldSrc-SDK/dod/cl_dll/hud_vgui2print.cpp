@@ -119,7 +119,8 @@ void CHudVGUI2Print::VGUI2HudPrint( char *text, int x, int y, float red, float g
 	wchar_t *localized = vgui2::localize()->Find( text );
 	if ( localized )
 	{
-		wcsncpy( m_wCharBuf, localized, wcslen( localized ) );
+		wcsncpy( m_wCharBuf, localized, sizeof( m_wCharBuf ) / sizeof( m_wCharBuf[0] ) - 1 );
+		m_wCharBuf[sizeof( m_wCharBuf ) / sizeof( m_wCharBuf[0] ) - 1] = 0;
 		m_iX = x;
 		m_iY = y;
 		m_fR = red;
