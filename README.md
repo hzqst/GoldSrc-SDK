@@ -91,6 +91,17 @@ On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `
 
 Configure with `-DGOLDSRC_BUILD_TESTS=ON` to register the regression tests under [`tests/`](tests/) with CTest; run them with `ctest --test-dir bin/obj/cmake/<preset>`. The Python tests compile their C++ with [`tests/cxx_toolchain.py`](tests/cxx_toolchain.py): `CXX` when set, otherwise MSVC (found through `vswhere`) on Windows and `c++` elsewhere. AddressSanitizer and UndefinedBehaviorSanitizer are enabled where the compiler supports them; MSVC supports only AddressSanitizer.
 
+### Static analysis
+
+[`tools/static_analysis.py`](tools/static_analysis.py) runs Cppcheck, clang-tidy (with [`GoldSrc-SDK/.clang-tidy`](GoldSrc-SDK/.clang-tidy)) and the Clang Static Analyzer on the project sources, from the compile database of the `windows-x86-analyze` preset (Ninja and MSVC x86, configured in the vcvarsall x86 environment found through `vswhere`) on Windows or `linux-x86-debug` on Linux. From the repository root:
+
+```bash
+python -I tools/static_analysis.py all --changed      # sources changed since main; or --files <source...>
+python -I tools/static_analysis.py analyzer           # cppcheck, clang-tidy, analyzer or all
+```
+
+The reports go to `GoldSrc-SDK/bin/static-analysis/`; warnings do not fail the run. See [`docs/static-analysis-playbook.md`](docs/static-analysis-playbook.md).
+
 ## Build output
 
 Runtime and game binaries are placed under `GoldSrc-SDK/`:

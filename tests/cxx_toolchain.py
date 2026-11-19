@@ -142,7 +142,7 @@ def environment_path(env):
     return next((value for key, value in env.items() if key.upper() == 'PATH'), '')
 
 
-def vcvars_environment():
+def vcvars_environment(arch=MSVC_ARCH):
     if not VSWHERE.exists():
         return None
     root = subprocess.run([str(VSWHERE), '-latest', '-products', '*', '-requires', MSVC_COMPONENT,
@@ -151,7 +151,7 @@ def vcvars_environment():
     if not root or not vcvars.exists():
         return None
     # cmd /u writes the environment as UTF-16 so non-ASCII paths survive.
-    result = subprocess.run(f'cmd /u /c ""{vcvars}" {MSVC_ARCH} >nul && set"', capture_output=True)
+    result = subprocess.run(f'cmd /u /c ""{vcvars}" {arch} >nul && set"', capture_output=True)
     if result.returncode:
         return None
     lines = result.stdout.decode('utf-16-le').splitlines()
