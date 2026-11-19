@@ -50,7 +50,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cxx_toolchain import compile_program
 from vgui1_panel_tests import VGUI, function, vgui1_sources
-from vgui1_widget_ownership_tests import WIDGETS
+from vgui1_widget_ownership_tests import ACCESS_DEFINES, WIDGETS
 
 HOLDERS = ['ScrollPanel.cpp', 'MessageBox.cpp']
 
@@ -429,9 +429,13 @@ def main():
                    + [VGUI / name for name in HOLDERS])
         for mode, scenarios in MODES.items():
             executable = Path(folder) / f'test-compat{mode}.exe'
-            # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
+            # VGUI_STATIC keeps VGUIAPI from exporting on Windows: MSVC would emit the whole
+            # vtable of an exported class in every file, also for sources the test leaves out.
+            # Every file sees the access macros the test uses, because MSVC puts the
+            # access of a member function into its name.
             executable = compile_program(sources, executable, includes=[VGUI / 'include', VGUI],
-                                         defines=['VGUI_EXPORTS', f'VGUI_ABI_COMPAT_MODE={mode}'], debug=True,
+                                         defines=['VGUI_STATIC', f'VGUI_ABI_COMPAT_MODE={mode}'] + ACCESS_DEFINES,
+                                         debug=True,
                                          sanitizers=['address'])
             for scenario in scenarios:
                 # Without destructors the compatible build frees no panel; only

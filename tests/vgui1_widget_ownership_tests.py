@@ -439,6 +439,10 @@ NONCOMPAT_SCENARIOS = ['toggle-copy', 'text-panel', 'text-grid', 'edit-panel', '
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
 
+# The test reads private and protected members; MSVC's standard library
+# refuses keyword macros unless _ALLOW_KEYWORD_MACROS is set.
+ACCESS_DEFINES = ['private=public', 'protected=public', '_ALLOW_KEYWORD_MACROS']
+
 
 def main():
     failed = []
@@ -449,9 +453,13 @@ def main():
         sources = [test_file] + vgui1_sources(folder) + [VGUI / name for name in WIDGETS]
         for mode, scenarios in MODES.items():
             executable = Path(folder) / f'test-compat{mode}.exe'
-            # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
+            # VGUI_STATIC keeps VGUIAPI from exporting on Windows: MSVC would emit the whole
+            # vtable of an exported class in every file, also for sources the test leaves out.
+            # Every file sees the access macros the test uses, because MSVC puts the
+            # access of a member function into its name.
             executable = compile_program(sources, executable, includes=[VGUI / 'include', VGUI],
-                                         defines=['VGUI_EXPORTS', f'VGUI_ABI_COMPAT_MODE={mode}'], debug=True,
+                                         defines=['VGUI_STATIC', f'VGUI_ABI_COMPAT_MODE={mode}'] + ACCESS_DEFINES,
+                                         debug=True,
                                          sanitizers=['address'])
             # Without destructors the compatible build frees no panel; only check
             # its memory errors.

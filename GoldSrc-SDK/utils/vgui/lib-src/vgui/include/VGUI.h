@@ -11,7 +11,8 @@
 #define VGUI_ABI_COMPAT_MODE	1
 #endif
 
-#if defined( _WIN32 )
+// VGUI_STATIC builds the sources into the program itself, without exports.
+#if defined( _WIN32 ) && !defined( VGUI_STATIC )
 #if defined( VGUI_EXPORTS )
 #define VGUIAPI __declspec( dllexport )
 #else
