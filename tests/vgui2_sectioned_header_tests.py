@@ -1,4 +1,4 @@
-"""Exercise the production VGUI2 SectionedListPanel section header and item column images with tracked TextImages.
+"""Exercise the production VGUI2 SectionedListPanel section header and item column images with tracked TextImages, and the image list ownership of SectionedListPanel with tracked ImageLists.
 
 Run: python tests/vgui2_sectioned_header_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -37,6 +37,8 @@ STUBS = r'''
 // every TextImage alive, so leaked, freed twice and dangling images are counted
 static std::set<const void*> liveImages;
 static int created = 0;
+// every ImageList alive, so leaked and freed twice lists are counted
+static std::set<const void*> liveLists;
 
 namespace vgui2 {
 typedef unsigned long HFont;
@@ -81,8 +83,21 @@ public:
  const char* GetString(const char*, const char*) { return "cell"; }
 };
 
+template <class T, class I> class CUtlLinkedList {
+public:
+ I Head() { return items.empty() ? InvalidIndex() : 0; }
+ I Next(I i) { return i + 1 < (I)items.size() ? i + 1 : InvalidIndex(); }
+ I InvalidIndex() { return -1; }
+ I AddToTail(const T& item) { items.push_back(item); return (I)items.size() - 1; }
+ T& operator[](I i) { return items[i]; }
+private:
+ std::vector<T> items;
+};
+
 class ImageList {
 public:
+ ImageList() { liveLists.insert(this); }
+ ~ImageList() { assert(liveLists.erase(this)); }
  bool IsValidIndex(int index) { return index == 0; }
  IImage* GetImage(int) { return &image; }
  IImage image;
@@ -139,8 +154,13 @@ public:
  std::vector<IImage*> images;
 };
 
+class CItemButton;
+
 class SectionedListPanel {
 public:
+ SectionedListPanel() {}
+ ~SectionedListPanel();
+ void SetImageList(ImageList* imageList, bool deleteImageListWhenDone);
  enum { COLUMN_HEADER_IMAGE = 0x01, COLUMN_IMAGE = 0x02, COLUMN_BRIGHT = 0x04, COLUMN_CENTER = 0x08, COLUMN_RIGHT = 0x10 };
  int GetColumnCountBySection(int section) { return section == 0 ? (int)flags.size() : 0; }
  int GetColumnFlagsBySection(int, int column) { return flags[column]; }
@@ -151,6 +171,8 @@ public:
  bool IsInEditMode() { return false; }
  std::vector<int> flags;
  ImageList* m_pImageList = nullptr;
+ bool m_bDeleteImageListWhenDone = false;
+ CUtlLinkedList<CItemButton*, int> m_Items;
 };
 '''
 
@@ -334,7 +356,96 @@ static void ItemImageColumnsKeepTheImageListImage() {
  puts("PASS: item image columns show the image list image, which is never freed");
 }
 
+static void AnOwnedListIsDeletedWithThePanel() {
+ {
+  SectionedListPanel list;
+  list.SetImageList(new vgui2::ImageList, true);
+  assert(1 == liveLists.size());
+ }
+ assert(0 == liveLists.size());
+ puts("PASS: an image list given with deleteImageListWhenDone is deleted once with the panel");
+}
+
+static void ASharedListIsNotDeleted() {
+ vgui2::ImageList shared;
+ {
+  SectionedListPanel list;
+  list.SetImageList(&shared, false);
+ }
+ assert(1 == liveLists.count(&shared));
+ {
+  SectionedListPanel list;
+  list.SetImageList(new vgui2::ImageList, true);
+  list.SetImageList(&shared, false);
+  assert(1 == liveLists.size());
+ }
+ assert(1 == liveLists.count(&shared) && 1 == liveLists.size());
+ puts("PASS: a shared image list is not deleted with the panel nor when it replaces an owned one");
+}
+
+// an item of the list with an image column and a text column, laid out with the current image list
+struct ListedItem : Item {
+ ListedItem(SectionedListPanel* list) : Item(list) {
+  list->m_Items.AddToTail(this);
+  Layout();
+ }
+};
+
+static void ReplacingAListMakesTheItemsDropItsImages() {
+ SectionedListPanel list;
+ list.flags = { SectionedListPanel::COLUMN_IMAGE, 0 };
+ vgui2::ImageList* first = new vgui2::ImageList;
+ list.SetImageList(first, true);
+ ListedItem item(&list);
+ assert(&first->image == item.GetImageAtIndex(0));
+ vgui2::ImageList* second = new vgui2::ImageList;
+ list.SetImageList(second, true);
+ assert(0 == liveLists.count(first) && 1 == liveLists.size());
+ assert(0 == item.GetImageCount());
+ assert(0 == liveImages.size());
+ item.Layout();
+ assert(2 == item.GetImageCount());
+ assert(&second->image == item.GetImageAtIndex(0));
+ CheckImages(item, list);
+ vgui2::ImageList shared;
+ list.SetImageList(&shared, false);
+ assert(0 == liveLists.count(second));
+ assert(0 == item.GetImageCount());
+ item.Layout();
+ assert(&shared.image == item.GetImageAtIndex(0));
+ list.SetImageList(new vgui2::ImageList, true);
+ assert(1 == liveLists.count(&shared));
+ assert(0 == item.GetImageCount());
+ puts("PASS: replacing the image list makes the items drop its images before an owned list is deleted, and keeps a shared one");
+}
+
+static void SettingTheSameListAgainOnlyChangesTheOwnership() {
+ vgui2::ImageList* images = new vgui2::ImageList;
+ {
+  SectionedListPanel list;
+  list.flags = { SectionedListPanel::COLUMN_IMAGE, 0 };
+  list.SetImageList(images, true);
+  ListedItem item(&list);
+  list.SetImageList(images, true);
+  assert(1 == liveLists.count(images));
+  assert(&images->image == item.GetImageAtIndex(0));
+  list.SetImageList(images, false);
+  assert(1 == liveLists.count(images));
+  assert(&images->image == item.GetImageAtIndex(0));
+ }
+ assert(1 == liveLists.count(images));
+ {
+  SectionedListPanel list;
+  list.SetImageList(images, false);
+  list.SetImageList(images, true);
+  assert(1 == liveLists.count(images));
+ }
+ assert(0 == liveLists.size());
+ puts("PASS: setting the same image list again keeps it and its item images and only switches who deletes it");
+}
+
 int main() {
+ setvbuf(stdout, nullptr, _IONBF, 0);
  DestroyingTheHeaderFreesItsColumnImages();
  AddingAColumnRebuildsTheHeaderWithoutLeaking();
  HeaderImageColumnsGetNoTextImage();
@@ -344,6 +455,10 @@ int main() {
  AReusedItemFreesItsRebuiltColumnImages();
  AddingAColumnRebuildsTheItemWithoutLeaking();
  ItemImageColumnsKeepTheImageListImage();
+ AnOwnedListIsDeletedWithThePanel();
+ ASharedListIsNotDeleted();
+ ReplacingAListMakesTheItemsDropItsImages();
+ SettingTheSameListAgainOnlyChangesTheOwnership();
 }
 '''
 
@@ -355,6 +470,8 @@ def main():
     code += declaration(source, 'class CItemButton : public Label') + '\n'
     code += function(source, 'void CSectionHeader::PerformLayout()') + '\n'
     code += function(source, 'void CItemButton::PerformLayout()') + '\n'
+    code += function(source, 'SectionedListPanel::~SectionedListPanel()') + '\n'
+    code += function(source, 'void SectionedListPanel::SetImageList( ImageList* imageList, bool deleteImageListWhenDone )') + '\n'
     # the scheme, paint and mouse overrides draw or send messages and are not under test
     code += r'''void CSectionHeader::ApplySchemeSettings( IScheme* ) {}
 void CSectionHeader::Paint() {}
