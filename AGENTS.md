@@ -59,3 +59,14 @@
 用 `ctest ... -R <regex>` 只运行匹配的测试。新增 Python 测试时，在 `GoldSrcTests.cmake` 的列表中按字母序单独占一行登记。
 
 例外：`engine_def_exports`（仅 Windows MSVC）用 `dumpbin` 检查构建出的 `sw.dll` / `swds.dll` 与 `sw_engine.def` / `swds.def` 的导出名和序号是否一致，以及转发导出的目标是否真的存在于 `vgui.dll`。它依赖构建产物，运行 CTest 前需先构建 `sw_engine` 和 `swds`。
+
+## 静态分析
+
+Cppcheck、clang-tidy、Clang Static Analyzer 由 [tools/static_analysis.py](tools/static_analysis.py) 统一运行（在仓库根目录），只出报告、不因告警失败，细节见 [docs/static-analysis-playbook.md](docs/static-analysis-playbook.md) 第 3、4 节：
+
+```bash
+python -I tools/static_analysis.py all --changed      # 相对 main 改动过的源文件；或 --files <源文件...>
+python -I tools/static_analysis.py analyzer           # 子命令：cppcheck / clang-tidy / analyzer / all
+```
+
+Windows 用 `windows-x86-analyze` preset（Ninja + MSVC x86）生成编译数据库，脚本会自动 configure 并进入 vcvarsall x86 环境；Linux 用 `linux-x86-debug`。报告位于 `GoldSrc-SDK/bin/static-analysis/`。

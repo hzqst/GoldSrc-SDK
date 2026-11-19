@@ -11,6 +11,19 @@
 			"condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
 		},
 		{
+			"name": "windows-x86-analyze",
+			"displayName": "Windows x86 compile database for static analysis (Ninja, MSVC x86 environment)",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/bin/obj/cmake/${presetName}",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"CMAKE_C_COMPILER": "cl",
+				"CMAKE_CXX_COMPILER": "cl",
+				"CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+			},
+			"condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+		},
+		{
 			"name": "linux-x86",
 			"hidden": true,
 			"generator": "Ninja",
