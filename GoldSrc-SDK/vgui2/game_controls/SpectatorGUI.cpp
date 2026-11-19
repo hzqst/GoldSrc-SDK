@@ -682,6 +682,7 @@ void CSpectatorGUI::UpdateSpectatorPlayerList()
 			m_pBottomBar->m_pPlayerList->UpdateItem( itemID++, playerText, data );
 		else
 			itemID = m_pBottomBar->m_pPlayerList->AddItem( playerText, data ) + 1;
+		data->deleteThis();
 	}
 }
 

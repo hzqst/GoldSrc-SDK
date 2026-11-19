@@ -421,6 +421,7 @@ void CSpectatorGUI::UpdateSpectatorPlayerList()
 		localize()->ConstructString( text, sizeof( text ), localize()->Find( "#Spec_PlayerItem_Team" ), 2, name, team );
 		KeyValues* data = new KeyValues( "UserData", "player", g_PlayerInfoList[player].name );
 		item = m_pBottomBar->PlayerAddItem( item, text, data );
+		data->deleteThis();
 	}
 }
 
