@@ -261,6 +261,41 @@ static void RecyclingAnItemFreesItsColumnImages() {
  puts("PASS: a recycled item frees its column images, and destroying it unused frees nothing again");
 }
 
+static void DestroyingALaidOutItemFreesItsColumnImages() {
+ SectionedListPanel list;
+ list.flags = { 0, 0 };
+ {
+  Item item(&list);
+  item.Layout();
+  assert(2 == liveImages.size());
+  CheckImages(item, list);
+ }
+ assert(0 == liveImages.size());
+ puts("PASS: destroying a laid out item frees its column text images");
+}
+
+static void AReusedItemFreesItsRebuiltColumnImages() {
+ SectionedListPanel list;
+ list.flags = { 0, 0 };
+ {
+  Item item(&list);
+  item.Layout();
+  item.Clear();
+  assert(0 == liveImages.size());
+  // AddItem takes the item off the free list and ModifyItem gives it a section and data again
+  vgui2::KeyValues data;
+  item.SetID(1);
+  item.SetSectionID(0);
+  item.SetData(&data);
+  item.Layout();
+  assert(2 == item.GetImageCount());
+  assert(2 == liveImages.size());
+  CheckImages(item, list);
+ }
+ assert(0 == liveImages.size());
+ puts("PASS: an item cleared and reused rebuilds its column images and destroying it frees them");
+}
+
 static void AddingAColumnRebuildsTheItemWithoutLeaking() {
  SectionedListPanel list;
  list.flags = { 0, 0 };
@@ -305,6 +340,8 @@ int main() {
  HeaderImageColumnsGetNoTextImage();
  LayoutWithTheSameColumnsKeepsTheHeaderImages();
  RecyclingAnItemFreesItsColumnImages();
+ DestroyingALaidOutItemFreesItsColumnImages();
+ AReusedItemFreesItsRebuiltColumnImages();
  AddingAColumnRebuildsTheItemWithoutLeaking();
  ItemImageColumnsKeepTheImageListImage();
 }
