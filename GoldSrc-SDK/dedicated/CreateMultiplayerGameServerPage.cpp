@@ -212,7 +212,9 @@ void CCreateMultiplayerGameServerPage::LoadModList()
 	GameDir_t game;
 	strcpy( game.name, "Half-Life" );
 	strcpy( game.gameDir, "valve" );
-	int item = m_pModList->AddItem( game.name, new KeyValues( game.name, "gamedir", game.gameDir ) );
+	KeyValues* data = new KeyValues( game.name, "gamedir", game.gameDir );
+	int item = m_pModList->AddItem( game.name, data );
+	data->deleteThis();
 	m_GameDirs.AddToTail( game );
 	m_pModList->ActivateItem( item );
 	strcpy( m_szMod, game.gameDir );
@@ -243,7 +245,9 @@ void CCreateMultiplayerGameServerPage::LoadModList()
 					}
 					if ( i == m_GameDirs.Count() )
 					{
-						m_pModList->AddItem( game.name, new KeyValues( game.name, "gamedir", game.gameDir ) );
+						KeyValues* modData = new KeyValues( game.name, "gamedir", game.gameDir );
+						m_pModList->AddItem( game.name, modData );
+						modData->deleteThis();
 						m_GameDirs.AddToTail( game );
 					}
 				}
