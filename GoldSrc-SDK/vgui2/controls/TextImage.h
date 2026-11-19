@@ -70,8 +70,8 @@ private:
 	void RecalculateEllipsesPosition();
 
 	wchar_t*		_utext; // unicode version of the text
-	short			_textBufferLen; // size of the text buffer
-	short			_textLen; // length of the text string
+	size_t			_textBufferLen; // size of the text buffer
+	size_t			_textLen; // length of the text string
 
 	HFont			_font;
 	HFont			_fallbackFont;
