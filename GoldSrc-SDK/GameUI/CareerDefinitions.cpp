@@ -103,13 +103,12 @@ void CareerDifficultyDefinition::Reset()
 			delete *map;
 	}
 	m_maps.clear();
+	m_costAvailability.clear();
 }
 
 void CareerDifficultyDefinition::Init( const char* careerName, const char* filename, const char* botFilename )
 {
-	for ( CharacterVec::iterator it = m_availableCharacters.begin(); it != m_availableCharacters.end(); ++it )
-		delete *it;
-	m_availableCharacters.clear();
+	Reset();
 	char path[CAREER_MAX_PATH];
 	// A mission pack path that does not fit is treated as a missing file
 	if ( !UTIL_FormatString( path, sizeof( path ), "MissionPacks/%s/%s", careerName, botFilename ) ||
