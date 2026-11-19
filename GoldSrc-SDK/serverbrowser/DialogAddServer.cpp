@@ -38,7 +38,7 @@ CDialogAddServer::CDialogAddServer( vgui2::Panel *parent, IGameList *gameList ) 
 	SetSizeable( false );
 
 	m_pTabPanel = new vgui2::PropertySheet( this, "GameTabs" );
-	m_pTabPanel->SetTabWidth( 72 );
+	m_pTabPanel->SetTabWidth( GetProportionalScaledValue( 72 ) );
 
 	m_pDiscoveredGames = new vgui2::ListPanel( this, "Servers" );
 
