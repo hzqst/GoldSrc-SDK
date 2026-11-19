@@ -63,6 +63,7 @@ void CDemoEventsDialog::OnUpdate()
 		sprintf( index, "%i", command->m_Index );
 		KeyValues* data = new KeyValues( index, "time", time, "type", command->ToString() );
 		m_EventList->AddItem( data, 0, false, false );
+		data->deleteThis();
 	}
 
 	m_CurrentCmd = m_DemoPlayer->GetLastCommand();
