@@ -477,11 +477,12 @@ void MenuItem::OpenCascadeMenu()
 //-----------------------------------------------------------------------------
 void MenuItem::SetUserData( const KeyValues* data )
 {
-	if ( m_pUserData )
-		m_pUserData->deleteThis();
+	// copy before freeing, data may be the current user data
+	KeyValues* oldData = m_pUserData;
+	m_pUserData = data ? data->MakeCopy() : NULL;
 
-	if ( data )
-		m_pUserData = data->MakeCopy();
+	if ( oldData )
+		oldData->deleteThis();
 }
 
 bool MenuItem::IsItemArmed()
