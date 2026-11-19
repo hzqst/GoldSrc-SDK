@@ -133,3 +133,17 @@ endif()
 foreach(scenario IN LISTS cd_thread_scenarios)
 	add_test(NAME cd_thread_${scenario} COMMAND cd_thread_tests ${scenario})
 endforeach()
+
+# The software and dedicated engines are linked with .def files that re-export
+# VGUI1 symbols, some of them forwarded to vgui.dll. Check the built DLLs, so
+# a VGUI header or vgui.def change that drops one of them is caught before the
+# engine fails to load. Build sw_engine and swds before running CTest.
+if(MSVC AND TARGET sw_engine AND TARGET swds)
+	get_filename_component(GOLDSRC_MSVC_BIN_DIR "${CMAKE_LINKER}" DIRECTORY)
+	find_program(GOLDSRC_DUMPBIN dumpbin HINTS "${GOLDSRC_MSVC_BIN_DIR}" REQUIRED)
+	add_test(NAME engine_def_exports
+		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/engine_def_exports_tests.py"
+			--dumpbin "${GOLDSRC_DUMPBIN}"
+			--module "$<TARGET_FILE:sw_engine>" "${GOLDSRC_ROOT}/engine/sw_engine.def"
+			--module "$<TARGET_FILE:swds>" "${GOLDSRC_ROOT}/swds/swds.def")
+endif()
