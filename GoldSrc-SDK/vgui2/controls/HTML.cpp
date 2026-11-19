@@ -560,7 +560,7 @@ void HTML::BrowserNeedsPaint( int textureid, int wide, int tall, const unsigned 
 
 void HTML::BrowserSetHTMLTitle( const char* title )
 {
-	PostMessage( GetParent(), new KeyValues( "OnSetHTMLTitle", "title", title ), 0.0f );
+	PostMessage( GetVParent(), new KeyValues( "OnSetHTMLTitle", "title", title ), 0.0f );
 	OnSetHTMLTitle( title );
 }
 

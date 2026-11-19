@@ -1289,12 +1289,16 @@ void Frame::OnKeyCodeTyped( KeyCode code )
 			VPANEL embedded = surface()->GetEmbeddedPanel();
 			if ( embedded != 0 )
 			{
-				Panel* embeddedPanel = ipanel()->GetPanel( embedded, GetModuleName() );
-				if ( embeddedPanel != nullptr )
+				// reload the data file
+				scheme()->ReloadSchemes();
+
+				// the embedded panel never resolves to a Panel, so make its top level children of this module
+				// reload their scheme, it will chain down to their child panels
+				for ( int i = 0; i < ipanel()->GetChildCount( embedded ); i++ )
 				{
-					// reload the data file
-					scheme()->ReloadSchemes();
-					embeddedPanel->InvalidateLayout( false, true );
+					Panel* topLevel = ipanel()->GetPanel( ipanel()->GetChild( embedded, i ), GetModuleName() );
+					if ( topLevel != nullptr )
+						topLevel->InvalidateLayout( false, true );
 				}
 			}
 			return;

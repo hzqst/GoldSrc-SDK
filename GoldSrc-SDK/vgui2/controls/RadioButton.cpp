@@ -338,7 +338,8 @@ void RadioButton::OnRadioButtonChecked( int tabPosition )
 //-----------------------------------------------------------------------------
 RadioButton* RadioButton::FindBestRadioButton( int direction )
 {
-	Panel* parent = GetParent();
+	// walk the siblings by VPANEL, the parent may belong to another controls module
+	VPANEL parent = GetVParent();
 	if ( !parent )
 		return NULL;
 
@@ -346,9 +347,9 @@ RadioButton* RadioButton::FindBestRadioButton( int direction )
 	int highestRadio = 0;
 
 	// find the radio button to go to next
-	for ( int i = 0; i < parent->GetChildCount(); i++ )
+	for ( int i = 0; i < ipanel()->GetChildCount( parent ); i++ )
 	{
-		Panel* childPanel = parent->GetChild( i );
+		Panel* childPanel = ipanel()->GetPanel( ipanel()->GetChild( parent, i ), GetModuleName() );
 		if ( !childPanel )
 			continue;
 
