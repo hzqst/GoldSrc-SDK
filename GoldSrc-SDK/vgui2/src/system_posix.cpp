@@ -4,10 +4,7 @@
 #include "KeyValues.h"
 #include "vgui/ISystem.h"
 #include "vgui/IInputInternal.h"
-
-#ifdef _WIN32
-#include "utf8_windows.h"
-#endif
+#include "LocalizedStringTable.h"
 
 #include "SDL_clipboard.h"
 #include "SDL_stdinc.h"
@@ -15,6 +12,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
+
+#include <memory>
 
 #ifndef _WIN32
 #include <sys/statvfs.h>
@@ -32,33 +32,22 @@
 
 using namespace vgui2;
 
+// the SDL clipboard is always UTF-8, so convert with the string table rather than the process locale
+// returns the bytes written including the terminator, or the bytes required for a null buffer
 static int Q_UnicodeToUTF8( const wchar_t* pUnicode, char* pUTF8, int cubDestSizeInBytes )
 {
-#ifdef _WIN32
-	return windows_utf8::FromUnicode( pUnicode, pUTF8, cubDestSizeInBytes );
-#else
-	pUTF8[0] = 0;
-	int cchResult = wcstombs( pUTF8, pUnicode, cubDestSizeInBytes );
-	pUTF8[cubDestSizeInBytes - 1] = 0;
-	return cchResult;
-#endif
+	return g_StringTable.ConvertUnicodeToANSI( pUnicode, pUTF8, cubDestSizeInBytes );
 }
 
+// returns the wide characters written including the terminator, also when the text is cut to fit
 static int Q_UTF8ToUnicode( const char* pUTF8, wchar_t* pwchDest, int cubDestSizeInBytes )
 {
-#ifdef _WIN32
-	int result = windows_utf8::ToUnicode( pUTF8, pwchDest, cubDestSizeInBytes );
-	return result < 0 ? result : result + 1;
-#else
-	pwchDest[0] = 0;
-	int cchResult = mbstowcs( pwchDest, pUTF8, cubDestSizeInBytes / sizeof( wchar_t ) );
-	if ( cchResult >= 0 )
+	int cchResult = g_StringTable.ConvertANSIToUnicode( pUTF8, pwchDest, cubDestSizeInBytes );
+	if ( cchResult == 0 && pwchDest && cubDestSizeInBytes >= (int)sizeof( wchar_t ) )
 	{
-		cchResult++;
+		cchResult = (int)wcslen( pwchDest ) + 1;
 	}
-	pwchDest[( cubDestSizeInBytes / sizeof( wchar_t ) ) - 1] = 0;
 	return cchResult;
-#endif
 }
 
 #ifdef _WIN32
@@ -258,12 +247,32 @@ void CSystem::SetClipboardText( const char* text, int )
 	SDL_SetClipboardText( text );
 }
 
-void CSystem::SetClipboardText( const wchar_t* text, int )
+void CSystem::SetClipboardText( const wchar_t* text, int textLen )
 {
-	char szText[2048];
+	if ( !text || textLen <= 0 )
+	{
+		return;
+	}
 
-	Q_UnicodeToUTF8( text, szText, sizeof( szText ) );
-	SetClipboardText( szText, strlen( szText ) );
+	// copy at most textLen characters, as on Windows
+	size_t length = wcsnlen( text, textLen );
+	std::unique_ptr<wchar_t[]> unicode( new wchar_t[length + 1] );
+	wmemcpy( unicode.get(), text, length );
+	unicode[length] = 0;
+
+	int size = Q_UnicodeToUTF8( unicode.get(), NULL, 0 );
+	if ( size <= 0 )
+	{
+		return;
+	}
+
+	std::unique_ptr<char[]> utf8( new char[size] );
+	if ( Q_UnicodeToUTF8( unicode.get(), utf8.get(), size ) != size )
+	{
+		return;
+	}
+
+	SetClipboardText( utf8.get(), size - 1 );
 }
 
 int CSystem::GetClipboardTextCount()
@@ -299,12 +308,21 @@ int CSystem::GetClipboardText( int, char* buf, int bufLen )
 	return strlen( buf );
 }
 
-int CSystem::GetClipboardText( int offset, wchar_t* buf, int bufLen )
+int CSystem::GetClipboardText( int, wchar_t* buf, int bufLen )
 {
-	char szText[2048];
+	if ( !buf || bufLen < (int)sizeof( wchar_t ) )
+		return 0;
+	buf[0] = 0;
+	char* clip = SDL_GetClipboardText();
 
-	GetClipboardText( offset, szText, sizeof( szText ) );
-	return Q_UTF8ToUnicode( szText, buf, bufLen );
+	if ( !clip )
+	{
+		return 0;
+	}
+
+	int count = Q_UTF8ToUnicode( clip, buf, bufLen );
+	SDL_free( clip );
+	return count;
 }
 
 bool CSystem::SetRegistryString( const char*, const char* )
