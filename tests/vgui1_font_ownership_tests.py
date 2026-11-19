@@ -471,6 +471,10 @@ NONCOMPAT_SCENARIOS = ['reset-frees-unused', 'reset-keeps-used', 'shared-platfor
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}
 
+# The test reads private and protected members; MSVC's standard library
+# refuses keyword macros unless _ALLOW_KEYWORD_MACROS is set.
+ACCESS_DEFINES = ['private=public', 'protected=public', '_ALLOW_KEYWORD_MACROS']
+
 
 def main():
     failed = []
@@ -493,7 +497,7 @@ def main():
                 executable = compile_program(sources, executable,
                                              includes=[windows, VGUI / 'include', VGUI / 'common'] + includes,
                                              defines=['VGUI_EXPORTS', f'VGUI_ABI_COMPAT_MODE={mode}',
-                                                      f'TEST_WIN32={int(platform == "win32")}'],
+                                                      f'TEST_WIN32={int(platform == "win32")}'] + ACCESS_DEFINES,
                                              debug=True, sanitizers=['address'])
                 for scenario in scenarios:
                     # Without destructors the compatible build frees nothing;

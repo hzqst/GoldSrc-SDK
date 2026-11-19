@@ -440,9 +440,10 @@ def main():
         sources = [test_file] + sources + [VGUI / name for name in SOURCES]
         for mode, scenarios in MODES.items():
             executable = Path(folder) / f'test-compat{mode}.exe'
-            # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
+            # VGUI_STATIC keeps VGUIAPI from exporting on Windows: MSVC would emit the whole
+            # vtable of an exported class in every file, also for sources the test leaves out.
             executable = compile_program(sources, executable, includes=[VGUI / 'include', VGUI],
-                                         defines=['VGUI_EXPORTS', f'VGUI_ABI_COMPAT_MODE={mode}'], debug=True,
+                                         defines=['VGUI_STATIC', f'VGUI_ABI_COMPAT_MODE={mode}'], debug=True,
                                          sanitizers=['address'])
             # Without destructors the compatible build frees no panel; only check
             # its memory errors.
