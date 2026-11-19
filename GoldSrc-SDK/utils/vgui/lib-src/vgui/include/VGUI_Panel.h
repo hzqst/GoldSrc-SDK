@@ -29,6 +29,9 @@ class VGUIAPI Panel
 	friend class App;
 	friend class Image;
 	friend class Border;
+#if VGUI_ABI_COMPAT_MODE != 1
+	friend class FocusNavGroup;
+#endif
 
 public:
 	Panel();
