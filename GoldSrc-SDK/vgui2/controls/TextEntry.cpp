@@ -2467,7 +2467,8 @@ void TextEntry::CopySelected()
 			buf.AddToTail( ch );
 		}
 		buf.AddToTail( 0 );
-		system()->SetClipboardText( buf.Base(), x1 - x0 );
+		// the length counts the carriage returns added before each newline
+		system()->SetClipboardText( buf.Base(), buf.Count() - 1 );
 	}
 	// have to request focus if we used the menu
 	RequestFocus( 0 );

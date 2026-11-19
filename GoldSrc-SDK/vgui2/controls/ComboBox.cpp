@@ -21,15 +21,10 @@
 #include "vgui/IScheme.h"
 #include "vgui/KeyValues.h"
 
-#include <climits>
-#include <cstdlib>
 #include <cstring>
 #include <cwchar>
 #include <cwctype>
 #include <memory>
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 namespace vgui2
 {
@@ -302,19 +297,13 @@ bool ComboBox::UpdateItem( int itemID, const wchar_t* itemText, const KeyValues*
 
 int ComboBox::AddItem( const wchar_t* itemText, const KeyValues* userData )
 {
-#ifdef _WIN32
-	int len = WideCharToMultiByte( CP_UTF8, 0, itemText, -1, NULL, 0, NULL, NULL );
-#else
-	size_t bytes = std::wcstombs( NULL, itemText, 0 );
-	if ( bytes >= INT_MAX )
-		return m_pDropDown->GetInvalidMenuID();
-	int len = (int)bytes + 1;
-#endif
+	// size the buffer with the converter that fills it, independent of the process locale
+	int len = localize()->ConvertUnicodeToANSI( itemText, NULL, 0 );
 	if ( len <= 0 )
 		return m_pDropDown->GetInvalidMenuID();
 
 	std::unique_ptr<char[]> ansi( new char[len] );
-	if ( localize()->ConvertUnicodeToANSI( itemText, ansi.get(), len ) <= 0 )
+	if ( localize()->ConvertUnicodeToANSI( itemText, ansi.get(), len ) != len )
 		return m_pDropDown->GetInvalidMenuID();
 
 	return m_pDropDown->AddMenuItem( ansi.get(), itemText, new KeyValues( "SetText", "text", itemText ), this, userData );
