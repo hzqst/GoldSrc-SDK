@@ -88,8 +88,8 @@ CareerDifficultyDefinition::~CareerDifficultyDefinition()
 void CareerDifficultyDefinition::Reset()
 {
 	delete m_botManager;
-	delete m_vdfFilename;
-	delete m_botFilename;
+	delete[] m_vdfFilename;
+	delete[] m_botFilename;
 	for ( CharacterVec::iterator it = m_availableCharacters.begin(); it != m_availableCharacters.end(); ++it )
 		delete *it;
 	m_availableCharacters.clear();
