@@ -9,6 +9,8 @@ namespace
 
 using namespace vgui;
 
+const int BUTTON_COUNT = 2;
+
 class FooDefaultButtonSignal : public ActionSignal
 {
 public:
@@ -47,6 +49,23 @@ void FooDefaultButtonSignal::actionPerformed( Panel* )
 void FooDefaultScrollBarIntChangeSignal::intChanged( int, Panel* )
 {
 	_scrollBar->fireIntChangeSignal();
+}
+
+// The new part is added before the old one goes, so it may have been a child of
+// the old one. An old part that is not a child of the bar, as in a copied
+// ScrollBar, is not touched.
+void RemovePart( ScrollBar* scrollBar, Panel* part )
+{
+	if ( part == NULL || part->getParent() != scrollBar )
+	{
+		return;
+	}
+
+	scrollBar->removeChild( part );
+#if VGUI_ABI_COMPAT_MODE != 1
+	// The part's relay signal, which calls the bar, goes with it.
+	delete part;
+#endif
 }
 
 }
@@ -134,6 +153,11 @@ bool ScrollBar::hasFullRange()
 
 Button* ScrollBar::getButton( int index )
 {
+	if ( index < 0 || index >= BUTTON_COUNT )
+	{
+		return NULL;
+	}
+
 	return _button[index];
 }
 
@@ -163,7 +187,7 @@ void ScrollBar::validate()
 	{
 		int buttonOffset = 0;
 
-		for ( int i = 0; i < 2; ++i )
+		for ( int i = 0; i < BUTTON_COUNT; ++i )
 		{
 			if ( _button[i] != NULL && _button[i]->isVisible() )
 			{
@@ -186,29 +210,36 @@ void ScrollBar::validate()
 	setSize( wide, tall );
 }
 
+// With VGUI_ABI_COMPAT_MODE != 1 the bar owns its parts and deletes a replaced
+// one. Setting the current part again would add a second relay, so it does
+// nothing.
 void ScrollBar::setSlider( Slider* slider )
 {
-	if ( _slider != NULL )
+	if ( slider == NULL || slider == _slider )
 	{
-		removeChild( _slider );
+		return;
 	}
 
+	Slider* old = _slider;
 	_slider = slider;
 	addChild( _slider );
 	_slider->addIntChangeSignal( new FooDefaultScrollBarIntChangeSignal( this ) );
+	RemovePart( this, old );
 	validate();
 }
 
 void ScrollBar::setButton( Button* button, int index )
 {
-	if ( _button[index] != NULL )
+	if ( index < 0 || index >= BUTTON_COUNT || button == NULL || button == _button[0] || button == _button[1] )
 	{
-		removeChild( _button[index] );
+		return;
 	}
 
+	Button* old = _button[index];
 	_button[index] = button;
 	addChild( button );
 	button->addActionSignal( new FooDefaultButtonSignal( this, index ) );
+	RemovePart( this, old );
 	validate();
 }
 

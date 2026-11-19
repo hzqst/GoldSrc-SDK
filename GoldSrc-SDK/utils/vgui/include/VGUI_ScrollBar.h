@@ -33,6 +33,8 @@ public:
 	virtual void    setSize(int wide,int tall);
 	virtual bool    isVertical();
 	virtual bool    hasFullRange();
+	// With VGUI_ABI_COMPAT_MODE != 1 the bar owns its slider and buttons and
+	// deletes a replaced one.
 	virtual void    setButton(Button* button,int index);
 	virtual Button* getButton(int index);
 	virtual void    setSlider(Slider* slider);
