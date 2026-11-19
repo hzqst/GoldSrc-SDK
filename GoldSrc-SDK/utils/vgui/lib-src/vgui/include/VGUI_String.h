@@ -12,6 +12,7 @@ public:
 	String();
 	String( const char* text );
 	String( const String& src );
+	String& operator=( const String& src );
 	~String();
 
 private:

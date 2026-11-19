@@ -8,27 +8,55 @@ namespace vgui
 
 String::String()
 {
-	_text = (char*)"";
+	_text = new char[1];
+	_text[0] = 0;
 }
 
 String::String( const char* text )
 {
 	int count;
 
+	if ( text == NULL )
+	{
+		text = "";
+	}
+
 	count = getCount( text );
 	_text = new char[count + 1];
-	memcpy( _text, text, count );
-	_text[count] = 0;
+	memcpy( _text, text, count + 1 );
 }
 
 String::String( const String& src )
 {
-	_text = src._text;
+	int count;
+
+	count = getCount( src._text );
+	_text = new char[count + 1];
+	memcpy( _text, src._text, count + 1 );
 }
 
 String::~String()
 {
+	delete[] _text;
 	_text = NULL;
+}
+
+String& String::operator=( const String& src )
+{
+	char* text;
+	int   count;
+
+	if ( this == &src )
+	{
+		return *this;
+	}
+
+	count = getCount( src._text );
+	text = new char[count + 1];
+	memcpy( text, src._text, count + 1 );
+	delete[] _text;
+	_text = text;
+	return *this;
 }
 
 int String::getCount( const char* text )
@@ -49,36 +77,24 @@ int String::getCount()
 
 String String::operator+( String text )
 {
-	int count1;
-	int count2;
-	String* newString;
-
-	count1 = getCount();
-	count2 = getCount( text._text );
-
-	newString = new String();
-	newString->_text = new char[count1 + count2 + 1];
-	memcpy( newString->_text, _text, count1 );
-	memcpy( newString->_text + count1, text._text, count2 );
-	newString->_text[count1 + count2] = 0;
-	return *newString;
+	return operator+( text._text );
 }
 
 String String::operator+( const char* text )
 {
-	int count1;
-	int count2;
-	String* newString;
+	int    count1;
+	int    count2;
+	String result;
 
 	count1 = getCount();
 	count2 = getCount( text );
 
-	newString = new String();
-	newString->_text = new char[count1 + count2 + 1];
-	memcpy( newString->_text, _text, count1 );
-	memcpy( newString->_text + count1, text, count2 );
-	newString->_text[count1 + count2] = 0;
-	return *newString;
+	delete[] result._text;
+	result._text = new char[count1 + count2 + 1];
+	memcpy( result._text, _text, count1 );
+	memcpy( result._text + count1, text, count2 );
+	result._text[count1 + count2] = 0;
+	return result;
 }
 
 bool String::operator==( String text )
