@@ -16,6 +16,7 @@ add_test(NAME vgui_game_controls COMMAND vgui_game_controls_tests)
 # One test per line, in alphabetical order, so that tests added in parallel rarely conflict.
 foreach(name IN ITEMS
 		commandmenu
+		common_q_strcpy
 		cstrike_avatar_image
 		cxx_toolchain
 		czeror_material_file
