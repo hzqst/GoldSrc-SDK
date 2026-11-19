@@ -104,6 +104,7 @@ Menu* CreateCommandMenu( char* menuFile, int playerTeam, Panel* parent )
 			KeyValues* userData = new KeyValues( "Command", "command", command, "map", map );
 			KeyValues* action = new KeyValues( "SetText", "text", text );
 			currentMenu->AddMenuItem( text, action, parent, userData );
+			userData->deleteThis();
 		}
 		else if ( teamOnly == -1 )
 		{
@@ -116,12 +117,14 @@ Menu* CreateCommandMenu( char* menuFile, int playerTeam, Panel* parent )
 			}
 			else
 				currentMenu->AddMenuItem( text, action, parent, userData );
+			userData->deleteThis();
 		}
 		else if ( teamOnly == playerTeam )
 		{
 			KeyValues* userData = new KeyValues( "Command", "command", command, "map", map );
 			KeyValues* action = new KeyValues( "SetText", "text", text );
 			currentMenu->AddMenuItem( text, action, parent, userData );
+			userData->deleteThis();
 		}
 		data = gEngfuncs.COM_ParseFile( data, token );
 	}
