@@ -80,6 +80,9 @@ Panel::~Panel()
 	if ( app != NULL )
 		app->panelDeleted( this );
 
+	if ( _focusNavGroup != NULL )
+		_focusNavGroup->removePanel( this );
+
 	delete _border;
 	_border = NULL;
 
@@ -119,7 +122,7 @@ Panel& Panel::operator=( const Panel& other )
 	_visible = other._visible;
 	_layout = other._layout;
 	_needsLayout = other._needsLayout;
-	_focusNavGroup = other._focusNavGroup;
+	setFocusNavGroup( other._focusNavGroup );
 	_autoFocusNavEnabled = other._autoFocusNavEnabled;
 	_needsRepaint = other._needsRepaint;
 	_enabled = other._enabled;
@@ -512,6 +515,12 @@ void Panel::invalidateLayout( bool layoutNow )
 
 void Panel::setFocusNavGroup( FocusNavGroup* focusNavGroup )
 {
+#if VGUI_ABI_COMPAT_MODE != 1
+	// With VGUI_ABI_COMPAT_MODE == 1 a deleted group does not clear
+	// _focusNavGroup, so the old group may be gone and is not touched.
+	if ( _focusNavGroup != NULL && _focusNavGroup != focusNavGroup )
+		_focusNavGroup->removePanel( this );
+#endif
 	_focusNavGroup = focusNavGroup;
 	if ( focusNavGroup != NULL )
 		focusNavGroup->addPanel( this );
