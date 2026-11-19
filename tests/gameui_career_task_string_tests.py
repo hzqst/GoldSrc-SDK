@@ -1,4 +1,4 @@
-"""Exercise the production career task ConstructStringWithReordering with reordered, odd and overflowing formats.
+"""Exercise the production career task ConstructStringWithReordering with reordered, repeated, odd and overflowing formats.
 
 Run: python tests/gameui_career_task_string_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -67,6 +67,15 @@ static void ParametersFollowTheirPlaceholders() {
  puts("PASS: parameters follow their placeholders, unknown placeholders are kept and a NULL format is empty");
 }
 
+static void RepeatedPlaceholdersTakeTheirOwnParameter() {
+ assert(std::wstring(L"a a") == Construct(L"%s1 %s1", 32, L"a", L"b"));
+ assert(std::wstring(L"b a b") == Construct(L"%s2 %s1 %s2", 32, L"a", L"b"));
+ assert(std::wstring(L"a b a b") == Construct(L"%s1 %s2 %s1 %s2", 32, L"a", L"b"));
+ assert(std::wstring(L"b b a") == Construct(L"%s2 %s2 %s1", 32, L"a", L"b"));
+ assert(std::wstring(L"abab") == Construct(L"%s1%s1%s1", 5, L"ab", L"b"));
+ puts("PASS: a placeholder that appears more than once takes its own parameter every time, also when cut");
+}
+
 static void OtherPercentSequencesAreKept() {
  assert(std::wstring(L"100%s done a") == Construct(L"100%s done %s1", 32, L"a", L"b"));
  assert(std::wstring(L"%sx%s") == Construct(L"%sx%s", 32, L"a", L"b"));
@@ -96,6 +105,7 @@ static void MissingParametersAndTinyBuffersStaySafe() {
 
 int main() {
  ParametersFollowTheirPlaceholders();
+ RepeatedPlaceholdersTakeTheirOwnParameter();
  OtherPercentSequencesAreKept();
  LongOutputIsCutBeforeTheLastCharacter();
  MissingParametersAndTinyBuffersStaySafe();
