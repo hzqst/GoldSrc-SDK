@@ -26,6 +26,7 @@ def defines(source, names):
 
 
 STUBS = r'''
+#include <algorithm>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
