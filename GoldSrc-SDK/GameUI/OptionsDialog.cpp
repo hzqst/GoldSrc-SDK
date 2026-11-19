@@ -43,6 +43,10 @@ COptionsDialog::COptionsDialog( vgui2::Panel* parent )
 	g_pTaskbar->AddTask( GetVPanel() );
 	SetTitle( "#GameUI_Options", true );
 
+	// a tab takes the sheet's tab width when its page is added, so it is set first
+	vgui2::PropertySheet* sheet = GetPropertySheet();
+	sheet->SetTabWidth( GetProportionalScaledValue( 72 ) );
+
 	if ( ModInfo()->IsMultiplayerOnly() && !ModInfo()->IsSinglePlayerOnly() )
 		AddPage( new COptionsSubMultiplayer( this ), "#GameUI_Multiplayer" );
 
@@ -64,8 +68,6 @@ COptionsDialog::COptionsDialog( vgui2::Panel* parent )
 		AddPage( new COptionsSubMultiplayer( this ), "#GameUI_Multiplayer" );
 
 	SetApplyButtonVisible( true );
-	vgui2::PropertySheet* sheet = GetPropertySheet();
-	sheet->SetTabWidth( GetProportionalScaledValue( 72 ) );
 }
 
 //-----------------------------------------------------------------------------
