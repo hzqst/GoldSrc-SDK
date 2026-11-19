@@ -28,6 +28,10 @@ public:
 	virtual bool isVertical();
 	virtual bool hasFullRange();
 
+	// The slider and buttons are children of the bar. With
+	// VGUI_ABI_COMPAT_MODE != 1 the bar owns them and deletes a replaced one.
+	// NULL, an index other than 0 or 1, the current part or the other button
+	// is ignored.
 	virtual void setButton( Button* button, int index );
 	virtual Button* getButton( int index );
 	virtual void setSlider( Slider* slider );
