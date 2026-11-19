@@ -1049,6 +1049,9 @@ void RichText::LayoutVerticalScrollBarSlider()
 
 	int fontTall = surface()->GetFontTall( _font );
 	int displayLines = tall / ( _drawOffsetY + fontTall );
+	// a positive height shorter than one line still shows part of a line, so keep a one line window instead of resetting the scroll position
+	if ( displayLines == 0 && tall > 0 )
+		displayLines = 1;
 	int lineCount = m_LineBreaks.Count();
 	if ( displayLines < lineCount && displayLines != 0 )
 	{
