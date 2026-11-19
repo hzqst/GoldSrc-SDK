@@ -1,4 +1,4 @@
-"""Exercise the production Career difficulty definition load and release with stubs and tracking allocation operators.
+"""Exercise the production Career mission pack and difficulty definition load and release with stubs and tracking allocation operators.
 
 Run: python tests/gameui_career_difficulty_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -23,6 +23,7 @@ def function(source, signature):
 
 STUBS = r'''
 #include <cassert>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -64,6 +65,27 @@ void operator delete[](void* p, size_t) noexcept { operator delete[](p); }
 #include "shared_util.h"
 #include "StringUtils.h"
 #define CAREER_MAX_PATH 260
+#ifndef _WIN32
+#include <strings.h>
+#define stricmp strcasecmp
+#endif
+char* SharedVarArgs(const char* format, ...) {
+ static char text[CAREER_MAX_PATH];
+ va_list args;
+ va_start(args, format);
+ vsnprintf(text, sizeof(text), format, args);
+ va_end(args);
+ return text;
+}
+class Color {
+public:
+ Color() {}
+ Color(int r, int g, int b, int a) { m_color[0] = r; m_color[1] = g; m_color[2] = b; m_color[3] = a; }
+ int GetRawColor() const { return m_color[0] | m_color[1] << 8 | m_color[2] << 16 | m_color[3] << 24; }
+ unsigned char& operator[](int index) { return m_color[index]; }
+private:
+ unsigned char m_color[4] = {};
+};
 // maps have no tasks, so the task parser is never asked for a token
 void SharedSetQuoteChar(char) {}
 bool SharedTokenWaiting(const char* buffer) { return buffer && *buffer; }
@@ -112,13 +134,21 @@ namespace vgui2 {
 struct FileSystem { bool FileExists(const char* path) { return files.count(path) != 0; } } fileSystemStub;
 FileSystem* filesystem() { return &fileSystemStub; }
 }
-// every existing difficulty file has 2 characters, costs 5 and 3, and one group of 3 maps with a bot each
+// every existing overview names its title and the Bots.db profile; every existing difficulty file
+// has 2 characters, costs 5 and 3, and one group of 3 maps with a bot each
+std::string overviewTitle;
 class KeyValues {
 public:
- explicit KeyValues(const char* name, const char* value = "") : m_name(name), m_value(value) {}
+ explicit KeyValues(const char* name, const char* value = "") : m_name(name), m_value(value), m_wvalue(m_value.begin(), m_value.end()) {}
  ~KeyValues() { for (KeyValues* key : m_keys) delete key; }
  bool LoadFromFile(vgui2::FileSystem*, const char* path, const char*) {
   if (!files.count(path)) return false;
+  if (strstr(path, "overview.vdf")) {
+   Add(new KeyValues("Title", overviewTitle.c_str()));
+   Add(new KeyValues("Author", "Author"));
+   Add(new KeyValues("BotProfile", "Bots.db"));
+   return true;
+  }
   Add(new KeyValues("Characters", "Alpha Bravo"));
   KeyValues* costs = Add(new KeyValues("CostAvailability"));
   costs->Add(new KeyValues("1", "5"));
@@ -137,6 +167,8 @@ public:
  }
  int GetInt(const char* name, int value) { KeyValues* key = FindKey(name, false); return key ? atoi(key->m_value.c_str()) : value; }
  const char* GetString(const char* name, const char* value) { KeyValues* key = FindKey(name, false); return key ? key->m_value.c_str() : value; }
+ const wchar_t* GetWString(const char* name, const wchar_t* value) { KeyValues* key = FindKey(name, false); return key ? key->m_wvalue.c_str() : value; }
+ Color GetColor(const char*) { return Color(); }
  KeyValues* GetFirstSubKey() { return m_keys.empty() ? nullptr : m_keys[0]; }
  KeyValues* GetNextKey() {
   if (!m_parent) return nullptr;
@@ -148,6 +180,7 @@ public:
 private:
  KeyValues* Add(KeyValues* key) { key->m_parent = this; m_keys.push_back(key); return key; }
  std::string m_name, m_value;
+ std::wstring m_wvalue;
  KeyValues* m_parent = nullptr;
  std::vector<KeyValues*> m_keys;
 };
@@ -159,8 +192,9 @@ static const int LOADED_CHARACTERS = 2 + 3;
 static const size_t LOADED_COSTS = 3;
 
 static void UseFiles(bool vdf) {
- files = {"MissionPacks/Test/Bots.db"};
+ files = {"MissionPacks/Test/Bots.db", "MissionPacks/Test/overview.vdf"};
  if (vdf) files.insert("MissionPacks/Test/Easy.vdf");
+ overviewTitle = "First";
 }
 
 static void AssertLoaded(CareerDifficultyDefinition* definition) {
@@ -239,23 +273,76 @@ static void DestructorFreesEveryLoad() {
  AssertReleased();
  puts("PASS: destroying loaded difficulty definitions frees every load");
 }
+
+static void MissionPackInitAgainReplacesThePreviousLoad() {
+ UseFiles(true);
+ {
+  CareerDefinition definition;
+  assert(definition.Init("Test"));
+  const int loadedArrays = LiveArrays();
+  overviewTitle = "Second";
+  assert(definition.Init("Test"));
+  assert(loadedArrays == LiveArrays() && MAX_CAREER_DIFFICULTY == liveManagers);
+  assert(0 == wcscmp(L"Second", definition.GetTitle()) && 0 == strcmp("Second", definition.GetAsciiTitle()));
+  assert(0 == strcmp("MissionPacks/Test/Save", definition.GetSaveDirectory()));
+ }
+ AssertReleased();
+ puts("PASS: mission pack Init without Reset frees the previous strings and difficulties");
+}
+
+static void MissingOverviewDropsThePreviousMissionPack() {
+ UseFiles(true);
+ {
+  CareerDefinition definition;
+  assert(definition.Init("Test"));
+  files.erase("MissionPacks/Test/overview.vdf");
+  assert(!definition.Init("Test"));
+  assert(!definition.GetTitle() && !definition.GetAsciiTitle() && !definition.GetAuthor() && !definition.GetBotFilename());
+  assert(0 == liveManagers && 0 == liveCharacters && 0 == liveMaps);
+ }
+ AssertReleased();
+ puts("PASS: mission pack Init that cannot load the overview keeps nothing from the previous load");
+}
+
+static void MissingBotProfileDropsThePreviousBotFilename() {
+ UseFiles(true);
+ {
+  CareerDefinition definition;
+  assert(definition.Init("Test"));
+  assert(0 == strcmp("Bots.db", definition.GetBotFilename()));
+  files.erase("MissionPacks/Test/Bots.db");
+  assert(definition.Init("Test"));
+  assert(!definition.GetBotFilename());
+ }
+ AssertReleased();
+ puts("PASS: mission pack Init without the bot profile drops the previous bot filename");
+}
 '''
 
 
 def main():
     definitions = (ROOT / 'GameUI/CareerDefinitions.cpp').read_text(encoding='utf-8')
     header = (ROOT / 'GameUI/CareerDefinitions.h').read_text(encoding='utf-8')
-    start = header.index('class CareerDifficultyDefinition')
+    career = (ROOT / 'common/GameUI/ICareerUI.h').read_text(encoding='utf-8')
     code = STUBS
-    code += header[start:header.index('};', start) + 2] + '\n'
+    code += re.search(r'enum CareerDifficultyType\n\{[^}]*\};', career).group(0) + '\n'
+    for name in ['class CareerDifficultyDefinition\n', 'class CareerDefinition\n']:
+        start = header.index(name)
+        code += header[start:header.index('\n};', start) + 3] + '\n'
     for signature in ['CareerDifficultyDefinition::CareerDifficultyDefinition(',
                       'CareerDifficultyDefinition::~CareerDifficultyDefinition(',
                       'void CareerDifficultyDefinition::Reset(',
-                      'void CareerDifficultyDefinition::Init(']:
+                      'void CareerDifficultyDefinition::Init(',
+                      'CareerDefinition::CareerDefinition(',
+                      'void CareerDefinition::Reset(',
+                      'CareerDefinition::~CareerDefinition(',
+                      'bool CareerDefinition::Init(']:
         code += function(definitions, signature) + '\n'
     code += TESTS
     code += ('\nint main() { ResetFreesTheBotFilenameAsAnArray(); InitAgainReplacesThePreviousLoad(); '
-             'ReloadKeepsOneCostList(); MissingFileDropsThePreviousLoad(); DestructorFreesEveryLoad(); }\n')
+             'ReloadKeepsOneCostList(); MissingFileDropsThePreviousLoad(); DestructorFreesEveryLoad(); '
+             'MissionPackInitAgainReplacesThePreviousLoad(); MissingOverviewDropsThePreviousMissionPack(); '
+             'MissingBotProfileDropsThePreviousBotFilename(); }\n')
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-career-difficulty-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code, encoding='utf-8')
