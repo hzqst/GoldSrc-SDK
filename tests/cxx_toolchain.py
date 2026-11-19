@@ -10,7 +10,9 @@ The compiler is chosen in this order:
 
 Requested sanitizers are probed, and the largest supported subset is enabled.
 MSVC only supports AddressSanitizer; its runtime DLL is copied next to the
-executable.
+executable. MSVC names an object after its source, so sources with the same
+name, such as win32/Font.cpp and Font.cpp, are compiled into separate object
+folders and then linked together.
 """
 import functools
 import os
@@ -52,18 +54,21 @@ class Toolchain:
         output = Path(output)
         return output.with_suffix('.exe') if os.name == 'nt' and not output.suffix else output
 
+    def msvc_link_arguments(self, debug, sanitizers):
+        # AddressSanitizer needs debug information to report source lines.
+        arguments = ['/Zi'] if debug or 'address' in sanitizers else []
+        return arguments + (['/fsanitize=address'] if 'address' in sanitizers else [])
+
+    def msvc_compile_arguments(self, executable, includes, defines, debug, sanitizers, strict_warnings):
+        arguments = ['/nologo', '/EHsc', '/std:c++17', '/permissive-', '/Zc:preprocessor']
+        arguments += [f'/I{include}' for include in includes] + [f'/D{define}' for define in defines]
+        if debug or 'address' in sanitizers:
+            arguments.append(f'/Fd:{executable.with_suffix(".pdb")}')
+        if strict_warnings:
+            arguments += ['/W4', '/WX']
+        return arguments + self.msvc_link_arguments(debug, sanitizers)
+
     def arguments(self, sources, executable, includes, defines, debug, sanitizers, strict_warnings):
-        if self.msvc:
-            arguments = ['/nologo', '/EHsc', '/std:c++17', '/permissive-', '/Zc:preprocessor']
-            arguments += [f'/I{include}' for include in includes] + [f'/D{define}' for define in defines]
-            # AddressSanitizer needs debug information to report source lines.
-            if debug or 'address' in sanitizers:
-                arguments += ['/Zi', f'/Fd:{executable.with_suffix(".pdb")}']
-            if strict_warnings:
-                arguments += ['/W4', '/WX']
-            if 'address' in sanitizers:
-                arguments.append('/fsanitize=address')
-            return arguments + [f'/Fo:{executable.parent}{os.sep}'] + sources + [f'/Fe:{executable}']
         arguments = ['-std=c++17'] + [f'-I{include}' for include in includes] + [f'-D{define}' for define in defines]
         if debug:
             arguments.append('-g')
@@ -78,14 +83,33 @@ class Toolchain:
     def run(self, sources, output, includes=(), defines=(), debug=False, sanitizers=(), strict_warnings=False,
             check=True):
         executable = self.executable(output)
+        if self.msvc:
+            compile_arguments = self.msvc_compile_arguments(executable, includes, defines, debug, sanitizers,
+                                                            strict_warnings)
+            objects = []
+            for index, batch in enumerate(object_batches(sources)):
+                folder = executable.parent / f'{executable.stem}-objects{index}'
+                folder.mkdir(exist_ok=True)
+                command = self.command + compile_arguments + ['/c', f'/Fo:{folder}{os.sep}'] + batch
+                if not self.execute(command, check):
+                    return None
+                objects += [str(folder / (Path(source).stem + '.obj')) for source in batch]
+            command = self.command + ['/nologo'] + self.msvc_link_arguments(debug, sanitizers) + objects + [
+                f'/Fe:{executable}']
+            if not self.execute(command, check):
+                return None
+            if 'address' in sanitizers:
+                self.copy_asan_runtime(executable.parent)
+            return executable
         command = self.command + self.arguments([str(source) for source in sources], executable, includes, defines,
                                                 debug, sanitizers, strict_warnings)
+        return executable if self.execute(command, check) else None
+
+    def execute(self, command, check):
         result = subprocess.run(command, env=self.env, check=check,
                                 stdout=None if check else subprocess.DEVNULL,
                                 stderr=None if check else subprocess.DEVNULL)
-        if result.returncode == 0 and self.msvc and 'address' in sanitizers:
-            self.copy_asan_runtime(executable.parent)
-        return executable if result.returncode == 0 else None
+        return result.returncode == 0
 
     def copy_asan_runtime(self, folder):
         env = self.env or os.environ
@@ -97,6 +121,21 @@ class Toolchain:
         for runtime in (Path(env['VCToolsInstallDir']) / 'bin' / f'Host{host}' / target).glob(
                 'clang_rt.asan_dynamic-*.dll'):
             shutil.copy(runtime, folder)
+
+
+def object_batches(sources):
+    """Split sources into batches with no two sources of the same name, so each
+    batch can be compiled into one object folder. Windows names are compared
+    without case."""
+    batches = []
+    for source in sources:
+        name = Path(source).stem.lower()
+        batch = next((batch for batch in batches if name not in batch), None)
+        if batch is None:
+            batch = {}
+            batches.append(batch)
+        batch[name] = str(source)
+    return [list(batch.values()) for batch in batches]
 
 
 def environment_path(env):
