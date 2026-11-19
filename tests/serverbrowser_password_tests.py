@@ -123,8 +123,8 @@ static void PasswordsThatCouldAddCommandsOrDoNotFitAreRefused() {
 
 
 def main():
-    source = (ROOT / 'ServerBrowser/DialogGameInfo.cpp').read_text(encoding='utf-8')
-    header = (ROOT / 'ServerBrowser/DialogGameInfo.h').read_text(encoding='utf-8')
+    source = (ROOT / 'serverbrowser/DialogGameInfo.cpp').read_text(encoding='utf-8')
+    header = (ROOT / 'serverbrowser/DialogGameInfo.h').read_text(encoding='utf-8')
     code = '#define PASSWORD_SIZE ' + array_size(header, 'm_szPassword') + '\n' + STUBS
     code += ''.join(function(source, signature) for signature in (
         'void CDialogGameInfo::OnJoinServerWithPassword(', 'void CDialogGameInfo::ApplyConnectCommand(',

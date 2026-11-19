@@ -27,6 +27,7 @@ STUBS = r'''
 #include <cctype>
 #include <cstdio>
 #include <cstring>
+#include <cwctype>
 #include <ctime>
 #include <map>
 #include <string>
