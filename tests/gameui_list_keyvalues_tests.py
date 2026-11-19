@@ -26,6 +26,7 @@ STUBS = r'''
 #include <cassert>
 #include <cctype>
 #include <climits>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -213,7 +214,9 @@ static HANDLE FindFirstFile(const char*, WIN32_FIND_DATA* data) {
 }
 static void FindClose(HANDLE) {}
 static bool UTIL_IsUnquotedCommandArgument(const char*) { return true; }
+#ifndef _WIN32
 static char* strlwr(char* text) { for (char* c = text; *c; ++c) *c = (char)tolower((unsigned char)*c); return text; }
+#endif
 class CChangeGameDialog {
 public:
  ~CChangeGameDialog() { delete m_pModList; }
