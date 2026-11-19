@@ -57,3 +57,5 @@
   ```
 
 用 `ctest ... -R <regex>` 只运行匹配的测试。新增 Python 测试时，在 `GoldSrcTests.cmake` 的列表中按字母序单独占一行登记。
+
+例外：`engine_def_exports`（仅 Windows MSVC）用 `dumpbin` 检查构建出的 `sw.dll` / `swds.dll` 与 `sw_engine.def` / `swds.def` 的导出名和序号是否一致，以及转发导出的目标是否真的存在于 `vgui.dll`。它依赖构建产物，运行 CTest 前需先构建 `sw_engine` 和 `swds`。
