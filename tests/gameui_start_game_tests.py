@@ -65,6 +65,8 @@ struct KeyValues {
   auto it = values.find(key);
   return it == values.end() ? defaultValue : it->second.c_str();
  }
+ KeyValues* MakeCopy() const { return new KeyValues(*this); }
+ void deleteThis() { delete this; }
  std::map<std::string, std::string> values;
 };
 
@@ -78,12 +80,14 @@ public:
 static CModInfo g_modInfo;
 CModInfo* ModInfo() { return &g_modInfo; }
 
+// AddItem keeps a copy like the production ListPanel, so the caller frees its own KeyValues
 struct ListPanel {
- void AddItem(KeyValues* data, int, bool, bool) { items.push_back(data); }
+ ~ListPanel() { for (KeyValues* copy : copies) copy->deleteThis(); }
+ void AddItem(const KeyValues* data, int, bool, bool) { copies.push_back(data->MakeCopy()); items.push_back(copies.back()); }
  int GetSelectedItemsCount() { return selected < 0 ? 0 : 1; }
  int GetSelectedItem(int) { return selected; }
  KeyValues* GetItem(int index) { return items[index]; }
- std::vector<KeyValues*> items;
+ std::vector<KeyValues*> items, copies;
  int selected = -1;
 };
 

@@ -40,8 +40,9 @@ ROOT = Path(__file__).resolve().parents[1]
 GAME_SHARED = ROOT / 'GoldSrc-SDK/game_shared'
 CONTROLS = ['vgui_listbox.cpp', 'vgui_scrollbar2.cpp', 'vgui_slider2.cpp', 'vgui_grid.cpp', 'vgui_checkbutton2.cpp']
 VGUI_SOURCES = ['ImagePanel.cpp']
-# The client controls use the public headers' null and the MSVC _vsnprintf.
-CONTROL_DEFINES = ['null=0', '_vsnprintf=vsnprintf']
+# The client controls use the public headers' null and the MSVC _vsnprintf,
+# which only needs a replacement where stdio.h does not declare it.
+CONTROL_DEFINES = ['null=0'] + ([] if os.name == 'nt' else ['_vsnprintf=vsnprintf'])
 
 TESTS = r'''
 #include <cstdio>
@@ -222,9 +223,10 @@ def main():
                    + [GAME_SHARED / name for name in CONTROLS])
         for mode, scenarios in MODES.items():
             executable = Path(folder) / f'test-compat{mode}.exe'
-            # VGUI_EXPORTS matches the vgui target, so VGUIAPI is not dllimport on Windows.
+            # VGUI_STATIC keeps VGUIAPI from exporting on Windows: MSVC would emit the whole
+            # vtable of an exported class in every file, also for sources the test leaves out.
             executable = compile_program(sources, executable, includes=[VGUI / 'include', VGUI, GAME_SHARED],
-                                         defines=['VGUI_EXPORTS', f'VGUI_ABI_COMPAT_MODE={mode}'] + CONTROL_DEFINES,
+                                         defines=['VGUI_STATIC', f'VGUI_ABI_COMPAT_MODE={mode}'] + CONTROL_DEFINES,
                                          debug=True, sanitizers=['address'])
             # Without destructors the compatible build frees no panel; only check
             # its memory errors.
