@@ -437,7 +437,12 @@ Panel* PropertySheet::HasHotkey( wchar_t key )
 	{
 		for ( int i = 0; i < _activePage->GetChildCount(); i++ )
 		{
-			Panel* panel = _activePage->GetChild( i )->HasHotkey( key );
+			// a child from another VGUI module cannot be resolved here
+			Panel* child = _activePage->GetChild( i );
+			if ( !child )
+				continue;
+
+			Panel* panel = child->HasHotkey( key );
 			if ( panel )
 				return panel;
 		}
