@@ -39,6 +39,7 @@ public:
 	virtual bool RequestFocusPrev( VPANEL panel ); // if panel is NULL, then the tab increment is based last known panel that had key focus
 	virtual bool RequestFocusNext( VPANEL panel );
 	virtual Panel* GetCurrentFocus();
+	VPANEL GetCurrentFocusVPanel(); // the focused panel of any controls module, or NULL once it is deleted
 	virtual VPANEL SetCurrentFocus( VPANEL panel, VPANEL defaultPanel ); // returns the Default panel
 	// sets the panel that owns this FocusNavGroup to be the root in the focus traversal heirarchy
 	// focus change via KEY_TAB will only travel to children of this main panel

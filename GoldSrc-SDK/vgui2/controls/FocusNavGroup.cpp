@@ -76,6 +76,11 @@ Panel* FocusNavGroup::GetCurrentFocus()
 	return ipanel()->GetPanel( _currentFocus.Get(), GetControlsModuleName() );
 }
 
+VPANEL FocusNavGroup::GetCurrentFocusVPanel()
+{
+	return _currentFocus.Get();
+}
+
 void FocusNavGroup::SetDefaultButton( Panel* panel )
 {
 	if ( !panel && !_defaultButton.Get() )

@@ -15,6 +15,7 @@
 #include "Button.h"
 #include "FocusNavGroup.h"
 #include "controls.h"
+#include "vgui/IPanel.h"
 #include "vgui/IVGui.h"
 #include "vgui/KeyValues.h"
 #include <cstring>
@@ -207,13 +208,13 @@ KeyValues* WizardPanel::GetWizardData()
 
 void WizardPanel::ResetKeyFocus()
 {
-	Panel* focus = GetFocusNavGroup().GetCurrentFocus();
+	VPANEL focus = GetFocusNavGroup().GetCurrentFocusVPanel();
 	if ( focus )
 	{
-		if ( focus->IsEnabled() && focus->IsVisible() )
-			focus->RequestFocus( 0 );
+		if ( ipanel()->IsEnabled( focus ) && ipanel()->IsVisible( focus ) )
+			ipanel()->RequestFocus( focus, 0 );
 		else
-			focus->RequestFocusNext( 0 );
+			ipanel()->RequestFocusNext( focus, 0 );
 	}
 	ResetDefaultButton();
 }
