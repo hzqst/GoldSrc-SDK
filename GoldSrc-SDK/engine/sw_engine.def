@@ -163,7 +163,7 @@ EXPORTS
     ??_7InputStream@vgui@@6B@ @161 DATA
     ??_7Panel@vgui@@6B@ @162 DATA
     ??_7Scheme@vgui@@6B@ @163 DATA
-    ??_7SurfaceBase@vgui@@6B@ @164 DATA
+    ??_7SurfaceBase@vgui@@6B@=vgui.??_7SurfaceBase@vgui@@6B@ @164 DATA
     ?addElement@?$Dar@D@vgui@@QAEXD@Z @165
     ?addElement@?$Dar@H@vgui@@QAEXH@Z @166
     ?addElement@?$Dar@PAD@vgui@@QAEXPAD@Z @167
