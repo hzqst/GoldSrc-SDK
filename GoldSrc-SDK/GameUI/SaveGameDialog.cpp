@@ -377,6 +377,7 @@ void CSaveGameDialog::ScanSavedGames()
 	newSave->SetInt( "timestamp", INT_MAX );
 	newSave->SetString( "ShortName", FindSaveSlot() );
 	m_pGameList->AddItem( newSave, 0, false, false );
+	newSave->deleteThis();
 	// sort the list
 	m_pGameList->SortList();
 	// set the first item to be selected

@@ -78,16 +78,17 @@ void CPlayerListDialog::Activate()
 		// get the player info from the engine
 		char szPlayerIndex[32];
 		sprintf( szPlayerIndex, "%d", playerIndex );
-		// collate user data then add it to the table
-		KeyValues* player = new KeyValues( szPlayerIndex );
 		const char* playerName = engine->PlayerInfo_ValueForKey( playerIndex, "name" );
 		if ( !playerName || !playerName[0] )
 			continue;
 
+		// collate user data then add it to the table
+		KeyValues* player = new KeyValues( szPlayerIndex );
 		player->SetString( "Name", playerName );
 		player->SetInt( "index", playerIndex );
 		// add to the list
 		m_pPlayerList->AddItem( player, 0, false, false );
+		player->deleteThis();
 	}
 
 	// refresh player properties info

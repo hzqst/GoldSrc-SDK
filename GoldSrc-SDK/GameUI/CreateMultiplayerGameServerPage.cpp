@@ -133,7 +133,9 @@ void CCreateMultiplayerGameServerPage::LoadMapList()
 {
 	m_pMapList->DeleteAllItems();
 	m_MapNames.RemoveAll();
-	m_pMapList->AddItem( "#GameUI_RandomMap", new KeyValues( "data", "mapname", "< Random Map >" ) );
+	KeyValues* randomMap = new KeyValues( "data", "mapname", "< Random Map >" );
+	m_pMapList->AddItem( "#GameUI_RandomMap", randomMap );
+	randomMap->deleteThis();
 
 	bool halfLife = !stricmp( ModInfo()->GetGameDescription(), "Half-Life" );
 	LoadMaps( halfLife ? NULL : "GAME" );
@@ -146,6 +148,7 @@ void CCreateMultiplayerGameServerPage::LoadMapList()
 	{
 		KeyValues* data = new KeyValues( "data", "mapname", m_MapNames.Element( i ).String() );
 		m_pMapList->AddItem( m_MapNames.Element( i ).String(), data );
+		data->deleteThis();
 	}
 
 	m_MapNames.RemoveAll();
