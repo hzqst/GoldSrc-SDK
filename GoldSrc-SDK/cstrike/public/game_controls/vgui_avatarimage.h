@@ -79,6 +79,12 @@ public:
 	CAvatarImagePanel( vgui2::Panel* parent, const char* name );
 	~CAvatarImagePanel() override;
 	void SetPlayer( int player, vgui2::IImage* blockedImage, vgui2::IImage* friendImage );
+	using BaseClass::SetImage;
+	void SetImage( vgui2::IImage* image ) override;
 	void PaintBackground() override;
 	bool IsValid();
+
+private:
+	// the avatar image this panel created and deletes, NULL once another image replaces it
+	CAvatarImage* m_pAvatarImage;
 };

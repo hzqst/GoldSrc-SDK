@@ -139,12 +139,30 @@ void CAvatarImage::SetAdditive( bool additive )
 	m_bAdditive = additive;
 }
 
+bool CAvatarImage::IsValid()
+{
+	return m_bValid;
+}
+
 CAvatarImagePanel::CAvatarImagePanel( vgui2::Panel* parent, const char* name ) : vgui2::ImagePanel( parent, name )
 {
+	m_pAvatarImage = NULL;
 }
 
 CAvatarImagePanel::~CAvatarImagePanel()
 {
+	delete m_pAvatarImage;
+}
+
+void CAvatarImagePanel::SetImage( vgui2::IImage* image )
+{
+	// the panel shows the new image before the avatar image it replaces is deleted
+	BaseClass::SetImage( image );
+	if ( image != m_pAvatarImage )
+	{
+		delete m_pAvatarImage;
+		m_pAvatarImage = NULL;
+	}
 }
 
 void CAvatarImagePanel::PaintBackground()
@@ -155,17 +173,20 @@ void CAvatarImagePanel::PaintBackground()
 
 void CAvatarImagePanel::SetPlayer( int player, vgui2::IImage* blockedImage, vgui2::IImage* friendImage )
 {
-	if ( GetImage() )
-		( (CAvatarImage*)GetImage() )->ClearAvatarSteamID();
+	if ( m_pAvatarImage )
+		m_pAvatarImage->ClearAvatarSteamID();
 	if ( player && SteamUtils() )
 	{
 		VGuiLibraryPlayer_t info = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( player );
 		if ( info.m_nSteamID )
 		{
 			CSteamID steamID( info.m_nSteamID );
-			if ( !GetImage() )
-				SetImage( new CAvatarImage( blockedImage, friendImage ) );
-			CAvatarImage* image = (CAvatarImage*)GetImage();
+			if ( !m_pAvatarImage )
+			{
+				m_pAvatarImage = new CAvatarImage( blockedImage, friendImage );
+				SetImage( m_pAvatarImage );
+			}
+			CAvatarImage* image = m_pAvatarImage;
 			image->SetAvatarSteamID( steamID );
 			image->m_iAvatarWidth = 32;
 			image->m_iAvatarHeight = 32;
@@ -178,4 +199,9 @@ void CAvatarImagePanel::SetPlayer( int player, vgui2::IImage* blockedImage, vgui
 			SetSize( image->GetWide(), GetTall() );
 		}
 	}
+}
+
+bool CAvatarImagePanel::IsValid()
+{
+	return m_pAvatarImage && m_pAvatarImage->IsValid();
 }

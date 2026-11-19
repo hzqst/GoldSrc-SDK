@@ -1,4 +1,4 @@
-"""Exercise the production cstrike CAvatarImage texture lifetime and the VGUI2 ImageList image ownership with tracked textures and images.
+"""Exercise the production cstrike CAvatarImage texture lifetime, the VGUI2 ImageList image ownership and the CAvatarImagePanel avatar image ownership with tracked textures and images.
 
 Run: python tests/cstrike_avatar_image_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -28,7 +28,9 @@ def declaration(source, signature):
 STUBS = r'''
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <set>
 #include <vector>
 
@@ -45,11 +47,33 @@ struct Color {
 enum EUniverse { k_EUniverseInvalid };
 enum EAccountType { k_EAccountTypeInvalid };
 static const unsigned k_unSteamUserDefaultInstance = 1;
+typedef uint32_t uint32;
+typedef uint64_t uint64;
 class CSteamID {
 public:
  CSteamID() {}
+ explicit CSteamID(uint64) {}
  CSteamID(unsigned, unsigned, EUniverse, EAccountType) {}
 };
+
+// every player has a 1x1 avatar, so a panel given a player creates a texture
+struct ISteamFriends { int GetMediumFriendAvatar(CSteamID) { return 1; } };
+struct ISteamUtils {
+ bool GetImageSize(int, uint32* width, uint32* height) { *width = *height = 1; return true; }
+ bool GetImageRGBA(int, unsigned char*, int) { return true; }
+};
+static ISteamFriends steamFriends;
+static ISteamUtils steamUtils;
+static ISteamFriends* SteamFriends() { return &steamFriends; }
+static ISteamUtils* SteamUtils() { return &steamUtils; }
+
+struct VGuiLibraryPlayer_t { uint64 m_nSteamID; };
+struct IClientVGUI { VGuiLibraryPlayer_t CallEnghudGetPlayerInfo(int player) { return VGuiLibraryPlayer_t{ (uint64)player }; } };
+struct IViewPort { IClientVGUI* GetClientDllInterface() { return &client; } IClientVGUI client; };
+static IViewPort viewPort;
+static IViewPort* gViewPortInterface = &viewPort;
+
+#define DECLARE_CLASS_SIMPLE_NAMED( className, baseClassName, baseMapName ) public: typedef baseClassName BaseClass
 
 namespace vgui2 {
 class IImage {
@@ -73,6 +97,24 @@ public:
 };
 static ISurface theSurface;
 static ISurface* surface() { return &theSurface; }
+
+struct Panel {};
+
+// only the members the avatar panel uses; like ImagePanel it shows the image without owning it
+class ImagePanel : public Panel {
+public:
+ ImagePanel(Panel*, const char*) {}
+ virtual ~ImagePanel() {}
+ virtual void SetImage(IImage* image) { m_pImage = image; }
+ void SetImage(IImage* image, bool) { SetImage(image); }
+ virtual IImage* GetImage() { return m_pImage; }
+ virtual void PaintBackground() {}
+ void SetSize(int, int) {}
+ int GetTall() { return 32; }
+ // sets the image of the "image" key like ImagePanel::ApplySchemeSettings
+ void ApplySchemeImage(IImage* image) { SetImage(image); }
+ IImage* m_pImage = nullptr;
+};
 }
 
 template <class T> class CUtlVector {
@@ -95,6 +137,20 @@ struct TrackedAvatar : CAvatarImage {
 };
 
 static const unsigned char RGBA[4] = { 255, 255, 255, 255 };
+
+// an image the scheme or the caller owns, which the panel must neither delete nor treat as an avatar
+struct ForeignImage : vgui2::IImage {
+ ForeignImage() { liveAvatars.insert(this); }
+ ~ForeignImage() override { assert(liveAvatars.erase(this)); }
+ void Paint() override {}
+ void SetPos(int, int) override {}
+ void GetContentSize(int& width, int& height) override { width = height = 0; }
+ void GetSize(int& width, int& height) override { width = height = 0; }
+ void SetSize(int, int) override { ++sizes; }
+ void SetColor(Color) override {}
+ void SetAdditive(bool) override {}
+ int sizes = 0;
+};
 
 static void AnAvatarFreesItsTexture() {
  {
@@ -144,11 +200,61 @@ static void AnOwningImageListDeletesItsAvatars() {
  puts("PASS: an image list made with deleteImagesWhenDone deletes its avatar images and their textures, and one without keeps them");
 }
 
+static void APanelDeletesTheAvatarItCreated() {
+ {
+  CAvatarImagePanel panel(nullptr, "avatar");
+  assert(!panel.IsValid());
+  panel.SetPlayer(1, nullptr, nullptr);
+  vgui2::IImage* first = panel.GetImage();
+  assert(first && panel.IsValid());
+  panel.SetPlayer(2, nullptr, nullptr);
+  panel.SetPlayer(3, nullptr, nullptr);
+  assert(first == panel.GetImage());
+  assert(1 == liveTextures.size());
+  panel.SetPlayer(0, nullptr, nullptr);
+  assert(first == panel.GetImage() && !panel.IsValid());
+ }
+ assert(0 == liveTextures.size());
+ {
+  CAvatarImagePanel panel(nullptr, "avatar");
+ }
+ puts("PASS: an avatar panel creates one avatar image for all its players and deletes it with its texture when destroyed");
+}
+
+static void AReplacedAvatarIsDeletedAndTheNewImageIsKept() {
+ ForeignImage foreign, scheme;
+ {
+  CAvatarImagePanel panel(nullptr, "avatar");
+  panel.SetPlayer(1, nullptr, nullptr);
+  panel.SetImage(&foreign);
+  assert(&foreign == panel.GetImage());
+  assert(0 == liveTextures.size());
+  assert(!panel.IsValid());
+  int sizes = foreign.sizes;
+  panel.SetPlayer(0, nullptr, nullptr);
+  assert(&foreign == panel.GetImage() && sizes == foreign.sizes);
+  panel.SetPlayer(2, nullptr, nullptr);
+  assert(&foreign != panel.GetImage() && panel.IsValid());
+  assert(sizes == foreign.sizes && 1 == liveTextures.size());
+  panel.ApplySchemeImage(&scheme);
+  assert(&scheme == panel.GetImage() && 0 == liveTextures.size());
+  panel.SetPlayer(3, nullptr, nullptr);
+  panel.SetImage(nullptr, true);
+  assert(!panel.GetImage() && 0 == liveTextures.size());
+  panel.SetImage(&foreign);
+ }
+ assert(1 == liveAvatars.count(&foreign) && 1 == liveAvatars.count(&scheme));
+ assert(0 == liveTextures.size());
+ puts("PASS: an avatar panel deletes its avatar image once another image replaces it, keeps the scheme or caller image and creates a new avatar image for the next player");
+}
+
 int main() {
  setvbuf(stdout, nullptr, _IONBF, 0);
  AnAvatarFreesItsTexture();
  AReinitializedAvatarFreesItsPreviousTexture();
  AnOwningImageListDeletesItsAvatars();
+ APanelDeletesTheAvatarItCreated();
+ AReplacedAvatarIsDeletedAndTheNewImageIsKept();
 }
 '''
 
@@ -171,15 +277,22 @@ def main():
     code += '}\n'
     code += 'class CCSClientScoreBoardDialog;\nclass CAvatarImagePanel;\n'
     code += declaration(avatar_header, 'class CAvatarImage : public vgui2::IImage') + '\n'
+    code += declaration(avatar_header, 'class CAvatarImagePanel : public vgui2::ImagePanel') + '\n'
     for signature in ('CAvatarImage::CAvatarImage( vgui2::IImage* blockedImage, vgui2::IImage* friendImage )',
                       'CAvatarImage::~CAvatarImage()', 'void CAvatarImage::ClearAvatarSteamID()',
                       'void CAvatarImage::InitFromRGBA( const unsigned char* rgba, int width, int height )',
                       'void CAvatarImage::SetPos( int x, int y )', 'void CAvatarImage::GetContentSize( int& width, int& height )',
                       'void CAvatarImage::GetSize( int& width, int& height )', 'void CAvatarImage::SetSize( int width, int height )',
-                      'void CAvatarImage::SetColor( Color color )', 'void CAvatarImage::SetAdditive( bool additive )'):
+                      'void CAvatarImage::SetColor( Color color )', 'void CAvatarImage::SetAdditive( bool additive )',
+                      'bool CAvatarImage::SetAvatarSteamID( CSteamID steamID )', 'bool CAvatarImage::IsValid()',
+                      'CAvatarImagePanel::CAvatarImagePanel( vgui2::Panel* parent, const char* name )',
+                      'CAvatarImagePanel::~CAvatarImagePanel()', 'void CAvatarImagePanel::SetImage( vgui2::IImage* image )',
+                      'void CAvatarImagePanel::PaintBackground()',
+                      'void CAvatarImagePanel::SetPlayer( int player, vgui2::IImage* blockedImage, vgui2::IImage* friendImage )',
+                      'bool CAvatarImagePanel::IsValid()'):
         code += function(avatar, signature) + '\n'
-    # painting draws with the surface and is not under test
-    code += 'void CAvatarImage::Paint() {}\n'
+    # painting draws with the surface and the friend status asks Steam, neither is under test
+    code += 'void CAvatarImage::Paint() {}\nvoid CAvatarImage::UpdateFriendStatus() {}\n'
     code += TESTS
     with tempfile.TemporaryDirectory(prefix='goldsrc-cstrike-avatar-image-') as folder:
         folder = Path(folder)
