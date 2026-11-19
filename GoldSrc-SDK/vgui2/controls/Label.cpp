@@ -1014,13 +1014,20 @@ void Label::ApplySettings( KeyValues* settings )
 		if ( text[0] == '%' && text[strlen( text ) - 1] == '%' )
 		{
 			// it's a variable, set it to be a special variable localized string
-			wchar_t unicodeVariable[256];
-			localize()->ConvertANSIToUnicode( text, unicodeVariable, sizeof( unicodeVariable ) );
 			char token[256];
-			_snprintf( token, sizeof( token ), "#var_%s", text );
-			token[sizeof( token ) - 1] = 0;
-			localize()->AddString( token + 1, unicodeVariable, "" );
-			SetText( token );
+			int tokenLength = _snprintf( token, sizeof( token ), "#var_%s", text );
+			if ( tokenLength >= 0 && tokenLength < (int)sizeof( token ) )
+			{
+				wchar_t unicodeVariable[256];
+				localize()->ConvertANSIToUnicode( text, unicodeVariable, sizeof( unicodeVariable ) );
+				localize()->AddString( token + 1, unicodeVariable, "" );
+				SetText( token );
+			}
+			else
+			{
+				// too long for a variable token; show it as plain text instead of a truncated token that could collide
+				SetText( text );
+			}
 		}
 		else
 		{
