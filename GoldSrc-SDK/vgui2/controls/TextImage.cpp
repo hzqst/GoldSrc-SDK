@@ -153,6 +153,8 @@ void TextImage::SetText( const char* text )
 	if ( !text )
 		text = "";
 
+	// new text replaces any localized text, so it must not keep the previous symbol
+	_unlocalizedTextSymbol = INVALID_STRING_INDEX;
 	if ( text[0] == '#' )
 	{
 		_unlocalizedTextSymbol = localize()->FindIndex( text + 1 );
@@ -169,8 +171,12 @@ void TextImage::SetText( const char* text )
 	SetText( unicode );
 }
 
-void TextImage::SetText( const wchar_t* text )
+void TextImage::SetText( const wchar_t* text, bool bClearUnlocalizedSymbol )
 {
+	// custom text replaces the localized text, so changing dialog variables must not rebuild it from the old symbol
+	if ( bClearUnlocalizedSymbol )
+		_unlocalizedTextSymbol = INVALID_STRING_INDEX;
+
 	if ( !text )
 		text = L"";
 

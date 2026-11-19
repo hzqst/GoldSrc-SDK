@@ -1,4 +1,5 @@
-"""Exercise the production VGUI2 Label::ApplySettings variable labelText handling with variables that fit, fill or overflow the token buffer, and the labelText Label::GetSettings saves back.
+"""Exercise the production VGUI2 Label::ApplySettings variable labelText handling with variables that fit, fill or overflow the token buffer, and the labelText Label::GetSettings saves back, the text Label::RequestInfo answers, the localized symbol Label::OnSetText leaves
+and the title Frame::GetSettings saves back.
 
 ApplySettings covers both the Windows legacy _snprintf, which leaves a filled buffer unterminated and returns -1 when it truncates, and C99 snprintf.
 
@@ -104,15 +105,29 @@ struct Localize {
 static Localize table;
 Localize* localize() { return &table; }
 
+// a key holds named values, or a single string or wide string value like a KeyValues leaf
 struct KeyValues {
+ enum types_t { TYPE_NONE, TYPE_STRING, TYPE_WSTRING };
  std::map<std::string, std::string> values;
  const char* GetString(const char* name, const char* defaultValue) {
+  if (!name) return type == TYPE_STRING ? value.c_str() : defaultValue;
   auto found = values.find(name);
   return found == values.end() ? defaultValue : found->second.c_str();
  }
  int GetInt(const char*, int defaultValue) { return defaultValue; }
  void SetString(const char* name, const char* value) { values[name] = value; }
  void SetInt(const char*, int) {}
+ const char* GetName() { return name.c_str(); }
+ void SetWString(const char* key, const wchar_t* value) { wideValues[key] = value; }
+ KeyValues* FindKey(const char* key, bool) { return child && child->name == key ? child : nullptr; }
+ types_t GetDataType(const char*) { return type; }
+ const wchar_t* GetWString(const char*, const wchar_t* defaultValue) { return type == TYPE_WSTRING ? wideValue.c_str() : defaultValue; }
+ std::string name;
+ std::map<std::string, std::wstring> wideValues;
+ KeyValues* child = nullptr;
+ types_t type = TYPE_NONE;
+ std::string value;
+ std::wstring wideValue;
 };
 
 struct IScheme { HFont GetFontEx(const char*, bool, bool) { return 0; } };
@@ -123,31 +138,47 @@ struct ISchemeManager {
 static ISchemeManager schemes;
 ISchemeManager* scheme() { return &schemes; }
 
+template <class T> struct CUtlVector : std::vector<T> { void RemoveAll() { this->clear(); } };
+
 // only the members the labelText round trip uses
 class TextImage {
 public:
  ~TextImage() { delete[] _utext; }
  void SetText(const char* text);
- void SetText(const wchar_t* text) {
-  delete[] _utext;
-  _utext = new wchar_t[wcslen(text) + 1];
-  wcscpy(_utext, text);
- }
+ void SetText(const wchar_t* text, bool bClearUnlocalizedSymbol = false);
+ void RecalculateNewLinePositions() {}
+ StringIndex_t GetUnlocalizedTextSymbol() { return _unlocalizedTextSymbol; }
  void GetText(char* buffer, int bufferSize);
+ void GetText(wchar_t* buffer, int bufferLength);
  void GetUnlocalizedText(char* buffer, int bufferSize);
  void SetWrap(bool) {}
  wchar_t* _utext = nullptr;
+ size_t _textBufferLen = 0;
+ size_t _textLen = 0;
  StringIndex_t _unlocalizedTextSymbol = INVALID_STRING_INDEX;
+ bool m_bRecalculateTruncation = false;
+ bool m_bWrap = false;
+ CUtlVector<wchar_t*> m_LineBreaks;
 };
 
 class Panel {
 public:
  void ApplySettings(KeyValues*) {}
  void GetSettings(KeyValues*) {}
+ bool RequestInfo(KeyValues*) { return false; }
  const char* GetName() { return "panel"; }
 };
 
-// only the members ApplySettings and GetSettings use
+// only the members GetSettings uses
+class Frame : public Panel {
+public:
+ ~Frame() { delete _title; }
+ void GetSettings(KeyValues* settings);
+ bool _drawTitleBar = true;
+ TextImage* _title = nullptr;
+};
+
+// only the members ApplySettings, GetSettings, RequestInfo and OnSetText use
 class Label : public Panel {
 public:
  enum Alignment { a_northwest, a_north, a_northeast, a_west, a_center, a_east, a_southwest, a_south, a_southeast };
@@ -155,10 +186,16 @@ public:
  ~Label() { delete[] _associateName; delete[] _fontOverrideName; }
  void ApplySettings(KeyValues* settings);
  void GetSettings(KeyValues* settings);
+ bool RequestInfo(KeyValues* output);
+ void OnSetText(KeyValues* params);
  void SetText(const char* text) {
   this->text = text;
   _textImage->SetText(text);
  }
+ void SetText(const wchar_t* text, bool bClearUnlocalizedSymbol = false);
+ wchar_t CalculateHotkey(const wchar_t*) { return 0; }
+ void SetHotkey(wchar_t) {}
+ void Repaint() {}
  void SetContentAlignment(Alignment) {}
  void SetTextColorState(EColorState) {}
  HScheme GetScheme() { return 0; }
@@ -274,6 +311,63 @@ static void TextBeyondTheTextImageIsCutOnLoad() {
  puts("PASS: plain labelText longer than 1023 characters is saved as the 1023 characters TextImage keeps");
 }
 
+static void RequestedTextFillsTheBuffer() {
+ Reset();
+ const size_t capacity = 256;
+ for (size_t length : {capacity - 1, capacity, (size_t)300}) {
+  std::wstring text(length, L'R');
+  Label label;
+  label._textImage->SetText(text.c_str());
+  KeyValues output;
+  output.name = "GetText";
+  assert(label.RequestInfo(&output));
+  assert(text.substr(0, capacity - 1) == output.wideValues["text"]);
+ }
+ puts("PASS: RequestInfo answers texts of 255, 256 and 300 characters with up to 255 characters");
+}
+
+static void OnSetTextClearsTheLocalizedSymbol() {
+ Reset();
+ vgui2::table.strings = {{"Token", L"localized"}};
+ for (KeyValues::types_t type : {KeyValues::TYPE_STRING, KeyValues::TYPE_WSTRING}) {
+  Label label;
+  label.SetText("#Token");
+  assert(0 == label._textImage->GetUnlocalizedTextSymbol());
+  KeyValues text;
+  text.name = "text";
+  text.type = type;
+  text.value = "custom";
+  text.wideValue = L"custom";
+  KeyValues params;
+  params.child = &text;
+  label.OnSetText(&params);
+  assert(vgui2::INVALID_STRING_INDEX == label._textImage->GetUnlocalizedTextSymbol());
+  KeyValues saved;
+  label.GetSettings(&saved);
+  assert("custom" == saved.values["labelText"]);
+ }
+ Label label;
+ label.SetText("#Token");
+ label.SetText(L"rebuilt");
+ assert(0 == label._textImage->GetUnlocalizedTextSymbol());
+ puts("PASS: OnSetText with string or wide string text clears the #token symbol, SetText of wide text keeps it by default");
+}
+
+static void FrameTitleFillsTheBuffer() {
+ Reset();
+ const size_t capacity = 256;
+ for (size_t length : {capacity - 2, capacity - 1, (size_t)300}) {
+  std::string title(length, 'T');
+  vgui2::Frame frame;
+  frame._title = new vgui2::TextImage;
+  frame._title->SetText(title.c_str());
+  KeyValues saved;
+  frame.GetSettings(&saved);
+  assert(title.substr(0, capacity - 1) == saved.values["title"]);
+ }
+ puts("PASS: Frame::GetSettings saves titles of 254, 255 and 300 characters with up to 255 characters");
+}
+
 int main() {
  for (bool legacy : {true, false}) {
   legacySnprintf = legacy;
@@ -285,6 +379,9 @@ int main() {
  }
  SavedLabelTextIsKept();
  TextBeyondTheTextImageIsCutOnLoad();
+ RequestedTextFillsTheBuffer();
+ OnSetTextClearsTheLocalizedSymbol();
+ FrameTitleFillsTheBuffer();
 }
 '''
 
@@ -295,9 +392,16 @@ def main():
     code = STUBS
     code += function(image, 'void TextImage::SetText( const char* text )') + '\n'
     code += function(image, 'void TextImage::GetText( char* buffer, int bufferSize )') + '\n'
+    code += function(image, 'void TextImage::SetText( const wchar_t* text, bool bClearUnlocalizedSymbol )') + '\n'
+    code += function(image, 'void TextImage::GetText( wchar_t* buffer, int bufferLength )') + '\n'
     code += function(image, 'void TextImage::GetUnlocalizedText( char* buffer, int bufferSize )') + '\n'
     code += function(label, 'void Label::ApplySettings( KeyValues* settings )') + '\n'
     code += function(label, 'void Label::GetSettings( KeyValues* settings )') + '\n'
+    code += function(label, 'bool Label::RequestInfo( KeyValues* output )') + '\n'
+    code += function(label, 'void Label::SetText( const wchar_t* text, bool bClearUnlocalizedSymbol )') + '\n'
+    code += function(label, 'void Label::OnSetText( KeyValues* params )') + '\n'
+    frame = (ROOT / 'vgui2/controls/Frame.cpp').read_text(encoding='utf-8')
+    code += function(frame, 'void Frame::GetSettings( KeyValues* settings )') + '\n'
     code += '}\n'
     code += TESTS
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui2-label-variable-') as folder:
