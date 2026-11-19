@@ -527,8 +527,34 @@ int ListPanel::GetNumColumnHeaders() const
 //-----------------------------------------------------------------------------
 void ListPanel::SetImageList( ImageList* imageList, bool deleteImageListWhenDone )
 {
-	if ( m_pImageList && m_bDeleteImageListWhenDone )
-		delete m_pImageList;
+	if ( imageList != m_pImageList )
+	{
+		// a column header shows an image of the old list, it takes the image at the same index of the new list
+		if ( m_pImageList )
+		{
+			for ( unsigned char column = m_ColumnsData.Head(); column != m_ColumnsData.InvalidIndex();
+				column = m_ColumnsData.Next( column ) )
+			{
+				Button* header = m_ColumnsData[column].m_pHeader;
+				IImage* image = header->GetImageCount() ? header->GetImageAtIndex( 0 ) : NULL;
+				if ( !image )
+					continue;
+
+				for ( int index = 0; index < m_pImageList->GetImageCount(); index++ )
+				{
+					if ( m_pImageList->GetImage( index ) != image )
+						continue;
+
+					bool valid = imageList && imageList->IsValidIndex( index );
+					header->SetImageAtIndex( 0, valid ? imageList->GetImage( index ) : NULL, 0 );
+					break;
+				}
+			}
+		}
+
+		if ( m_bDeleteImageListWhenDone )
+			delete m_pImageList;
+	}
 	m_bDeleteImageListWhenDone = deleteImageListWhenDone;
 	m_pImageList = imageList;
 }
