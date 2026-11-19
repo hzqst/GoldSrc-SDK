@@ -561,7 +561,8 @@ void Frame::SetTitle( const char* title, bool surfaceTitle )
 		if ( index != static_cast<StringIndex_t>( -1 ) )
 		{
 			const wchar_t* localized = localize()->GetValueByIndex( index );
-			std::wcsncpy( unicodeTitle, localized, 128 );
+			std::wcsncpy( unicodeTitle, localized, sizeof( unicodeTitle ) / sizeof( unicodeTitle[0] ) - 1 );
+			unicodeTitle[sizeof( unicodeTitle ) / sizeof( unicodeTitle[0] ) - 1] = 0;
 		}
 	}
 	else
