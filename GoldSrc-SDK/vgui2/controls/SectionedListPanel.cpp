@@ -156,10 +156,16 @@ public:
 		if ( sectionID != m_iSectionID )
 		{
 			// free any existing textimage list 
-			FreeTextImages( this, m_TextImages );
-			InvalidateLayout( false, false );
+			ResetColumnImages();
 		}
 		m_iSectionID = sectionID;
+	}
+
+	// drops the column images, the next layout rebuilds them and takes the image list images again
+	void ResetColumnImages()
+	{
+		FreeTextImages( this, m_TextImages );
+		InvalidateLayout( false, false );
 	}
 
 	void SetData( const KeyValues* data )
@@ -244,6 +250,8 @@ SectionedListPanel::SectionedListPanel( Panel* parent, const char* name ) : Pane
 
 SectionedListPanel::~SectionedListPanel()
 {
+	if ( m_bDeleteImageListWhenDone )
+		delete m_pImageList;
 }
 
 //-----------------------------------------------------------------------------
@@ -597,6 +605,15 @@ int SectionedListPanel::GetItemIDFromRow( int row )
 //-----------------------------------------------------------------------------
 void SectionedListPanel::SetImageList( ImageList* imageList, bool deleteImageListWhenDone )
 {
+	if ( imageList != m_pImageList )
+	{
+		// the items show images of the old list, so they drop them before it is deleted
+		for ( int i = m_Items.Head(); i != m_Items.InvalidIndex(); i = m_Items.Next( i ) )
+			m_Items[i]->ResetColumnImages();
+
+		if ( m_bDeleteImageListWhenDone )
+			delete m_pImageList;
+	}
 	m_bDeleteImageListWhenDone = deleteImageListWhenDone;
 	m_pImageList = imageList;
 }
