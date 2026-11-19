@@ -77,14 +77,16 @@ SurfaceBase::SurfaceBase( Panel* embeddedPanel )
 	_emulatedCursor->setParent( _embeddedPanel );
 }
 
-// Like the original memberwise copy, except for the mode names.
+// A copy is detached: the root, its emulated cursor and App's registration stay
+// with the original, so App never ticks the copy and deleting the root cannot
+// leave the copy pointing at it. It only gets the mode names.
 SurfaceBase::SurfaceBase( const SurfaceBase& other )
 {
 	_needsSwap = other._needsSwap;
 	_app = other._app;
-	_embeddedPanel = other._embeddedPanel;
-	_emulatedCursor = other._emulatedCursor;
-	_currentCursor = other._currentCursor;
+	_embeddedPanel = NULL;
+	_emulatedCursor = NULL;
+	_currentCursor = NULL;
 	copyModeInfo( _modeInfoDar, other._modeInfoDar );
 }
 
@@ -95,11 +97,8 @@ SurfaceBase& SurfaceBase::operator=( const SurfaceBase& other )
 		return *this;
 	}
 
+	// The surface keeps its own root, emulated cursor and current cursor.
 	_needsSwap = other._needsSwap;
-	_app = other._app;
-	_embeddedPanel = other._embeddedPanel;
-	_emulatedCursor = other._emulatedCursor;
-	_currentCursor = other._currentCursor;
 	copyModeInfo( _modeInfoDar, other._modeInfoDar );
 	return *this;
 }
@@ -163,13 +162,24 @@ App* SurfaceBase::getApp()
 	return App::getInstance();
 }
 
+// A copy, or a surface whose root was deleted, has no root and no emulated cursor.
 void SurfaceBase::setEmulatedCursorVisible( bool state )
 {
+	if ( _emulatedCursor == NULL )
+	{
+		return;
+	}
+
 	_emulatedCursor->setVisible( state );
 }
 
 void SurfaceBase::setEmulatedCursorPos( int x, int y )
 {
+	if ( _emulatedCursor == NULL )
+	{
+		return;
+	}
+
 	getPanel()->removeChild( _emulatedCursor );
 	getPanel()->addChild( _emulatedCursor );
 	getPanel()->screenToLocal( x, y );

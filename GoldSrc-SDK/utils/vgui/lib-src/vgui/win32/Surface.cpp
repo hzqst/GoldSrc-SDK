@@ -189,6 +189,11 @@ LRESULT CALLBACK SurfaceWindowProc( HWND window, UINT message, WPARAM wParam, LP
 
 Surface::~Surface()
 {
+	// A copy has no window.
+	if ( _plat == NULL )
+	{
+		return;
+	}
 	if ( _plat->isFullscreen )
 	{
 		ChangeDisplaySettingsA( NULL, 0 );

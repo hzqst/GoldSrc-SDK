@@ -10,6 +10,20 @@ Surface::Surface( Panel* embeddedPanel ) : SurfaceBase( embeddedPanel )
 	recreateContext();
 }
 
+// A copy has no window, like the detached SurfaceBase it copies; it can only be
+// assigned or destroyed.
+Surface::Surface( const Surface& other ) : SurfaceBase( other )
+{
+	_plat = NULL;
+}
+
+// The surface keeps its own window.
+Surface& Surface::operator=( const Surface& other )
+{
+	SurfaceBase::operator=( other );
+	return *this;
+}
+
 void Surface::createPopup( Panel* embeddedPanel )
 {
 	embeddedPanel->setParent( NULL );

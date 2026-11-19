@@ -404,9 +404,14 @@ void App::surfaceBaseCreated( SurfaceBase* surfaceBase )
 // is not tied to a window.
 void App::surfaceBaseDeleted( SurfaceBase* surfaceBase )
 {
-	_surfaceBaseDar.removeElement( surfaceBase );
 	if ( capturedSurface == surfaceBase )
 		capturedSurface = NULL;
+	// A copied surface was never registered, and a surface whose root was
+	// deleted was unregistered after App forgot the panels of that tree.
+	if ( !_surfaceBaseDar.hasElement( surfaceBase ) )
+		return;
+
+	_surfaceBaseDar.removeElement( surfaceBase );
 	if ( _mouseArenaPanel != NULL )
 		internalSetMouseArena( 0, 0, 0, 0, false );
 	_oldMouseFocus = NULL;

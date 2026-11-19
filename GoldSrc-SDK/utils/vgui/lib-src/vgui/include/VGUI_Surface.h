@@ -14,6 +14,8 @@ class VGUIAPI Surface : public SurfaceBase
 {
 public:
 	Surface( Panel* embeddedPanel );
+	Surface( const Surface& other );
+	Surface& operator=( const Surface& other );
 #if defined( _WIN32 )
 	~Surface();
 #endif
