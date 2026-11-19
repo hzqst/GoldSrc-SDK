@@ -154,6 +154,11 @@ Button::Button( const Button& other ) : Label( other )
 
 Button::~Button()
 {
+	if ( _buttonGroup != NULL )
+	{
+		_buttonGroup->removeButton( this );
+	}
+
 	// Take the controller's signals off first so that ~Panel does not delete
 	// a controller that registered itself as one.
 	if ( _buttonController != NULL )
@@ -209,6 +214,14 @@ bool Button::isSelected()
 
 void Button::setButtonGroup( ButtonGroup* buttonGroup )
 {
+#if VGUI_ABI_COMPAT_MODE != 1
+	// With VGUI_ABI_COMPAT_MODE == 1 a deleted group does not clear
+	// _buttonGroup, so the old group may be gone and is not touched.
+	if ( _buttonGroup != NULL && _buttonGroup != buttonGroup )
+	{
+		_buttonGroup->removeButton( this );
+	}
+#endif
 	_buttonGroup = buttonGroup;
 
 	if ( buttonGroup != NULL )

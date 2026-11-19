@@ -139,8 +139,8 @@ TabPanel::TabPanel( const TabPanel& other ) : Panel( other )
 	copyFrom( other );
 }
 
-// ButtonGroup has no virtual destructor; this is the ButtonGroup the
-// constructor made.
+// This is the ButtonGroup the constructor made. Deleting it leaves the tabs,
+// which ~Panel deletes afterwards, without a group.
 TabPanel::~TabPanel()
 {
 	delete _buttonGroup;

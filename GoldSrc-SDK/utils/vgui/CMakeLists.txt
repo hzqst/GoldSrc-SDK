@@ -136,6 +136,8 @@ if(TARGET vgui)
 			??1IntChangeSignal@vgui@@UAE@XZ
 			??1TickSignal@vgui@@UAE@XZ
 			??1FocusNavGroup@vgui@@UAE@XZ
+			??1ButtonGroup@vgui@@UAE@XZ
+			?removeButton@ButtonGroup@vgui@@QAEXPAVButton@2@@Z
 			?removeTickSignal@App@vgui@@QAEXPAVTickSignal@2@@Z
 			?frameDeleted@FrameSignal@vgui@@UAEXPAVFrame@2@@Z
 			?removeFrame@TaskBar@vgui@@QAEXPAVFrame@2@@Z)
