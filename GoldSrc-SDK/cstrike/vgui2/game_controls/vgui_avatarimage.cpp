@@ -13,10 +13,13 @@ CAvatarImage::CAvatarImage( vgui2::IImage* blockedImage, vgui2::IImage* friendIm
 	ClearAvatarSteamID();
 	m_pFriendImage = friendImage;
 	m_bAdditive = false;
+	m_iTextureID = 0;
 }
 
 CAvatarImage::~CAvatarImage()
 {
+	if ( m_iTextureID != 0 )
+		vgui2::surface()->DeleteTextureByID( m_iTextureID );
 }
 
 void CAvatarImage::ClearAvatarSteamID()
@@ -52,6 +55,9 @@ bool CAvatarImage::SetAvatarSteamID( CSteamID steamID )
 
 void CAvatarImage::InitFromRGBA( const unsigned char* rgba, int width, int height )
 {
+	// a reused image, like the one of CAvatarImagePanel, frees the texture of its previous avatar
+	if ( m_iTextureID != 0 )
+		vgui2::surface()->DeleteTextureByID( m_iTextureID );
 	m_iTextureID = vgui2::surface()->CreateNewTextureID( true );
 	vgui2::surface()->DrawSetTextureRGBA( m_iTextureID, rgba, width, height, true, true );
 	m_Color = Color( 255, 255, 255, 255 );
