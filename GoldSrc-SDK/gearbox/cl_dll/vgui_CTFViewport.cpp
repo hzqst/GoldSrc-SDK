@@ -1112,6 +1112,8 @@ void CTFViewport::CreateCommandMenu()
 		return;
 	}
 
+	// file moves through the buffer while parsing, so keep its start to free it
+	char* fileStart = file;
 	CHudTextMessage::LocaliseTextString( "#DetpackSet_For5Seconds", m_sDetpackStrings[0], MAX_BUTTON_SIZE );
 	CHudTextMessage::LocaliseTextString( "#DetpackSet_For20Seconds", m_sDetpackStrings[1], MAX_BUTTON_SIZE );
 	CHudTextMessage::LocaliseTextString( "#DetpackSet_For50Seconds", m_sDetpackStrings[2], MAX_BUTTON_SIZE );
@@ -1135,6 +1137,7 @@ void CTFViewport::CreateCommandMenu()
 			{
 				gEngfuncs.Con_Printf( "Error in Commandmenu.txt file after '%s'.\n", lastButtonText );
 				m_iInitialized = false;
+				gEngfuncs.COM_FreeFile( fileStart );
 				return;
 			}
 
@@ -1225,7 +1228,7 @@ void CTFViewport::CreateCommandMenu()
 	}
 	m_pCurrentMenu = NULL;
 	SetCurrentCommandMenu( NULL );
-	gEngfuncs.COM_FreeFile( file );
+	gEngfuncs.COM_FreeFile( fileStart );
 	m_iInitialized = true;
 }
 

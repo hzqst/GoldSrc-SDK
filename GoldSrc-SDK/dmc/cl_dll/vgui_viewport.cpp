@@ -650,6 +650,9 @@ int TeamFortressViewport::CreateCommandMenu( char * menuFile, int direction, int
 		return newIndex;
 	}
 
+	// pfile moves through the file while parsing, so keep the start of the buffer to free it
+	char *pFileStart = pfile;
+
 #ifdef _WIN32
 try
 {
@@ -689,6 +692,7 @@ try
 			{
 				gEngfuncs.Con_Printf("Error in %s file after '%s'.\n",menuFile, szLastButtonText );
 				m_iInitialized = false;
+				gEngfuncs.COM_FreeFile( pFileStart );
 				return newIndex;
 			}
 
@@ -843,12 +847,13 @@ catch( CException *e )
 	//e->Delete();
 	e = NULL;
 	m_iInitialized = false;
+	gEngfuncs.COM_FreeFile( pFileStart );
 	return newIndex;
 }
 #endif
 	SetCurrentMenu( NULL );
 	SetCurrentCommandMenu( NULL );
-	gEngfuncs.COM_FreeFile( pfile );
+	gEngfuncs.COM_FreeFile( pFileStart );
 
 	m_iInitialized = true;
 	return newIndex;
