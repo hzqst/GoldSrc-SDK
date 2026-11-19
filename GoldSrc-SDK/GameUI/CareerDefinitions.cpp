@@ -284,7 +284,7 @@ BotProfileManager* CareerDefinition::GetBotProfileManager( CareerDifficultyType 
 
 bool CareerDefinition::Init( const char* careerName )
 {
-	m_isCT = true;
+	Reset();
 	m_careerName = CloneString( careerName );
 	char path[CAREER_MAX_PATH];
 	if ( !stricmp( careerName, "TurtleRockCounterTerrorist" ) )
