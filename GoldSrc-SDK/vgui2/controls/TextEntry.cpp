@@ -645,6 +645,11 @@ void TextEntry::FireActionSignal()
 //-----------------------------------------------------------------------------
 void TextEntry::GetText( wchar_t* wbuf, int bufLen )
 {
+	if ( !wbuf || bufLen <= 0 )
+	{
+		return;
+	}
+
 	int count = m_TextStream.Count();
 	if ( !count )
 	{

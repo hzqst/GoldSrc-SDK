@@ -1,6 +1,6 @@
 """Exercise the production VGUI2 wide string copies into fixed buffers with texts that fit, fill or overflow them.
 
-Covers Frame::SetTitle, the ProgressBox constructor, TextImage::GetText and CLoadingDialog::DisplayGenericError.
+Covers Frame::SetTitle, the ProgressBox constructor, TextImage::GetText, TextEntry::GetText and CLoadingDialog::DisplayGenericError.
 
 Run: python tests/vgui2_wide_copy_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -90,6 +90,19 @@ public:
  wchar_t* _utext = nullptr;
 };
 
+// the text stream TextEntry::GetText reads, it is not terminated like CUtlVector
+struct TextStream {
+ int Count() const { return (int)text.size(); }
+ wchar_t* Base() { return text.data(); }
+ std::vector<wchar_t> text;
+};
+
+class TextEntry {
+public:
+ void GetText(wchar_t* wbuf, int bufLen);
+ TextStream m_TextStream;
+};
+
 class Panel {};
 class Label {
 public:
@@ -139,6 +152,7 @@ TESTS = r'''
 using vgui2::Frame;
 using vgui2::ProgressBox;
 using vgui2::TextImage;
+using vgui2::TextEntry;
 
 static const size_t TitleCapacity = 128;
 
@@ -228,6 +242,40 @@ static void TextImageGetTextTerminatesTheBuffer() {
  puts("PASS: TextImage::GetText cuts at the buffer, terminates it and leaves an empty buffer alone");
 }
 
+static void TextEntryGetTextTerminatesTheBuffer() {
+ TextEntry entry;
+ const wchar_t text[] = L"abcdefghij";
+ entry.m_TextStream.text.assign(text, text + 10);
+ wchar_t buffer[16];
+ std::wmemset(buffer, L'x', 16);
+ entry.GetText(buffer, 4);
+ assert(std::wstring(L"abc") == buffer);
+ std::wmemset(buffer, L'x', 16);
+ entry.GetText(buffer, 10);
+ assert(std::wstring(L"abcdefghi") == buffer);
+ std::wmemset(buffer, L'x', 16);
+ entry.GetText(buffer, 11);
+ assert(std::wstring(L"abcdefghij") == buffer);
+ std::wmemset(buffer, L'x', 16);
+ entry.GetText(buffer, 1);
+ assert(L'\0' == buffer[0]);
+ assert(L'x' == buffer[1]);
+ std::wmemset(buffer, L'x', 16);
+ entry.GetText(buffer + 1, 0);
+ assert(L'x' == buffer[0]);
+ assert(L'x' == buffer[1]);
+ entry.GetText(buffer + 1, -1);
+ assert(L'x' == buffer[0]);
+ assert(L'x' == buffer[1]);
+ entry.GetText(nullptr, 16);
+ TextEntry empty;
+ empty.GetText(buffer + 1, 0);
+ assert(L'x' == buffer[1]);
+ empty.GetText(buffer, 16);
+ assert(L'\0' == buffer[0]);
+ puts("PASS: TextEntry::GetText cuts at the buffer, terminates it and leaves an empty or missing buffer alone");
+}
+
 static void LoadingErrorsAreCutBeforeTheLastCharacter() {
  const size_t capacity = 256;
  Register("LongReason", Text(300));
@@ -249,6 +297,7 @@ int main() {
  TitlesWithoutTheSurfaceAreNotSent();
  ProgressBoxTextsAreCutBeforeTheLastCharacter();
  TextImageGetTextTerminatesTheBuffer();
+ TextEntryGetTextTerminatesTheBuffer();
  LoadingErrorsAreCutBeforeTheLastCharacter();
 }
 '''
@@ -259,11 +308,13 @@ def main():
     frame = (controls / 'Frame.cpp').read_text(encoding='utf-8')
     box = (controls / 'ProgressBox.cpp').read_text(encoding='utf-8')
     image = (controls / 'TextImage.cpp').read_text(encoding='utf-8')
+    entry = (controls / 'TextEntry.cpp').read_text(encoding='utf-8')
     loading = (ROOT / 'GameUI/LoadingDialog.cpp').read_text(encoding='utf-8')
     code = STUBS.replace('MEMBERS', members((controls / 'ProgressBox.h').read_text(encoding='utf-8')))
     code += function(frame, 'void Frame::SetTitle( const char* title, bool surfaceTitle )') + '\n'
     code += function(box, 'ProgressBox::ProgressBox( const char* title, const char* info, const char* text, Panel* parent )') + '\n'
     code += function(image, 'void TextImage::GetText( wchar_t* buffer, int bufferLength )') + '\n'
+    code += function(entry, 'void TextEntry::GetText( wchar_t* wbuf, int bufLen )') + '\n'
     code += LOADING_STUBS
     code += function(loading, 'void CLoadingDialog::DisplayGenericError( const char* failureReason, const char* extendedReason )') + '\n'
     code += TESTS
