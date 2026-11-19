@@ -39,6 +39,7 @@ BuildGroup::BuildGroup( const BuildGroup& other )
 	_cursor_sizewe = new Cursor( Cursor::DefaultCursor::dc_sizewe );
 	_cursor_sizens = new Cursor( Cursor::DefaultCursor::dc_sizens );
 	_cursor_sizeall = new Cursor( Cursor::DefaultCursor::dc_sizeall );
+	_currentPanel = NULL;
 	*this = other;
 }
 
@@ -52,9 +53,16 @@ BuildGroup::~BuildGroup()
 
 	for ( int i = 0; i < _panelNameDar.getCount(); ++i )
 		delete[] _panelNameDar[i];
+
+	for ( int i = 0; i < _panelDar.getCount(); ++i )
+	{
+		if ( _panelDar[i]->_buildGroup == this )
+			_panelDar[i]->_buildGroup = NULL;
+	}
 }
 
-// Keeps this group's own cursors.
+// Keeps this group's own cursors, panels, panel names and current panel: the
+// other group's panels point to it.
 BuildGroup& BuildGroup::operator=( const BuildGroup& other )
 {
 	if ( this == &other )
@@ -67,18 +75,29 @@ BuildGroup& BuildGroup::operator=( const BuildGroup& other )
 	_dragMouseCode = other._dragMouseCode;
 	memcpy( _dragStartPanelPos, other._dragStartPanelPos, sizeof( _dragStartPanelPos ) );
 	memcpy( _dragStartCursorPos, other._dragStartCursorPos, sizeof( _dragStartCursorPos ) );
-	_currentPanel = other._currentPanel;
 	_currentPanelChangeSignalDar = other._currentPanelChangeSignalDar;
-	_panelDar = other._panelDar;
-
-	Dar<char*> names( other._panelNameDar );
-	for ( int i = 0; i < _panelNameDar.getCount(); ++i )
-		delete[] _panelNameDar[i];
-	_panelNameDar.removeAll();
-	for ( int i = 0; i < names.getCount(); ++i )
-		_panelNameDar.addElement( vgui_strdup( names[i] ) );
 
 	return *this;
+}
+
+// _panelNameDar holds the name of the panel at the same index in _panelDar.
+void BuildGroup::panelRemoved( Panel* panel )
+{
+	for ( int i = _panelDar.getCount() - 1; i >= 0; --i )
+	{
+		if ( _panelDar[i] == panel )
+		{
+			_panelDar.removeElementAt( i );
+			delete[] _panelNameDar[i];
+			_panelNameDar.removeElementAt( i );
+		}
+	}
+
+	if ( _currentPanel == panel )
+	{
+		_currentPanel = NULL;
+		fireCurrentPanelChangeSignal();
+	}
 }
 
 void* BuildGroup::operator new( size_t size )
