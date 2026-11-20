@@ -100,6 +100,7 @@ foreach(name IN ITEMS
 		vgui2_propertysheet_tab_width
 		vgui2_richtext_scroll
 		vgui2_scheme_image_cache
+		vgui2_scheme_reload
 		vgui2_sectioned_header
 		vgui2_textentry_scroll
 		vgui2_textimage
