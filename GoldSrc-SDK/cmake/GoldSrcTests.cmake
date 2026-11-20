@@ -113,6 +113,7 @@ foreach(name IN ITEMS
 		vgui2_system_registry
 		vgui2_textentry_scroll
 		vgui2_textimage
+		vgui2_time_since_last_use
 		vgui2_unicode_token
 		vgui2_wide_copy
 		vgui2_wizard_panel

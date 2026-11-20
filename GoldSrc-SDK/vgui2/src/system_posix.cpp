@@ -179,7 +179,7 @@ void CSystem::RunFrame()
 
 	if ( abs( ( x + y ) - ( m_iStaticMouseOldX + m_iStaticMouseOldY ) ) > 50 )
 	{
-		m_StaticLastComputerUseTime = GetTimeMillis() / 1000;
+		m_StaticLastComputerUseTime = GetCurrentTime();
 		m_iStaticMouseOldX = x;
 		m_iStaticMouseOldY = y;
 	}
@@ -380,7 +380,7 @@ double CSystem::GetTimeSinceLastUse()
 {
 	if ( m_bStaticWatchForComputerUse )
 	{
-		return ( GetCurrentTime() / 1000.0f - m_StaticLastComputerUseTime ) / 1000.0f;
+		return GetCurrentTime() - m_StaticLastComputerUseTime;
 	}
 
 	return 0.0;
