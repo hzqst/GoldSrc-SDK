@@ -25,6 +25,9 @@
 #include "shared_util.h"
 #include "simple_checksum.h"
 
+#include <memory>
+#include <utility>
+
 #if !defined( _WIN32 ) && !defined( _snprintf )
 #define _snprintf snprintf
 #endif
@@ -169,8 +172,8 @@ void BotProfileManager::Init( const char *filename, unsigned int *checksum )
 		*checksum = ComputeSimpleChecksum( (const unsigned char *)dataPointer, dataLength );
 	}
 
-	// keep list of templates used for inheritance
-	BotProfileList templateList;
+	// keep list of templates used for inheritance - owned here so every early return frees them
+	std::list< std::unique_ptr< BotProfile > > templateList;
 
 	BotProfile defaultProfile;
 
@@ -284,13 +287,17 @@ void BotProfileManager::Init( const char *filename, unsigned int *checksum )
 		// encountered a new profile
 		BotProfile *profile;
 
+		// owns a new profile until it is added to a list, so a parse error does not leak it
+		std::unique_ptr< BotProfile > newProfile;
+
 		if (isDefault)
 		{
 			profile = &defaultProfile;
 		}
 		else
 		{
-			profile = new BotProfile;
+			newProfile.reset( new BotProfile );
+			profile = newProfile.get();
 
 			// always inherit from Default
 			*profile = defaultProfile;
@@ -309,11 +316,11 @@ void BotProfileManager::Init( const char *filename, unsigned int *checksum )
 					*c = '\000';
 
 				// find the given template name
-				for( BotProfileList::iterator iter = templateList.begin(); iter != templateList.end(); ++iter )
+				for( auto iter = templateList.begin(); iter != templateList.end(); ++iter )
 				{
 					if (!stricmp( (*iter)->GetName(), token ))
 					{
-						inherit = *iter;
+						inherit = iter->get();
 						break;
 					}
 				}
@@ -526,21 +533,17 @@ void BotProfileManager::Init( const char *filename, unsigned int *checksum )
 			if (isTemplate)
 			{
 				// add to template list
-				templateList.push_back( profile );
+				templateList.push_back( std::move( newProfile ) );
 			}
 			else
 			{
 				// add profile to the master list
-				m_profileList.push_back( profile );
+				m_profileList.push_back( newProfile.release() );
 			}
 		}
 	}
 
 	FREE_FILE( dataPointer );
-
-	// free the templates
-	for( BotProfileList::iterator iter = templateList.begin(); iter != templateList.end(); ++iter )
-		delete *iter;
 }
 
 //--------------------------------------------------------------------------------------------------------------
