@@ -257,10 +257,17 @@ int CLocalizedStringTable::GetLocalizationFileCount()
 void CLocalizedStringTable::ReloadLocalizationFiles( IFileSystem* filesystem )
 {
 	int i;
+	CUtlVector< CUtlSymbol > files;
 
+	// AddFile moves each loaded file to the tail of m_LocalizationFiles, so walk a snapshot
 	for ( i = 0; i < m_LocalizationFiles.Count(); i++ )
 	{
-		AddFile( filesystem, m_LocalizationFiles[i].String() );
+		files.AddToTail( m_LocalizationFiles[i] );
+	}
+
+	for ( i = 0; i < files.Count(); i++ )
+	{
+		AddFile( filesystem, files[i].String() );
 	}
 }
 
