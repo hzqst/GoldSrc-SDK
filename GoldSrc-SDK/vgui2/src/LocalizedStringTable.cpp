@@ -945,20 +945,62 @@ void CLocalizedStringTable::ConstructString( wchar_t* unicodeOutput, int unicode
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: writes wide text as UTF-16LE whatever the size of wchar_t
+//			code points above U+FFFF become surrogate pairs
+//-----------------------------------------------------------------------------
+static void WriteUTF16LE( IFileSystem* fileSystem, const wchar_t* text, FileHandle_t file )
+{
+	unsigned char buffer[512];
+	int used = 0;
+
+	while ( *text )
+	{
+		unsigned int codePoint;
+		unsigned int units[2];
+		int count = 1;
+
+		text += DecodeWideCodePoint( text, &codePoint );
+		units[0] = codePoint;
+		if ( codePoint >= 0x10000 )
+		{
+			codePoint -= 0x10000;
+			units[0] = 0xD800 + ( codePoint >> 10 );
+			units[1] = 0xDC00 + ( codePoint & 0x3FF );
+			count = 2;
+		}
+
+		// a surrogate pair needs 4 bytes, flush before it could overflow
+		if ( used > (int)sizeof( buffer ) - 4 )
+		{
+			fileSystem->Write( buffer, used, file );
+			used = 0;
+		}
+
+		for ( int i = 0; i < count; ++i )
+		{
+			buffer[used++] = (unsigned char)( units[i] & 0xFF );
+			buffer[used++] = (unsigned char)( units[i] >> 8 );
+		}
+	}
+
+	if ( used )
+	{
+		fileSystem->Write( buffer, used, file );
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: saves the entire contents of the token tree to the file
+//			the file is UTF-16LE with a byte order mark, as AddFile reads it
 //-----------------------------------------------------------------------------
 bool CLocalizedStringTable::SaveToFile( IFileSystem* fileSystem, const char* szFileName )
 {
 	static wchar_t unicodeString[1024];
 	static const char* startStr = "\"lang\"\r\n{\r\n\"Language\" \"English\"\r\n\"Tokens\"\r\n{\r\n";
 	static const char* endStr = "}\r\n}\r\n";
+	static const unsigned char marker[2] = { 0xFF, 0xFE };
 	FileHandle_t file;
 	CUtlSymbol fileSymbol;
-	unsigned short marker;
-	wchar_t unicodeQuote;
-	wchar_t unicodeCR;
-	wchar_t unicodeNewline;
-	wchar_t unicodeTab;
 	StringIndex_t idx;
 	int strLength;
 
@@ -969,8 +1011,7 @@ bool CLocalizedStringTable::SaveToFile( IFileSystem* fileSystem, const char* szF
 	}
 
 	fileSymbol = CUtlSymbol( szFileName );
-	marker = 0xFEFF;
-	fileSystem->Write( &marker, sizeof( marker ), file );
+	fileSystem->Write( marker, sizeof( marker ), file );
 
 	strLength = ConvertANSIToUnicode( startStr, unicodeString, (int)sizeof( unicodeString ) );
 	if ( !strLength )
@@ -979,12 +1020,7 @@ bool CLocalizedStringTable::SaveToFile( IFileSystem* fileSystem, const char* szF
 		return false;
 	}
 
-	fileSystem->Write( unicodeString, wcslen( unicodeString ) * sizeof( wchar_t ), file );
-
-	unicodeQuote = L'\"';
-	unicodeCR = L'\r';
-	unicodeNewline = L'\n';
-	unicodeTab = L'\t';
+	WriteUTF16LE( fileSystem, unicodeString, file );
 
 	// write out all the key/value pairs
 	for ( idx = GetFirstStringIndex(); idx != INVALID_LOCALIZE_STRING_INDEX; idx = GetNextStringIndex( idx ) )
@@ -1001,22 +1037,16 @@ bool CLocalizedStringTable::SaveToFile( IFileSystem* fileSystem, const char* szF
 		value = GetValueByIndex( idx );
 		ConvertANSIToUnicode( name, unicodeString, (int)sizeof( unicodeString ) );
 
-		fileSystem->Write( &unicodeTab, sizeof( wchar_t ), file );
-		fileSystem->Write( &unicodeQuote, sizeof( wchar_t ), file );
-		fileSystem->Write( unicodeString, wcslen( unicodeString ) * sizeof( wchar_t ), file );
-		fileSystem->Write( &unicodeQuote, sizeof( wchar_t ), file );
-		fileSystem->Write( &unicodeTab, sizeof( wchar_t ), file );
-		fileSystem->Write( &unicodeTab, sizeof( wchar_t ), file );
-		fileSystem->Write( &unicodeQuote, sizeof( wchar_t ), file );
-		fileSystem->Write( value, wcslen( value ) * sizeof( wchar_t ), file );
-		fileSystem->Write( &unicodeQuote, sizeof( wchar_t ), file );
-		fileSystem->Write( &unicodeCR, sizeof( wchar_t ), file );
-		fileSystem->Write( &unicodeNewline, sizeof( wchar_t ), file );
+		WriteUTF16LE( fileSystem, L"\t\"", file );
+		WriteUTF16LE( fileSystem, unicodeString, file );
+		WriteUTF16LE( fileSystem, L"\"\t\t\"", file );
+		WriteUTF16LE( fileSystem, value, file );
+		WriteUTF16LE( fileSystem, L"\"\r\n", file );
 	}
 
 	// write end string
 	ConvertANSIToUnicode( endStr, unicodeString, (int)sizeof( unicodeString ) );
-	fileSystem->Write( unicodeString, wcslen( unicodeString ) * sizeof( wchar_t ), file );
+	WriteUTF16LE( fileSystem, unicodeString, file );
 	fileSystem->Close( file );
 	return true;
 }
@@ -1263,15 +1293,26 @@ bool CLocalizedStringTable::AddFile( IFileSystem* fileSystem, const char* szFile
 		{
 			wchar_t fullString[2049];
 			int j;
+			int k;
 
-			for ( j = 0; j != 2048; ++j )
+			// a 32-bit wchar_t holds a whole code point, so join the file's surrogate pairs
+			for ( j = 0, k = 0; k != 2048; ++j, ++k )
 			{
-				if ( valuetoken[j] == 0 )
+				unsigned int unit = valuetoken[k];
+
+				if ( unit == 0 )
 				{
 					break;
 				}
 
-				fullString[j] = valuetoken[j];
+				if ( sizeof( wchar_t ) == 4 && unit >= 0xD800 && unit <= 0xDBFF && k + 1 != 2048
+					&& valuetoken[k + 1] >= 0xDC00 && valuetoken[k + 1] <= 0xDFFF )
+				{
+					unit = 0x10000 + ( ( unit - 0xD800 ) << 10 ) + ( valuetoken[k + 1] - 0xDC00 );
+					++k;
+				}
+
+				fullString[j] = (wchar_t)unit;
 			}
 
 			fullString[j] = 0;
