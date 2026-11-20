@@ -1,4 +1,4 @@
-"""Exercise the production VGUI2 CSchemeManager::ReloadSchemes against a scheme file that changes, drops a border or can't be read.
+"""Exercise the production VGUI2 CSchemeManager::ReloadSchemes against a scheme file that changes, drops a border, changes a font or can't be read.
 
 Run: python tests/vgui2_scheme_reload_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -46,6 +46,8 @@ static int g_fileReads = 0;
 static bool g_failOpen = false;
 static bool g_defineFrameBorder = true;
 static int g_borderResets = 0;
+static const char* g_fontTall = "12";
+static bool g_secondGlyphSet = false;
 static std::map<std::string, std::string> g_baseBorderInset; // scheme file name -> BaseBorder inset
 
 class IFileSystem;
@@ -82,7 +84,12 @@ public:
   if (g_defineFrameBorder) borders->FindKey("FrameBorder", true)->SetString("inset", "4 4 4 4");
   KeyValues* glyph = FindKey("Fonts", true)->FindKey("Default", true)->FindKey("1", true);
   glyph->SetString("name", "Tahoma");
-  glyph->SetString("tall", "12");
+  glyph->SetString("tall", g_fontTall);
+  if (g_secondGlyphSet) {
+   KeyValues* second = FindKey("Fonts", true)->FindKey("Default", true)->FindKey("2", true);
+   second->SetString("name", "Verdana");
+   second->SetString("tall", "12");
+  }
   return true;
  }
  KeyValues* FindKey(const char* keyName, bool create = false) {
@@ -165,9 +172,16 @@ public:
  void AddCustomFontFile(const char*) {}
  void GetScreenSize(int& wide, int& tall) { wide = 640; tall = 480; }
  HFont CreateFont() { return ++fonts; }
- void AddGlyphSetToFont(HFont, const char*, int, int, int, int, int, int, int) {}
+ void AddGlyphSetToFont(HFont font, const char* name, int tall, int, int, int, int, int, int) {
+  assert(font == fonts); // glyph sets only go to the font just created
+  assert(0 == strcmp("Tahoma", name) || 0 == strcmp("Verdana", name));
+  lastTall = tall;
+  ++glyphSets;
+ }
  bool SupportsFeature(SurfaceFeature_e) { return false; }
  HFont fonts = 0;
+ int glyphSets = 0;
+ int lastTall = 0;
 };
 }
 using namespace vgui2;
@@ -188,6 +202,12 @@ public:
  {
   char _fontName[64];
   HFont _font;
+  int _glyphNameSymbol;
+  int _tall;
+  int _weight;
+  int _blur;
+  int _scanlines;
+  int _flags;
  };
  CScheme() { fileName[0] = 0; tag[0] = 0; }
  IBorder* GetBorder(const char* borderName);
@@ -199,6 +219,7 @@ public:
  Border* TakeRetiredBorder(const char* borderName);
  HFont GetFontEx(const char* fontName, bool proportional, bool hd);
  HFont FindFontInAliasList(const char* fontName);
+ HFont FindPreviousFont(int firstAlias);
  const char* GetMungedFontName(const char* fontName, const char* scheme, bool proportional, bool bHDProportional);
  int GetAdjustedFontHeightForCurrentLanguage(int tall) { return tall; }
  char fileName[256];
@@ -210,6 +231,7 @@ public:
  Border* _baseBorder = nullptr;
  KeyValues* _borders = nullptr;
  CUtlVector<fontalias_t> _fontAliases;
+ CUtlVector<fontalias_t> m_PreviousFontAliases;
  CUtlVector<Border*> m_RetiredBorders;
 };
 
@@ -247,6 +269,8 @@ static void Release() {
  g_Scheme._scheme.AddToTail(new CScheme());
  g_defineFrameBorder = true;
  g_borderResets = 0;
+ g_fontTall = "12";
+ g_secondGlyphSet = false;
  assert(0 == g_liveBorders);
  assert(0 == g_liveKeyValues);
 }
@@ -356,11 +380,85 @@ static void RemovedBorderStaysAliveUntilItIsDefinedAgain() {
  puts("PASS: a border dropped by a reload stays alive and is reused when the definition comes back");
 }
 
+static void ReloadKeepsTheHandleOfAnUnchangedFont() {
+ HScheme handle = Load("1 1 1 1");
+ HFont fonts = g_Surface.fonts;
+ int glyphSets = g_Surface.glyphSets;
+ HFont normal = Scheme(handle)->GetFontEx("Default", false, false);
+ HFont proportional = Scheme(handle)->GetFontEx("Default", true, false);
+ HFont hd = Scheme(handle)->GetFontEx("Default", true, true);
+ assert(0 != normal && normal != proportional && proportional != hd && normal != hd);
+
+ g_Scheme.ReloadSchemes();
+ g_Scheme.ReloadSchemes();
+
+ assert(fonts == g_Surface.fonts);
+ assert(glyphSets == g_Surface.glyphSets);
+ assert(normal == Scheme(handle)->GetFontEx("Default", false, false));
+ assert(proportional == Scheme(handle)->GetFontEx("Default", true, false));
+ assert(hd == Scheme(handle)->GetFontEx("Default", true, true));
+ assert(3 == Scheme(handle)->_fontAliases.Count());
+ assert(0 == Scheme(handle)->m_PreviousFontAliases.Count());
+ Release();
+ puts("PASS: reloading a font with the same glyph sets keeps its handle and creates no font");
+}
+
+static void ReloadCreatesAFontWhoseGlyphSetsChanged() {
+ HScheme handle = Load("1 1 1 1");
+ HFont fonts = g_Surface.fonts;
+ HFont normal = Scheme(handle)->GetFontEx("Default", false, false);
+
+ g_fontTall = "16";
+ g_Scheme.ReloadSchemes();
+
+ assert(fonts + 3 == g_Surface.fonts);
+ assert(16 == g_Surface.lastTall);
+ HFont reloaded = Scheme(handle)->GetFontEx("Default", false, false);
+ assert(0 != reloaded && normal != reloaded);
+ assert(3 == Scheme(handle)->_fontAliases.Count());
+
+ g_Scheme.ReloadSchemes();
+ assert(fonts + 3 == g_Surface.fonts);
+ assert(reloaded == Scheme(handle)->GetFontEx("Default", false, false));
+ Release();
+ puts("PASS: reloading a font whose glyph sets changed creates a new font once");
+}
+
+static void ReloadMatchesEveryGlyphSetOfAFont() {
+ HScheme handle = Load("1 1 1 1");
+ HFont fonts = g_Surface.fonts;
+ HFont single = Scheme(handle)->GetFontEx("Default", false, false);
+
+ g_secondGlyphSet = true;
+ g_Scheme.ReloadSchemes();
+
+ assert(fonts + 3 == g_Surface.fonts);
+ assert(6 == Scheme(handle)->_fontAliases.Count());
+ HFont two = Scheme(handle)->GetFontEx("Default", false, false);
+ assert(single != two);
+ int glyphSets = g_Surface.glyphSets;
+
+ g_Scheme.ReloadSchemes();
+ assert(fonts + 3 == g_Surface.fonts);
+ assert(glyphSets == g_Surface.glyphSets);
+ assert(two == Scheme(handle)->GetFontEx("Default", false, false));
+
+ g_secondGlyphSet = false;
+ g_Scheme.ReloadSchemes();
+ assert(fonts + 6 == g_Surface.fonts);
+ assert(3 == Scheme(handle)->_fontAliases.Count());
+ Release();
+ puts("PASS: a font is only reused when all of its glyph sets match, not a leading part of them");
+}
+
 int main() {
  ReloadReadsTheFileAgainAndRebuildsBorders();
  FailedReloadKeepsThePreviousScheme();
  ReloadKeepsTheAddressOfEveryBorder();
  RemovedBorderStaysAliveUntilItIsDefinedAgain();
+ ReloadKeepsTheHandleOfAnUnchangedFont();
+ ReloadCreatesAFontWhoseGlyphSetsChanged();
+ ReloadMatchesEveryGlyphSetOfAFont();
 }
 '''
 
@@ -375,6 +473,7 @@ SIGNATURES = (
     'void CScheme::Reload(',
     'const char* CScheme::GetMungedFontName(',
     'HFont CScheme::FindFontInAliasList(',
+    'HFont CScheme::FindPreviousFont(',
     'HFont CScheme::GetFontEx(',
     'void CScheme::LoadFonts()',
     'void CScheme::LoadBorders()',
