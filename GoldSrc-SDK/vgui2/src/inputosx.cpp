@@ -359,7 +359,12 @@ void CInputWin32::PanelDeleted( VPANEL focus, InputContext_t& context )
 	}
 	if ( context._mouseCapture == panel )
 	{
-		SetMouseCapture( NULL );
+		// SetMouseCapture works on the active context, and only that context
+		// holds the platform capture; an inactive context just drops its record
+		if ( &context == GetInputContext( m_hContext ) )
+		{
+			SetMouseCapture( NULL );
+		}
 		context._mouseCapture = NULL;
 	}
 	// the panel may belong to a context other than the active one
