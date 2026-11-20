@@ -47,6 +47,7 @@ foreach(name IN ITEMS
 		hashpak_remove
 		hunk_temp_alloc
 		localize_construct
+		localize_reload
 		localize_save
 		localize_utf8
 		mixer_failure
