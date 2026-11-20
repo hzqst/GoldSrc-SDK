@@ -3,9 +3,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <initializer_list>
+#include <string>
 #include <type_traits>
 
 #include "game_controls/iclientvgui.h"
+#include "game_controls/map_page_text.h"
 #include "cl_dll/IVGuiClientDll.h"
 #include "utlstack.h"
 #include "game_controls/viewport_message_reader.h"
@@ -102,8 +104,44 @@ static void MessageReaderChecks()
 	Check( !emptyString.ReadString()[0] && emptyString.IsValid(), "Empty terminated string accepted" );
 }
 
+// Decodes count bytes of a map page file the way LoadMapPage does.
+static std::string NarrowMapPage( const char* data, int count )
+{
+	std::string bytes( data, count );
+	bytes += '#'; // the slot the terminator must go in
+	Check( !IsWideMapPageText( bytes.data(), count ), "Narrow map page detected as wide" );
+	DecodeNarrowMapPageText( &bytes[0], count );
+	return bytes.c_str();
+}
+
+static std::wstring WideMapPage( const char* data, int count )
+{
+	const wchar_t sentinel = L'#';
+	Check( IsWideMapPageText( data, count ), "Wide map page not detected" );
+	std::wstring text( count / 2 + 1, sentinel );
+	DecodeWideMapPageText( data, count, &text[0] );
+	Check( text[count / 2] == sentinel, "Wide map page decoded past count / 2 chars" );
+	return text.c_str();
+}
+
+static void MapPageTextChecks()
+{
+	Check( NarrowMapPage( "ABCDE", 5 ) == "ABCDE", "Odd sized narrow map page keeps its last char" );
+	Check( NarrowMapPage( "ABCD", 4 ) == "ABCD", "Even sized narrow map page keeps its last char" );
+	Check( NarrowMapPage( "", 0 ).empty(), "Empty map page is empty text" );
+	Check( NarrowMapPage( "A\r\nB\r\n", 6 ) == "A\nB\n", "Narrow map page drops CR" );
+	Check( NarrowMapPage( "\xFF", 1 ) == "\xFF", "One byte map page is narrow" );
+
+	const char wide[] = "\xFF\xFE" "A\0B\0" "\x1A\x4E" "\r\0\n\0" "C\0";
+	Check( WideMapPage( wide, sizeof( wide ) - 1 ) == L"AB\x4E1A\nC", "Wide map page decodes UTF-16LE, keeps 0x1A bytes and drops CR" );
+	Check( WideMapPage( wide, sizeof( wide ) - 2 ) == L"AB\x4E1A\n", "Wide map page drops a trailing odd byte" );
+	Check( WideMapPage( "\xFF\xFE", 2 ).empty(), "Byte order mark alone is empty text" );
+	Check( WideMapPage( "\xFF\xFE\xFF", 3 ).empty(), "Byte order mark and an odd byte is empty text" );
+}
+
 int main()
 {
+	MapPageTextChecks();
 	MessageReaderChecks();
 	PlayerLayoutChecks<CompactPlayer>();
 	PlayerLayoutChecks<PaddedPlayer>();
@@ -128,5 +166,5 @@ int main()
 		Check( stack.Top().value == 10, "Stack reusable after purge" );
 	}
 	Check( Item::live == 0, "Stack destructor leaked elements" );
-	std::puts( "VGUI interface signatures, callback layout and stack lifetime checks passed" );
+	std::puts( "VGUI interface signatures, callback layout, stack lifetime and map page text checks passed" );
 }

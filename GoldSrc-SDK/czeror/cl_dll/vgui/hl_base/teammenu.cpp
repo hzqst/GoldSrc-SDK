@@ -16,6 +16,7 @@
 #include "FileSystem.h"
 #include "igameuifuncs.h"
 #include "game_controls/legacy_iviewport.h"
+#include "game_controls/map_page_text.h"
 #include "hud.h"
 
 #include <stdio.h>
@@ -146,31 +147,46 @@ void CTeamMenu::LoadMapPage( const char* mapName )
 		_snprintf( mapRES, sizeof( mapRES ), "maps/default.txt" );
 	}
 
-	FileHandle_t f = vgui2::filesystem()->Open( mapRES, "r" );
+	FileHandle_t f = vgui2::filesystem()->Open( mapRES, "rb" );
+	if ( !f )
+		return;
 
 	// read into a memory block
 	unsigned int fileSize = vgui2::filesystem()->Size( f );
-	wchar_t* memBlock = (wchar_t*)malloc( fileSize + sizeof( wchar_t ) );
-	wchar_t* memBlockStart = memBlock;
-	vgui2::filesystem()->Read( memBlock, fileSize, f );
-
-	// null-terminate the stream
-	memBlock[fileSize / sizeof( wchar_t )] = 0x0000;
+	if ( fileSize >= INT_MAX )
+	{
+		vgui2::filesystem()->Close( f );
+		return;
+	}
+	char* memBlock = (char*)malloc( fileSize + 1 );
+	if ( !memBlock )
+	{
+		vgui2::filesystem()->Close( f );
+		return;
+	}
+	int count = vgui2::filesystem()->Read( memBlock, (int)fileSize, f );
+	vgui2::filesystem()->Close( f );
 
 	// check the first character, make sure this a little-endian unicode file
-	if ( memBlock[0] != 0xFEFF )
+	if ( IsWideMapPageText( memBlock, count ) )
 	{
-		// its a ascii char file
-		m_pMapInfo->SetText( reinterpret_cast<char*>( memBlock ) );
+		wchar_t* text = (wchar_t*)malloc( ( count / 2 ) * sizeof( wchar_t ) );
+		if ( !text )
+		{
+			free( memBlock );
+			return;
+		}
+		DecodeWideMapPageText( memBlock, count, text );
+		m_pMapInfo->SetText( text );
+		free( text );
 	}
 	else
 	{
-		memBlock++;
+		// its a ascii char file
+		DecodeNarrowMapPageText( memBlock, count );
 		m_pMapInfo->SetText( memBlock );
 	}
-
-	vgui2::filesystem()->Close( f );
-	free( memBlockStart );
+	free( memBlock );
 
 	InvalidateLayout( false, false );
 	Repaint();

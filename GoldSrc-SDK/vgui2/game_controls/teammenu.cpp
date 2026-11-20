@@ -12,6 +12,7 @@
 #include "../controls/controls.h"
 #include "../../engine/controls.h"
 #include "iviewport.h"
+#include "map_page_text.h"
 #include "igameuifuncs.h"
 #include "../../public/FileSystem.h"
 #include "vgui/KeyValues.h"
@@ -149,38 +150,46 @@ void CTeamMenu::LoadMapPage( const char* map )
 		_snprintf( filename, sizeof( filename ), "maps/default.txt" );
 	}
 
-	FileHandle_t file = vgui2::filesystem()->Open( filename, "r", NULL );
+	FileHandle_t file = vgui2::filesystem()->Open( filename, "rb", NULL );
 	if ( !file )
 		return;
 
 	unsigned int size = vgui2::filesystem()->Size( file );
-	if ( size > INT_MAX - sizeof( wchar_t ) )
+	if ( size >= INT_MAX )
 	{
 		vgui2::filesystem()->Close( file );
 		return;
 	}
-	wchar_t* text = (wchar_t*)malloc( size + sizeof( wchar_t ) );
-	if ( !text )
+	char* bytes = (char*)malloc( size + 1 );
+	if ( !bytes )
 	{
 		vgui2::filesystem()->Close( file );
 		return;
 	}
-	memset( text, 0, size + sizeof( wchar_t ) );
-	vgui2::filesystem()->Read( text, (int)size, file );
+	int count = vgui2::filesystem()->Read( bytes, (int)size, file );
+	vgui2::filesystem()->Close( file );
 
-	// null-terminate the stream
-	text[size / sizeof( wchar_t )] = 0;
-
-	if ( *text == 0xFEFF )
-		m_pMapInfo->SetText( text + 1 );
+	if ( IsWideMapPageText( bytes, count ) )
+	{
+		wchar_t* text = (wchar_t*)malloc( ( count / 2 ) * sizeof( wchar_t ) );
+		if ( !text )
+		{
+			free( bytes );
+			return;
+		}
+		DecodeWideMapPageText( bytes, count, text );
+		m_pMapInfo->SetText( text );
+		free( text );
+	}
 	else
-		m_pMapInfo->SetText( (const char*)text );
+	{
+		DecodeNarrowMapPageText( bytes, count );
+		m_pMapInfo->SetText( bytes );
+	}
+	free( bytes );
 
 	// go back to the top of the text buffer
 	m_pMapInfo->GotoTextStart();
-
-	vgui2::filesystem()->Close( file );
-	free( text );
 
 	InvalidateLayout( false, false );
 	Repaint();
