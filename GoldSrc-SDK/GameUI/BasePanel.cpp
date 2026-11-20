@@ -170,9 +170,10 @@ void CBasePanel::ApplySchemeSettings( vgui2::IScheme* scheme )
 #pragma warning( suppress: 6255 )
 #endif
 	char* buffer = (char*)alloca( size + 1 );
-	vgui2::filesystem()->Read( buffer, size, file );
+	int bytesRead = vgui2::filesystem()->Read( buffer, size, file );
 	vgui2::filesystem()->Close( file );
-	buffer[size] = 0;
+	// text mode reads fewer bytes than the file size when it turns CRLF into LF
+	buffer[bytesRead > 0 ? bytesRead : 0] = 0;
 
 	char token[512];
 	char* cursor = buffer;
