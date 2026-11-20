@@ -50,6 +50,7 @@ foreach(name IN ITEMS
 		localize_save
 		localize_utf8
 		mixer_failure
+		parse_event_args
 		server_model
 		serverbrowser_filter_data
 		serverbrowser_filter_string

@@ -876,7 +876,6 @@ void CL_ParseEvent()
 	fields = DELTA_LookupRegistration( "event_t" );
 
 	Q_memset( &nullargs, 0, sizeof( nullargs ) );
-	Q_memset( &args, 0, sizeof( args ) );
 
 	MSG_StartBitReading( &net_message );
 
@@ -889,6 +888,8 @@ void CL_ParseEvent()
 		if ( MSG_ReadBits( 1 ) )
 			packetIndex = (int)MSG_ReadBits( EVENT_ENTITY_BITS );
 
+		// The server sends no arguments when they are all zero, so do not keep the previous event's
+		Q_memset( &args, 0, sizeof( args ) );
 		if ( MSG_ReadBits( 1 ) )
 			DELTA_ParseDelta( (byte*)&nullargs, (byte*)&args, *fields, sizeof( args ) );
 
