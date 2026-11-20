@@ -156,10 +156,10 @@ void CPlayerListDialog::OnItemSelected()
 	}
 
 	int playerIndex = player->GetInt( "index" );
-	const char* botValue = engine->PlayerInfo_ValueForKey( playerIndex, "*bot" );
+	const char* botValue = engine ? engine->PlayerInfo_ValueForKey( playerIndex, "*bot" ) : NULL;
 	bool disabled = botValue && !stricmp( "1", botValue );
 
-	if ( !engine->PlayerInfo_ValueForKey( playerIndex, "name" ) )
+	if ( !engine || !engine->PlayerInfo_ValueForKey( playerIndex, "name" ) )
 		disabled = true;
 
 	if ( !disabled && GameClientExports()

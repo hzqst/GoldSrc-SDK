@@ -1,4 +1,4 @@
-"""Exercise the production GameUI CPlayerListDialog::OnItemSelected when the selected row has no data, which disables the mute button instead of dereferencing NULL, and with real, bot, disconnected and muted players (#480).
+"""Exercise the production GameUI CPlayerListDialog::OnItemSelected when the selected row has no data, which disables the mute button instead of dereferencing NULL, and or when there is no engine, and with real, bot, disconnected and muted players (#480).
 
 Run: python tests/gameui_player_list_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -76,7 +76,7 @@ struct cl_enginefuncs_s {
  const char* (*PlayerInfo_ValueForKey)(int playerIndex, const char* key);
 };
 static cl_enginefuncs_s engineFuncs = { PlayerInfo_ValueForKey };
-static cl_enginefuncs_s* engine = &engineFuncs;
+static cl_enginefuncs_s* engine;
 
 class IGameClientExports {
 public:
@@ -113,6 +113,7 @@ static CPlayerListDialog Reset(int selectedCount, KeyValues* item) {
  botValue = nullptr;
  nameValue = "Player";
  engineCalls = 0;
+ engine = &engineFuncs;
  exports.muted = false;
  exportsPointer = &exports;
  CPlayerListDialog dialog;
@@ -177,6 +178,15 @@ static void DisconnectedPlayerDisablesTheButton() {
  puts("PASS: CPlayerListDialog::OnItemSelected disables the mute button for a disconnected player");
 }
 
+static void NoEngineDisablesTheButton() {
+ CPlayerListDialog dialog = Reset(1, &player);
+ engine = nullptr;
+ dialog.OnItemSelected();
+ AssertDisabledMute();
+ assert(0 == engineCalls);
+ puts("PASS: CPlayerListDialog::OnItemSelected disables the mute button without an engine instead of dereferencing it");
+}
+
 static void NoGameClientExportsDisablesTheButton() {
  CPlayerListDialog dialog = Reset(1, &player);
  exportsPointer = nullptr;
@@ -192,6 +202,7 @@ int main() {
  MutedPlayerEnablesUnmute();
  BotDisablesTheButton();
  DisconnectedPlayerDisablesTheButton();
+ NoEngineDisablesTheButton();
  NoGameClientExportsDisablesTheButton();
 }
 '''
