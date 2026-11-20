@@ -266,7 +266,8 @@ void BuildModeDialog::UpdateEditControl( PanelItem_t& panelItem, const char* dat
 		{
 			wchar_t unicode[512];
 			localize()->ConvertANSIToUnicode( datstring, unicode, sizeof( unicode ) );
-			panelItem.m_EditPanel->SetText( unicode );
+			if ( panelItem.m_EditPanel )
+				panelItem.m_EditPanel->SetText( unicode );
 		}
 		break;
 	}
