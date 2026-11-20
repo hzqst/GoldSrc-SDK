@@ -84,11 +84,8 @@ private:
 };
 
 template <class T>
-#ifdef _MSC_VER
-#pragma warning( suppress: 26495 )
-#endif
 inline CUtlVector<T>::CUtlVector( int growSize, int initSize )
-	: m_Memory( growSize, initSize ), m_Size( 0 )
+	: m_Memory( growSize, initSize ), m_Size( 0 ), m_pElements( NULL )
 {
 }
 

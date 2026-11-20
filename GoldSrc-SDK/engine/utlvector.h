@@ -98,11 +98,8 @@ private:
 	T* m_pElements;
 };
 
-#ifdef _MSC_VER
-#pragma warning( suppress: 26495 )
-#endif
 template <class T>
-CUtlVector<T>::CUtlVector( int growSize, int initialSize ) : m_Memory( growSize, initialSize ), m_Size( 0 )
+CUtlVector<T>::CUtlVector( int growSize, int initialSize ) : m_Memory( growSize, initialSize ), m_Size( 0 ), m_pElements( NULL )
 {
 }
 
