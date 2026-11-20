@@ -23,8 +23,13 @@ def main():
 #include <cstring>
 #include <cwchar>
 #include <string>
-#include <strings.h>
 #include <vector>
+#ifdef _MSC_VER
+#include <string.h>
+#define strcasecmp _stricmp
+#else
+#include <strings.h>
+#endif
 
 typedef unsigned long StringIndex_t;
 #define INVALID_LOCALIZE_STRING_INDEX ((StringIndex_t)-1)
