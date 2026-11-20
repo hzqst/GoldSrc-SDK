@@ -346,7 +346,7 @@ void BotProfileManager::Init( const char *filename, unsigned int *checksum )
 				FREE_FILE( dataPointer );
 				return;
 			}
-			profile->m_name = CloneString( SharedGetToken() );
+			profile->m_name = SharedGetToken();
 
 			/**
 			 * HACK HACK
