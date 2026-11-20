@@ -40,6 +40,7 @@ foreach(name IN ITEMS
 		gameui_music_manager
 		gameui_options_command
 		gameui_platform_modules
+		gameui_player_list
 		gameui_save_command
 		gameui_save_read
 		gameui_start_game
