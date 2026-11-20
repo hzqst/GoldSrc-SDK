@@ -740,7 +740,7 @@ void CCSClientScoreBoardDialog::UpdatePlayerInfo()
 			GetPlayerScoreInfo( i, data );
 			UpdatePlayerAvatar( i, data );
 			const char* name = data->GetString( "name", "" );
-			int capacity = 2 * (int)strlen( name );
+			int capacity = 2 * (int)strlen( name ) + 1;
 			char* safeName = (char*)malloc( capacity );
 			gViewPortInterface->MakeSafeName( name, safeName, capacity );
 			data->SetString( "name", safeName );

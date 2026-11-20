@@ -1,4 +1,4 @@
-"""Exercise production scoreboard refreshes selecting the local player row on the first fill."""
+"""Exercise production scoreboard refreshes selecting the local player row and escaping player names."""
 from pathlib import Path
 import subprocess
 import sys
@@ -48,10 +48,10 @@ struct ClientDll {
  int GetMaxPlayers() { return TestPlayers; }
  VGuiLibraryPlayer_t CallEnghudGetPlayerInfo(int player) { return players[player]; }
 };
-struct Viewport {
+struct TeamFortressViewport {
  ClientDll client;
  ClientDll* GetClientDllInterface() { return &client; }
- void MakeSafeName(const char* oldName, char* newName, int size) { snprintf(newName, size, "%s", oldName); }
+ void MakeSafeName(const char* oldName, char* newName, int capacity);
 } viewport, *gViewPortInterface = &viewport;
 template <typename T> struct CUtlVector {
  std::vector<T> items;
@@ -72,6 +72,15 @@ int DialogBase::FindItemIDForPlayerIndex(int player) {
   if (list.IsItemIDValid(item) && list.rows[item].data.index == player)
    return item;
  return -1;
+}
+template <typename Dialog> void ExerciseNames() {
+ players[1] = {"&&", false, 1};
+ players[2] = {"", true, 2};
+ players[3] = {nullptr, false, 0};
+ Dialog dialog;
+ dialog.UpdatePlayerInfo();
+ assert(std::string("&&&&") == dialog.list.rows[0].data.name);
+ assert(std::string("") == dialog.list.rows[1].data.name);
 }
 template <typename Dialog> void Exercise() {
  players[1] = {"other", false, 1};
@@ -138,6 +147,9 @@ int main() {
  Exercise<czeror::CClientScoreBoardDialog>();
  Exercise<dod::CDoDClientScoreBoardDialog>();
  Exercise<cstrike::CCSClientScoreBoardDialog>();
+ ExerciseNames<game_controls::CClientScoreBoardDialog>();
+ ExerciseNames<dod::CDoDClientScoreBoardDialog>();
+ ExerciseNames<cstrike::CCSClientScoreBoardDialog>();
 }
 '''
 
@@ -167,6 +179,7 @@ def main():
         path = Path(folder)
         (path / 'test.cpp').write_text('\n'.join((
             PRELUDE,
+            function(read('vgui2/game_controls/vgui_TeamFortressViewport.cpp'), 'void TeamFortressViewport::MakeSafeName('),
             GAME_CONTROLS_STUBS,
             function(game_controls, 'int CClientScoreBoardDialog::FindItemIDForPlayerIndex('),
             function(game_controls, 'void CClientScoreBoardDialog::UpdatePlayerInfo('),
