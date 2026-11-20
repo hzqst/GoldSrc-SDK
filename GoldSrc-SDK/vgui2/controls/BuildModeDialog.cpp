@@ -299,6 +299,10 @@ void BuildModeDialog::UpdateControlData( Panel* control )
 //-----------------------------------------------------------------------------
 void BuildModeDialog::DoPaste()
 {
+	// nothing copied yet
+	if ( !_copySettings )
+		return;
+
 	int x = 0;
 	int y = 0;
 	input()->GetCursorPos( x, y );
@@ -573,6 +577,12 @@ void BuildModeDialog::SetActiveControl( Panel* controlToEdit )
 
 	// reset the data
 	m_pCurrentPanel = controlToEdit;
+
+	// the undo settings belong to the previous panel
+	if ( _undoSettings )
+		_undoSettings->deleteThis();
+	_undoSettings = NULL;
+
 	RemoveAllControls();
 	m_pPanelList->m_pControls->MoveScrollBarToTop();
 
