@@ -19,6 +19,7 @@
 #undef min
 #undef max
 #include <list>
+#include <string>
 #include <vector>
 #include "bot_constants.h"
 
@@ -48,7 +49,6 @@ public:
 #endif
 	BotProfile( void )
 	{
-		m_name = NULL;
 		m_aggression = 0.0f;
 		m_skill = 0.0f;
 		m_teamwork = 0.0f;
@@ -64,7 +64,7 @@ public:
 		m_prefersSilencer = false;
 	}
 
-	const char *GetName( void ) const					{ return m_name; }		///< return bot's name
+	const char *GetName( void ) const					{ return m_name.c_str(); }		///< return bot's name
 	float GetAggression( void ) const					{ return m_aggression; }
 	float GetSkill( void ) const							{ return m_skill; }
 	float GetTeamwork( void ) const						{ return m_teamwork; }
@@ -91,7 +91,7 @@ private:
 
 	void Inherit( const BotProfile *parent, const BotProfile *baseline );	///< copy values from parent if they differ from baseline
 
-	char *m_name;												///< the bot's name
+	std::string m_name;									///< the bot's name
 	float m_aggression;									///< percentage: 0 = coward, 1 = berserker
 	float m_skill;											///< percentage: 0 = terrible, 1 = expert
 	float m_teamwork;										///< percentage: 0 = rogue, 1 = complete obeyance to team, lots of comm
