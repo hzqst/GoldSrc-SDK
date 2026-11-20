@@ -96,6 +96,7 @@ foreach(name IN ITEMS
 		vgui2_combobox_unicode
 		vgui2_cross_module_parent
 		vgui2_focus_nav_group
+		vgui2_input_modal_context
 		vgui2_label_variable
 		vgui2_listpanel_imagelist
 		vgui2_menu_scroll_range

@@ -556,17 +556,17 @@ void CInputWin32::PanelDeleted( VPANEL focus, InputContext_t& context )
 	{
 		context._mouseFocus = NULL;
 	}
-	// NOTE: These two will only ever happen for the default context at the moment
+	// NOTE: This will only ever happen for the default context at the moment
 	if ( context._mouseCapture == panel )
 	{
 		ASSERT_AT( &context == &m_DefaultInputContext, 598 );
 		SetMouseCapture( NULL );
 		context._mouseCapture = NULL;
 	}
+	// the panel may belong to a context other than the active one
 	if ( context._appModalPanel == panel )
 	{
-		ASSERT_AT( &context == &m_DefaultInputContext, 604 );
-		ReleaseAppModalSurface();
+		context._appModalPanel = NULL;
 	}
 }
 
@@ -1189,15 +1189,15 @@ void CInputWin32::PostKeyMessage( KeyValues* message )
 
 VPANEL CInputWin32::GetAppModalSurface()
 {
-	return (VPANEL)m_DefaultInputContext._appModalPanel;
+	return (VPANEL)GetInputContext( m_hContext )->_appModalPanel;
 }
 
 void CInputWin32::SetAppModalSurface( VPANEL panel )
 {
-	m_DefaultInputContext._appModalPanel = (VPanel*)panel;
+	GetInputContext( m_hContext )->_appModalPanel = (VPanel*)panel;
 }
 
 void CInputWin32::ReleaseAppModalSurface()
 {
-	m_DefaultInputContext._appModalPanel = NULL;
+	GetInputContext( m_hContext )->_appModalPanel = NULL;
 }
