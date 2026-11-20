@@ -105,6 +105,7 @@ foreach(name IN ITEMS
 		vgui2_scheme_image_cache
 		vgui2_scheme_reload
 		vgui2_sectioned_header
+		vgui2_surface_window
 		vgui2_textentry_scroll
 		vgui2_textimage
 		vgui2_unicode_token
