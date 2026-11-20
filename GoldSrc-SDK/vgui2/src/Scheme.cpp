@@ -91,6 +91,23 @@ HScheme CSchemeManager::GetScheme( const char* tag )
 	return 1; // default scheme
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: reads a scheme file, returns NULL if it can't be read
+//-----------------------------------------------------------------------------
+static KeyValues* LoadSchemeData( const char* fileName )
+{
+	KeyValues* pData = new KeyValues( "Scheme" );
+
+	if ( pData->LoadFromFile( g_pFileSystem, fileName, "SKIN" )
+		|| pData->LoadFromFile( g_pFileSystem, fileName, NULL ) )
+	{
+		return pData;
+	}
+
+	pData->deleteThis();
+	return NULL;
+}
+
 void CSchemeManager::Shutdown( bool full )
 {
 	if ( _scheme.Count() <= 1 )
@@ -100,30 +117,7 @@ void CSchemeManager::Shutdown( bool full )
 
 	for ( int i = 1; i < _scheme.Count(); ++i )
 	{
-		CScheme* pScheme = _scheme[i];
-
-		for ( int j = 0; j < pScheme->m_BorderList.Count(); ++j )
-		{
-			if ( !pScheme->m_BorderList[j].bSharedBorder )
-			{
-				Border* pBorder = pScheme->m_BorderList[j].border;
-
-				if ( pBorder )
-				{
-					delete pBorder;
-				}
-			}
-		}
-
-		pScheme->_baseBorder = NULL;
-		pScheme->m_BorderList.RemoveAll();
-		pScheme->_borders = NULL;
-
-		if ( full && pScheme->data )
-		{
-			pScheme->data->deleteThis();
-			pScheme->data = NULL;
-		}
+		_scheme[i]->Shutdown( full );
 	}
 }
 
@@ -132,14 +126,27 @@ void CSchemeManager::Shutdown( bool full )
 //-----------------------------------------------------------------------------
 void CSchemeManager::ReloadSchemes()
 {
-	int count = _scheme.Count();
-
-	Shutdown( false );
-
-	// reload the scheme
-	for ( int i = 1; i < count; ++i )
+	// reload every scheme in place so the handles stay valid
+	for ( int i = 1; i < _scheme.Count(); ++i )
 	{
-		LoadSchemeFromFile( _scheme[i]->fileName, _scheme[i]->tag );
+		CScheme* pScheme = _scheme[i];
+		KeyValues* pData = LoadSchemeData( pScheme->fileName );
+
+		// keep the previous data and borders if the file can't be read
+		if ( !pData )
+		{
+			continue;
+		}
+
+		// LoadFromFile copies into these buffers, so don't pass them in directly
+		char fileName[sizeof( pScheme->fileName )];
+		char tag[sizeof( pScheme->tag )];
+		strcpy( fileName, pScheme->fileName );
+		strcpy( tag, pScheme->tag );
+
+		pScheme->Shutdown( true );
+		pScheme->_fontAliases.RemoveAll();
+		pScheme->LoadFromFile( fileName, tag, pData );
 	}
 }
 
@@ -407,18 +414,16 @@ HScheme CSchemeManager::LoadSchemeFromFile( const char* fileName, const char* ta
 		return hScheme;
 	}
 
-	pData = new KeyValues( "Scheme" );
+	pData = LoadSchemeData( fileName );
 
-	if ( pData->LoadFromFile( g_pFileSystem, fileName, "SKIN" )
-		|| pData->LoadFromFile( g_pFileSystem, fileName, NULL ) )
+	if ( !pData )
 	{
-		pScheme = new CScheme();
-		pScheme->LoadFromFile( fileName, tag, pData );
-		return _scheme.AddToTail( pScheme );
+		return 0;
 	}
 
-	pData->deleteThis();
-	return 0;
+	pScheme = new CScheme();
+	pScheme->LoadFromFile( fileName, tag, pData );
+	return _scheme.AddToTail( pScheme );
 }
 
 void CScheme::LoadFromFile( const char* inFilename, const char* inTag, KeyValues* inKeys )
