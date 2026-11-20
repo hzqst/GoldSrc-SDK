@@ -292,23 +292,18 @@ const char* CLocalizedStringTable::GetFileNameByIndex( StringIndex_t index )
 //-----------------------------------------------------------------------------
 void CLocalizedStringTable::SetValueByIndex( StringIndex_t index, wchar_t* newValue )
 {
-	// get the existing string
-	localizedstring_t& lstr = m_Lookup[index];
-	wchar_t* wstr = &m_Values[lstr.valueIndex];
-	int newLen = (int)wcslen( newValue );
-	int oldLen = (int)wcslen( wstr );
+	// values can be shared between tokens (see FindExistingValueIndex), so never write in place;
+	// give the edited token its own storage - this is wasteful, but only happens in edit mode
+	int len = (int)wcslen( newValue ) + 1;
 
-	if ( newLen > oldLen )
-	{
-		// it won't fit, so allocate new memory - this is wasteful, but only happens in edit mode
-		lstr.valueIndex = m_Values.AddMultipleToTail( newLen + 1 );
-		memcpy( &m_Values[lstr.valueIndex], newValue, ( newLen + 1 ) * sizeof( wchar_t ) );
-	}
-	else
-	{
-		// copy the string into the old position
-		wcscpy( wstr, newValue );
-	}
+	// newValue may point into m_Values, which AddMultipleToTail can reallocate
+	CUtlVector< wchar_t > copy;
+	copy.AddMultipleToTail( len );
+	memcpy( copy.Base(), newValue, len * sizeof( wchar_t ) );
+
+	int valueIndex = m_Values.AddMultipleToTail( len );
+	memcpy( &m_Values[valueIndex], copy.Base(), len * sizeof( wchar_t ) );
+	m_Lookup[index].valueIndex = valueIndex;
 }
 
 void CLocalizedStringTable::ConstructString( wchar_t* unicodeOutput, int unicodeBufferSizeInBytes,

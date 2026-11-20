@@ -49,6 +49,7 @@ foreach(name IN ITEMS
 		localize_construct
 		localize_reload
 		localize_save
+		localize_set_value
 		localize_utf8
 		mixer_failure
 		parse_event_args
