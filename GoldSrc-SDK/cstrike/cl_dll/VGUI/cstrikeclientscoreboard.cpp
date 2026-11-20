@@ -747,12 +747,12 @@ void CCSClientScoreBoardDialog::UpdatePlayerInfo()
 			free( safeName );
 			int item = FindItemIDForPlayerIndex( i );
 			int section = player.teamnumber ? player.teamnumber : 3;
-			if ( player.thisplayer )
-				selectedItem = item;
 			if ( item == -1 )
 				item = m_pPlayerList->AddItem( section, data );
 			else
 				m_pPlayerList->ModifyItem( item, section, data );
+			if ( player.thisplayer )
+				selectedItem = item;
 			m_pPlayerList->SetItemFgColor( item, GetTeamColor( player.teamnumber ) );
 			data->deleteThis();
 		}
