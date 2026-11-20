@@ -1,4 +1,4 @@
-"""Exercise the production VGUI2 CSchemeManager::ReloadSchemes against a scheme file that changes or can't be read.
+"""Exercise the production VGUI2 CSchemeManager::ReloadSchemes against a scheme file that changes, drops a border or can't be read.
 
 Run: python tests/vgui2_scheme_reload_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -44,6 +44,8 @@ static int g_liveKeyValues = 0;
 static int g_liveBorders = 0;
 static int g_fileReads = 0;
 static bool g_failOpen = false;
+static bool g_defineFrameBorder = true;
+static int g_borderResets = 0;
 static std::map<std::string, std::string> g_baseBorderInset; // scheme file name -> BaseBorder inset
 
 class IFileSystem;
@@ -77,6 +79,7 @@ public:
   KeyValues* borders = FindKey("Borders", true);
   borders->FindKey("BaseBorder", true)->SetString("inset", it->second.c_str());
   borders->SetString("ButtonBorder", "BaseBorder");
+  if (g_defineFrameBorder) borders->FindKey("FrameBorder", true)->SetString("inset", "4 4 4 4");
   KeyValues* glyph = FindKey("Fonts", true)->FindKey("Default", true)->FindKey("1", true);
   glyph->SetString("name", "Tahoma");
   glyph->SetString("tall", "12");
@@ -129,6 +132,7 @@ public:
  int AddToTail(const T& element) { elements.push_back(element); return Count() - 1; }
  int Count() const { return (int)elements.size(); }
  T& operator[](int i) { return elements[i]; }
+ void Remove(int i) { elements.erase(elements.begin() + i); }
  void RemoveAll() { elements.clear(); }
  std::vector<T> elements;
 };
@@ -144,6 +148,8 @@ public:
  Border() { ++g_liveBorders; }
  ~Border() { --g_liveBorders; }
  void SetName(const char* borderName) { name = borderName; }
+ const char* GetName() { return name.c_str(); }
+ void ResetSettings() { inset.clear(); ++g_borderResets; }
  void ApplySchemeSettings(IScheme*, KeyValues* inResourceData) { inset = inResourceData->GetString("inset", ""); }
  std::string name;
  std::string inset;
@@ -187,8 +193,10 @@ public:
  IBorder* GetBorder(const char* borderName);
  void Shutdown(bool full);
  void LoadFromFile(const char* inFilename, const char* inTag, KeyValues* inKeys);
+ void Reload(KeyValues* inKeys);
  void LoadFonts();
  void LoadBorders();
+ Border* TakeRetiredBorder(const char* borderName);
  HFont GetFontEx(const char* fontName, bool proportional, bool hd);
  HFont FindFontInAliasList(const char* fontName);
  const char* GetMungedFontName(const char* fontName, const char* scheme, bool proportional, bool bHDProportional);
@@ -202,6 +210,7 @@ public:
  Border* _baseBorder = nullptr;
  KeyValues* _borders = nullptr;
  CUtlVector<fontalias_t> _fontAliases;
+ CUtlVector<Border*> m_RetiredBorders;
 };
 
 class CSchemeManager {
@@ -236,6 +245,8 @@ static void Release() {
  }
  g_Scheme._scheme.RemoveAll();
  g_Scheme._scheme.AddToTail(new CScheme());
+ g_defineFrameBorder = true;
+ g_borderResets = 0;
  assert(0 == g_liveBorders);
  assert(0 == g_liveKeyValues);
 }
@@ -247,7 +258,7 @@ static HScheme Load(const char* inset) {
  HScheme handle = g_Scheme.LoadSchemeFromFile(SCHEME_FILE, "TestScheme");
  assert(1 == handle);
  assert(1 == g_fileReads);
- assert(1 == g_liveBorders);
+ assert(2 == g_liveBorders);
  assert(std::string(inset) == GetBorder(handle, "BaseBorder")->inset);
  return handle;
 }
@@ -267,13 +278,13 @@ static void ReloadReadsTheFileAgainAndRebuildsBorders() {
  assert(std::string("2 2 2 2") == GetBorder(handle, "BaseBorder")->inset);
  assert(GetBorder(handle, "BaseBorder") == GetBorder(handle, "ButtonBorder"));
  assert(GetBorder(handle, "BaseBorder") == Scheme(handle)->_baseBorder);
- assert(1 == g_liveBorders);
+ assert(2 == g_liveBorders);
  assert(aliases == Scheme(handle)->_fontAliases.Count());
  assert(0 != Scheme(handle)->GetFontEx("Default", true, false));
 
  g_Scheme.ReloadSchemes();
  assert(3 == g_fileReads);
- assert(1 == g_liveBorders);
+ assert(2 == g_liveBorders);
  assert(aliases == Scheme(handle)->_fontAliases.Count());
  Release();
  puts("PASS: reloading reads the scheme file again and rebuilds borders and fonts under the same handle");
@@ -300,9 +311,56 @@ static void FailedReloadKeepsThePreviousScheme() {
  puts("PASS: a scheme file that can't be read keeps the previous data and borders");
 }
 
+static void ReloadKeepsTheAddressOfEveryBorder() {
+ HScheme handle = Load("1 1 1 1");
+ Border* base = GetBorder(handle, "BaseBorder");
+ Border* frame = GetBorder(handle, "FrameBorder");
+ assert(base != frame);
+
+ g_baseBorderInset[SCHEME_FILE] = "2 2 2 2";
+ g_Scheme.ReloadSchemes();
+
+ assert(base == GetBorder(handle, "BaseBorder"));
+ assert(base == GetBorder(handle, "ButtonBorder"));
+ assert(base == Scheme(handle)->_baseBorder);
+ assert(frame == GetBorder(handle, "FrameBorder"));
+ assert(std::string("2 2 2 2") == base->inset);
+ assert(std::string("4 4 4 4") == frame->inset);
+ assert(2 == g_borderResets);
+ assert(2 == g_liveBorders);
+ assert(0 == Scheme(handle)->m_RetiredBorders.Count());
+ Release();
+ puts("PASS: reloading reapplies each border definition to the border object of the same name");
+}
+
+static void RemovedBorderStaysAliveUntilItIsDefinedAgain() {
+ HScheme handle = Load("1 1 1 1");
+ Border* frame = GetBorder(handle, "FrameBorder");
+
+ g_defineFrameBorder = false;
+ g_Scheme.ReloadSchemes();
+
+ assert(GetBorder(handle, "BaseBorder") == GetBorder(handle, "FrameBorder"));
+ assert(1 == Scheme(handle)->m_RetiredBorders.Count());
+ assert(frame == Scheme(handle)->m_RetiredBorders[0]);
+ assert(std::string("4 4 4 4") == frame->inset);
+ assert(2 == g_liveBorders);
+
+ g_defineFrameBorder = true;
+ g_Scheme.ReloadSchemes();
+
+ assert(frame == GetBorder(handle, "FrameBorder"));
+ assert(0 == Scheme(handle)->m_RetiredBorders.Count());
+ assert(2 == g_liveBorders);
+ Release();
+ puts("PASS: a border dropped by a reload stays alive and is reused when the definition comes back");
+}
+
 int main() {
  ReloadReadsTheFileAgainAndRebuildsBorders();
  FailedReloadKeepsThePreviousScheme();
+ ReloadKeepsTheAddressOfEveryBorder();
+ RemovedBorderStaysAliveUntilItIsDefinedAgain();
 }
 '''
 
@@ -314,11 +372,13 @@ SIGNATURES = (
     'HScheme CSchemeManager::FindLoadedScheme(',
     'HScheme CSchemeManager::LoadSchemeFromFile(',
     'void CScheme::LoadFromFile(',
+    'void CScheme::Reload(',
     'const char* CScheme::GetMungedFontName(',
     'HFont CScheme::FindFontInAliasList(',
     'HFont CScheme::GetFontEx(',
     'void CScheme::LoadFonts()',
     'void CScheme::LoadBorders()',
+    'Border* CScheme::TakeRetiredBorder(',
 )
 
 

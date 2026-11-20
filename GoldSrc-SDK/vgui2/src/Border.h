@@ -33,6 +33,9 @@ public:
 	const char* GetName() override;
 	void SetName( const char* name ) override;
 
+	// clears the inset and lines so the next ApplySchemeSettings starts from an empty border
+	void ResetSettings();
+
 protected:
 	int	_inset[4];
 

@@ -216,6 +216,23 @@ void Border::ApplySchemeSettings( IScheme* pScheme, KeyValues* inResourceData )
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: clears the inset and lines
+//-----------------------------------------------------------------------------
+void Border::ResetSettings()
+{
+	int i;
+
+	SetInset( 0, 0, 0, 0 );
+
+	for ( i = 0; i < 4; i++ )
+	{
+		delete[] _sides[i].lines;
+		_sides[i].lines = NULL;
+		_sides[i].count = 0;
+	}
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: 
 // Input  : side_index - 
 //			*inResourceData - 
@@ -237,7 +254,8 @@ void Border::ParseSideSettings( int side_index, KeyValues* inResourceData, ISche
 		count++;
 	}
 
-	// allocate memory
+	// allocate memory, replacing the lines of an earlier call
+	delete[] _sides[side_index].lines;
 	_sides[side_index].count = count;
 	_sides[side_index].lines = new line_t[count];
 
