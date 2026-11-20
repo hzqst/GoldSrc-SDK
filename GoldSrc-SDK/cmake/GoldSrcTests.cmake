@@ -54,6 +54,7 @@ foreach(name IN ITEMS
 		localize_utf8
 		mixer_failure
 		parse_event_args
+		perf_counter_init
 		server_model
 		serverbrowser_filter_data
 		serverbrowser_filter_string
