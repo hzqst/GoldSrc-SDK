@@ -60,6 +60,7 @@ foreach(name IN ITEMS
 		sound_resample
 		spectate_connection
 		spectator_command_menu
+		spr_load_name
 		static_analysis
 		stream_sound
 		tfc_text_window

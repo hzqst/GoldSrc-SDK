@@ -75,6 +75,10 @@ HSPRITE SPR_Load( const char* name )
 	{
 		if ( !gSpriteList[i].pSprite )
 		{
+			// A slot whose sprite failed to load keeps its name; free it before reusing the slot
+			if ( gSpriteList[i].pName )
+				Mem_Free( gSpriteList[i].pName );
+
 			gSpriteList[i].pName = (char*)Mem_Malloc( Q_strlen( name ) + 1 );
 			Q_strcpy( gSpriteList[i].pName, name );
 		}
