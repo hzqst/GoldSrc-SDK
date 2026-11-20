@@ -317,6 +317,14 @@ CSchemeManager::~CSchemeManager()
 	{
 		_scheme[i]->Shutdown( false );
 	}
+
+	// the manager owns every scheme, including the null scheme in slot 0
+	for ( i = 0; i < _scheme.Count(); ++i )
+	{
+		delete _scheme[i];
+	}
+
+	_scheme.RemoveAll();
 }
 
 CScheme::CScheme()

@@ -42,6 +42,7 @@ STUBS = r'''
 
 static int g_liveKeyValues = 0;
 static int g_liveBorders = 0;
+static int g_liveSchemes = 0;
 static int g_fileReads = 0;
 static bool g_failOpen = false;
 static bool g_defineFrameBorder = true;
@@ -149,6 +150,7 @@ typedef unsigned long HScheme;
 typedef unsigned long HFont;
 class IScheme {};
 class IBorder {};
+class Bitmap {};
 
 class Border : public IBorder {
 public:
@@ -209,7 +211,8 @@ public:
   int _scanlines;
   int _flags;
  };
- CScheme() { fileName[0] = 0; tag[0] = 0; }
+ CScheme() { fileName[0] = 0; tag[0] = 0; ++g_liveSchemes; }
+ ~CScheme() { --g_liveSchemes; }
  IBorder* GetBorder(const char* borderName);
  void Shutdown(bool full);
  void LoadFromFile(const char* inFilename, const char* inTag, KeyValues* inKeys);
@@ -237,7 +240,20 @@ public:
 
 class CSchemeManager {
 public:
+ struct CachedBitmapHandle_t
+ {
+  Bitmap* bitmap;
+  bool hardwareFiltered;
+ };
+ // no images are cached while reloading, the destructor only walks the tree
+ struct BitmapTree {
+  int MaxElement() const { return 0; }
+  bool IsValidIndex(int) const { return false; }
+  CachedBitmapHandle_t& operator[](int) { static CachedBitmapHandle_t none = {}; return none; }
+  void RemoveAll() {}
+ };
  CSchemeManager() { _scheme.AddToTail(new CScheme()); }
+ ~CSchemeManager();
  HScheme GetScheme(const char* tag) {
   for (int i = 1; i < _scheme.Count(); ++i)
    if (!strcasecmp(tag, _scheme[i]->tag)) return i;
@@ -249,6 +265,7 @@ public:
  int GetProportionalScaledValue(int normalizedValue) { return normalizedValue; }
  int GetHDProportionalScaledValue(int normalizedValue) { return normalizedValue; }
  CUtlVector<CScheme*> _scheme;
+ BitmapTree m_Bitmaps;
 };
 static CSchemeManager g_Scheme;
 '''
@@ -451,6 +468,18 @@ static void ReloadMatchesEveryGlyphSetOfAFont() {
  puts("PASS: a font is only reused when all of its glyph sets match, not a leading part of them");
 }
 
+static void DestroyingTheManagerDeletesEveryScheme() {
+ int liveSchemes = g_liveSchemes;
+ CSchemeManager* manager = new CSchemeManager();
+ manager->_scheme.AddToTail(new CScheme());
+ assert(liveSchemes + 2 == g_liveSchemes);
+
+ delete manager;
+
+ assert(liveSchemes == g_liveSchemes);
+ puts("PASS: destroying the scheme manager deletes the null scheme and every loaded scheme");
+}
+
 int main() {
  ReloadReadsTheFileAgainAndRebuildsBorders();
  FailedReloadKeepsThePreviousScheme();
@@ -459,12 +488,14 @@ int main() {
  ReloadKeepsTheHandleOfAnUnchangedFont();
  ReloadCreatesAFontWhoseGlyphSetsChanged();
  ReloadMatchesEveryGlyphSetOfAFont();
+ DestroyingTheManagerDeletesEveryScheme();
 }
 '''
 
 SIGNATURES = (
     'static KeyValues* LoadSchemeData(',
     'void CSchemeManager::ReloadSchemes()',
+    'CSchemeManager::~CSchemeManager()',
     'IBorder* CScheme::GetBorder(',
     'void CScheme::Shutdown(',
     'HScheme CSchemeManager::FindLoadedScheme(',
