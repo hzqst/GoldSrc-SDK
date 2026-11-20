@@ -101,6 +101,7 @@ public:
 	struct CachedBitmapHandle_t
 	{
 		vgui2::Bitmap*	bitmap;
+		bool			hardwareFiltered;
 	};
 
 	static bool BitmapHandleSearchFunc( const CachedBitmapHandle_t& lhs, const CachedBitmapHandle_t& rhs );
