@@ -88,6 +88,7 @@ foreach(name IN ITEMS
 		vgui1_textimage
 		vgui1_widget_ownership
 		vgui2_border_settings
+		vgui2_build_mode_dialog
 		vgui2_child_panel
 		vgui2_combobox_key
 		vgui2_combobox_unicode

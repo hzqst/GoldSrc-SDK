@@ -118,7 +118,7 @@ BuildModeDialog::~BuildModeDialog()
 //-----------------------------------------------------------------------------
 void BuildModeDialog::DoUndo()
 {
-	if ( _undoSettings )
+	if ( _undoSettings && m_pCurrentPanel )
 	{
 		m_pCurrentPanel->ApplySettings( _undoSettings );
 		UpdateControlData( m_pCurrentPanel );
@@ -179,6 +179,10 @@ KeyValues* BuildModeDialog::StoreSettings()
 //-----------------------------------------------------------------------------
 void BuildModeDialog::DoCopy()
 {
+	// nothing selected, keep the last copy
+	if ( !m_pCurrentPanel )
+		return;
+
 	if ( _copySettings )
 	{
 		_copySettings->deleteThis();
@@ -204,7 +208,7 @@ void BuildModeDialog::OnSetClipboardText( const char* text )
 //-----------------------------------------------------------------------------
 void BuildModeDialog::StoreUndoSettings()
 {
-	bool editable = m_pCurrentPanel->IsBuildModeEditable();
+	bool editable = m_pCurrentPanel && m_pCurrentPanel->IsBuildModeEditable();
 
 	if ( _undoSettings )
 		_undoSettings->deleteThis();
@@ -219,13 +223,14 @@ void BuildModeDialog::StoreUndoSettings()
 //-----------------------------------------------------------------------------
 void BuildModeDialog::OnDeletePanel()
 {
-	if ( !m_pCurrentPanel->IsBuildModeEditable() )
+	if ( !m_pCurrentPanel || !m_pCurrentPanel->IsBuildModeEditable() )
 		return;
 
 	m_pBuildGroup->RemoveSettings();
 	SetActiveControl( m_pBuildGroup->GetCurrentPanel() );
 
-	_undoSettings->deleteThis();
+	if ( _undoSettings )
+		_undoSettings->deleteThis();
 	_undoSettings = NULL;
 	m_pSaveButton->SetEnabled( true );
 }
@@ -809,6 +814,10 @@ void BuildModeDialog::CreateControls()
 
 void BuildModeDialog::ApplyDataToControls()
 {
+	// nothing selected, nothing to apply
+	if ( !m_pCurrentPanel )
+		return;
+
 	// don't apply if the panel is not editable
 	if ( !m_pCurrentPanel->IsBuildModeEditable() )
 	{
