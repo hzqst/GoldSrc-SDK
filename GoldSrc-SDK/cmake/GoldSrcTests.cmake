@@ -109,6 +109,7 @@ foreach(name IN ITEMS
 		vgui2_textimage
 		vgui2_unicode_token
 		vgui2_wide_copy
+		vgui2_wizard_panel
 		vgui_font_glyph
 		viewport
 		viewport_command_menu

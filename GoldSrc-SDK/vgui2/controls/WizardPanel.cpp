@@ -284,6 +284,12 @@ void WizardPanel::InternalActivateNextSubPanel( Panel* panel )
 
 void WizardPanel::ActivateNextSubPanel( WizardSubPanel* panel )
 {
+	if ( !panel )
+	{
+		ivgui()->DPrintf( "Error: WizardPanel::ActivateNextSubPanel(): no panel to activate\n" );
+		return;
+	}
+
 	WizardSubPanel* previous = _currentSubPanel;
 	if ( previous && previous->ShouldDisplayPanel() )
 	{
@@ -331,6 +337,12 @@ void WizardPanel::ActivateNextSubPanel( WizardSubPanel* panel )
 //-----------------------------------------------------------------------------
 void WizardPanel::ActivatePrevSubPanel()
 {
+	if ( !_currentSubPanel )
+	{
+		ivgui()->DPrintf( "Error: WizardPanel::ActivatePrevSubPanel(): no previous panel to go back to\n" );
+		return;
+	}
+
 	_currentSubPanel->SetVisible( false );
 	WizardSubPanel* panel = NULL;
 	if ( _subPanelStack.GetCount() )
