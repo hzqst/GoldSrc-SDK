@@ -440,12 +440,12 @@ void CClientScoreBoardDialog::UpdatePlayerInfo()
 			gViewPortInterface->MakeSafeName( oldName, name.Base(), size );
 			data->SetString( "name", name.Base() );
 			int item = FindItemIDForPlayerIndex( player );
-			if ( playerInfo.thisplayer )
-				selectedRow = item;
 			if ( item == -1 )
 				item = m_pPlayerList->AddItem( playerInfo.teamnumber, data );
 			else
 				m_pPlayerList->ModifyItem( item, playerInfo.teamnumber, data );
+			if ( playerInfo.thisplayer )
+				selectedRow = item;
 			m_pPlayerList->SetItemFgColor( item, GetTeamColor( playerInfo.teamnumber ) );
 			data->deleteThis();
 		}

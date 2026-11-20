@@ -340,12 +340,12 @@ void CClientScoreBoardDialog::UpdatePlayerInfo()
 			int section = g_PlayerExtraInfo[player].teamnumber;
 			if ( section == 0 )
 				section = 3;
-			if ( g_PlayerInfoList[player].thisplayer )
-				selected = item;
 			if ( item == -1 )
 				item = m_pPlayerList->AddItem( section, data );
 			else
 				m_pPlayerList->ModifyItem( item, section, data );
+			if ( g_PlayerInfoList[player].thisplayer )
+				selected = item;
 			m_pPlayerList->SetItemFgColor( item, GetTeamColor( g_PlayerExtraInfo[player].teamnumber ) );
 			data->deleteThis();
 		}

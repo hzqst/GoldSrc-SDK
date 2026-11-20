@@ -86,12 +86,12 @@ void CDoDClientScoreBoardDialog::UpdatePlayerInfo()
 			data->SetString( "name", safeName.Base() );
 			int item = FindItemIDForPlayerIndex( player );
 			int section = info.teamnumber == 1 || info.teamnumber == 2 ? info.teamnumber : 3;
-			if ( info.thisplayer )
-				selectedRow = item;
 			if ( item == -1 )
 				item = m_pPlayerList->AddItem( section, data );
 			else
 				m_pPlayerList->ModifyItem( item, section, data );
+			if ( info.thisplayer )
+				selectedRow = item;
 			m_pPlayerList->SetItemFgColor( item, GetTeamColor( info.teamnumber ) );
 			data->deleteThis();
 		}
