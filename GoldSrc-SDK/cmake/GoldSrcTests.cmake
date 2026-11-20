@@ -94,6 +94,7 @@ foreach(name IN ITEMS
 		vgui2_child_panel
 		vgui2_combobox_key
 		vgui2_combobox_unicode
+		vgui2_command_line_params
 		vgui2_cross_module_parent
 		vgui2_current_time_and_date
 		vgui2_focus_nav_group
