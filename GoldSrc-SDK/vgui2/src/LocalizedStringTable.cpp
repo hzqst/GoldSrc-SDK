@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <wchar.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -1305,12 +1306,15 @@ bool CLocalizedStringTable::AddFile( IFileSystem* fileSystem, const char* szFile
 					break;
 				}
 
-				if ( sizeof( wchar_t ) == 4 && unit >= 0xD800 && unit <= 0xDBFF && k + 1 != 2048
+#if WCHAR_MAX > 0xFFFF
+				// checked by the preprocessor, a constant sizeof( wchar_t ) test is C4127 with a 16-bit wchar_t
+				if ( unit >= 0xD800 && unit <= 0xDBFF && k + 1 != 2048
 					&& valuetoken[k + 1] >= 0xDC00 && valuetoken[k + 1] <= 0xDFFF )
 				{
 					unit = 0x10000 + ( ( unit - 0xD800 ) << 10 ) + ( valuetoken[k + 1] - 0xDC00 );
 					++k;
 				}
+#endif
 
 				fullString[j] = (wchar_t)unit;
 			}
