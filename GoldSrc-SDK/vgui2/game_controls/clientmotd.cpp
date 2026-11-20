@@ -68,8 +68,11 @@ CClientMOTD::~CClientMOTD()
 
 bool CClientMOTD::IsURL( const char* text )
 {
-	return strlen( text ) > 7 && text[0] == 'h' && text[1] == 't' && text[2] == 't'
-		&& text[3] == 'p' && text[4] == ':' && text[5] == '/' && text[6] == '/';
+	static const char HttpScheme[] = "http://";
+	static const char HttpsScheme[] = "https://";
+	const size_t length = strlen( text );
+	return ( length > sizeof( HttpScheme ) - 1 && !_strnicmp( text, HttpScheme, sizeof( HttpScheme ) - 1 ) )
+		|| ( length > sizeof( HttpsScheme ) - 1 && !_strnicmp( text, HttpsScheme, sizeof( HttpsScheme ) - 1 ) );
 }
 
 void CClientMOTD::Activate( const char* title, const char* message )
