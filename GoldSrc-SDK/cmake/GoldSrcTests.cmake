@@ -65,6 +65,7 @@ foreach(name IN ITEMS
 		serverbrowser_sort
 		sound_resample
 		spectate_connection
+		spectator_chat_position
 		spectator_command_menu
 		spr_load_name
 		static_analysis

@@ -506,7 +506,7 @@ void CL_DLLEXPORT HUD_ChatInputPosition( int *x, int *y )
 		*y += gHUD.m_ObjectiveIcons.TimerHUDArea->bottom - gHUD.m_ObjectiveIcons.TimerHUDArea->top + 6;
 	else if ( gHUD.m_Spectator.m_pip->value != 0 )
 	{
-		float offset = (float)((gHUD.m_Spectator.m_OverviewData.insetWindowHeight + 5) * (ScreenHeight / 480.0) + 0.5);
+		float offset = (float)((gHUD.m_Spectator.m_OverviewData.insetWindowY + gHUD.m_Spectator.m_OverviewData.insetWindowHeight + 5) * (ScreenHeight / 480.0) + 0.5);
 		*y = (int)offset;
 	}
 	else if ( !ShowHudElement( 5 ) )

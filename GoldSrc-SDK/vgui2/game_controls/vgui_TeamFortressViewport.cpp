@@ -476,9 +476,9 @@ void TeamFortressViewport::ChatInputPosition( int*, int* y )
 		*y = m_pSpectatorGUI->GetTopBarHeight() + 5;
 	else
 	{
-		int x, top, dummy;
-		m_pClientDllInterface->InsetValues( x, top, dummy, dummy );
-		*y = top + 5;
+		int x, top, wide, tall;
+		m_pClientDllInterface->InsetValues( x, top, wide, tall );
+		*y = top + tall + 5;
 	}
 }
 

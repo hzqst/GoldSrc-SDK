@@ -376,7 +376,7 @@ bool TeamFortressViewport::IsSpectatorBarVisible() { return m_bInitialized && m_
 void TeamFortressViewport::ChatInputPosition( int*, int* y )
 {
 	if ( g_iUser1 || gEngfuncs.IsSpectateOnly() )
-		*y = ( gHUD.m_Spectator.m_pip->value == 0 ? m_pSpectatorGUI->GetTopBarHeight() : gHUD.m_Spectator.m_OverviewData.insetWindowHeight ) + 5;
+		*y = ( gHUD.m_Spectator.m_pip->value == 0 ? m_pSpectatorGUI->GetTopBarHeight() : gHUD.m_Spectator.m_OverviewData.insetWindowY + gHUD.m_Spectator.m_OverviewData.insetWindowHeight ) + 5;
 }
 
 void EXPORT HUD_ChatInputPosition( int* x, int* y )
