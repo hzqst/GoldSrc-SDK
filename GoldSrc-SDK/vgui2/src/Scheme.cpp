@@ -37,17 +37,17 @@ const char* CSchemeManager::s_pszSearchString = NULL;
 //-----------------------------------------------------------------------------
 bool CSchemeManager::BitmapHandleSearchFunc( const CachedBitmapHandle_t& lhs, const CachedBitmapHandle_t& rhs )
 {
-	if ( lhs.bitmap )
-	{
-		if ( rhs.bitmap )
-		{
-			return strcasecmp( lhs.bitmap->GetName(), rhs.bitmap->GetName() ) > 0;
-		}
+	const char* lhsName = lhs.bitmap ? lhs.bitmap->GetName() : s_pszSearchString;
+	const char* rhsName = rhs.bitmap ? rhs.bitmap->GetName() : s_pszSearchString;
 
-		return strcasecmp( lhs.bitmap->GetName(), s_pszSearchString ) > 0;
+	int result = strcasecmp( lhsName, rhsName );
+	if ( result != 0 )
+	{
+		return result > 0;
 	}
 
-	return strcasecmp( s_pszSearchString, rhs.bitmap->GetName() ) > 0;
+	// the same image is cached once per filtering mode
+	return lhs.hardwareFiltered > rhs.hardwareFiltered;
 }
 
 CSchemeManager g_Scheme;
@@ -787,6 +787,7 @@ IImage* CSchemeManager::GetImage( const char* imageName, bool hardwareFiltered )
 
 	s_pszSearchString = imageName;
 	searchBitmap.bitmap = NULL;
+	searchBitmap.hardwareFiltered = hardwareFiltered;
 
 	i = m_Bitmaps.Find( searchBitmap );
 
@@ -798,6 +799,7 @@ IImage* CSchemeManager::GetImage( const char* imageName, bool hardwareFiltered )
 	CachedBitmapHandle_t bitmap;
 
 	bitmap.bitmap = new Bitmap( imageName, hardwareFiltered );
+	bitmap.hardwareFiltered = hardwareFiltered;
 	m_Bitmaps.Insert( bitmap );
 	return (IImage*)bitmap.bitmap;
 }
