@@ -96,6 +96,7 @@ private:
 	void BuildFastValueLookup();
 	void DiscardFastValueLookup();
 	int FindExistingValueIndex( const wchar_t* value );
+	int AddValue( const wchar_t* value );
 	void ConstructString( wchar_t* unicodeOutput, int unicodeBufferSizeInBytes,
 		wchar_t* formatString, int numFormatParameters, va_list argList );
 
