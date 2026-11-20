@@ -59,6 +59,8 @@ private:
 // Purpose: Constructor
 //-----------------------------------------------------------------------------
 inline CPerformanceCounter::CPerformanceCounter()
+	: m_iLowShift( 0 ), m_flPerfCounterFreq( 0.0 ),
+	  m_flCurrentTime( 0.0 ), m_flLastCurrentTime( 0.0 )
 {
 	InitializePerformanceCounter();
 }
