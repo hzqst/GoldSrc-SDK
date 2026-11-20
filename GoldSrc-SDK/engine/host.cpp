@@ -30,6 +30,7 @@
 #include "zone.h"
 #include "eiface.h"
 
+#include <climits>
 #include <cstdio>
 #include <cstdarg>
 #include <cstring>
@@ -786,13 +787,15 @@ void Host_Version()
 	if ( file )
 	{
 		unsigned int fileSize = FS_Size( file );
-		char* buffer = static_cast<char*>( Mem_Malloc( fileSize + 1 ) );
-		FS_Read( buffer, static_cast<int>( fileSize ), 1, file );
+		char* buffer = fileSize < INT_MAX ? static_cast<char*>( Mem_Malloc( fileSize + 1 ) ) : NULL;
+		int bytesRead = buffer ? FS_Read( buffer, static_cast<int>( fileSize ), 1, file ) : 0;
 		FS_Close( file );
-		buffer[fileSize] = 0;
+		// text mode reads fewer bytes than the file size when it turns CRLF into LF
+		if ( buffer )
+			buffer[bytesRead > 0 ? bytesRead : 0] = 0;
 
 		int matchedKeys = 0;
-		for ( const char* cursor = COM_Parse( buffer ); cursor; cursor = COM_Parse( cursor ) )
+		for ( const char* cursor = buffer ? COM_Parse( buffer ) : NULL; cursor; cursor = COM_Parse( cursor ) )
 		{
 			int tokenLength = Q_strlen( com_token );
 			if ( tokenLength <= 0 || matchedKeys >= MAX_VERSION_KEYS )

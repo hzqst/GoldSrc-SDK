@@ -1223,9 +1223,14 @@ bool CLocalizedStringTable::AddFile( IFileSystem* fileSystem, const char* szFile
 	m_LocalizationFiles.AddToTail( m_CurrentFile );
 
 	fileSize = fileSystem->Size( file );
-	data = (ucs2*)malloc( (size_t)fileSize + sizeof( ucs2 ) );
-	fileSystem->Read( data, (int)fileSize, file );
-	data[fileSize >> 1] = 0;
+	data = fileSize < INT_MAX ? (ucs2*)malloc( (size_t)fileSize + sizeof( ucs2 ) ) : NULL;
+	if ( !data )
+	{
+		fileSystem->Close( file );
+		return false;
+	}
+	int bytesRead = fileSystem->Read( data, (int)fileSize, file );
+	data[( bytesRead > 0 ? bytesRead : 0 ) >> 1] = 0;
 
 	if ( *data != 0xFEFF )
 	{
