@@ -1248,13 +1248,21 @@ void CWin32Surface::PushMakeCurrent( VPANEL pPanel, bool useInsets )
 		window = window->GetParent();
 	}
 
-	SetContextPanel( (VPANEL)window );
-	_currentFontObject = NULL;
-
 	if ( !window )
 	{
 		g_pIVgui->DPrintf( "Warning: VPanel with no drawing context\n" );
+
+		// keep a valid context so draw calls before PopMakeCurrent do not crash,
+		// and clip everything away so nothing is drawn into the wrong window
+		SetContextPanel( _embeddedPanel );
+		_currentFontObject = NULL;
+		SetRectRgn( ContextPlat()->clipRgn, 0, 0, 0, 0 );
+		SelectObject( ContextPlat()->hdc, ContextPlat()->clipRgn );
+		return;
 	}
+
+	SetContextPanel( (VPANEL)window );
+	_currentFontObject = NULL;
 
 	int inset[4];
 	panel->Client()->GetInset( inset[0], inset[1], inset[2], inset[3] );
@@ -2041,6 +2049,11 @@ void CWin32Surface::SetAsTopMost( VPANEL panel, bool state )
 		{
 			break;
 		}
+	}
+
+	if ( !window )
+	{
+		return;
 	}
 
 	UINT flags = SWP_NOMOVE | SWP_NOSIZE;
@@ -2953,6 +2966,11 @@ void CWin32Surface::EnableMouseCapture( VPANEL panel, bool state )
 	if ( !state )
 	{
 		ReleaseCapture();
+		return;
+	}
+
+	if ( !window )
+	{
 		return;
 	}
 
