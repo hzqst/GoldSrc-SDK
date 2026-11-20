@@ -6,6 +6,7 @@
 #include "vgui/IInputInternal.h"
 #include "LocalizedStringTable.h"
 #include "ClipboardText.h"
+#include "CommandLineArgs.h"
 
 #include "SDL_clipboard.h"
 #include "SDL_stdinc.h"
@@ -16,6 +17,8 @@
 #include <wchar.h>
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #ifndef _WIN32
 #include <sys/statvfs.h>
@@ -458,19 +461,47 @@ void CSystem::SaveUserConfigFile()
 	}
 }
 
-bool CSystem::CommandLineParamExists( const char* )
+// reads the process arguments as the kernel received them, so values with spaces keep their boundaries
+// returns no arguments when the file cannot be read
+static std::vector<std::string> ReadCommandLineArgs( const char* path )
 {
-	return false;
+	std::string data;
+	FILE* fp = fopen( path, "rb" );
+	if ( !fp )
+	{
+		return std::vector<std::string>();
+	}
+
+	char buf[4096];
+	size_t count;
+	while ( ( count = fread( buf, 1, sizeof( buf ), fp ) ) > 0 )
+	{
+		data.append( buf, count );
+	}
+	fclose( fp );
+	return SplitNulSeparatedArgs( data.data(), data.size() );
 }
 
-bool CSystem::GetCommandLineParamValue( const char*, char*, int )
+static const std::vector<std::string>& GetCommandLineArgs()
 {
-	return true;
+	static const std::vector<std::string> s_Args = ReadCommandLineArgs( "/proc/self/cmdline" );
+	return s_Args;
+}
+
+bool CSystem::CommandLineParamExists( const char* paramName )
+{
+	return CommandLineArgExists( GetCommandLineArgs(), paramName );
+}
+
+bool CSystem::GetCommandLineParamValue( const char* paramName, char* value, int valueBufferSize )
+{
+	return CopyCommandLineArgValue( GetCommandLineArgs(), paramName, value, valueBufferSize );
 }
 
 const char* CSystem::GetFullCommandLine()
 {
-	return "";
+	static const std::string s_CmdLine = JoinCommandLine( GetCommandLineArgs() );
+	return s_CmdLine.c_str();
 }
 
 // struct tm counts years from 1900 and months from 0, callers expect the calendar year and months from 1 as on Windows

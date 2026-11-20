@@ -14,16 +14,19 @@
 #include "vgui_internal.h"
 #include "vgui_key_translation.h"
 #include "KeyValues.h"
-#include "filesystem_helpers.h"
 #include "vgui/ISystem.h"
 #include "vgui/IInputInternal.h"
 #include "ClipboardText.h"
+#include "CommandLineArgs.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+#include <string>
+#include <vector>
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -729,14 +732,19 @@ int CSystem::GetAvailableDrives( char* buf, int bufLen )
 	return GetLogicalDriveStringsA( bufLen, buf );
 }
 
+// the arguments of the process command line, split once since it does not change
+static const std::vector<std::string>& GetCommandLineArgs()
+{
+	static const std::vector<std::string> s_Args = SplitCommandLine( GetCommandLineA() );
+	return s_Args;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: returns whether or not the parameter was on the command line
 //-----------------------------------------------------------------------------
 bool CSystem::CommandLineParamExists( const char* paramName )
 {
-	const char* cmdLine = GetFullCommandLine();
-	const char* loc = strstr( cmdLine, paramName );
-	return ( loc != NULL );
+	return CommandLineArgExists( GetCommandLineArgs(), paramName );
 }
 
 //-----------------------------------------------------------------------------
@@ -749,20 +757,7 @@ const char* CSystem::GetFullCommandLine()
 
 bool CSystem::GetCommandLineParamValue( const char* paramName, char* value, int valueBufferSize )
 {
-	const char* cmdLine = GetFullCommandLine();
-	const char* loc = strstr( cmdLine, paramName );
-	if ( !loc )
-	{
-		return false;
-	}
-
-	loc += strlen( paramName );
-
-	char token[512];
-	ParseFile( loc, token, NULL, NULL );
-	strncpy( value, token, valueBufferSize - 1 );
-	value[valueBufferSize - 1] = 0;
-	return true;
+	return CopyCommandLineArgValue( GetCommandLineArgs(), paramName, value, valueBufferSize );
 }
 
 bool CSystem::GetCurrentTimeAndDate( int* year, int* month, int* dayOfWeek, int* day, int* hour, int* minute, int* second )
