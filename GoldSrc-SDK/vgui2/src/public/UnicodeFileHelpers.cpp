@@ -18,7 +18,7 @@ ucs2* AdvanceOverWhitespace( ucs2* start )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose: copies out the next token, tokenBufferSize counts the terminator
 //-----------------------------------------------------------------------------
 ucs2* ReadUnicodeToken( ucs2* start, ucs2* token, int tokenBufferSize, bool& quoted )
 {
@@ -39,7 +39,7 @@ ucs2* ReadUnicodeToken( ucs2* start, ucs2* token, int tokenBufferSize, bool& quo
 		// copy out the string until we hit an end quote
 		start++;
 		int count = 0;
-		while ( *start && *start != '\"' && count < tokenBufferSize )
+		while ( *start && *start != '\"' && count < tokenBufferSize - 1 )
 		{
 			// check for special characters
 			if ( *start == '\\' && *( start + 1 ) == 'n' )
@@ -71,7 +71,7 @@ ucs2* ReadUnicodeToken( ucs2* start, ucs2* token, int tokenBufferSize, bool& quo
 	{
 		// copy out the string until we hit a whitespace
 		int count = 0;
-		while ( *start && !iswspace( *start ) && count < tokenBufferSize )
+		while ( *start && !iswspace( *start ) && count < tokenBufferSize - 1 )
 		{
 			// no checking for special characters if it's not a quoted string
 			*token = *start;
