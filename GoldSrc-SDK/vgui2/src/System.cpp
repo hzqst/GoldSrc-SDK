@@ -17,6 +17,7 @@
 #include "filesystem_helpers.h"
 #include "vgui/ISystem.h"
 #include "vgui/IInputInternal.h"
+#include "ClipboardText.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -392,31 +393,22 @@ int CSystem::GetClipboardText( int offset, char* buf, int bufLen )
 		return 0;
 	}
 
+	buf[0] = 0;
 	int count = 0;
 	if ( !OpenClipboard( NULL ) )
 	{
 		return 0;
 	}
 
-	HANDLE hmem = GetClipboardData( CF_UNICODETEXT );
+	// the narrow text is CF_TEXT, as SetClipboardText and GetClipboardTextCount use, and offset counts its bytes
+	HANDLE hmem = GetClipboardData( CF_TEXT );
 	if ( hmem )
 	{
-		count = (int)GlobalSize( hmem ) - offset;
-		if ( count <= 0 )
-		{
-			CloseClipboard();
-			return 0;
-		}
-
-		if ( bufLen < count )
-		{
-			count = bufLen;
-		}
-
-		void* ptr = GlobalLock( hmem );
+		const char* ptr = (const char*)GlobalLock( hmem );
 		if ( ptr )
 		{
-			memcpy( buf, (char*)ptr + offset, count );
+			int length = (int)strnlen( ptr, GlobalSize( hmem ) );
+			count = CopyClipboardText( ptr, length, offset, buf, bufLen );
 			GlobalUnlock( hmem );
 		}
 	}
@@ -435,7 +427,7 @@ int CSystem::GetClipboardText( int offset, wchar_t* buf, int bufLen )
 		return 0;
 	}
 
-	if ( bufLen <= 0 )
+	if ( bufLen < (int)sizeof( wchar_t ) )
 	{
 		return 0;
 	}
@@ -446,31 +438,21 @@ int CSystem::GetClipboardText( int offset, wchar_t* buf, int bufLen )
 		return 0;
 	}
 
+	// offset counts wide characters
 	HANDLE hmem = GetClipboardData( CF_UNICODETEXT );
 	if ( hmem )
 	{
-		count = (int)GlobalSize( hmem ) - offset;
-		if ( count <= 0 )
-		{
-			CloseClipboard();
-			return 0;
-		}
-
-		if ( bufLen < count )
-		{
-			count = bufLen;
-		}
-
-		void* ptr = GlobalLock( hmem );
+		const wchar_t* ptr = (const wchar_t*)GlobalLock( hmem );
 		if ( ptr )
 		{
-			memcpy( buf, (wchar_t*)ptr + offset, count );
+			int length = (int)wcsnlen( ptr, GlobalSize( hmem ) / sizeof( wchar_t ) );
+			count = CopyClipboardText( ptr, length, offset, buf, bufLen / (int)sizeof( wchar_t ) );
 			GlobalUnlock( hmem );
 		}
 	}
 
 	CloseClipboard();
-	return (int)( count / sizeof( wchar_t ) );
+	return count;
 }
 
 static bool staticSplitRegistryKey( const char* key, char* key0, int key0Len, char* key1, int key1Len )

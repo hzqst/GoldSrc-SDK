@@ -5,6 +5,7 @@
 #include "vgui/ISystem.h"
 #include "vgui/IInputInternal.h"
 #include "LocalizedStringTable.h"
+#include "ClipboardText.h"
 
 #include "SDL_clipboard.h"
 #include "SDL_stdinc.h"
@@ -242,9 +243,20 @@ void CSystem::ShellExecute( const char* command, const char* file )
 #endif
 }
 
-void CSystem::SetClipboardText( const char* text, int )
+void CSystem::SetClipboardText( const char* text, int textLen )
 {
-	SDL_SetClipboardText( text );
+	if ( !text || textLen <= 0 )
+	{
+		return;
+	}
+
+	// copy at most textLen bytes, as on Windows
+	size_t length = strnlen( text, textLen );
+	std::unique_ptr<char[]> copy( new char[length + 1] );
+	memcpy( copy.get(), text, length );
+	copy[length] = 0;
+
+	SDL_SetClipboardText( copy.get() );
 }
 
 void CSystem::SetClipboardText( const wchar_t* text, int textLen )
@@ -290,7 +302,7 @@ int CSystem::GetClipboardTextCount()
 	return len;
 }
 
-int CSystem::GetClipboardText( int, char* buf, int bufLen )
+int CSystem::GetClipboardText( int offset, char* buf, int bufLen )
 {
 	if ( !buf || bufLen <= 0 )
 		return 0;
@@ -302,13 +314,13 @@ int CSystem::GetClipboardText( int, char* buf, int bufLen )
 		return 0;
 	}
 
-	strncpy( buf, clip, bufLen - 1 );
-	buf[bufLen - 1] = 0;
+	// offset counts the UTF-8 bytes, as Windows counts the CF_TEXT bytes
+	int count = CopyClipboardText( clip, (int)strlen( clip ), offset, buf, bufLen );
 	SDL_free( clip );
-	return strlen( buf );
+	return count;
 }
 
-int CSystem::GetClipboardText( int, wchar_t* buf, int bufLen )
+int CSystem::GetClipboardText( int offset, wchar_t* buf, int bufLen )
 {
 	if ( !buf || bufLen < (int)sizeof( wchar_t ) )
 		return 0;
@@ -320,9 +332,13 @@ int CSystem::GetClipboardText( int, wchar_t* buf, int bufLen )
 		return 0;
 	}
 
-	int count = Q_UTF8ToUnicode( clip, buf, bufLen );
+	// offset counts wide characters, so convert the whole text before skipping them
+	int size = Q_UTF8ToUnicode( clip, NULL, 0 );
+	std::unique_ptr<wchar_t[]> unicode( new wchar_t[size] );
+	Q_UTF8ToUnicode( clip, unicode.get(), size * (int)sizeof( wchar_t ) );
 	SDL_free( clip );
-	return count;
+
+	return CopyClipboardText( unicode.get(), size - 1, offset, buf, bufLen / (int)sizeof( wchar_t ) );
 }
 
 bool CSystem::SetRegistryString( const char*, const char* )

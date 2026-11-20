@@ -1,4 +1,4 @@
-"""Exercise the production POSIX VGUI2 wide clipboard functions and TextEntry::CopySelected on a stub SDL clipboard, under the C and a UTF-8 LC_CTYPE.
+"""Exercise the production POSIX VGUI2 clipboard functions, the CopyClipboardText helpers Windows shares and TextEntry::CopySelected on a stub SDL clipboard, under the C and a UTF-8 LC_CTYPE.
 
 Run: python tests/vgui2_posix_clipboard_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -59,6 +59,7 @@ public:
  void SetClipboardText(const char* text, int textLen);
  void SetClipboardText(const wchar_t* text, int textLen);
  int GetClipboardTextCount();
+ int GetClipboardText(int offset, char* buf, int bufLen);
  int GetClipboardText(int offset, wchar_t* buf, int bufLen);
 };
 static CSystem systemObject;
@@ -180,6 +181,85 @@ static void PasteRejectsNoBufferOrText() {
  assert(0 == buf[0]);
 }
 
+static void CopiesNarrowAtMostTextLen() {
+ systemObject.SetClipboardText("abcdef", 3);
+ assert(std::string("abc") == clipboard);
+ systemObject.SetClipboardText("ab", 100);
+ assert(std::string("ab") == clipboard);
+ systemObject.SetClipboardText("", 1);
+ assert(std::string("") == clipboard);
+ SetClipboard("kept");
+ systemObject.SetClipboardText("ab", 0);
+ systemObject.SetClipboardText((const char*)nullptr, 2);
+ assert(std::string("kept") == clipboard);
+}
+
+static void PastesNarrowFromOffset() {
+ char buf[16];
+ SetClipboard("abcdef");
+ assert(6 == systemObject.GetClipboardText(0, buf, (int)sizeof(buf)));
+ assert(std::string("abcdef") == buf);
+ assert(4 == systemObject.GetClipboardText(2, buf, (int)sizeof(buf)));
+ assert(std::string("cdef") == buf);
+ assert(1 == systemObject.GetClipboardText(5, buf, (int)sizeof(buf)));
+ assert(std::string("f") == buf);
+ assert(0 == systemObject.GetClipboardText(6, buf, (int)sizeof(buf)));
+ assert(0 == buf[0]);
+ assert(0 == systemObject.GetClipboardText(7, buf, (int)sizeof(buf)));
+ assert(0 == systemObject.GetClipboardText(-1, buf, (int)sizeof(buf)));
+ assert(0 == buf[0]);
+}
+
+static void PastesNarrowThatFits() {
+ char small[4];
+ SetClipboard("abcdef");
+ assert(3 == systemObject.GetClipboardText(0, small, (int)sizeof(small)));
+ assert(std::string("abc") == small);
+ assert(3 == systemObject.GetClipboardText(2, small, (int)sizeof(small)));
+ assert(std::string("cde") == small);
+ char one[1] = {'x'};
+ assert(0 == systemObject.GetClipboardText(0, one, (int)sizeof(one)));
+ assert(0 == one[0]);
+}
+
+// the narrow interface counts bytes, so an offset or a cut may split a UTF-8 character
+static void PastesNarrowUtf8AsBytes() {
+ char buf[16];
+ SetClipboard("ab\xe4\xb8\xad");
+ assert(2 == systemObject.GetClipboardText(3, buf, (int)sizeof(buf)));
+ assert(std::string("\xb8\xad") == buf);
+ char small[4];
+ assert(3 == systemObject.GetClipboardText(0, small, (int)sizeof(small)));
+ assert(std::string("ab\xe4") == small);
+}
+
+static void PasteNarrowRejectsNoBufferOrText() {
+ char buf[2] = {'x', 'x'};
+ SetClipboard("ab");
+ assert(0 == systemObject.GetClipboardText(0, (char*)nullptr, (int)sizeof(buf)));
+ assert(0 == systemObject.GetClipboardText(0, buf, 0));
+ assert('x' == buf[0]);
+ hasClipboard = false;
+ assert(0 == systemObject.GetClipboardText(0, buf, (int)sizeof(buf)));
+ assert(0 == buf[0]);
+}
+
+// offset counts wide characters, and the count includes the terminator
+static void PastesWideFromOffset() {
+ wchar_t buf[16];
+ SetClipboard("ab\xe4\xb8\xad" "cd");
+ assert(4 == systemObject.GetClipboardText(2, buf, (int)sizeof(buf)));
+ assert(std::wstring(L"\u4e2dcd") == buf);
+ assert(1 == systemObject.GetClipboardText(5, buf, (int)sizeof(buf)));
+ assert(0 == buf[0]);
+ assert(0 == systemObject.GetClipboardText(6, buf, (int)sizeof(buf)));
+ assert(0 == systemObject.GetClipboardText(-1, buf, (int)sizeof(buf)));
+ assert(0 == buf[0]);
+ wchar_t small[3];
+ assert(3 == systemObject.GetClipboardText(1, small, (int)sizeof(small)));
+ assert(std::wstring(L"b\u4e2d") == small);
+}
+
 static void RunClipboard(const char* locale) {
  CopiesAsUtf8();
  CopiesAtMostTextLen();
@@ -188,7 +268,34 @@ static void RunClipboard(const char* locale) {
  PastesLongText();
  PastesWholeCharactersThatFit();
  PasteRejectsNoBufferOrText();
- printf("PASS: the wide clipboard is UTF-8, copies textLen characters and pastes long or cut text under LC_CTYPE %s\n", locale);
+ CopiesNarrowAtMostTextLen();
+ PastesNarrowFromOffset();
+ PastesNarrowThatFits();
+ PastesNarrowUtf8AsBytes();
+ PasteNarrowRejectsNoBufferOrText();
+ PastesWideFromOffset();
+ printf("PASS: the clipboard is UTF-8, copies textLen characters and pastes long, cut or offset text under LC_CTYPE %s\n", locale);
+}
+
+// the Windows clipboard reads its CF_TEXT and CF_UNICODETEXT data with the same helpers
+static void CopiesClipboardTextSuffix() {
+ char narrow[4];
+ assert(3 == CopyClipboardText("abcdef", 6, 1, narrow, (int)sizeof(narrow)));
+ assert(std::string("bcd") == narrow);
+ assert(0 == CopyClipboardText("abcdef", 6, 6, narrow, (int)sizeof(narrow)));
+ assert(0 == narrow[0]);
+ wchar_t wide[4];
+ assert(4 == CopyClipboardText(L"abcdef", 6, 1, wide, 4));
+ assert(std::wstring(L"bcd") == wide);
+ assert(1 == CopyClipboardText(L"abcdef", 6, 6, wide, 4));
+ assert(0 == wide[0]);
+ assert(0 == CopyClipboardText(L"abcdef", 6, 7, wide, 4));
+ assert(0 == CopyClipboardText(L"abcdef", 6, -1, wide, 4));
+ // a surrogate pair is not split where wchar_t is 16 bits
+ const wchar_t pair[] = {L'a', (wchar_t)0xD83D, (wchar_t)0xDE00, 0};
+ assert((sizeof(wchar_t) == 2 ? 2 : 3) == CopyClipboardText(pair, 3, 0, wide, 3));
+ assert(L'a' == wide[0]);
+ puts("PASS: CopyClipboardText copies the suffix from offset, cut to fit with a terminator");
 }
 
 static void TextEntryCopiesNewlinesWhole() {
@@ -204,6 +311,7 @@ static void TextEntryCopiesNewlinesWhole() {
 int main() {
  assert(setlocale(LC_CTYPE, "C"));
  RunClipboard("C");
+ CopiesClipboardTextSuffix();
  TextEntryCopiesNewlinesWhole();
  const char* utf8Locales[] = {"C.UTF-8", "C.utf8", "en_US.UTF-8", ".UTF-8"};
  for (const char* locale : utf8Locales) {
@@ -222,7 +330,8 @@ def main():
     table = (ROOT / 'vgui2/src/LocalizedStringTable.cpp').read_text(encoding='utf-8')
     posix = (ROOT / 'vgui2/src/system_posix.cpp').read_text(encoding='utf-8')
     text_entry = (ROOT / 'vgui2/controls/TextEntry.cpp').read_text(encoding='utf-8')
-    code = f'#define LONG_TEXT_CHARACTERS {LONG_TEXT_CHARACTERS}\n' + STUBS
+    clipboard_text = (ROOT / 'vgui2/src/ClipboardText.h').read_text(encoding='utf-8')
+    code = f'#define LONG_TEXT_CHARACTERS {LONG_TEXT_CHARACTERS}\n' + clipboard_text + STUBS
     code += ''.join(function(text_entry, signature) + '\n' for signature in ('void TextEntry::CopySelected()',))
     code += '}\n'
     code += ''.join(function(table, signature) + '\n' for signature in (
@@ -232,10 +341,11 @@ def main():
         'int CLocalizedStringTable::ConvertUnicodeToANSI('))
     code += ''.join(function(posix, signature) + '\n' for signature in (
         'static int Q_UnicodeToUTF8(', 'static int Q_UTF8ToUnicode(',
-        'void CSystem::SetClipboardText( const char* text, int )',
+        'void CSystem::SetClipboardText( const char* text, int textLen )',
         'void CSystem::SetClipboardText( const wchar_t* text, int textLen )',
         'int CSystem::GetClipboardTextCount()',
-        'int CSystem::GetClipboardText( int, wchar_t* buf, int bufLen )'))
+        'int CSystem::GetClipboardText( int offset, char* buf, int bufLen )',
+        'int CSystem::GetClipboardText( int offset, wchar_t* buf, int bufLen )'))
     code += TESTS
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui2-posix-clipboard-') as folder:
         folder = Path(folder)
