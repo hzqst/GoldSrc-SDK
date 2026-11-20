@@ -1,4 +1,4 @@
-"""Exercise the production VGUI2 focus restore of EditablePanel and WizardPanel through FocusNavGroup, with the focused child of this module, of another module and deleted, and the FocusNavGroup tab navigation over children of both modules.
+"""Exercise the production VGUI2 focus restore of EditablePanel and WizardPanel through FocusNavGroup, with the focused child of this module, of another module and deleted, the FocusNavGroup tab navigation over children of both modules, and FocusNavGroup::SetDefaultButton setting and clearing the default button (#482).
 
 Run: python tests/vgui2_focus_nav_group_tests.py
 Requires a C++17 compiler; cxx_toolchain.py picks CXX, MSVC on Windows or c++.
@@ -27,6 +27,8 @@ STUBS = r'''
 #include <cstdlib>
 #include <map>
 #include <vector>
+
+#define ASSERT_AT( expression, line ) assert( expression )
 
 #ifndef _WIN32
 #define _stricmp strcasecmp
@@ -153,8 +155,13 @@ public:
  VPANEL GetCurrentFocusVPanel();
  bool RequestFocusPrev(VPANEL panel);
  bool RequestFocusNext(VPANEL panel);
- bool CanButtonBeDefault(VPANEL) { return false; }
- void SetCurrentDefaultButton(VPANEL, bool) {}
+ void SetDefaultButton(Panel* panel);
+ // a button counts as one only once set, so the tab navigation never makes a child the default
+ bool CanButtonBeDefault(VPANEL panel) { return panel && panel == button; }
+ // records what SetCurrentDefaultButton is given
+ void SetCurrentDefaultButton(VPANEL panel, bool) { ++currentDefaultCalls; currentDefault = panel; }
+ VPANEL button = 0, currentDefault = 0;
+ int currentDefaultCalls = 0;
  VPanelHandle _defaultButton;
  VPanelHandle _currentFocus;
  Panel* _mainPanel;
@@ -309,7 +316,30 @@ static void TabSkipsAChildThatCannotTakeTheFocus() {
  puts("PASS: FocusNavGroup tabbing skips a disabled or hidden child of either module");
 }
 
+static void SetDefaultButtonSetsAndClearsTheDefault() {
+ Scene<EditablePanel> scene;
+ FocusNavGroup& group = scene.page.m_NavGroup;
+ group.SetDefaultButton(nullptr);
+ assert(0 == group._defaultButton.Get());
+ assert(0 == group.currentDefaultCalls);
+ group.button = scene.first.GetVPanel();
+ group.SetDefaultButton(&scene.first);
+ assert(scene.first.GetVPanel() == group._defaultButton.Get());
+ assert(scene.first.GetVPanel() == group.currentDefault);
+ assert(1 == group.currentDefaultCalls);
+ group.SetDefaultButton(&scene.first);
+ assert(1 == group.currentDefaultCalls);
+ group.SetDefaultButton(nullptr);
+ assert(0 == group._defaultButton.Get());
+ assert(0 == group.currentDefault);
+ assert(2 == group.currentDefaultCalls);
+ group.SetDefaultButton(nullptr);
+ assert(2 == group.currentDefaultCalls);
+ puts("PASS: FocusNavGroup::SetDefaultButton sets the default button once and NULL clears it");
+}
+
 int main() {
+ SetDefaultButtonSetsAndClearsTheDefault();
  TabReachesTheChildOfAnotherModule();
  TabSkipsAChildThatCannotTakeTheFocus();
  TheChildOfThisModuleGetsTheFocusBack();
@@ -324,7 +354,7 @@ int main() {
 def main():
     controls = ROOT / 'vgui2/controls'
     sources = {
-        'FocusNavGroup.cpp': ('Panel* FocusNavGroup::GetDefaultPanel()', 'Panel* FocusNavGroup::GetCurrentFocus()',
+        'FocusNavGroup.cpp': ('void FocusNavGroup::SetDefaultButton( Panel* panel )', 'Panel* FocusNavGroup::GetDefaultPanel()', 'Panel* FocusNavGroup::GetCurrentFocus()',
                               'VPANEL FocusNavGroup::GetCurrentFocusVPanel()', 'static int GetTabbableChildPosition( VPANEL child )',
                               'bool FocusNavGroup::RequestFocusPrev( VPANEL panel )', 'bool FocusNavGroup::RequestFocusNext( VPANEL panel )'),
         'EditablePanel.cpp': ('void EditablePanel::OnSetFocus()', 'VPANEL EditablePanel::GetCurrentKeyFocus()'),
