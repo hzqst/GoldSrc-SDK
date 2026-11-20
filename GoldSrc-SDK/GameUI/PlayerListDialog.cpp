@@ -143,26 +143,27 @@ void CPlayerListDialog::OnItemSelected()
 	// make sure the data is up-to-date
 	RefreshPlayerProperties();
 	// set the button state based on the selected item
-	if ( m_pPlayerList->GetSelectedItemsCount() <= 0 )
+	KeyValues* player = NULL;
+	if ( m_pPlayerList->GetSelectedItemsCount() > 0 )
+		player = m_pPlayerList->GetItem( m_pPlayerList->GetSelectedItem( 0 ) );
+
+	// no selection, or the selected row has no data
+	if ( !player )
 	{
 		m_pMuteButton->SetEnabled( false );
 		m_pMuteButton->SetText( "#GameUI_MuteIngameVoice" );
 		return;
 	}
 
-	KeyValues* player = m_pPlayerList->GetItem( m_pPlayerList->GetSelectedItem( 0 ) );
-	bool disabled = false;
-	if ( player )
-	{
-		const char* botValue = engine->PlayerInfo_ValueForKey( player->GetInt( "index" ), "*bot" );
-		disabled = botValue && !stricmp( "1", botValue );
-	}
+	int playerIndex = player->GetInt( "index" );
+	const char* botValue = engine->PlayerInfo_ValueForKey( playerIndex, "*bot" );
+	bool disabled = botValue && !stricmp( "1", botValue );
 
-	if ( !engine->PlayerInfo_ValueForKey( player->GetInt( "index" ), "name" ) )
+	if ( !engine->PlayerInfo_ValueForKey( playerIndex, "name" ) )
 		disabled = true;
 
-	if ( player && !disabled && GameClientExports()
-		&& GameClientExports()->IsPlayerGameVoiceMuted( player->GetInt( "index" ) ) )
+	if ( !disabled && GameClientExports()
+		&& GameClientExports()->IsPlayerGameVoiceMuted( playerIndex ) )
 		m_pMuteButton->SetText( "#GameUI_UnmuteIngameVoice" );
 	else
 		m_pMuteButton->SetText( "#GameUI_MuteIngameVoice" );
