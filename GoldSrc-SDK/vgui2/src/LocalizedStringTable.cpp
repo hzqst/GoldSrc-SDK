@@ -294,16 +294,24 @@ void CLocalizedStringTable::SetValueByIndex( StringIndex_t index, wchar_t* newVa
 {
 	// values can be shared between tokens (see FindExistingValueIndex), so never write in place;
 	// give the edited token its own storage - this is wasteful, but only happens in edit mode
-	int len = (int)wcslen( newValue ) + 1;
+	m_Lookup[index].valueIndex = AddValue( newValue );
+}
 
-	// newValue may point into m_Values, which AddMultipleToTail can reallocate
+//-----------------------------------------------------------------------------
+// Purpose: appends a copy of value to the value storage and returns its index
+//-----------------------------------------------------------------------------
+int CLocalizedStringTable::AddValue( const wchar_t* value )
+{
+	int len = (int)wcslen( value ) + 1;
+
+	// value may point into m_Values, which AddMultipleToTail can reallocate
 	CUtlVector< wchar_t > copy;
 	copy.AddMultipleToTail( len );
-	memcpy( copy.Base(), newValue, len * sizeof( wchar_t ) );
+	memcpy( copy.Base(), value, len * sizeof( wchar_t ) );
 
 	int valueIndex = m_Values.AddMultipleToTail( len );
 	memcpy( &m_Values[valueIndex], copy.Base(), len * sizeof( wchar_t ) );
-	m_Lookup[index].valueIndex = valueIndex;
+	return valueIndex;
 }
 
 void CLocalizedStringTable::ConstructString( wchar_t* unicodeOutput, int unicodeBufferSizeInBytes,
@@ -1060,10 +1068,7 @@ void CLocalizedStringTable::AddString( const char* pString, wchar_t* pValue, con
 	valueIndex = FindExistingValueIndex( pValue );
 	if ( valueIndex == -1 )
 	{
-		int len = (int)wcslen( pValue ) + 1;
-
-		valueIndex = m_Values.AddMultipleToTail( len );
-		memcpy( &m_Values[valueIndex], pValue, len * sizeof( wchar_t ) );
+		valueIndex = AddValue( pValue );
 	}
 
 	stridx = FindIndex( pString );
