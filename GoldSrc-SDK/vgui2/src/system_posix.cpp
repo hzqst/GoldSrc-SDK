@@ -20,6 +20,7 @@
 #ifndef _WIN32
 #include <sys/statvfs.h>
 #include <sys/time.h>
+#include <time.h>
 #endif
 
 #ifdef _WIN32
@@ -472,8 +473,53 @@ const char* CSystem::GetFullCommandLine()
 	return "";
 }
 
-bool CSystem::GetCurrentTimeAndDate( int*, int*, int*, int*, int*, int*, int* )
+// struct tm counts years from 1900 and months from 0, callers expect the calendar year and months from 1 as on Windows
+static const int TM_YEAR_BASE = 1900;
+static const int TM_MONTH_BASE = 1;
+
+bool CSystem::GetCurrentTimeAndDate( int* year, int* month, int* dayOfWeek, int* day, int* hour, int* minute, int* second )
 {
+	time_t now = time( NULL );
+	if ( now == (time_t)-1 )
+	{
+		return false;
+	}
+
+	struct tm local;
+	if ( !localtime_r( &now, &local ) )
+	{
+		return false;
+	}
+
+	if ( year )
+	{
+		*year = local.tm_year + TM_YEAR_BASE;
+	}
+	if ( month )
+	{
+		*month = local.tm_mon + TM_MONTH_BASE;
+	}
+	if ( dayOfWeek )
+	{
+		*dayOfWeek = local.tm_wday;
+	}
+	if ( day )
+	{
+		*day = local.tm_mday;
+	}
+	if ( hour )
+	{
+		*hour = local.tm_hour;
+	}
+	if ( minute )
+	{
+		*minute = local.tm_min;
+	}
+	if ( second )
+	{
+		*second = local.tm_sec;
+	}
+
 	return true;
 }
 
