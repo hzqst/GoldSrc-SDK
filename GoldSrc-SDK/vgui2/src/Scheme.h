@@ -51,6 +51,13 @@ private:
 	{
 		char			_fontName[64];
 		vgui2::HFont	_font;
+		// the glyph set this entry added to _font, compared by a reload to reuse _font
+		int				_glyphNameSymbol;
+		int				_tall;
+		int				_weight;
+		int				_blur;
+		int				_scanlines;
+		int				_flags;
 	};
 
 	char	fileName[256];
@@ -64,6 +71,8 @@ private:
 	vgui2::Border*				_baseBorder;
 	KeyValues*					_borders;
 	CUtlVector<fontalias_t>		_fontAliases;
+	// the aliases from before a reload, only filled while LoadFonts runs from Reload
+	CUtlVector<fontalias_t>		m_PreviousFontAliases;
 	// borders taken out of m_BorderList by a reload, kept alive because panels may still point at them
 	CUtlVector<vgui2::Border*>	m_RetiredBorders;
 
@@ -74,6 +83,7 @@ private:
 	void LoadBorders();
 	vgui2::Border* TakeRetiredBorder( const char* borderName );
 	vgui2::HFont FindFontInAliasList( const char* fontName );
+	vgui2::HFont FindPreviousFont( int firstAlias );
 	const char* GetMungedFontName( const char* fontName, const char* scheme, bool proportional, bool bHDProportional );
 	int GetAdjustedFontHeightForCurrentLanguage( int tall );
 

@@ -496,6 +496,13 @@ void CScheme::Reload( KeyValues* inKeys )
 	_baseBorder = NULL;
 	m_BorderList.RemoveAll();
 	_borders = NULL;
+
+	// the surface can't free or redefine a font, so LoadFonts reuses the fonts whose glyph sets didn't change
+	for ( i = 0; i < _fontAliases.Count(); ++i )
+	{
+		m_PreviousFontAliases.AddToTail( _fontAliases[i] );
+	}
+
 	_fontAliases.RemoveAll();
 
 	if ( data )
@@ -505,6 +512,7 @@ void CScheme::Reload( KeyValues* inKeys )
 	}
 
 	LoadFromFile( inFilename, inTag, inKeys );
+	m_PreviousFontAliases.RemoveAll();
 }
 
 //-----------------------------------------------------------------------------
@@ -648,8 +656,11 @@ void CScheme::LoadFonts()
 			bool proportional = ( i == 1 );
 			bool bHDProportional = ( i == 2 );
 			const char* fontName = GetMungedFontName( pFont->GetName(), tag, proportional, bHDProportional ); // first time it adds a normal font, and then a proportional one
-			HFont font = g_pSurface->CreateFont();
+			int firstAlias = _fontAliases.Count();
+			CUtlVector<const char*> glyphNames;
+			HFont font;
 			KeyValues* pGlyph;
+			int j;
 
 			for ( pGlyph = pFont->GetFirstSubKey(); pGlyph != NULL; pGlyph = pGlyph->GetNextKey() )
 			{
@@ -747,23 +758,102 @@ void CScheme::LoadFonts()
 					tall = GetAdjustedFontHeightForCurrentLanguage( tall );
 				}
 
-				g_pSurface->AddGlyphSetToFont(
-					font,
-					pGlyph->GetString( "name", "" ),
-					tall,
-					pGlyph->GetInt( "weight" ),
-					blur,
-					scanlines,
-					flags,
-					0,
-					0xFFFF );
-
 				index = _fontAliases.AddToTail();
 				strncpy( _fontAliases[index]._fontName, fontName, sizeof( _fontAliases[index]._fontName ) );
-				_fontAliases[index]._font = font;
+				_fontAliases[index]._font = 0; // set once every glyph set of this font is known
+				_fontAliases[index]._glyphNameSymbol = g_pKeyValues->GetSymbolForString( pGlyph->GetString( "name", "" ) );
+				_fontAliases[index]._tall = tall;
+				_fontAliases[index]._weight = pGlyph->GetInt( "weight" );
+				_fontAliases[index]._blur = blur;
+				_fontAliases[index]._scanlines = scanlines;
+				_fontAliases[index]._flags = flags;
+				glyphNames.AddToTail( pGlyph->GetString( "name", "" ) );
+			}
+
+			// no glyph set fits this resolution, nothing can look the font up
+			if ( glyphNames.Count() == 0 )
+			{
+				continue;
+			}
+
+			font = FindPreviousFont( firstAlias );
+
+			if ( !font )
+			{
+				font = g_pSurface->CreateFont();
+
+				for ( j = 0; j < glyphNames.Count(); ++j )
+				{
+					fontalias_t& alias = _fontAliases[firstAlias + j];
+
+					g_pSurface->AddGlyphSetToFont(
+						font,
+						glyphNames[j],
+						alias._tall,
+						alias._weight,
+						alias._blur,
+						alias._scanlines,
+						alias._flags,
+						0,
+						0xFFFF );
+				}
+			}
+
+			for ( j = firstAlias; j < _fontAliases.Count(); ++j )
+			{
+				_fontAliases[j]._font = font;
 			}
 		}
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: returns the font from before a reload that had the same name and glyph sets as
+//			the aliases from firstAlias on, 0 if there is none
+//-----------------------------------------------------------------------------
+HFont CScheme::FindPreviousFont( int firstAlias )
+{
+	int count = _fontAliases.Count() - firstAlias;
+	int i;
+	int end;
+	int j;
+
+	for ( i = 0; i < m_PreviousFontAliases.Count(); i = end )
+	{
+		// the aliases of one font sit next to each other
+		for ( end = i + 1; end < m_PreviousFontAliases.Count() && m_PreviousFontAliases[end]._font == m_PreviousFontAliases[i]._font; ++end )
+		{
+		}
+
+		if ( end - i != count )
+		{
+			continue;
+		}
+
+		for ( j = 0; j < count; ++j )
+		{
+			fontalias_t& previous = m_PreviousFontAliases[i + j];
+			fontalias_t& alias = _fontAliases[firstAlias + j];
+
+			if ( strncmp( previous._fontName, alias._fontName, sizeof( alias._fontName ) ) != 0
+				|| previous._glyphNameSymbol != alias._glyphNameSymbol
+				|| previous._tall != alias._tall
+				|| previous._weight != alias._weight
+				|| previous._blur != alias._blur
+				|| previous._scanlines != alias._scanlines
+				|| previous._flags != alias._flags )
+			{
+				break;
+			}
+		}
+
+		if ( j == count )
+		{
+			return m_PreviousFontAliases[i]._font;
+		}
+	}
+
+	return 0;
 }
 
 void CScheme::LoadBorders()
