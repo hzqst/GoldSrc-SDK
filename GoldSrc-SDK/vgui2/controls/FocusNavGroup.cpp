@@ -96,17 +96,16 @@ VPANEL FocusNavGroup::GetCurrentFocusVPanel()
 
 void FocusNavGroup::SetDefaultButton( Panel* panel )
 {
-	if ( !panel && !_defaultButton.Get() )
-		return;
-
-	if ( panel->GetVPanel() == _defaultButton.Get() )
+	// a NULL panel clears the default button
+	VPANEL vpanel = panel ? panel->GetVPanel() : 0;
+	if ( vpanel == _defaultButton.Get() )
 		return;
 
 #if defined( _WIN32 )
-	ASSERT_AT( CanButtonBeDefault(panel->GetVPanel()), 297 );
+	ASSERT_AT( !vpanel || CanButtonBeDefault(vpanel), 297 );
 #endif
 
-	_defaultButton.Set( panel->GetVPanel() );
+	_defaultButton.Set( vpanel );
 	SetCurrentDefaultButton( _defaultButton.Get(), true );
 }
 
