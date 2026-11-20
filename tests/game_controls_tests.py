@@ -133,6 +133,15 @@ int main() {
  assert(!motd.visible && !vgui2::files.exists && 1 == html.urls.size());
  motd.Activate(L"server", L"http://example.invalid/motd");
  assert(motd.visible && 2 == html.urls.size() && std::string("http://example.invalid/motd") == html.urls[1]);
+ motd.visible = false;
+ motd.Activate(L"server", L"https://example.invalid/motd");
+ assert(motd.visible && !vgui2::files.exists && 3 == html.urls.size());
+ assert(std::string("https://example.invalid/motd") == html.urls[2]);
+ motd.Activate(L"server", L"HTTPS://example.invalid/motd");
+ assert(!vgui2::files.exists && 4 == html.urls.size() && std::string("HTTPS://example.invalid/motd") == html.urls[3]);
+ motd.Activate(L"server", L"https://");
+ assert(vgui2::files.exists && std::string("https://") == vgui2::files.written);
+ assert(5 == html.urls.size() && std::string("file:///motd_temp.html") == html.urls[4]);
 }
 '''
 
