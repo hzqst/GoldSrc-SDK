@@ -525,6 +525,14 @@ bool CSystem::SetRegistryString( const char* key, const char* value )
 		return false;
 	}
 
+	// a NULL value deletes the registry value; one that is already gone counts as deleted
+	if ( !value )
+	{
+		LONG result = RegDeleteValueA( hKey, key1 );
+		RegCloseKey( hKey );
+		return result == ERROR_SUCCESS || result == ERROR_FILE_NOT_FOUND;
+	}
+
 	if ( RegSetValueExA( hKey, key1, 0, REG_SZ, (const BYTE*)value, (DWORD)strlen( value ) + 1 ) == ERROR_SUCCESS )
 	{
 		RegCloseKey( hKey );
