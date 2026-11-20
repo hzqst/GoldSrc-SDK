@@ -18,6 +18,7 @@
 #include "UtlLinkedList.h"
 
 #include "vgui_internal.h"
+#include "vgui_key_translation.h"
 #include "vgui/IClientPanel.h"
 #include "vgui/IInputInternal.h"
 #include "vgui/ISurface.h"
@@ -153,8 +154,6 @@ private:
 	HCursor									_cursorOverride;
 	bool									_updateToggleButtonState;
 
-	const char*								_keyTrans[KEY_LAST];
-
 	InputContext_t							m_DefaultInputContext;
 	HInputContext							m_hContext; // current input context
 	CUtlLinkedList< InputContext_t, int >	m_Contexts;
@@ -174,114 +173,6 @@ CInputWin32::CInputWin32()
 {
 	InitInputContext( &m_DefaultInputContext );
 	m_hContext = DEFAULT_INPUT_CONTEXT;
-
-	// build key to text translation table
-	// first byte unshifted key
-	// second byte shifted key
-	// the rest is the name of the key
-	_keyTrans[KEY_0]			= "0)KEY_0";
-	_keyTrans[KEY_1]			= "1!KEY_1";
-	_keyTrans[KEY_2]			= "2@KEY_2";
-	_keyTrans[KEY_3]			= "3#KEY_3";
-	_keyTrans[KEY_4]			= "4$KEY_4";
-	_keyTrans[KEY_5]			= "5%KEY_5";
-	_keyTrans[KEY_6]			= "6^KEY_6";
-	_keyTrans[KEY_7]			= "7&KEY_7";
-	_keyTrans[KEY_8]			= "8*KEY_8";
-	_keyTrans[KEY_9]			= "9(KEY_9";
-	_keyTrans[KEY_A]			= "aAKEY_A";
-	_keyTrans[KEY_B]			= "bBKEY_B";
-	_keyTrans[KEY_C]			= "cCKEY_C";
-	_keyTrans[KEY_D]			= "dDKEY_D";
-	_keyTrans[KEY_E]			= "eEKEY_E";
-	_keyTrans[KEY_F]			= "fFKEY_F";
-	_keyTrans[KEY_G]			= "gGKEY_G";
-	_keyTrans[KEY_H]			= "hHKEY_H";
-	_keyTrans[KEY_I]			= "iIKEY_I";
-	_keyTrans[KEY_J]			= "jJKEY_J";
-	_keyTrans[KEY_K]			= "kKKEY_K";
-	_keyTrans[KEY_L]			= "lLKEY_L";
-	_keyTrans[KEY_M]			= "mMKEY_M";
-	_keyTrans[KEY_N]			= "nNKEY_N";
-	_keyTrans[KEY_O]			= "oOKEY_O";
-	_keyTrans[KEY_P]			= "pPKEY_P";
-	_keyTrans[KEY_Q]			= "qQKEY_Q";
-	_keyTrans[KEY_R]			= "rRKEY_R";
-	_keyTrans[KEY_S]			= "sSKEY_S";
-	_keyTrans[KEY_T]			= "tTKEY_T";
-	_keyTrans[KEY_U]			= "uUKEY_U";
-	_keyTrans[KEY_V]			= "vVKEY_V";
-	_keyTrans[KEY_W]			= "wWKEY_W";
-	_keyTrans[KEY_X]			= "xXKEY_X";
-	_keyTrans[KEY_Y]			= "yYKEY_Y";
-	_keyTrans[KEY_Z]			= "zZKEY_Z";
-	_keyTrans[KEY_PAD_0]		= "0\0KEY_PAD_0";
-	_keyTrans[KEY_PAD_1]		= "1\0KEY_PAD_1";
-	_keyTrans[KEY_PAD_2]		= "2\0KEY_PAD_2";
-	_keyTrans[KEY_PAD_3]		= "3\0KEY_PAD_3";
-	_keyTrans[KEY_PAD_4]		= "4\0KEY_PAD_4";
-	_keyTrans[KEY_PAD_5]		= "5\0KEY_PAD_5";
-	_keyTrans[KEY_PAD_6]		= "6\0KEY_PAD_6";
-	_keyTrans[KEY_PAD_7]		= "7\0KEY_PAD_7";
-	_keyTrans[KEY_PAD_8]		= "8\0KEY_PAD_8";
-	_keyTrans[KEY_PAD_9]		= "9\0KEY_PAD_9";
-	_keyTrans[KEY_PAD_DIVIDE]	= "//KEY_PAD_DIVIDE";
-	_keyTrans[KEY_PAD_MULTIPLY]	= "**KEY_PAD_MULTIPLY";
-	_keyTrans[KEY_PAD_MINUS]	= "--KEY_PAD_MINUS";
-	_keyTrans[KEY_PAD_PLUS]		= "++KEY_PAD_PLUS";
-	_keyTrans[KEY_PAD_ENTER]	= "\0\0KEY_PAD_ENTER";
-	_keyTrans[KEY_PAD_DECIMAL]	= ".\0KEY_PAD_DECIMAL";
-	_keyTrans[KEY_LBRACKET]		= "[{KEY_LBRACKET";
-	_keyTrans[KEY_RBRACKET]		= "]}KEY_RBRACKET";
-	_keyTrans[KEY_SEMICOLON]	= ";:KEY_SEMICOLON";
-	_keyTrans[KEY_APOSTROPHE]	= "'\"KEY_APOSTROPHE";
-	_keyTrans[KEY_BACKQUOTE]	= "`~KEY_BACKQUOTE";
-	_keyTrans[KEY_COMMA]		= ",<KEY_COMMA";
-	_keyTrans[KEY_PERIOD]		= ".>KEY_PERIOD";
-	_keyTrans[KEY_SLASH]		= "/?KEY_SLASH";
-	_keyTrans[KEY_BACKSLASH]	= "\\|KEY_BACKSLASH";
-	_keyTrans[KEY_MINUS]		= "-_KEY_MINUS";
-	_keyTrans[KEY_EQUAL]		= "=+KEY_EQUAL";
-	_keyTrans[KEY_ENTER]		= "\0\0KEY_ENTER";
-	_keyTrans[KEY_SPACE]		= "  KEY_SPACE";
-	_keyTrans[KEY_BACKSPACE]	= "\0\0KEY_BACKSPACE";
-	_keyTrans[KEY_TAB]			= "\0\0KEY_TAB";
-	_keyTrans[KEY_CAPSLOCK]		= "\0\0KEY_CAPSLOCK";
-	_keyTrans[KEY_NUMLOCK]		= "\0\0KEY_NUMLOCK";
-	_keyTrans[KEY_ESCAPE]		= "\0\0KEY_ESCAPE";
-	_keyTrans[KEY_SCROLLLOCK]	= "\0\0KEY_SCROLLLOCK";
-	_keyTrans[KEY_INSERT]		= "\0\0KEY_INSERT";
-	_keyTrans[KEY_DELETE]		= "\0\0KEY_DELETE";
-	_keyTrans[KEY_HOME]			= "\0\0KEY_HOME";
-	_keyTrans[KEY_END]			= "\0\0KEY_END";
-	_keyTrans[KEY_PAGEUP]		= "\0\0KEY_PAGEUP";
-	_keyTrans[KEY_PAGEDOWN]		= "\0\0KEY_PAGEDOWN";
-	_keyTrans[KEY_BREAK]		= "\0\0KEY_BREAK";
-	_keyTrans[KEY_LSHIFT]		= "\0\0KEY_LSHIFT";
-	_keyTrans[KEY_RSHIFT]		= "\0\0KEY_RSHIFT";
-	_keyTrans[KEY_LALT]			= "\0\0KEY_LALT";
-	_keyTrans[KEY_RALT]			= "\0\0KEY_RALT";
-	_keyTrans[KEY_LCONTROL]		= "\0\0KEY_LCONTROL";
-	_keyTrans[KEY_RCONTROL]		= "\0\0KEY_RCONTROL";
-	_keyTrans[KEY_LWIN]			= "\0\0KEY_LWIN";
-	_keyTrans[KEY_RWIN]			= "\0\0KEY_RWIN";
-	_keyTrans[KEY_APP]			= "\0\0KEY_APP";
-	_keyTrans[KEY_UP]			= "\0\0KEY_UP";
-	_keyTrans[KEY_LEFT]			= "\0\0KEY_LEFT";
-	_keyTrans[KEY_DOWN]			= "\0\0KEY_DOWN";
-	_keyTrans[KEY_RIGHT]		= "\0\0KEY_RIGHT";
-	_keyTrans[KEY_F1]			= "\0\0KEY_F1";
-	_keyTrans[KEY_F2]			= "\0\0KEY_F2";
-	_keyTrans[KEY_F3]			= "\0\0KEY_F3";
-	_keyTrans[KEY_F4]			= "\0\0KEY_F4";
-	_keyTrans[KEY_F5]			= "\0\0KEY_F5";
-	_keyTrans[KEY_F6]			= "\0\0KEY_F6";
-	_keyTrans[KEY_F7]			= "\0\0KEY_F7";
-	_keyTrans[KEY_F8]			= "\0\0KEY_F8";
-	_keyTrans[KEY_F9]			= "\0\0KEY_F9";
-	_keyTrans[KEY_F10]			= "\0\0KEY_F10";
-	_keyTrans[KEY_F11]			= "\0\0KEY_F11";
-	_keyTrans[KEY_F12]			= "\0\0KEY_F12";
 }
 
 //-----------------------------------------------------------------------------
@@ -851,22 +742,7 @@ void CInputWin32::GetCursorPosition( int& x, int& y )
 //-----------------------------------------------------------------------------
 void CInputWin32::GetKeyCodeText( KeyCode code, char* buf, int buflen )
 {
-	if ( !buf )
-	{
-		return;
-	}
-
-	// copy text into buf up to buflen in length
-	// skip 2 in _keyTrans because the first two are for GetKeyCodeChar
-	for ( int i = 0; i < buflen; i++ )
-	{
-		char ch = _keyTrans[code][i + 2];
-		buf[i] = ch;
-		if ( !ch )
-		{
-			break;
-		}
-	}
+	KeyCode_GetText( code, buf, buflen );
 }
 
 void CInputWin32::SetCursorPos( int x, int y )

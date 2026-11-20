@@ -147,6 +147,128 @@ void vgui2::InitKeyTranslationTable()
 	}
 }
 
+static const char* s_pKeyCodeText[KEY_LAST];
+
+static void InitKeyCodeTextTable()
+{
+	static bool bInitted = false;
+
+	if ( bInitted )
+	{
+		return;
+	}
+
+	bInitted = true;
+
+	// build key to text translation table
+	// first byte unshifted key
+	// second byte shifted key
+	// the rest is the name of the key
+	s_pKeyCodeText[KEY_0]				= "0)KEY_0";
+	s_pKeyCodeText[KEY_1]				= "1!KEY_1";
+	s_pKeyCodeText[KEY_2]				= "2@KEY_2";
+	s_pKeyCodeText[KEY_3]				= "3#KEY_3";
+	s_pKeyCodeText[KEY_4]				= "4$KEY_4";
+	s_pKeyCodeText[KEY_5]				= "5%KEY_5";
+	s_pKeyCodeText[KEY_6]				= "6^KEY_6";
+	s_pKeyCodeText[KEY_7]				= "7&KEY_7";
+	s_pKeyCodeText[KEY_8]				= "8*KEY_8";
+	s_pKeyCodeText[KEY_9]				= "9(KEY_9";
+	s_pKeyCodeText[KEY_A]				= "aAKEY_A";
+	s_pKeyCodeText[KEY_B]				= "bBKEY_B";
+	s_pKeyCodeText[KEY_C]				= "cCKEY_C";
+	s_pKeyCodeText[KEY_D]				= "dDKEY_D";
+	s_pKeyCodeText[KEY_E]				= "eEKEY_E";
+	s_pKeyCodeText[KEY_F]				= "fFKEY_F";
+	s_pKeyCodeText[KEY_G]				= "gGKEY_G";
+	s_pKeyCodeText[KEY_H]				= "hHKEY_H";
+	s_pKeyCodeText[KEY_I]				= "iIKEY_I";
+	s_pKeyCodeText[KEY_J]				= "jJKEY_J";
+	s_pKeyCodeText[KEY_K]				= "kKKEY_K";
+	s_pKeyCodeText[KEY_L]				= "lLKEY_L";
+	s_pKeyCodeText[KEY_M]				= "mMKEY_M";
+	s_pKeyCodeText[KEY_N]				= "nNKEY_N";
+	s_pKeyCodeText[KEY_O]				= "oOKEY_O";
+	s_pKeyCodeText[KEY_P]				= "pPKEY_P";
+	s_pKeyCodeText[KEY_Q]				= "qQKEY_Q";
+	s_pKeyCodeText[KEY_R]				= "rRKEY_R";
+	s_pKeyCodeText[KEY_S]				= "sSKEY_S";
+	s_pKeyCodeText[KEY_T]				= "tTKEY_T";
+	s_pKeyCodeText[KEY_U]				= "uUKEY_U";
+	s_pKeyCodeText[KEY_V]				= "vVKEY_V";
+	s_pKeyCodeText[KEY_W]				= "wWKEY_W";
+	s_pKeyCodeText[KEY_X]				= "xXKEY_X";
+	s_pKeyCodeText[KEY_Y]				= "yYKEY_Y";
+	s_pKeyCodeText[KEY_Z]				= "zZKEY_Z";
+	s_pKeyCodeText[KEY_PAD_0]			= "0\0KEY_PAD_0";
+	s_pKeyCodeText[KEY_PAD_1]			= "1\0KEY_PAD_1";
+	s_pKeyCodeText[KEY_PAD_2]			= "2\0KEY_PAD_2";
+	s_pKeyCodeText[KEY_PAD_3]			= "3\0KEY_PAD_3";
+	s_pKeyCodeText[KEY_PAD_4]			= "4\0KEY_PAD_4";
+	s_pKeyCodeText[KEY_PAD_5]			= "5\0KEY_PAD_5";
+	s_pKeyCodeText[KEY_PAD_6]			= "6\0KEY_PAD_6";
+	s_pKeyCodeText[KEY_PAD_7]			= "7\0KEY_PAD_7";
+	s_pKeyCodeText[KEY_PAD_8]			= "8\0KEY_PAD_8";
+	s_pKeyCodeText[KEY_PAD_9]			= "9\0KEY_PAD_9";
+	s_pKeyCodeText[KEY_PAD_DIVIDE]		= "//KEY_PAD_DIVIDE";
+	s_pKeyCodeText[KEY_PAD_MULTIPLY]	= "**KEY_PAD_MULTIPLY";
+	s_pKeyCodeText[KEY_PAD_MINUS]		= "--KEY_PAD_MINUS";
+	s_pKeyCodeText[KEY_PAD_PLUS]		= "++KEY_PAD_PLUS";
+	s_pKeyCodeText[KEY_PAD_ENTER]		= "\0\0KEY_PAD_ENTER";
+	s_pKeyCodeText[KEY_PAD_DECIMAL]		= ".\0KEY_PAD_DECIMAL";
+	s_pKeyCodeText[KEY_LBRACKET]		= "[{KEY_LBRACKET";
+	s_pKeyCodeText[KEY_RBRACKET]		= "]}KEY_RBRACKET";
+	s_pKeyCodeText[KEY_SEMICOLON]		= ";:KEY_SEMICOLON";
+	s_pKeyCodeText[KEY_APOSTROPHE]		= "'\"KEY_APOSTROPHE";
+	s_pKeyCodeText[KEY_BACKQUOTE]		= "`~KEY_BACKQUOTE";
+	s_pKeyCodeText[KEY_COMMA]			= ",<KEY_COMMA";
+	s_pKeyCodeText[KEY_PERIOD]			= ".>KEY_PERIOD";
+	s_pKeyCodeText[KEY_SLASH]			= "/?KEY_SLASH";
+	s_pKeyCodeText[KEY_BACKSLASH]		= "\\|KEY_BACKSLASH";
+	s_pKeyCodeText[KEY_MINUS]			= "-_KEY_MINUS";
+	s_pKeyCodeText[KEY_EQUAL]			= "=+KEY_EQUAL";
+	s_pKeyCodeText[KEY_ENTER]			= "\0\0KEY_ENTER";
+	s_pKeyCodeText[KEY_SPACE]			= "  KEY_SPACE";
+	s_pKeyCodeText[KEY_BACKSPACE]		= "\0\0KEY_BACKSPACE";
+	s_pKeyCodeText[KEY_TAB]				= "\0\0KEY_TAB";
+	s_pKeyCodeText[KEY_CAPSLOCK]		= "\0\0KEY_CAPSLOCK";
+	s_pKeyCodeText[KEY_NUMLOCK]			= "\0\0KEY_NUMLOCK";
+	s_pKeyCodeText[KEY_ESCAPE]			= "\0\0KEY_ESCAPE";
+	s_pKeyCodeText[KEY_SCROLLLOCK]		= "\0\0KEY_SCROLLLOCK";
+	s_pKeyCodeText[KEY_INSERT]			= "\0\0KEY_INSERT";
+	s_pKeyCodeText[KEY_DELETE]			= "\0\0KEY_DELETE";
+	s_pKeyCodeText[KEY_HOME]			= "\0\0KEY_HOME";
+	s_pKeyCodeText[KEY_END]				= "\0\0KEY_END";
+	s_pKeyCodeText[KEY_PAGEUP]			= "\0\0KEY_PAGEUP";
+	s_pKeyCodeText[KEY_PAGEDOWN]		= "\0\0KEY_PAGEDOWN";
+	s_pKeyCodeText[KEY_BREAK]			= "\0\0KEY_BREAK";
+	s_pKeyCodeText[KEY_LSHIFT]			= "\0\0KEY_LSHIFT";
+	s_pKeyCodeText[KEY_RSHIFT]			= "\0\0KEY_RSHIFT";
+	s_pKeyCodeText[KEY_LALT]			= "\0\0KEY_LALT";
+	s_pKeyCodeText[KEY_RALT]			= "\0\0KEY_RALT";
+	s_pKeyCodeText[KEY_LCONTROL]		= "\0\0KEY_LCONTROL";
+	s_pKeyCodeText[KEY_RCONTROL]		= "\0\0KEY_RCONTROL";
+	s_pKeyCodeText[KEY_LWIN]			= "\0\0KEY_LWIN";
+	s_pKeyCodeText[KEY_RWIN]			= "\0\0KEY_RWIN";
+	s_pKeyCodeText[KEY_APP]				= "\0\0KEY_APP";
+	s_pKeyCodeText[KEY_UP]				= "\0\0KEY_UP";
+	s_pKeyCodeText[KEY_LEFT]			= "\0\0KEY_LEFT";
+	s_pKeyCodeText[KEY_DOWN]			= "\0\0KEY_DOWN";
+	s_pKeyCodeText[KEY_RIGHT]			= "\0\0KEY_RIGHT";
+	s_pKeyCodeText[KEY_F1]				= "\0\0KEY_F1";
+	s_pKeyCodeText[KEY_F2]				= "\0\0KEY_F2";
+	s_pKeyCodeText[KEY_F3]				= "\0\0KEY_F3";
+	s_pKeyCodeText[KEY_F4]				= "\0\0KEY_F4";
+	s_pKeyCodeText[KEY_F5]				= "\0\0KEY_F5";
+	s_pKeyCodeText[KEY_F6]				= "\0\0KEY_F6";
+	s_pKeyCodeText[KEY_F7]				= "\0\0KEY_F7";
+	s_pKeyCodeText[KEY_F8]				= "\0\0KEY_F8";
+	s_pKeyCodeText[KEY_F9]				= "\0\0KEY_F9";
+	s_pKeyCodeText[KEY_F10]				= "\0\0KEY_F10";
+	s_pKeyCodeText[KEY_F11]				= "\0\0KEY_F11";
+	s_pKeyCodeText[KEY_F12]				= "\0\0KEY_F12";
+}
+
 void vgui2::InitVGUIToVKTranslationTable()
 {
 	static bool bInitted = false;
@@ -422,4 +544,30 @@ MouseCode MouseCode_VirtualKeyToVGUI( int )
 int MouseCode_VGUIToVirtualKey( MouseCode )
 {
 	return 0;
+}
+
+void KeyCode_GetText( KeyCode code, char* buf, int buflen )
+{
+	if ( !buf || buflen <= 0 )
+	{
+		return;
+	}
+
+	buf[0] = 0;
+
+	InitKeyCodeTextTable();
+
+	if ( code < 0 || code >= KEY_LAST || !s_pKeyCodeText[code] )
+	{
+		return;
+	}
+
+	// skip 2 in s_pKeyCodeText because the first two are the unshifted and shifted keys
+	const char* text = s_pKeyCodeText[code] + 2;
+	int i;
+	for ( i = 0; i < buflen - 1 && text[i]; i++ )
+	{
+		buf[i] = text[i];
+	}
+	buf[i] = 0;
 }

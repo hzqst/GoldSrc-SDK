@@ -3,6 +3,7 @@
 #include "tier1/interface.h"
 #include "utllinkedlist.h"
 #include "vgui_internal.h"
+#include "vgui_key_translation.h"
 #include "vgui/IClientPanel.h"
 #include "vgui/IInputInternal.h"
 #include "vgui/ISurface.h"
@@ -98,8 +99,6 @@ private:
 	void PostKeyMessage( KeyValues* message );
 
 	bool									_updateToggleButtonState;
-
-	char*									_keyTrans[KEY_LAST];
 
 	InputContext_t							m_DefaultInputContext;
 	HInputContext							m_hContext;
@@ -598,20 +597,7 @@ void CInputWin32::GetCursorPosition( int& x, int& y )
 
 void CInputWin32::GetKeyCodeText( KeyCode code, char* buf, int buflen )
 {
-	if ( !buf || buflen <= 0 )
-	{
-		return;
-	}
-
-	for ( int i = 0; i < buflen; i++ )
-	{
-		char ch = _keyTrans[code][i + 2];
-		buf[i] = ch;
-		if ( !ch )
-		{
-			break;
-		}
-	}
+	KeyCode_GetText( code, buf, buflen );
 }
 
 void CInputWin32::SetCursorPos( int x, int y )
