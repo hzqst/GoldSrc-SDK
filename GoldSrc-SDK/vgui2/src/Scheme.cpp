@@ -138,15 +138,7 @@ void CSchemeManager::ReloadSchemes()
 			continue;
 		}
 
-		// LoadFromFile copies into these buffers, so don't pass them in directly
-		char fileName[sizeof( pScheme->fileName )];
-		char tag[sizeof( pScheme->tag )];
-		strcpy( fileName, pScheme->fileName );
-		strcpy( tag, pScheme->tag );
-
-		pScheme->Shutdown( true );
-		pScheme->_fontAliases.RemoveAll();
-		pScheme->LoadFromFile( fileName, tag, pData );
+		pScheme->Reload( pData );
 	}
 }
 
@@ -368,6 +360,13 @@ void CScheme::Shutdown( bool full )
 	m_BorderList.RemoveAll();
 	_borders = NULL;
 
+	for ( i = 0; i < m_RetiredBorders.Count(); ++i )
+	{
+		delete m_RetiredBorders[i];
+	}
+
+	m_RetiredBorders.RemoveAll();
+
 	if ( full && data )
 	{
 		data->deleteThis();
@@ -470,6 +469,42 @@ void CScheme::LoadFromFile( const char* inFilename, const char* inTag, KeyValues
 	// need to copy tag before loading fonts
 	LoadFonts();
 	LoadBorders();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: replaces the scheme data, reusing the borders panels may still point at
+//-----------------------------------------------------------------------------
+void CScheme::Reload( KeyValues* inKeys )
+{
+	char inFilename[sizeof( fileName )];
+	char inTag[sizeof( tag )];
+	int i;
+
+	// LoadFromFile copies into fileName and tag, so don't pass them in directly
+	strcpy( inFilename, fileName );
+	strcpy( inTag, tag );
+
+	// panels hold raw pointers to these, so LoadBorders reuses them by name instead of deleting them
+	for ( i = 0; i < m_BorderList.Count(); ++i )
+	{
+		if ( !m_BorderList[i].bSharedBorder )
+		{
+			m_RetiredBorders.AddToTail( m_BorderList[i].border );
+		}
+	}
+
+	_baseBorder = NULL;
+	m_BorderList.RemoveAll();
+	_borders = NULL;
+	_fontAliases.RemoveAll();
+
+	if ( data )
+	{
+		data->deleteThis();
+		data = NULL;
+	}
+
+	LoadFromFile( inFilename, inTag, inKeys );
 }
 
 //-----------------------------------------------------------------------------
@@ -749,8 +784,18 @@ void CScheme::LoadBorders()
 
 		index = m_BorderList.AddToTail();
 
-		pBorder = new Border();
-		pBorder->SetName( kv->GetName() );
+		// a border of the same name from before a reload keeps its address
+		pBorder = TakeRetiredBorder( kv->GetName() );
+		if ( pBorder )
+		{
+			pBorder->ResetSettings();
+		}
+		else
+		{
+			pBorder = new Border();
+			pBorder->SetName( kv->GetName() );
+		}
+
 		pBorder->ApplySchemeSettings( this, kv );
 
 		m_BorderList[index].border = pBorder;
@@ -779,6 +824,27 @@ void CScheme::LoadBorders()
 	}
 
 	_baseBorder = (Border*)GetBorder( "BaseBorder" );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: removes a retired border from the list and returns it, NULL if there is none of that name
+//-----------------------------------------------------------------------------
+Border* CScheme::TakeRetiredBorder( const char* borderName )
+{
+	int i;
+
+	for ( i = 0; i < m_RetiredBorders.Count(); ++i )
+	{
+		Border* pBorder = m_RetiredBorders[i];
+
+		if ( !strcasecmp( pBorder->GetName(), borderName ) )
+		{
+			m_RetiredBorders.Remove( i );
+			return pBorder;
+		}
+	}
+
+	return NULL;
 }
 
 //-----------------------------------------------------------------------------

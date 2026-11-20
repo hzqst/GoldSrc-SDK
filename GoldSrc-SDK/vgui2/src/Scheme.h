@@ -64,11 +64,15 @@ private:
 	vgui2::Border*				_baseBorder;
 	KeyValues*					_borders;
 	CUtlVector<fontalias_t>		_fontAliases;
+	// borders taken out of m_BorderList by a reload, kept alive because panels may still point at them
+	CUtlVector<vgui2::Border*>	m_RetiredBorders;
 
 	void Shutdown( bool full );
 	void LoadFromFile( const char* inFilename, const char* inTag, KeyValues* inKeys );
+	void Reload( KeyValues* inKeys );
 	void LoadFonts();
 	void LoadBorders();
+	vgui2::Border* TakeRetiredBorder( const char* borderName );
 	vgui2::HFont FindFontInAliasList( const char* fontName );
 	const char* GetMungedFontName( const char* fontName, const char* scheme, bool proportional, bool bHDProportional );
 	int GetAdjustedFontHeightForCurrentLanguage( int tall );
