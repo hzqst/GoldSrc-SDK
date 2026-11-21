@@ -10,31 +10,22 @@
 
 #include "MemPool.h"
 
-#include <math.h>
-#include <stdlib.h>
+#include <climits>
+#include <cmath>
+#include <cstdlib>
+#include <new>
 
-#ifdef _WIN32
-#include <intrin.h>
+#if defined( _MSC_VER )
+#include <sal.h>
+#endif
 
-#define MEMPOOL_ASSERT( exp ) \
-	do \
-	{ \
-		if ( !( exp ) ) \
-			__debugbreak(); \
-	} while ( 0 )
-#else
-#define MEMPOOL_ASSERT( exp ) ( (void)0 )
-#endif // _DEBUG
-
-CMemoryPool::CMemoryPool( int blockSize, int numElements ) :
-	_blockSize( blockSize )
+CMemoryPool::CMemoryPool( int blockSize, int blocksPerBlob )
 {
+	_blockSize = blockSize;
 	_numBlobs = 0;
 	_numElements = 0;
-	_blocksPerBlob = numElements;
-
+	_blocksPerBlob = blocksPerBlob;
 	AddNewBlob();
-
 	_peakAlloc = 0;
 	_blocksAllocated = 0;
 }
@@ -42,73 +33,97 @@ CMemoryPool::CMemoryPool( int blockSize, int numElements ) :
 CMemoryPool::~CMemoryPool()
 {
 	for ( int i = 0; i < _numBlobs; i++ )
-	{
 		free( _memBlob[i] );
+}
+
+#if defined( _MSC_VER )
+_Post_satisfies_( condition )
+#endif
+static inline void MemPool_Assert( bool condition )
+{
+	if ( !condition )
+	{
+#if defined( _MSC_VER )
+		__debugbreak();
+#endif // _DEBUG
+		abort();
 	}
 }
 
 void CMemoryPool::AddNewBlob()
 {
-	int sizeMultiplier = (int)pow( 2.0, (double)_numBlobs );
-	int numBlocks = _blocksPerBlob * sizeMultiplier;
+	MemPool_Assert( _numBlobs >= 0 && _numBlobs < MAX_BLOBS );
+	MemPool_Assert( _blocksPerBlob > 0 && _blockSize >= (int)sizeof( void* ) );
 
-	_memBlob[_numBlobs] = malloc( _blockSize * numBlocks );
-	MEMPOOL_ASSERT( _memBlob[_numBlobs] );
+	// reject blob sizes that would overflow int before allocating
+	int sizeMultiplier = (int)pow( 2.0, (double)_numBlobs );
+	MemPool_Assert( _blocksPerBlob <= INT_MAX / sizeMultiplier );
+	int nElements = sizeMultiplier * _blocksPerBlob;
+	MemPool_Assert( _blockSize <= INT_MAX / nElements && _numElements <= INT_MAX - nElements );
+	int blobSize = nElements * _blockSize;
+
+	_memBlob[_numBlobs] = malloc( blobSize );
+	MemPool_Assert( _memBlob[_numBlobs] != NULL );
 
 	_headOfFreeList = _memBlob[_numBlobs];
-	MEMPOOL_ASSERT( _headOfFreeList );
+	MemPool_Assert( _headOfFreeList != NULL );
 
-	char* pBlock = (char*)_headOfFreeList;
-	for ( int i = 1; i < numBlocks; i++ )
+	void** newBlob = (void**)_headOfFreeList;
+	for ( int j = 0; j < nElements - 1; j++ )
 	{
-		char* pNext = pBlock + _blockSize;
-
-		*(void**)pBlock = pNext;
-		pBlock = pNext;
+		newBlob[0] = (char*)newBlob + _blockSize;
+		newBlob = (void**)newBlob[0];
 	}
+	// null terminate list
+	newBlob[0] = NULL;
 
-	*(void**)pBlock = NULL;
 	_numBlobs++;
-	_numElements += numBlocks;
+	_numElements += nElements;
 
-	MEMPOOL_ASSERT( _numBlobs < MAX_BLOBS - 1 );
+	MemPool_Assert( _numBlobs < MAX_BLOBS - 1 );
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: Allocs a single block of memory from the pool.  
+// Input  : amount - 
+//-----------------------------------------------------------------------------
 void* CMemoryPool::Alloc( unsigned int amount )
 {
-	void* pBlock;
+	void* returnBlock;
 
 	if ( amount > (unsigned int)_blockSize )
-	{
 		return NULL;
-	}
 
 	int allocated = _blocksAllocated + 1;
-
+#if defined( _WIN32 )
+	_blocksAllocated = allocated;
+	if ( _peakAlloc <= _blocksAllocated )
+		_peakAlloc = _blocksAllocated;
+	if ( allocated >= _numElements )
+		AddNewBlob();
+#else
 	if ( allocated >= _numElements )
 		AddNewBlob();
 
 	_blocksAllocated = allocated;
-
-	if ( _blocksAllocated > _peakAlloc )
-	{
+	if ( _peakAlloc <= _blocksAllocated )
 		_peakAlloc = _blocksAllocated;
-	}
+#endif
 
-	pBlock = _headOfFreeList;
-	MEMPOOL_ASSERT( pBlock );
-	_headOfFreeList = *(void**)pBlock;
-	return pBlock;
+	MemPool_Assert( _headOfFreeList != NULL );
+
+	returnBlock = _headOfFreeList;
+	_headOfFreeList = *(void**)_headOfFreeList;
+
+	return returnBlock;
 }
 
-void CMemoryPool::Free( void* memBlock )
+void CMemoryPool::Free( void* memblock )
 {
-	if ( !memBlock )
-	{
+	if ( !memblock )
 		return;  // trying to delete NULL pointer, ignore
-	}
 
 	_blocksAllocated--;
-	*(void**)memBlock = _headOfFreeList;
-	_headOfFreeList = memBlock;
+	*(void**)memblock = _headOfFreeList;
+	_headOfFreeList = memblock;
 }

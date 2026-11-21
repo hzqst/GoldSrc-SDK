@@ -71,9 +71,9 @@ goldsrc_add_module(serverbrowser
 		vgui2/controls/URLLabel.cpp
 		engine/interface.cpp
 		vgui2/src/public/UtlBuffer.cpp
-		engine/utlsymbol.cpp
+		vgui2/src/public/utlsymbol.cpp
 		vgui2/src/public/KeyValues.cpp
-		engine/MemPool.cpp
+		vgui2/src/public/MemPool.cpp
 		engine/controls.cpp
 		common/StringUtils.cpp
 	INCLUDES

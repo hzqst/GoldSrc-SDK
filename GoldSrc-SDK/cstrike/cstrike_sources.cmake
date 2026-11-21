@@ -90,8 +90,8 @@ set(CSTRIKE_SERVER_SOURCES
 	cstrike/pm_shared/pm_debug.c
 	cstrike/game_shared/voice_gamemgr.cpp
 	game_shared/cstrike/shared_util.cpp
-	engine/MemPool.cpp
-	engine/utlsymbol.cpp
+	vgui2/src/public/MemPool.cpp
+	vgui2/src/public/utlsymbol.cpp
 	cstrike/dlls/hostage/states/hostage_animate.cpp
 	cstrike/dlls/hostage/states/hostage_escape.cpp
 	cstrike/dlls/hostage/states/hostage_follow.cpp
@@ -285,8 +285,8 @@ set(CSTRIKE_CLIENT_SOURCES
 	vgui2/controls/WizardSubPanel.cpp
 	vgui2/src/public/KeyValues.cpp
 	vgui2/src/public/UtlBuffer.cpp
-	engine/utlsymbol.cpp
-	engine/MemPool.cpp
+	vgui2/src/public/utlsymbol.cpp
+	vgui2/src/public/MemPool.cpp
 	vgui2/controls/AnimatingImagePanel.cpp
 	vgui2/controls/BuildModeDialog.cpp
 	vgui2/controls/CheckButton.cpp

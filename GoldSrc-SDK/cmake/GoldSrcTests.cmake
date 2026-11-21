@@ -73,6 +73,7 @@ foreach(name IN ITEMS
 		static_analysis
 		stream_sound
 		tfc_text_window
+		utl_containers
 		vgui1_app_focus
 		vgui1_build_group
 		vgui1_button_group

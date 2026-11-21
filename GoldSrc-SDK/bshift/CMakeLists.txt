@@ -214,9 +214,9 @@ goldsrc_add_module(bshift_cdll
 		bshift/pm_shared/pm_shared.c
 		public/interface.cpp
 		vgui2/src/public/KeyValues.cpp
-		engine/MemPool.cpp
+		vgui2/src/public/MemPool.cpp
 		vgui2/src/public/UtlBuffer.cpp
-		engine/utlsymbol.cpp
+		vgui2/src/public/utlsymbol.cpp
 		vgui2/controls/AnimatingImagePanel.cpp
 		vgui2/controls/BitmapImagePanel.cpp
 		vgui2/controls/BuildGroup.cpp

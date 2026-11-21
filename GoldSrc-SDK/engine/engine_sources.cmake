@@ -49,7 +49,7 @@ set(ENGINE_COMMON_SOURCES
 	engine/l_studio.cpp
 	engine/mathlib.cpp
 	engine/mem.cpp
-	engine/MemPool.cpp
+	vgui2/src/public/MemPool.cpp
 	engine/module.cpp
 	engine/net_api.cpp
 	engine/net_chan.cpp
@@ -93,7 +93,7 @@ set(ENGINE_COMMON_SOURCES
 	engine/traceinit.cpp
 	engine/unicode_strtools.cpp
 	vgui2/src/public/UtlBuffer.cpp
-	engine/utlsymbol.cpp
+	vgui2/src/public/utlsymbol.cpp
 	engine/vgui2/BaseUISurface.cpp
 	engine/vgui2/BaseUISurface_Font.cpp
 	engine/vgui2/BaseUI_Interface.cpp

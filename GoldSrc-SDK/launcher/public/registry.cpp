@@ -11,7 +11,7 @@
 #if defined(_WIN32)
 #include <windows.h>
 #else
-#include "UtlVector.h"
+#include "../../vgui2/src/public/utlvector.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -285,7 +285,7 @@ void CRegistry::LoadKeyValuesFromDisk()
 
 		strncpy( entry.key, line, REGISTRY_FIELD_LENGTH );
 		strncpy( entry.value, value, REGISTRY_FIELD_LENGTH );
-		m_vecValues.Add( entry );
+		m_vecValues.AddToTail( entry );
 	}
 
 	fclose( m_fConfig );
