@@ -132,6 +132,7 @@ foreach(name IN ITEMS
 		voice_callback
 		voice_wavefile
 		vox
+		wad_miptex
 		waveout_failure
 	)
 	add_test(NAME ${name}
