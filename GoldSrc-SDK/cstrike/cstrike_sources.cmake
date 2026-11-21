@@ -211,7 +211,7 @@ set(CSTRIKE_CLIENT_SOURCES
 	cstrike/cl_dll/buy_presets.cpp
 	cstrike/cl_dll/buy_preset_weapon_info.cpp
 	cstrike/cl_dll/buy_preset.cpp
-	engine/interface.cpp
+	public/interface.cpp
 	cstrike/public/checksum_crc.cpp
 	cstrike/common/steamid.cpp
 	game_shared/cstrike/parsemsg.cpp

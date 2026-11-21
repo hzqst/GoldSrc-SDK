@@ -31,7 +31,7 @@ goldsrc_add_module(Core
 		HLTV/common/random.cpp
 		HLTV/Core/private/common/BaseSystemModule.cpp
 		HLTV/Core/private/common/ObjectDictionary.cpp
-		HLTV/Core/private/public/interface.cpp
+		public/interface.cpp
 		common/ObjectList.cpp
 		common/TokenLine.cpp
 		HLTV/Core/private/utils/bzip2/blocksort.c

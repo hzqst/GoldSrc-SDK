@@ -69,7 +69,7 @@ goldsrc_add_module(serverbrowser
 		vgui2/controls/ToggleButton.cpp
 		vgui2/controls/Tooltip.cpp
 		vgui2/controls/URLLabel.cpp
-		engine/interface.cpp
+		public/interface.cpp
 		vgui2/src/public/UtlBuffer.cpp
 		vgui2/src/public/utlsymbol.cpp
 		vgui2/src/public/KeyValues.cpp
