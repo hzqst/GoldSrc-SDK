@@ -21,6 +21,9 @@ def extract(filename, signature, occurrence=0, end='\n}'):
 
 STUBS = r'''
 #include <cassert>
+#include <cstring>
+#define Q_memcpy std::memcpy
+#define Q_memset std::memset
 constexpr int MAX_PHYSENTS = 3;
 using physent_t = int;
 using edict_t = int;
@@ -33,12 +36,15 @@ int main()
 {
     move.numvisent = MAX_PHYSENTS - 1;
     move.sentinel = 13;
-    AddVisible(42, nullptr);
+    int physical = 0;
+    AddVisible(42, nullptr, &physical);
     assert(MAX_PHYSENTS == move.numvisent);
     assert(42 == move.visents[MAX_PHYSENTS - 1]);
-    AddVisible(99, nullptr);
+    assert(42 == physical);
+    AddVisible(99, nullptr, &physical);
     assert(MAX_PHYSENTS == move.numvisent);
     assert(13 == move.sentinel && 42 == move.visents[MAX_PHYSENTS - 1]);
+    assert(99 == physical);
 }
 '''
 
@@ -48,7 +54,12 @@ def main():
     start = source_text.index('int entityIndex = NUM_FOR_EDICT( entity );', source_text.index('static void SV_AddLinksToPM_( areanode_t* node, float* mins, float* maxs )\n{'))
     start = source_text.index('\n', start)
     end = source_text.index('\n\t\t\tif ( entity->v.solid', start)
-    production = ['void AddVisible(int entityIndex, edict_t* entity) {' + source_text[start:end] + '\n}']
+    copy_start = source_text.index('\n\t\t\tif ( visible )', end)
+    copy_end = source_text.index('\n\t\t}', copy_start)
+    production = [
+        'void AddVisible(int entityIndex, edict_t* entity, physent_t* physical) {'
+        + source_text[start:end] + source_text[copy_start:copy_end] + '\n}'
+    ]
     with tempfile.TemporaryDirectory(prefix='goldsrc-sv-pmove-visibility-') as folder:
         work = Path(folder)
         source = work / 'test.cpp'
