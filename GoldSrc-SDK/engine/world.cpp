@@ -205,7 +205,7 @@ hull_t* SV_HullForBsp( edict_t* ent, const float* mins, const float* maxs, float
 	hull_t* hull;
 	vec3_t size;
 
-	model = sv.models[ent->v.modelindex];
+	model = SV_ModelForIndex( ent->v.modelindex );
 	if ( !model )
 		Sys_Error( "Hit a %s with no model (%s)", &pr_strings[ent->v.classname], &pr_strings[ent->v.model] );
 	if ( model->type != mod_brush )
@@ -401,7 +401,7 @@ void SV_TouchLinks( edict_t* ent, areanode_t* node )
 			 || ent->v.absmax[1] < touch->v.absmin[1] || ent->v.absmax[2] < touch->v.absmin[2] )
 			continue;
 
-		pModel = sv.models[touch->v.modelindex];
+		pModel = SV_ModelForIndex( touch->v.modelindex );
 		if ( pModel && pModel->type == mod_brush )
 		{
 			hull = SV_HullForBsp( touch, ent->v.mins, ent->v.maxs, offset );
@@ -534,7 +534,7 @@ void SV_LinkEdict( edict_t* ent, qboolean touch_triggers )
 	if ( ent->v.solid == SOLID_NOT && ent->v.skin >= CONTENTS_EMPTY )
 		return;
 
-	if ( ent->v.solid == SOLID_BSP && !sv.models[ent->v.modelindex] && !Q_strlen( &pr_strings[ent->v.model] ) )
+	if ( ent->v.solid == SOLID_BSP && !SV_ModelForIndex( ent->v.modelindex ) && !Q_strlen( &pr_strings[ent->v.model] ) )
 	{
 		Con_DPrintf( "Inserted %s with no model\n", &pr_strings[ent->v.classname] );
 		return;
@@ -634,7 +634,7 @@ int SV_LinkContents( areanode_t* node, const float* pos )
 				continue;
 		}
 
-		pModel = sv.models[touch->v.modelindex];
+		pModel = SV_ModelForIndex( touch->v.modelindex );
 		if ( !pModel || pModel->type != mod_brush )
 			continue;
 
@@ -867,10 +867,7 @@ void SV_SingleClipMoveToEntity(
 	trace->allsolid = TRUE;
 	VectorCopy( end, trace->endpos );
 
-	if ( ent->v.modelindex >= 0 )
-		pmodel = sv.models[ent->v.modelindex];
-	else
-		pmodel = NULL;
+	pmodel = SV_ModelForIndex( ent->v.modelindex );
 
 	if ( pmodel && pmodel->type == mod_studio )
 	{
