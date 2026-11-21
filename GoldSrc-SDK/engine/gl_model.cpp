@@ -613,6 +613,13 @@ void Mod_LoadSpriteModel( model_t* mod, void* buffer )
 	if ( version != SPRITE_VERSION )
 		Sys_Error( "%s has wrong version number (%i should be %i)", mod->name, version, SPRITE_VERSION );
 
+	const int textureFormat = LittleLong( pin->texFormat );
+	if ( textureFormat < SPR_NORMAL || textureFormat > SPR_ALPHTEST )
+	{
+		Sys_Error( "%s has invalid sprite texture format %d", mod->name, textureFormat );
+		return;
+	}
+
 	numframes = LittleLong( pin->numframes );
 
 	palette = (byte*)( pin + 1 );
@@ -626,7 +633,7 @@ void Mod_LoadSpriteModel( model_t* mod, void* buffer )
 	mod->cache.data = psprite;
 
 	psprite->type = (short)LittleLong( pin->type );
-	psprite->texFormat = (short)LittleLong( pin->texFormat );
+	psprite->texFormat = (short)textureFormat;
 	gSpriteTextureFormat = psprite->texFormat;
 	psprite->maxwidth = LittleLong( pin->width );
 	psprite->maxheight = LittleLong( pin->height );
