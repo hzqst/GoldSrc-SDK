@@ -432,10 +432,10 @@ void BaseUISurface::SurfaceSetCursorPos( int x, int y )
 		SDL_GetWindowSize( (SDL_Window*)game->GetMainWindow(), &windowWide, &windowTall );
 		VideoMode_GetCurrentVideoMode( &videoWide, &videoTall, NULL );
 
-		int scaledX = (int)( ( (float)videoWide / windowWide ) * x );
-		int scaledY = (int)( ( (float)videoTall / windowTall ) * y );
-		x = (int)( ( GetXMouseAspectRatioAdjustment() - 1.0 ) * (float)( scaledX - videoWide / 2 ) + scaledX );
-		y = (int)( ( GetYMouseAspectRatioAdjustment() - 1.0 ) * (float)( scaledY - videoTall / 2 ) + scaledY );
+		const int centerX = videoWide / 2;
+		const int centerY = videoTall / 2;
+		x = (int)( ( centerX + ( x - centerX ) / GetXMouseAspectRatioAdjustment() ) * windowWide / videoWide );
+		y = (int)( ( centerY + ( y - centerY ) / GetYMouseAspectRatioAdjustment() ) * windowTall / videoTall );
 	}
 
 	SDL_WarpMouseInWindow( (SDL_Window*)game->GetMainWindow(), x, y );
