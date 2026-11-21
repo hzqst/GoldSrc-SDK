@@ -1199,8 +1199,12 @@ static void SV_AddLinksToPM_( areanode_t* node, float* mins, float* maxs )
 				 && entity->v.solid != SOLID_NOT )
 				continue;
 			int entityIndex = NUM_FOR_EDICT( entity );
-			physent_t* visible = &pmove->visents[pmove->numvisent++];
-			SV_CopyEdictToPhysent( visible, entityIndex, entity );
+			physent_t* visible = nullptr;
+			if ( pmove->numvisent < MAX_PHYSENTS )
+			{
+				visible = &pmove->visents[pmove->numvisent++];
+				SV_CopyEdictToPhysent( visible, entityIndex, entity );
+			}
 			if ( entity->v.solid == SOLID_NOT && ( !entity->v.skin || !entity->v.modelindex ) )
 				continue;
 			if ( ( entity->v.flags & FL_MONSTERCLIP ) && entity->v.solid == SOLID_BSP )
@@ -1249,7 +1253,13 @@ static void SV_AddLinksToPM_( areanode_t* node, float* mins, float* maxs )
 				}
 				physical = &pmove->physents[pmove->numphysent++];
 			}
-			Q_memcpy( physical, visible, sizeof( physent_t ) );
+			if ( visible )
+				Q_memcpy( physical, visible, sizeof( physent_t ) );
+			else
+			{
+				Q_memset( physical, 0, sizeof( physent_t ) );
+				SV_CopyEdictToPhysent( physical, entityIndex, entity );
+			}
 		}
 		if ( node->axis == -1 )
 			return;

@@ -74,6 +74,7 @@ foreach(name IN ITEMS
 		spr_load_name
 		static_analysis
 		stream_sound
+		sv_pmove_visibility
 		tfc_text_window
 		utl_containers
 		vgui1_app_focus
