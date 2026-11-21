@@ -99,8 +99,9 @@ static void CopiesValues() {
  char value[64];
  Expect(CopyCommandLineArgValue(args, "-name", value, sizeof(value)) && std::string("a b") == value, "a value with spaces is copied whole");
 
- char small[SMALL_BUFFER];
- Expect(CopyCommandLineArgValue(args, "-game", small, sizeof(small)) && std::string("cs") == small, "a long value is cut and terminated");
+ // not "small": windows.h defines it as char through rpcndr.h
+ char cut[SMALL_BUFFER];
+ Expect(CopyCommandLineArgValue(args, "-game", cut, sizeof(cut)) && std::string("cs") == cut, "a long value is cut and terminated");
 
  char one[1] = {'x'};
  Expect(CopyCommandLineArgValue(args, "-game", one, sizeof(one)) && 0 == one[0], "a one byte buffer gets only the terminator");
@@ -178,7 +179,8 @@ def main():
         folder = Path(folder)
         (folder / 'test.cpp').write_text(code, encoding='utf-8')
         executable = compile_program([folder / 'test.cpp'], folder / 'test', includes=[ROOT / 'vgui2/src'],
-                                     sanitizers=['address', 'undefined'], strict_warnings=True)
+                                     sanitizers=['address', 'undefined'], strict_warnings=True,
+                                     defines=['_CRT_SECURE_NO_WARNINGS'])
         subprocess.run([str(executable)] + PROCESS_ARGS, check=True, cwd=folder, timeout=TIMEOUT_SECONDS)
 
 
