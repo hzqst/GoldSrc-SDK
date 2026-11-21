@@ -46,6 +46,7 @@ foreach(name IN ITEMS
 		gameui_save_read
 		gameui_start_game
 		gameui_string_utils
+		gl_sprite_format
 		hashpak_remove
 		hunk_temp_alloc
 		interface_load_module

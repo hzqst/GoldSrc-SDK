@@ -625,6 +625,9 @@ void GL_Upload32( unsigned int* data, int width, int height, qboolean mipmap, in
 		internalformat = bpp == 16 ? GL_RGB5_A1 : GL_RGBA8;
 		format = GL_RGBA;
 		break;
+	default:
+		Sys_Error( "GL_Upload32: invalid texture type %d", type );
+		return;
 	}
 
 	if ( scaled_width == width && scaled_height == height )
