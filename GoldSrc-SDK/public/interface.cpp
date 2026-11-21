@@ -103,7 +103,9 @@ CSysModule	*Sys_LoadModule( const char *pModuleName )
 		char szCwd[1024];
 		char szAbsoluteModuleName[1024];
 
-		getcwd( szCwd, sizeof( szCwd ) );
+		// without the working directory, fall back to a path relative to it
+		if ( !getcwd( szCwd, sizeof( szCwd ) ) )
+			strcpy( szCwd, "." );
 		if ( szCwd[ strlen( szCwd ) - 1 ] == '/' )
 			szCwd[ strlen( szCwd ) - 1 ] = 0;
 
