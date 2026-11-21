@@ -1199,8 +1199,8 @@ static void SV_AddLinksToPM_( areanode_t* node, float* mins, float* maxs )
 				 && entity->v.solid != SOLID_NOT )
 				continue;
 			int entityIndex = NUM_FOR_EDICT( entity );
-			physent_t* visible = &pmove->visents[pmove->numvisent++];
-			SV_CopyEdictToPhysent( visible, entityIndex, entity );
+			if ( pmove->numvisent < MAX_PHYSENTS )
+				SV_CopyEdictToPhysent( &pmove->visents[pmove->numvisent++], entityIndex, entity );
 			if ( entity->v.solid == SOLID_NOT && ( !entity->v.skin || !entity->v.modelindex ) )
 				continue;
 			if ( ( entity->v.flags & FL_MONSTERCLIP ) && entity->v.solid == SOLID_BSP )
