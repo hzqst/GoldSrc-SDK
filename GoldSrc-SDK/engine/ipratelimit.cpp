@@ -26,7 +26,7 @@ bool CIPRateLimit::LessIP( const iprate_s& lhs, const iprate_s& rhs )
 bool CIPRateLimit::CheckIP( netadr_t adr )
 {
 	long curTime = (long)time( NULL );
-	unsigned int ip;
+	int ip;
 	float window;
 	int i;
 

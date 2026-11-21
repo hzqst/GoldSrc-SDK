@@ -21,7 +21,7 @@ private:
 
 	struct iprate_s
 	{
-		unsigned int	ip;
+		int				ip;
 		long			lastTime;
 		int				count;
 	};

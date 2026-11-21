@@ -49,6 +49,7 @@ foreach(name IN ITEMS
 		hashpak_remove
 		hunk_temp_alloc
 		interface_load_module
+		ip_rate_order
 		keyvalues
 		localize_construct
 		localize_reload
