@@ -1051,6 +1051,10 @@ void Host_Reconnect_f()
 	if ( cls.state == ca_dedicated || cls.state == ca_disconnected || cls.state == ca_connecting )
 		return;
 
+	// The demo's signon messages drive map changes during playback.
+	if ( cls.demoplayback && !Cmd_CurrentCommandIsPrivileged() )
+		return;
+
 	if ( cls.passive )
 	{
 		char temp[128];
