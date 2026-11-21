@@ -20,6 +20,7 @@ def main():
     table = (ROOT / 'GoldSrc-SDK/vgui2/src/LocalizedStringTable.cpp').read_text(encoding='utf-8')
     code = r'''
 #include <cassert>
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
