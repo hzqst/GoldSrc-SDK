@@ -22,6 +22,7 @@ foreach(name IN ITEMS
 		cxx_toolchain
 		czeror_material_file
 		dedicated_mod_list
+		demo_edit_commands
 		dod_vgui2print
 		engine_client_api
 		engine_font_fallback

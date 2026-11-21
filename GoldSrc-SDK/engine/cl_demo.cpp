@@ -1761,9 +1761,9 @@ void CL_RemoveDemo_f( void )
 	COM_StripExtension( name, tempname );
 	COM_AddExtension( tempname, ".dm2", sizeof( tempname ) );
 
-	if ( !COM_HasFileExtension( name, "dm2" ) )
+	if ( !COM_HasFileExtension( tempname, "dm2" ) )
 	{
-		Con_Printf( "Error: couldn't open temporary file %s.\n", name );
+		Con_Printf( "Error: couldn't open temporary file %s.\n", tempname );
 		FS_Close( fp );
 		return;
 	}
@@ -1807,6 +1807,11 @@ void CL_RemoveDemo_f( void )
 	if ( demodir.nEntries == 1 )
 	{
 		Con_Printf( "ERROR: Can't remove last directory entry.\n" );
+		goto failed;
+	}
+	if ( removed >= demodir.nEntries )
+	{
+		Con_Printf( "ERROR: demo only has %d entries\n", demodir.nEntries );
 		goto failed;
 	}
 
@@ -1857,6 +1862,7 @@ void CL_RemoveDemo_f( void )
 failed:
 	FS_Close( cls.demofile );
 	FS_Close( fp );
+	_unlink( tempname );
 	cls.demofile = NULL;
 }
 
@@ -1891,13 +1897,13 @@ void CL_SwapDemo_f( void )
 	}
 
 	seg1 = Q_atoi( Cmd_Argv( 2 ) );
-	if ( seg1 <= 1 )
+	seg2 = Q_atoi( Cmd_Argv( 3 ) );
+	if ( seg1 <= 1 || seg2 <= 1 )
 	{
 		Con_Printf( "Cannot swap the STARTUP segment.\n" );
 		return;
 	}
 
-	seg2 = Q_atoi( Cmd_Argv( 3 ) );
 	idx1 = seg1 - 1;
 	idx2 = seg2 - 1;
 
@@ -2126,6 +2132,11 @@ void CL_SetDemoInfo_f( void )
 		goto failed;
 	}
 
+	if ( segment > demodir.nEntries )
+	{
+		Con_Printf( "ERROR: demo only has %d entries\n", demodir.nEntries );
+		goto failed;
+	}
 	demodir.p_rgEntries = (demoentry_t*)Mem_Malloc( sizeof( demoentry_t ) * demodir.nEntries );
 	FS_Read( demodir.p_rgEntries, sizeof( demoentry_t ) * demodir.nEntries, 1, fp );
 
