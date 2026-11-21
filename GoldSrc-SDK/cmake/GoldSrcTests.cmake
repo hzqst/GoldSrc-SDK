@@ -58,6 +58,7 @@ foreach(name IN ITEMS
 		mixer_failure
 		parse_event_args
 		perf_counter_init
+		playback_demo_commands
 		scoreboard_selection
 		server_model
 		serverbrowser_filter_data
