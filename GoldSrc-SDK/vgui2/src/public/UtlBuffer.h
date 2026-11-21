@@ -14,6 +14,10 @@
 #ifndef UTLBUFFER_H
 #define UTLBUFFER_H
 
+#ifdef _WIN32
+#pragma once
+#endif
+
 #include "UtlMemory.h"
 
 #include <stdarg.h>
@@ -42,14 +46,7 @@ public:
 	//		read for strings until a null character is reached.
 	// Text mode: it'll parse the file, turning text #s into real numbers.
 	//		GetString will read a string until a space is reaced
-	char GetChar();
-	unsigned char GetUnsignedChar();
-	short GetShort();
-	unsigned short GetUnsignedShort();
 	int GetInt();
-	unsigned int GetUnsignedInt();
-	float GetFloat();
-	double GetDouble();
 	void GetString( char* pString );
 	void Get( void* pMem, int size );
 
@@ -66,22 +63,14 @@ public:
 	// Text mode: it'll convert the numbers to text versions
 	//		PutString will not write a terminating character
 	void PutChar( char c );
-	void PutUnsignedChar( unsigned char uc );
-	void PutShort( short s );
 	void PutUnsignedShort( unsigned short us );
 	void PutInt( int i );
-	void PutUnsignedInt( unsigned int u );
-	void PutFloat( float f );
-	void PutDouble( double d );
 	void PutString( const char* pString );
 	void Put( const void* pMem, int size );
 
 	// Just like printf, writes a terminating zero in binary mode
 	void Printf( const char* pFmt, ... );
 	void VaPrintf( const char* pFmt, va_list list );
-
-	void* PeekPut( int offset = 0 );
-	const void* PeekGet( int offset = 0 ) const;
 
 	int TellPut() const;
 	int TellGet() const;
@@ -98,8 +87,6 @@ public:
 
 	bool IsText() const;
 	bool IsValid() const;
-
-	void Clear();
 
 private:
 	// error flags
@@ -144,11 +131,16 @@ inline int CUtlBuffer::Size() const
 }
 
 //-----------------------------------------------------------------------------
-// Where am I writing?
+// Where am I reading and writing?
 //-----------------------------------------------------------------------------
 inline int CUtlBuffer::TellPut() const
 {
 	return m_Put;
+}
+
+inline int CUtlBuffer::TellGet() const
+{
+	return m_Get;
 }
 
 //-----------------------------------------------------------------------------

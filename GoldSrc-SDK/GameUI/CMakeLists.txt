@@ -122,7 +122,7 @@ goldsrc_add_module(GameUI
 		vgui2/controls/URLLabel.cpp
 		engine/interface.cpp
 		public/checksum_md5.cpp
-		engine/utlbuffer.cpp
+		vgui2/src/public/UtlBuffer.cpp
 		engine/utlsymbol.cpp
 		engine/BaseSystemModule.cpp
 		common/ObjectList.cpp
@@ -139,7 +139,7 @@ goldsrc_add_module(GameUI
 		HLTV/DemoPlayer/private/HLTV/common/common.cpp
 		public/characterset.cpp
 		vgui2/src/public/filesystem_helpers.cpp
-		engine/KeyValues.cpp
+		vgui2/src/public/KeyValues.cpp
 		engine/MemPool.cpp
 		engine/controls.cpp
 	LINUX_SOURCES

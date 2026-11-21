@@ -178,7 +178,7 @@ static void SaveWithoutLoadIsIgnored() {
 
 
 def main():
-    keyvalues = (ROOT / 'engine/KeyValues.cpp').read_text()
+    keyvalues = (ROOT / 'vgui2/src/public/KeyValues.cpp').read_text()
     source = (ROOT / 'serverbrowser/ServerBrowserDialog.cpp').read_text()
     code = STUBS
     for signature in ['void KeyValues::RemoveSubKey(', 'void KeyValues::AddSubKey(',

@@ -5,7 +5,7 @@
 // Valve, L.L.C., or in accordance with the terms and conditions stipulated in
 // the agreement/contract under which the contents have been supplied.
 //
-// Purpose: 
+// Purpose:
 //
 // $NoKeywords: $
 //=============================================================================
@@ -17,16 +17,24 @@
 #pragma once
 #endif
 
+#include <string.h>
+
+//-----------------------------------------------------------------------------
+// Purpose: Basic handler for an rgb set of colors
+//			This class is fully inline
+//-----------------------------------------------------------------------------
 class Color
 {
 public:
-	Color() : _color{}
+	constexpr Color() : _color{}
 	{
 	}
 
-	Color( int r, int g, int b, int a )
+	Color( int r, int g, int b );
+
+	constexpr Color( int r, int g, int b, int a )
+		: _color{ (unsigned char)r, (unsigned char)g, (unsigned char)b, (unsigned char)a }
 	{
-		SetColor( r, g, b, a );
 	}
 
 	void SetColor( int r, int g, int b, int a )
@@ -36,6 +44,25 @@ public:
 		_color[2] = (unsigned char)b;
 		_color[3] = (unsigned char)a;
 	}
+
+	void GetColor( int& r, int& g, int& b, int& a ) const;
+
+	void SetRawColor( int color )
+	{
+		memcpy( _color, &color, sizeof( _color ) );
+	}
+
+	int GetRawColor() const
+	{
+		int color;
+		memcpy( &color, _color, sizeof( color ) );
+		return color;
+	}
+
+	int r() const { return _color[0]; }
+	int g() const { return _color[1]; }
+	int b() const { return _color[2]; }
+	int a() const { return _color[3]; }
 
 	unsigned char& operator[]( int index )
 	{
@@ -47,10 +74,15 @@ public:
 		return _color[index];
 	}
 
-	Color& operator=( const Color& rhs )
+	bool operator==( const Color& rhs ) const
 	{
-		*((int*)this) = *((int*)&rhs);
-		return *this;
+		return _color[0] == rhs._color[0] && _color[1] == rhs._color[1] && _color[2] == rhs._color[2]
+			&& _color[3] == rhs._color[3];
+	}
+
+	bool operator!=( const Color& rhs ) const
+	{
+		return !( *this == rhs );
 	}
 
 private:

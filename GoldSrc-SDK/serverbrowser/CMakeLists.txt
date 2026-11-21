@@ -70,9 +70,9 @@ goldsrc_add_module(serverbrowser
 		vgui2/controls/Tooltip.cpp
 		vgui2/controls/URLLabel.cpp
 		engine/interface.cpp
-		engine/utlbuffer.cpp
+		vgui2/src/public/UtlBuffer.cpp
 		engine/utlsymbol.cpp
-		engine/KeyValues.cpp
+		vgui2/src/public/KeyValues.cpp
 		engine/MemPool.cpp
 		engine/controls.cpp
 		common/StringUtils.cpp

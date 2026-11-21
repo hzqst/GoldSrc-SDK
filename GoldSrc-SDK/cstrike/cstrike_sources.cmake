@@ -283,8 +283,8 @@ set(CSTRIKE_CLIENT_SOURCES
 	vgui2/controls/URLLabel.cpp
 	vgui2/controls/WizardPanel.cpp
 	vgui2/controls/WizardSubPanel.cpp
-	engine/KeyValues.cpp
-	engine/utlbuffer.cpp
+	vgui2/src/public/KeyValues.cpp
+	vgui2/src/public/UtlBuffer.cpp
 	engine/utlsymbol.cpp
 	engine/MemPool.cpp
 	vgui2/controls/AnimatingImagePanel.cpp

@@ -48,6 +48,7 @@ foreach(name IN ITEMS
 		gameui_string_utils
 		hashpak_remove
 		hunk_temp_alloc
+		keyvalues
 		localize_construct
 		localize_reload
 		localize_save
