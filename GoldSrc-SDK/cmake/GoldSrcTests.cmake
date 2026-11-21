@@ -22,6 +22,7 @@ foreach(name IN ITEMS
 		czeror_material_file
 		dedicated_mod_list
 		dod_vgui2print
+		engine_client_api
 		engine_font_fallback
 		file_read_length
 		filesystem_pack_close
