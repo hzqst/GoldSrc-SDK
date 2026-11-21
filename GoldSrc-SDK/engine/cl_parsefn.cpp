@@ -870,9 +870,7 @@ void CL_ParseEvent()
 	packet_entities_t* pack;
 	entity_state_t* state;
 	int i, count, index, packetIndex;
-	float delay;
 
-	delay = 0.0f;
 	fields = DELTA_LookupRegistration( "event_t" );
 
 	Q_memset( &nullargs, 0, sizeof( nullargs ) );
@@ -893,6 +891,7 @@ void CL_ParseEvent()
 		if ( MSG_ReadBits( 1 ) )
 			DELTA_ParseDelta( (byte*)&nullargs, (byte*)&args, *fields, sizeof( args ) );
 
+		float delay = 0.0f;
 		if ( MSG_ReadBits( 1 ) )
 			delay = (float)( MSG_ReadBits( EVENT_DELAY_BITS ) / 100.0 );
 

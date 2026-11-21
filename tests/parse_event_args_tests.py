@@ -48,6 +48,7 @@ static delta_t* eventDeltaPointer = &eventDelta;
 static std::deque<unsigned> bits;
 static std::deque<event_args_t> sentArgs;
 static std::vector<event_args_t> queued;
+static std::vector<float> delays;
 static void Q_memset( void* d, int c, size_t n ) {std::memset(d,c,n);}
 static delta_t** DELTA_LookupRegistration( const char* ) {return &eventDeltaPointer;}
 static void MSG_StartBitReading( sizebuf_t* ) {}
@@ -61,16 +62,17 @@ static vec3_t vec3_origin;
 static void COM_NormalizeAngles( float* ) {}
 static void Con_DPrintf( const char*, ... ) {}
 static void CL_CalcPlayerVelocity( int, float* velocity ) {velocity[0]=velocity[1]=velocity[2]=9.0f;}
-static void CL_QueueEvent( int, int, float, event_args_t* args ) {queued.push_back(*args);}
+static void CL_QueueEvent( int, int, float delay, event_args_t* args ) {queued.push_back(*args);delays.push_back(delay);}
 '''
 
 TESTS = r'''
-// One event in the message: index, packet index, optional arguments, no delay
-static void Event( int packetIndex, const event_args_t* args )
+// One event in the message: index, packet index, optional arguments and delay.
+static void Event( int packetIndex, const event_args_t* args, unsigned delay = 0 )
 {
 	bits.insert(bits.end(),{1u,1u,(unsigned)packetIndex,args?1u:0u});
 	if(args) sentArgs.push_back(*args);
-	bits.push_back(0);
+	bits.push_back(delay != 0);
+	if (delay) bits.push_back(delay);
 }
 
 int main() {
@@ -85,10 +87,11 @@ int main() {
 
 	// A player event with arguments, then an event of entity 5 that the server sent without arguments
 	bits.push_back(2);
-	Event(0,&player);
+	Event(0,&player,25);
 	Event(1,nullptr);
 	CL_ParseEvent();
 	assert(bits.empty());assert(2==queued.size());
+	assert((std::vector<float>{0.25f, 0.0f} == delays));
 
 	assert(1==queued[0].entindex);assert(7==queued[0].fparam1);assert(9==queued[0].velocity[0]);
 
