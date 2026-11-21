@@ -162,12 +162,17 @@ void KeyValues::FreeAllocatedValue()
 	m_iAllocationSize = 0;
 }
 
-static char* ReadToken( char** buffer )
+//-----------------------------------------------------------------------------
+// Purpose: Reads the next token; wasQuoted tells a quoted "{" or "}" value from
+//			an unquoted brace, which the original reader did not
+//-----------------------------------------------------------------------------
+static char* ReadToken( char** buffer, bool& wasQuoted )
 {
 	constexpr unsigned TOKEN_BUFFER_BYTES = 512;
 	static char buf[TOKEN_BUFFER_BYTES];
 	unsigned length = 0;
 	signed char character;
+	wasQuoted = false;
 	for ( ;; )
 	{
 		do // eat whitespaces
@@ -187,6 +192,7 @@ static char* ReadToken( char** buffer )
 	}
 	if ( character == '"' )
 	{
+		wasQuoted = true;
 		character = static_cast<signed char>( *( *buffer )++ );
 		while ( character != '"' && character != 0 )
 		{
@@ -794,32 +800,36 @@ void KeyValues::deleteThis()
 void KeyValues::LoadFromBuffer( const char* buffer )
 {
 	char* cursor = const_cast<char*>( buffer );
-	char* token = ReadToken( &cursor );
+	bool wasQuoted;
+	char* token = ReadToken( &cursor, wasQuoted );
 	if ( token )
 		m_iKeyName = keyvalues()->GetSymbolForString( token );
-	token = ReadToken( &cursor );
-	if ( m_iKeyName >= 0 && token && token[0] == '{' )
+	token = ReadToken( &cursor, wasQuoted );
+	if ( m_iKeyName >= 0 && token && !wasQuoted && token[0] == '{' )
 		RecursiveLoadFromBuffer( &cursor );
 }
 
 void KeyValues::RecursiveLoadFromBuffer( char** buffer )
 {
-	for ( char* token = ReadToken( buffer ); token; token = ReadToken( buffer ) )
+	bool wasQuoted;
+	for ( char* token = ReadToken( buffer, wasQuoted ); token; token = ReadToken( buffer, wasQuoted ) )
 	{
-		if ( !token[0] || std::strcmp( token, "}" ) == 0 )
+		// only unquoted braces delimit blocks, so a saved "{" or "}" value reads back as one
+		if ( !token[0] || ( !wasQuoted && std::strcmp( token, "}" ) == 0 ) )
 			return;
 		KeyValues* child = FindKey( token, true );
-		const char* value = ReadToken( buffer );
-		if ( !value || std::strcmp( value, "}" ) == 0 )
+		const char* value = ReadToken( buffer, wasQuoted );
+		if ( !value || ( !wasQuoted && std::strcmp( value, "}" ) == 0 ) )
 			return;
-		if ( std::strcmp( value, "{" ) == 0 )
+		if ( !wasQuoted && std::strcmp( value, "{" ) == 0 )
 		{
 			child->RecursiveLoadFromBuffer( buffer );
 		}
 		else
 		{
+			// free the value being replaced; the original freed this block node's value instead
 			std::size_t size = std::strlen( value ) + 1;
-			FreeAllocatedValue();
+			child->FreeAllocatedValue();
 			child->AllocateValueBlock( static_cast<int>( size ) );
 			std::memcpy( child->m_pValue, value, size );
 			child->m_iDataType = TYPE_STRING;

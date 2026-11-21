@@ -233,6 +233,52 @@ static void SavesAndLoadsFiles() {
  puts("PASS: SaveToFile writes quoted, escaped text that LoadFromFile reads back");
 }
 
+static void RepeatedKeysFreeTheOldValue() {
+ KeyValues* data = Load("root { a \"1\" a \"22\" a \"333\" }");
+ assert(std::strcmp("333", data->GetString("a")) == 0);
+ assert(data->GetFirstSubKey() && !data->GetFirstSubKey()->GetNextKey());
+ data->deleteThis();
+ assert(0 == g_KeyValues.live);
+
+ // the block node's own value is not the one a string value replaces; "a" already
+ // exists, so loading it does not reset the block node's type
+ KeyValues* block = new KeyValues("");
+ block->SetString("a", "0");
+ block->SetString(nullptr, "own");
+ block->LoadFromBuffer("root { a \"1\" }");
+ assert(std::strcmp("own", block->GetString()) == 0 && 1 == block->GetInt("a"));
+ block->deleteThis();
+ assert(0 == g_KeyValues.live);
+ puts("PASS: a repeated key frees the value it replaces and the block node keeps its own value");
+}
+
+static void QuotedBracesAreValues() {
+ MemoryFileSystem files;
+ KeyValues* data = new KeyValues("root");
+ data->SetString("close", "}");
+ data->SetString("open", "{");
+ data->SetString("next", "present");
+ assert(data->SaveToFile(&files, "braces.txt"));
+ data->deleteThis();
+
+ KeyValues* loaded = new KeyValues("");
+ assert(loaded->LoadFromFile(&files, "braces.txt"));
+ assert(std::strcmp("}", loaded->GetString("close")) == 0 && std::strcmp("{", loaded->GetString("open")) == 0);
+ assert(std::strcmp("present", loaded->GetString("next")) == 0 && !loaded->FindKey("open")->GetFirstSubKey());
+ loaded->deleteThis();
+
+ KeyValues* names = Load("root { \"}\" \"close\" \"{\" \"open\" }");
+ assert(std::strcmp("close", names->GetString("}")) == 0 && std::strcmp("open", names->GetString("{")) == 0);
+ names->deleteThis();
+
+ // only an unquoted { opens the file's top block
+ KeyValues* header = Load("root \"{\" a \"1\" }");
+ assert(!header->FindKey("a"));
+ header->deleteThis();
+ assert(0 == g_KeyValues.live);
+ puts("PASS: quoted { and } are names and values, and only unquoted braces open and close blocks");
+}
+
 static void BufferWritesNumbersAndText() {
  CUtlBuffer text(0, 0, true);
  text.PutInt(-12);
@@ -260,6 +306,8 @@ int main() {
  ConvertsBetweenTypes();
  CopiesAndNumbersKeys();
  SavesAndLoadsFiles();
+ RepeatedKeysFreeTheOldValue();
+ QuotedBracesAreValues();
  BufferWritesNumbersAndText();
  return 0;
 }
