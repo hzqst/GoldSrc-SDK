@@ -244,7 +244,7 @@ goldsrc_add_module(dod_cdll
 		dod/pm_shared/pm_debug.c
 		dod/pm_shared/pm_math.c
 		dod/pm_shared/pm_shared.c
-		engine/interface.cpp
+		public/interface.cpp
 		vgui2/src/public/KeyValues.cpp
 		vgui2/src/public/MemPool.cpp
 		vgui2/src/public/UtlBuffer.cpp

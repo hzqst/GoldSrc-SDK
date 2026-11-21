@@ -21,7 +21,7 @@ goldsrc_add_module(vgui2
 		vgui2/src/MessageListener.cpp
 		public/characterset.cpp
 		vgui2/src/public/filesystem_helpers.cpp
-		vgui2/src/public/interface.cpp
+		public/interface.cpp
 		vgui2/src/public/KeyValues.cpp
 		vgui2/src/public/MemPool.cpp
 		vgui2/src/public/UnicodeFileHelpers.cpp

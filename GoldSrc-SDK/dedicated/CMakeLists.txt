@@ -23,7 +23,7 @@ goldsrc_add_module(hlds
 		common/commandline.cpp
 		common/netapi.cpp
 		common/ObjectList.cpp
-		engine/interface.cpp
+		public/interface.cpp
 		engine/mem.c
 		vgui2/src/public/KeyValues.cpp
 		vgui2/src/public/UtlBuffer.cpp
@@ -107,7 +107,7 @@ if(NOT WIN32)
 			common/TextConsoleUnix.cpp
 			common/commandline.cpp
 			common/ObjectList.cpp
-			engine/interface.cpp
+			public/interface.cpp
 			engine/mem.c
 		INCLUDES
 			dedicated

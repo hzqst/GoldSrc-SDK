@@ -20,7 +20,7 @@ goldsrc_add_module(demoplayer
 		HLTV/DemoPlayer/private/common/ObjectDictionary.cpp
 		common/ObjectList.cpp
 		common/TokenLine.cpp
-		HLTV/DemoPlayer/private/public/interface.cpp
+		public/interface.cpp
 	INCLUDES
 		HLTV/DemoPlayer/private
 		HLTV/DemoPlayer/private/common

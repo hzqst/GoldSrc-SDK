@@ -35,7 +35,7 @@ goldsrc_add_module(Proxy
 		HLTV/Core/private/common/ObjectDictionary.cpp
 		common/ObjectList.cpp
 		common/TokenLine.cpp
-		HLTV/Core/private/public/interface.cpp
+		public/interface.cpp
 		HLTV/Director/Director.cpp
 		HLTV/Core/private/utils/bzip2/blocksort.c
 		HLTV/Core/private/utils/bzip2/bzlib.c

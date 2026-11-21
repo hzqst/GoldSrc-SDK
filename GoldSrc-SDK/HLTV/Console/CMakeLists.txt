@@ -19,7 +19,7 @@ goldsrc_add_module(HLTV
 		HLTV/Core/private/common/BaseSystemModule.cpp
 		common/ObjectList.cpp
 		common/TokenLine.cpp
-		engine/interface.cpp
+		public/interface.cpp
 	WINDOWS_SOURCES
 		# VGUI2 console window (Windows only).
 		vgui2/src/public/KeyValues.cpp

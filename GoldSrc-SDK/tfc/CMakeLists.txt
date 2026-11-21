@@ -58,7 +58,7 @@ goldsrc_add_module(tfcdll
 		tfc/pm_shared/pm_debug.c
 		tfc/pm_shared/pm_math.c
 		tfc/pm_shared/pm_shared.c
-		tfc/public/interface.cpp
+		public/interface.cpp
 		tfc/pyro.cpp
 		tfc/schedule.cpp
 		tfc/scripted.cpp
@@ -205,7 +205,7 @@ goldsrc_add_module(tfc_cdll
 		tfc/pm_shared/pm_debug.c
 		tfc/pm_shared/pm_math.c
 		tfc/pm_shared/pm_shared.c
-		tfc/public/interface.cpp
+		public/interface.cpp
 		tfc/wpn_shared/tf_wpn_ac.cpp
 		tfc/wpn_shared/tf_wpn_ar.cpp
 		tfc/wpn_shared/tf_wpn_axe.cpp

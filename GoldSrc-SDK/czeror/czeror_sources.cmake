@@ -189,7 +189,7 @@ set(CZEROR_CLIENT_SOURCES
 	czeror/cl_dll/util.cpp
 	czeror/cl_dll/view.cpp
 	czeror/cl_dll/worldmap.cpp
-	engine/interface.cpp
+	public/interface.cpp
 	cstrike/public/checksum_crc.cpp
 	game_shared/cstrike/parsemsg.cpp
 	cstrike/game_shared/voice_status_hud.cpp

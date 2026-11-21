@@ -284,7 +284,7 @@ goldsrc_add_module(opfor_cdll
 		gearbox/pm_shared/pm_debug.c
 		gearbox/pm_shared/pm_math.c
 		gearbox/pm_shared/pm_shared.c
-		common/interface.cpp
+		public/interface.cpp
 	INCLUDES
 		gearbox/dlls
 		gearbox/cl_dll

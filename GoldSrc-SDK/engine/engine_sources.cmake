@@ -40,7 +40,7 @@ set(ENGINE_COMMON_SOURCES
 	engine/host_cmd.cpp
 	engine/hud.cpp
 	engine/info.cpp
-	engine/interface.cpp
+	public/interface.cpp
 	engine/ipratelimit.cpp
 	engine/ipratelimitWrapper.cpp
 	engine/keys.cpp

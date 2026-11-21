@@ -120,7 +120,7 @@ goldsrc_add_module(GameUI
 		vgui2/controls/ToggleButton.cpp
 		vgui2/controls/Tooltip.cpp
 		vgui2/controls/URLLabel.cpp
-		engine/interface.cpp
+		public/interface.cpp
 		public/checksum_md5.cpp
 		vgui2/src/public/UtlBuffer.cpp
 		vgui2/src/public/utlsymbol.cpp
