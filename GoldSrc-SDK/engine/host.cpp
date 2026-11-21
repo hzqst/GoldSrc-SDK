@@ -414,12 +414,14 @@ int Host_Frame( float time, int iState, int* stateInfo )
 	if ( giActive != ENGINE_CLOSE || !g_iQuitCommandIssued )
 		giActive = iState;
 	*stateInfo = 0;
-	double time1;
-	double time2;
-	if ( host_profile.value != 0.0f )
+	// Commands executed during the frame can change host_profile, so sample it once.
+	const bool profileFrame = host_profile.value != 0.0f;
+	double time1 = 0.0;
+	double time2 = 0.0;
+	if ( profileFrame )
 		time1 = Sys_FloatTime();
 	_Host_Frame( time );
-	if ( host_profile.value != 0.0f )
+	if ( profileFrame )
 		time2 = Sys_FloatTime();
 	if ( giStateInfo )
 	{
@@ -427,7 +429,7 @@ int Host_Frame( float time, int iState, int* stateInfo )
 		giStateInfo = 0;
 		Cbuf_Execute();
 	}
-	if ( host_profile.value != 0.0f )
+	if ( profileFrame )
 	{
 		timetotal += time2 - time1;
 		++timecount;

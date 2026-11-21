@@ -463,10 +463,13 @@ void AddTEntity( cl_entity_t* pEnt )
 	float dist;
 	vec3_t v;
 
+	if ( !pEnt->model )
+		return;
+
 	if ( numTransObjs >= maxTransObjs )
 		Sys_Error( "AddTentity: Too many objects" );
 
-	if ( pEnt->model && pEnt->model->type == mod_brush && pEnt->curstate.rendermode == kRenderTransAlpha )
+	if ( pEnt->model->type == mod_brush && pEnt->curstate.rendermode == kRenderTransAlpha )
 	{
 		dist = 1E9F;
 	}
@@ -835,10 +838,13 @@ void AddTEntity( cl_entity_t* pEnt )
 	float dist;
 	vec3_t v;
 
+	if ( !pEnt->model )
+		return;
+
 	if ( numTransObjs >= maxTransObjs )
 		Sys_Error( "AddTentity: Too many objects" );
 
-	if ( pEnt->model && pEnt->model->type == mod_brush && pEnt->curstate.rendermode == kRenderTransAlpha )
+	if ( pEnt->model->type == mod_brush && pEnt->curstate.rendermode == kRenderTransAlpha )
 	{
 		dist = 1E9F;
 	}

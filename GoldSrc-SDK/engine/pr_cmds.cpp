@@ -1568,6 +1568,12 @@ void PF_ambientsound_I( edict_t* entity, float* pos, const char* samp, float vol
 	short ent;
 	sizebuf_t* pout;
 
+	if ( !samp )
+	{
+		Con_Printf( "PF_ambientsound_I: NULL sample\n" );
+		return;
+	}
+
 	flags = (short)fFlags;
 
 	if ( samp[0] == CHAR_SENTENCE )
