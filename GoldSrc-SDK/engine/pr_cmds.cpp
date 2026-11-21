@@ -1798,7 +1798,10 @@ int GetEntityIllum( edict_t* pEnt )
 	if ( cls.state != ca_connected && cls.state != ca_uninitialized && cls.state != ca_active )
 		return 128;
 
-	cvFloorColor = &cl_entities[iIndex].cvFloorColor;
+	cl_entity_t* entity = CL_GetEntityIfValid( iIndex );
+	if ( !entity )
+		return 128;
+	cvFloorColor = &entity->cvFloorColor;
 	return (int)( cvFloorColor->r + cvFloorColor->g + cvFloorColor->b ) / 3;
 }
 

@@ -1990,8 +1990,11 @@ void CL_ParseTEnt( void )
 				decal += 256;
 		}
 
-		if ( entity >= cl.max_edicts )
-			Sys_Error( "Decal: entity = %i", entity );
+		if ( !CL_GetEntityIfValid( entity ) )
+		{
+			Con_DPrintf( "Decal: invalid entity %i\n", entity );
+			break;
+		}
 
 		if ( r_decals.value )
 			efx.R_DecalShoot( efx.Draw_DecalIndex( decal ), entity, modelIndex, pos, flags );
@@ -2043,12 +2046,16 @@ void CL_ParseTEnt( void )
 		int entity, modelIndex, density;
 
 		entity = MSG_ReadShort();
-		if ( entity >= cl.max_edicts )
-			Sys_Error( "Bubble: entity = %i", entity );
 		modelIndex = MSG_ReadShort();
 		density = MSG_ReadByte();
 
-		efx.R_FizzEffect( &cl_entities[entity], modelIndex, density );
+		cl_entity_t* fizzEntity = CL_GetEntityIfValid( entity );
+		if ( !fizzEntity )
+		{
+			Con_DPrintf( "Bubble: invalid entity %i\n", entity );
+			break;
+		}
+		efx.R_FizzEffect( fizzEntity, modelIndex, density );
 		break;
 	}
 
@@ -2122,6 +2129,12 @@ void CL_ParseTEnt( void )
 		entity = MSG_ReadShort();
 		decal = MSG_ReadByte();
 
+		if ( !CL_GetEntityIfValid( entity ) )
+		{
+			Con_DPrintf( "Decal: invalid entity %i\n", entity );
+			break;
+		}
+
 		efx.R_BulletImpactParticles( pos );
 
 		iRand = RandomLong( 0, 0x7FFF );
@@ -2134,9 +2147,6 @@ void CL_ParseTEnt( void )
 			sounds[4] = cl_sfx_ric5;
 			S_StartDynamicSound( -1, CHAN_AUTO, sounds[iRand % 5], pos, 1.0f, 1.0f, 0, PITCH_NORM );
 		}
-
-		if ( entity >= cl.max_edicts )
-			Sys_Error( "Decal: entity = %i", entity );
 
 		if ( r_decals.value )
 			efx.R_DecalShoot( efx.Draw_DecalIndex( decal ), entity, 0, pos, 0 );
@@ -2189,8 +2199,11 @@ void CL_ParseTEnt( void )
 		entity = MSG_ReadShort();
 		decal = MSG_ReadByte();
 
-		if ( entity >= cl.max_edicts )
-			Sys_Error( "Decal: entity = %i", entity );
+		if ( !CL_GetEntityIfValid( entity ) )
+		{
+			Con_DPrintf( "Decal: invalid entity %i\n", entity );
+			break;
+		}
 
 		pTexture = NULL;
 		if ( pCust && pCust->pBuffer && pCust->pInfo && ( pCust->resource.ucFlags & RES_CUSTOM )
@@ -2947,11 +2960,10 @@ void R_SpriteColor( colorVec* pColor, cl_entity_t* pEntity, int alpha )
 
 float* R_GetAttachmentPoint( int entity, int attachment )
 {
-	cl_entity_t* pEntity;
-
-	pEntity = &cl_entities[entity];
-
-	if ( attachment )
+	cl_entity_t* pEntity = CL_GetEntityIfValid( entity );
+	if ( !pEntity )
+		return NULL;
+	if ( attachment > 0 && attachment <= ARRAYSIZE( pEntity->attachment ) )
 		return pEntity->attachment[attachment - 1];
 
 	return pEntity->origin;

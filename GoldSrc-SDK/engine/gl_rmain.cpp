@@ -650,7 +650,11 @@ void R_DrawEntitiesOnList()
 
 		org = currententity->origin;
 		if ( currententity->curstate.body )
-			org = R_GetAttachmentPoint( currententity->curstate.skin, currententity->curstate.body );
+		{
+			float* attachment = R_GetAttachmentPoint( currententity->curstate.skin, currententity->curstate.body );
+			if ( attachment )
+				org = attachment;
+		}
 		VectorCopy( org, r_entorigin );
 
 		R_DrawSpriteModel( currententity );

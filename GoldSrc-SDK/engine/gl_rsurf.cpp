@@ -2830,13 +2830,13 @@ void R_DecalShoot_( texture_t* ptexture, int index, int entity, int modelIndex, 
 
 	VectorCopy( position, gDecalPos ); // Pass position in global
 
-	pent = &cl_entities[entity];
+	pent = CL_GetEntityIfValid( entity );
 
 	gDecalModel = pent ? pent->model : NULL;
 	if ( pent && !gDecalModel && modelIndex )
 		gDecalModel = CL_GetModelByIndex( modelIndex );
-	if ( pent && !gDecalModel && sv.active )
-		gDecalModel = sv.models[(int)sv.edicts[entity].v.modelindex];
+	if ( pent && !gDecalModel && sv.active && sv.edicts && entity < sv.num_edicts )
+		gDecalModel = SV_ModelForIndex( sv.edicts[entity].v.modelindex );
 
 	if ( !pent || !gDecalModel || gDecalModel->type != mod_brush || !ptexture )
 	{
@@ -3035,13 +3035,13 @@ void R_FireCustomDecal( int textureIndex, int entity, int modelIndex, vec_t* pos
 
 	VectorCopy( position, gDecalPos ); // Pass position in global
 
-	pent = &cl_entities[entity];
+	pent = CL_GetEntityIfValid( entity );
 
 	gDecalModel = pent ? pent->model : NULL;
 	if ( pent && !gDecalModel && modelIndex )
 		gDecalModel = CL_GetModelByIndex( modelIndex );
-	if ( pent && !gDecalModel && sv.active )
-		gDecalModel = sv.models[(int)sv.edicts[entity].v.modelindex];
+	if ( pent && !gDecalModel && sv.active && sv.edicts && entity < sv.num_edicts )
+		gDecalModel = SV_ModelForIndex( sv.edicts[entity].v.modelindex );
 
 	if ( !pent || !gDecalModel || gDecalModel->type != mod_brush || !ptexture )
 	{
