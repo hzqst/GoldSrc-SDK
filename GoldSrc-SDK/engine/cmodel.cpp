@@ -156,7 +156,7 @@ void CM_CalcPAS( model_t* model )
 		// push the plane out apropriately for mins/maxs
 
 		// FIXME: use signbits into 8 way lookup for each mins/maxs
-		for ( j = 0; j < count; j++ )
+		for ( j = 0; j < model->numleafs; j++ )
 		{
 			if ( scan[j >> 3] & ( 1 << ( j & 7 ) ) )
 				vcount++;
@@ -196,7 +196,7 @@ void CM_CalcPAS( model_t* model )
 		if ( i == 0 )
 			continue;
 
-		for ( j = 0; j < count; j++ )
+		for ( j = 0; j < model->numleafs; j++ )
 		{
 			if ( ( (byte*)dest )[j >> 3] & ( 1 << ( j & 7 ) ) )
 				acount++;
