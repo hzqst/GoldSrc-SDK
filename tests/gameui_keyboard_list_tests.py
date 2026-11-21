@@ -101,7 +101,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix='goldsrc-gameui-keyboard-list-') as folder:
         path = Path(folder)
         (path / 'test.cpp').write_text(code, encoding='utf-8')
-        executable = compile_program([path / 'test.cpp', ROOT / 'engine/utlbuffer.cpp'], path / 'test',
+        executable = compile_program([path / 'test.cpp', ROOT / 'vgui2/src/public/UtlBuffer.cpp'], path / 'test',
                                      includes=[ROOT / 'engine', ROOT / 'public'], sanitizers=['address', 'undefined'],
                                      # the POSIX build gets this from common/posix_compat.h, which it force-includes
                                      defines=[] if os.name == 'nt' else ['_vsnprintf=vsnprintf'])

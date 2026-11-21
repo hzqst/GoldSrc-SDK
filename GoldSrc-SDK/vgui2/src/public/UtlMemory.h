@@ -18,12 +18,19 @@
 #pragma once
 #endif
 
+#include <assert.h>
 #include <stdlib.h>
 #include <new>
 
+#if ( defined( HL25_HW_ENGINE ) || defined( SW_RENDERER ) ) && defined( _WIN32 )
+#define UTL_ENGINE_ASSERTS
+#endif
+
 #ifdef _WIN32
 extern "C" _ACRTIMP void __cdecl _wassert( const wchar_t* message, const wchar_t* file, unsigned int line );
+#endif
 
+#ifdef UTL_ENGINE_ASSERTS
 #define UTLMEMORY_SOURCE_PATH	L"c:\\buildslave\\goldsrc_win32\\build\\GoldSrc\\public\\UtlMemory.h"
 #endif
 
@@ -60,20 +67,25 @@ public:
 	// Memory deallocation
 	void Purge();
 
+	// is the memory externally allocated?
 	bool IsExternallyAllocated() const;
+
+	// Set the size by which the memory grows
+	void SetGrowSize( int size );
+	int GetGrowSize() const;
 
 	enum
 	{
 		EXTERNAL_BUFFER_MARKER	= -1
 	};
 
-	T*	m_pMemory;
-	int	m_NumAllocated;
-	int	m_GrowSize;
-
 private:
 	CUtlMemory( const CUtlMemory<T>& other );
 	CUtlMemory<T>& operator=( const CUtlMemory<T>& other );
+
+	T*	m_pMemory;
+	int	m_NumAllocated;
+	int	m_GrowSize;
 };
 
 template <class T>
@@ -98,10 +110,13 @@ inline CUtlMemory<T>::~CUtlMemory()
 	Purge();
 }
 
+//-----------------------------------------------------------------------------
+// element access
+//-----------------------------------------------------------------------------
 template <class T>
 inline T& CUtlMemory<T>::operator[]( int i )
 {
-#ifdef _WIN32
+#ifdef UTL_ENGINE_ASSERTS
 	if ( !IsIdxValid( i ) )
 	{
 		_wassert( L"IsIdxValid(i)", UTLMEMORY_SOURCE_PATH, 155 );
@@ -114,7 +129,7 @@ inline T& CUtlMemory<T>::operator[]( int i )
 template <class T>
 inline const T& CUtlMemory<T>::operator[]( int i ) const
 {
-#ifdef _WIN32
+#ifdef UTL_ENGINE_ASSERTS
 	if ( !IsIdxValid( i ) )
 	{
 		_wassert( L"IsIdxValid(i)", UTLMEMORY_SOURCE_PATH, 162 );
@@ -167,6 +182,25 @@ inline bool CUtlMemory<T>::IsExternallyAllocated() const
 }
 
 template <class T>
+inline void CUtlMemory<T>::SetGrowSize( int size )
+{
+	assert( size >= 0 && !IsExternallyAllocated() );
+	if ( size >= 0 && !IsExternallyAllocated() )
+	{
+		m_GrowSize = size;
+	}
+}
+
+template <class T>
+inline int CUtlMemory<T>::GetGrowSize() const
+{
+	return m_GrowSize;
+}
+
+//-----------------------------------------------------------------------------
+// Makes sure we've got at least this much memory
+//-----------------------------------------------------------------------------
+template <class T>
 inline void CUtlMemory<T>::EnsureCapacity( int num )
 {
 	if ( m_NumAllocated >= num )
@@ -187,7 +221,7 @@ inline void CUtlMemory<T>::Grow( int num )
 
 	if ( num > 0 )
 	{
-#ifdef _WIN32
+#ifdef UTL_ENGINE_ASSERTS
 		if ( IsExternallyAllocated() )
 		{
 			_wassert( L"0", UTLMEMORY_SOURCE_PATH, 233 );
@@ -205,23 +239,28 @@ inline void CUtlMemory<T>::Grow( int num )
 		}
 	}
 
-	m_NumAllocated += growSize;
-
+	int numAllocated = m_NumAllocated + growSize;
+	T* pMemory;
 	if ( m_pMemory )
 	{
-		m_pMemory = (T*)realloc( m_pMemory, m_NumAllocated * sizeof( T ) );
+		pMemory = (T*)realloc( m_pMemory, numAllocated * sizeof( T ) );
 	}
 	else
 	{
-		m_pMemory = (T*)malloc( m_NumAllocated * sizeof( T ) );
+		pMemory = (T*)malloc( numAllocated * sizeof( T ) );
 	}
 
-#ifdef _WIN32
-	if ( !m_pMemory )
+	// keep the old block on failure instead of continuing with a null pointer
+	if ( !pMemory )
 	{
+#ifdef UTL_ENGINE_ASSERTS
 		_wassert( L"m_pMemory", UTLMEMORY_SOURCE_PATH, 249 );
-	}
 #endif
+		abort();
+	}
+
+	m_pMemory = pMemory;
+	m_NumAllocated = numAllocated;
 }
 
 //-----------------------------------------------------------------------------
@@ -230,16 +269,18 @@ inline void CUtlMemory<T>::Grow( int num )
 template <class T>
 inline void CUtlMemory<T>::Purge()
 {
-	if ( !IsExternallyAllocated() )
+	if ( IsExternallyAllocated() )
 	{
-		if ( m_pMemory )
-		{
-			free( m_pMemory );
-			m_pMemory = NULL;
-		}
-
-		m_NumAllocated = 0;
+		return;
 	}
+
+	if ( m_pMemory )
+	{
+		free( m_pMemory );
+		m_pMemory = NULL;
+	}
+
+	m_NumAllocated = 0;
 }
 
 #endif // UTLMEMORY_H

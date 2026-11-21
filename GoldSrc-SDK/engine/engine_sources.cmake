@@ -44,7 +44,7 @@ set(ENGINE_COMMON_SOURCES
 	engine/ipratelimit.cpp
 	engine/ipratelimitWrapper.cpp
 	engine/keys.cpp
-	engine/KeyValues.cpp
+	vgui2/src/public/KeyValues.cpp
 	engine/LoadBlob.cpp
 	engine/l_studio.cpp
 	engine/mathlib.cpp
@@ -92,7 +92,7 @@ set(ENGINE_COMMON_SOURCES
 	engine/tmessage.cpp
 	engine/traceinit.cpp
 	engine/unicode_strtools.cpp
-	engine/utlbuffer.cpp
+	vgui2/src/public/UtlBuffer.cpp
 	engine/utlsymbol.cpp
 	engine/vgui2/BaseUISurface.cpp
 	engine/vgui2/BaseUISurface_Font.cpp

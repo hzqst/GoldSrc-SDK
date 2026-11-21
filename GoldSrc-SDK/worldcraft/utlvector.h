@@ -19,13 +19,6 @@
 #include "../engine/utlvector.h"
 #include <assert.h>
 
-template<class T> void CUtlMemory<T>::SetGrowSize( int size )
-{
-	assert( size >= 0 && !IsExternallyAllocated() );
-	if ( size >= 0 && !IsExternallyAllocated() )
-		m_GrowSize = size;
-}
-
 template<class T> void CUtlVector<T>::SetGrowSize( int size )
 {
 	m_Memory.SetGrowSize( size );

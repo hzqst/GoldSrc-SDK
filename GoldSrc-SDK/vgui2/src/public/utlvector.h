@@ -197,9 +197,9 @@ void CUtlVector<T>::GrowVector( int num )
 	if ( m_Size + num > m_Memory.NumAllocated() )
 	{
 		int growSize = m_Size + num - m_Memory.NumAllocated();
-		if ( growSize < m_Memory.m_GrowSize )
+		if ( growSize < m_Memory.GetGrowSize() )
 		{
-			growSize = m_Memory.m_GrowSize;
+			growSize = m_Memory.GetGrowSize();
 		}
 
 		m_Memory.Grow( growSize );

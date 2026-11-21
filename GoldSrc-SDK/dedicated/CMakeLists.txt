@@ -25,8 +25,8 @@ goldsrc_add_module(hlds
 		common/ObjectList.cpp
 		engine/interface.cpp
 		engine/mem.c
-		engine/KeyValues.cpp
-		engine/utlbuffer.cpp
+		vgui2/src/public/KeyValues.cpp
+		vgui2/src/public/UtlBuffer.cpp
 		engine/utlsymbol.cpp
 		engine/MemPool.cpp
 		engine/controls.cpp

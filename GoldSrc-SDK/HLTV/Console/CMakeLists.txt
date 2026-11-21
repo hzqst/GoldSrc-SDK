@@ -22,8 +22,8 @@ goldsrc_add_module(HLTV
 		engine/interface.cpp
 	WINDOWS_SOURCES
 		# VGUI2 console window (Windows only).
-		engine/KeyValues.cpp
-		engine/utlbuffer.cpp
+		vgui2/src/public/KeyValues.cpp
+		vgui2/src/public/UtlBuffer.cpp
 		engine/utlsymbol.cpp
 		engine/MemPool.cpp
 		engine/controls.cpp
