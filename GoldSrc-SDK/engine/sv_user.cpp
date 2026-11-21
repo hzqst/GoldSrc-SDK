@@ -81,22 +81,18 @@ void SV_SendConsistencyList( sizebuf_t* )
 
 qboolean SV_FileInConsistencyList( const char* filename, consistency_t** entry )
 {
-	int index = 0;
-	consistency_t* consistency = &sv.consistency_list[1];
-	char* name = sv.consistency_list[0].filename;
-	if ( name == nullptr )
-		return false;
-	while ( Q_stricmp( filename, name ) != 0 )
+	for ( int index = 0; index < ARRAYSIZE( sv.consistency_list ); ++index )
 	{
-		++consistency;
-		name = consistency[-1].filename;
-		++index;
+		const char* name = sv.consistency_list[index].filename;
 		if ( name == nullptr )
-			return false;
+			break;
+		if ( Q_stricmp( filename, name ) != 0 )
+			continue;
+		if ( entry != nullptr )
+			*entry = &sv.consistency_list[index];
+		return true;
 	}
-	if ( entry != nullptr )
-		*entry = &sv.consistency_list[index];
-	return true;
+	return false;
 }
 
 void SV_ParseConsistencyResponse( client_t* )
