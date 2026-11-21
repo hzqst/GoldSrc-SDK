@@ -175,11 +175,6 @@ extern CreateInterfaceFn	Sys_GetFactory( CSysModule *pModule );
 // hlds_run wants to use this function
 void *Sys_GetProcAddress( void *pModuleHandle, const char *pName );
 
-#if !defined( _WIN32 )
-// Linux doesn't have this function so this emulates its functionality
-void *GetModuleHandle( const char *name );
-#endif
-
 // This is a helper function to load a module, get its factory, and get a specific interface.
 // You are expected to free all of these things.
 // Returns false and cleans up if any of the steps fail.
