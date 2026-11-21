@@ -66,6 +66,7 @@ foreach(name IN ITEMS
 		serverbrowser_last_played
 		serverbrowser_password
 		serverbrowser_sort
+		skeletal_model
 		sound_resample
 		spectate_connection
 		spectator_chat_position

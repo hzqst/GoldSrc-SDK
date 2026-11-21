@@ -598,20 +598,15 @@ int R_GetStudioBounds( const char* filename, float* mins, float* maxs )
 	buffer = (byte*)FS_GetReadBuffer( fp, &length );
 	usingReadBuffer = buffer != NULL;
 	if ( !buffer )
-		buffer = COM_LoadFile( (char*)filename, 5, NULL );
+		buffer = COM_LoadFileForMe( (char*)filename, &length );
 
 	result = 0;
-	if ( buffer )
-	{
-		if ( LittleLong( *(int*)buffer ) == IDSTUDIOHEADER )
-			result = R_StudioComputeBounds( buffer, mins, maxs );
-		else
-			COM_FreeFile( buffer );
-	}
+	if ( buffer && length >= (int)sizeof( studiohdr_t ) && LittleLong( *(int*)buffer ) == IDSTUDIOHEADER )
+		result = R_StudioComputeBounds( buffer, mins, maxs );
 
 	if ( usingReadBuffer )
 		FS_ReleaseReadBuffer( fp, buffer );
-	else
+	else if ( buffer )
 		COM_FreeFile( buffer );
 
 	FS_Close( fp );
@@ -2480,8 +2475,12 @@ void R_StudioProcessGait( entity_state_t* pplayer )
 	float flYaw; // view direction relative to movement
 	mstudioseqdesc_t* pseqdesc;
 
-	if ( currententity->curstate.sequence >= pstudiohdr->numseq )
+	if ( pstudiohdr->numseq <= 0 )
+		return;
+	if ( currententity->curstate.sequence < 0 || currententity->curstate.sequence >= pstudiohdr->numseq )
 		currententity->curstate.sequence = 0;
+	if ( pplayer->gaitsequence < 0 || pplayer->gaitsequence >= pstudiohdr->numseq )
+		pplayer->gaitsequence = 0;
 
 	pseqdesc = (mstudioseqdesc_t*)( (byte*)pstudiohdr + pstudiohdr->seqindex ) + currententity->curstate.sequence;
 
@@ -4521,20 +4520,15 @@ int R_GetStudioBounds( const char* filename, float* mins, float* maxs )
 	buffer = (byte*)FS_GetReadBuffer( fp, &length );
 	usingReadBuffer = buffer != NULL;
 	if ( !buffer )
-		buffer = COM_LoadFile( (char*)filename, 5, NULL );
+		buffer = COM_LoadFileForMe( (char*)filename, &length );
 
 	result = 0;
-	if ( buffer )
-	{
-		if ( LittleLong( *(int*)buffer ) == IDSTUDIOHEADER )
-			result = R_StudioComputeBounds( buffer, mins, maxs );
-		else
-			COM_FreeFile( buffer );
-	}
+	if ( buffer && length >= (int)sizeof( studiohdr_t ) && LittleLong( *(int*)buffer ) == IDSTUDIOHEADER )
+		result = R_StudioComputeBounds( buffer, mins, maxs );
 
 	if ( usingReadBuffer )
 		FS_ReleaseReadBuffer( fp, buffer );
-	else
+	else if ( buffer )
 		COM_FreeFile( buffer );
 
 	FS_Close( fp );
@@ -7126,8 +7120,12 @@ void R_StudioProcessGait( entity_state_t* pplayer )
 	float flYaw; // view direction relative to movement
 	mstudioseqdesc_t* pseqdesc;
 
-	if ( currententity->curstate.sequence >= pstudiohdr->numseq )
+	if ( pstudiohdr->numseq <= 0 )
+		return;
+	if ( currententity->curstate.sequence < 0 || currententity->curstate.sequence >= pstudiohdr->numseq )
 		currententity->curstate.sequence = 0;
+	if ( pplayer->gaitsequence < 0 || pplayer->gaitsequence >= pstudiohdr->numseq )
+		pplayer->gaitsequence = 0;
 
 	pseqdesc = (mstudioseqdesc_t*)( (byte*)pstudiohdr + pstudiohdr->seqindex ) + currententity->curstate.sequence;
 
