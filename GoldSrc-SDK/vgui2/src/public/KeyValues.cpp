@@ -163,6 +163,19 @@ void KeyValues::FreeAllocatedValue()
 }
 
 //-----------------------------------------------------------------------------
+// Purpose: Reads the next character of a token. The cursor stays on the
+//			terminator, so a truncated buffer keeps returning it instead of
+//			reading past its end
+//-----------------------------------------------------------------------------
+static signed char ReadTokenChar( char** buffer )
+{
+	signed char character = static_cast<signed char>( **buffer );
+	if ( character != 0 )
+		++*buffer;
+	return character;
+}
+
+//-----------------------------------------------------------------------------
 // Purpose: Reads the next token; wasQuoted tells a quoted "{" or "}" value from
 //			an unquoted brace, which the original reader did not
 //-----------------------------------------------------------------------------
@@ -177,28 +190,28 @@ static char* ReadToken( char** buffer, bool& wasQuoted )
 	{
 		do // eat whitespaces
 		{
-			character = static_cast<signed char>( *( *buffer )++ );
+			character = ReadTokenChar( buffer );
 		} while ( std::isspace( static_cast<unsigned char>( character ) ) );
 		if ( character != '/' )
 			break;	// new token starts here
-		character = static_cast<signed char>( *( *buffer )++ );
+		character = ReadTokenChar( buffer );
 		if ( character != '/' )
 		{
 			buf[length++] = '/';
 			break; // a real token starts here
 		}
 		while ( character != '\n' && character > 0 )
-			character = static_cast<signed char>( *( *buffer )++ );
+			character = ReadTokenChar( buffer );
 	}
 	if ( character == '"' )
 	{
 		wasQuoted = true;
-		character = static_cast<signed char>( *( *buffer )++ );
+		character = ReadTokenChar( buffer );
 		while ( character != '"' && character != 0 )
 		{
 			if ( character == '\\' )
 			{
-				character = static_cast<signed char>( *( *buffer )++ );
+				character = ReadTokenChar( buffer );
 				switch ( character )
 				{
 				case '"':
@@ -217,7 +230,7 @@ static char* ReadToken( char** buffer, bool& wasQuoted )
 			}
 			if ( length < TOKEN_BUFFER_BYTES )
 				buf[length++] = character; // add char to buffer
-			character = static_cast<signed char>( *( *buffer )++ );
+			character = ReadTokenChar( buffer );
 		}
 	}
 	else
@@ -230,7 +243,7 @@ static char* ReadToken( char** buffer, bool& wasQuoted )
 					break;
 				if ( length < TOKEN_BUFFER_BYTES )
 					buf[length++] = character; // add char to buffer
-				character = static_cast<signed char>( *( *buffer )++ );
+				character = ReadTokenChar( buffer );
 				if ( **buffer == 0 )
 					break;
 			}
