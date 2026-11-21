@@ -52,6 +52,7 @@ foreach(name IN ITEMS
 		gameui_string_utils
 		gl_sprite_format
 		hashpak_remove
+		host_profile
 		hunk_temp_alloc
 		interface_load_module
 		ip_rate_order
@@ -76,6 +77,7 @@ foreach(name IN ITEMS
 		serverbrowser_password
 		serverbrowser_sort
 		skeletal_model
+		sound_msg
 		sound_resample
 		spectate_connection
 		spectator_chat_position
@@ -85,6 +87,7 @@ foreach(name IN ITEMS
 		stream_sound
 		sv_pmove_visibility
 		tfc_text_window
+		transparent_entity
 		utl_containers
 		vgui1_app_focus
 		vgui1_build_group

@@ -4316,8 +4316,14 @@ qboolean SV_BuildSoundMsg( edict_t* entity, int channel, const char* sample, int
 		pitch = pitch < 0 ? 0 : SOUND_CHANNEL_MAX;
 	}
 
+	if ( !sample )
+	{
+		Con_Printf( "SV_StartSound: NULL sample\n" );
+		return 0;
+	}
+
 	int soundIndex;
-	if ( sample && *sample == CHAR_SENTENCE )
+	if ( *sample == CHAR_SENTENCE )
 	{
 		flags |= SND_SENTENCE;
 		soundIndex = Q_atoi( sample + 1 );
@@ -4327,7 +4333,7 @@ qboolean SV_BuildSoundMsg( edict_t* entity, int channel, const char* sample, int
 			return 0;
 		}
 	}
-	else if ( sample && *sample == '#' )
+	else if ( *sample == '#' )
 	{
 		flags |= SND_SENTENCE;
 		soundIndex = static_cast<int>( static_cast<unsigned int>( Q_atoi( sample + 1 ) ) + MAX_SENTENCES );

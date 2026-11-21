@@ -641,7 +641,7 @@ static int CL_AddVisibleEntity( int type, cl_entity_t* ent )
 	}
 	else
 	{
-		if ( cl_numvisedicts >= MAX_VISEDICTS )
+		if ( !ent->model || cl_numvisedicts >= MAX_VISEDICTS )
 			return 0;
 		cl_visedicts[cl_numvisedicts++] = ent;
 	}
@@ -661,7 +661,7 @@ int ClientDLL_AddEntity( int type, cl_entity_s* ent )
 		return 0;
 
 	if ( CL_IsSpectateOnly() && !CL_IsDevOverviewMode() && type != ET_TEMPENTITY && type != ET_BEAM
-		 && ent->curstate.movetype != MOVETYPE_FOLLOW )
+		 && ent->curstate.movetype != MOVETYPE_FOLLOW && ent->model )
 	{
 		VectorAdd( ent->origin, ent->model->mins, mins );
 		VectorAdd( ent->origin, ent->model->maxs, maxs );
