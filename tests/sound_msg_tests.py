@@ -1,4 +1,4 @@
-"""Exercise server sound message sample handling, including a NULL sample name."""
+"""Exercise server sound message sample handling, including NULL sample names and pitch clamping."""
 from pathlib import Path
 import subprocess
 import sys
@@ -98,6 +98,19 @@ int main()
 
     assert(1 == SV_BuildSoundMsg(&entity, 0, "#3", 255, 1.0f, 0, PITCH_NORM, origin, &buffer));
     assert(3 == buffer.cursize && static_cast<unsigned int>(MAX_SENTENCES + 3) == lastBitField);
+
+    assert(1 == SV_BuildSoundMsg(&entity, 0, "player/pl_step1.wav", 255, 1.0f, 0, 300, origin, &buffer));
+    assert(255u == lastBitField);
+    assert(1 == SV_BuildSoundMsg(&entity, 0, "player/pl_step1.wav", 255, 1.0f, 0, -5, origin, &buffer));
+    assert(0u == lastBitField);
+
+    const int printsBeforeAmbient = printCount;
+    PF_ambientsound_I(&entity, origin, nullptr, 1.0f, 1.0f, 0, PITCH_NORM);
+    assert(0 == sv.datagram.cursize && 0 == sv.signon.cursize && printsBeforeAmbient + 1 == printCount);
+    PF_ambientsound_I(&entity, origin, "player/pl_step1.wav", 1.0f, 1.0f, 0, PITCH_NORM);
+    assert(0 < sv.datagram.cursize && 0 == sv.signon.cursize);
+    PF_ambientsound_I(&entity, origin, "!7", 1.0f, 1.0f, SND_SPAWNING, PITCH_NORM);
+    assert(0 < sv.signon.cursize);
 }
 '''
 
@@ -105,6 +118,7 @@ int main()
 def main():
     production = [
         extract_range('sv_main.cpp', 'int hashstrings_collisions;', 'void SV_StartSound('),
+        extract_range('pr_cmds.cpp', 'void PF_ambientsound_I(', 'void PF_particle_I('),
     ]
     with tempfile.TemporaryDirectory(prefix='goldsrc-sound-msg-') as folder:
         work = Path(folder)

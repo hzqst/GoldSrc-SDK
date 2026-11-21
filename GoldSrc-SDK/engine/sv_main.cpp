@@ -4313,7 +4313,7 @@ qboolean SV_BuildSoundMsg( edict_t* entity, int channel, const char* sample, int
 	if ( static_cast<unsigned int>( pitch ) > SOUND_PITCH_MAX )
 	{
 		Con_Printf( "SV_StartSound: pitch = %i", pitch );
-		pitch = pitch < 0 ? 0 : SOUND_CHANNEL_MAX;
+		pitch = pitch < 0 ? 0 : SOUND_PITCH_MAX;
 	}
 
 	if ( !sample )
