@@ -703,7 +703,7 @@ void Host_InitCommands()
 		Cmd_AddCommandWithFlags( "_sethdmodels", Host_SetHDModels_f, CMD_FLAG_PRIVILEGED );
 		Cmd_AddCommandWithFlags( "_setaddons_folder", Host_SetAddonsFolder_f, CMD_FLAG_PRIVILEGED );
 	}
-	Cmd_AddCommand( "exit", Host_Quit_f );
+	Cmd_AddCommandWithFlags( "exit", Host_Quit_f, CMD_FLAG_PRIVILEGED );
 	Cmd_AddCommand( "map", Host_Map_f );
 	Cmd_AddCommand( "career", Host_Career_f );
 	Cmd_AddCommand( "maps", Host_Maps_f );

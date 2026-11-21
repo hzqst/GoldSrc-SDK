@@ -286,27 +286,46 @@ void CL_Send_CvarValue2()
 		MSG_WriteString( &cls.netchan.message, var->string );
 }
 
-static bool StuffTextHasCommand( const char* text, const char* command, bool lineBreaks )
+static bool StuffTextIsSpace( char c )
 {
-	const char* match;
-	char prev;
+	return c != '\0' && static_cast<unsigned char>( c ) <= ' ';
+}
 
-	match = Q_stristr( text, command );
-	if ( !match )
-		return false;
+static bool StuffTextStartsCommand( const char* text, const char* match )
+{
+	return match == text || StuffTextIsSpace( match[-1] ) || match[-1] == ';' || match[-1] == '"';
+}
 
-	if ( match == text )
-		return true;
+static bool StuffTextHasCommand( const char* text, const char* command )
+{
+	for ( const char* match = Q_stristr( text, command ); match; match = Q_stristr( match + 1, command ) )
+	{
+		if ( StuffTextStartsCommand( text, match ) )
+			return true;
+	}
+	return false;
+}
 
-	prev = match[-1];
-	return prev == ' ' || prev == ';' || ( lineBreaks && ( prev == '\n' || prev == '\r' ) );
+static bool StuffTextHasArgumentCommand( const char* text, const char* command, bool requireCommandStart = false )
+{
+	const size_t length = strlen( command );
+	for ( const char* match = Q_stristr( text, command ); match; match = Q_stristr( match + 1, command ) )
+	{
+		if ( requireCommandStart && !StuffTextStartsCommand( text, match ) )
+			continue;
+
+		const char* tail = match + length;
+		if ( *tail == '"' && match > text && match[-1] == '"' )
+			++tail;
+		if ( *tail != '\0' && *tail != '\n' && ( StuffTextIsSpace( *tail ) || strchr( "{}()',:", *tail ) ) )
+			return true;
+	}
+	return false;
 }
 
 qboolean ValidStuffText( const char* cmd )
 {
 	const char* pchTokCmd;
-	const char* pos;
-	const char* pos1;
 	bool bGoodCommand;
 	int i, len;
 
@@ -337,24 +356,17 @@ qboolean ValidStuffText( const char* cmd )
 			return false;
 	}
 
-	bGoodCommand &= _strnicmp( cmd, "alias ", sizeof( "alias " ) - 1 ) != 0;
-
-	pos1 = Q_stristr( cmd, "reconnect" );
-	pos = Q_stristr( cmd, "connect " );
-	if ( pos && pos1 && pos == pos1 + ( sizeof( "re" ) - 1 ) )
-		pos = Q_stristr( pos + 1, "connect " );
-	if ( !pos1 || ( pos && pos != pos1 + ( sizeof( "re" ) - 1 ) ) )
-		bGoodCommand &= !StuffTextHasCommand( pos, "connect ", true );
-
-	bGoodCommand &= !StuffTextHasCommand( cmd, "motd_write", true );
-	bGoodCommand &= !StuffTextHasCommand( cmd, "motdfile", true );
-	bGoodCommand &= !StuffTextHasCommand( cmd, "retry", true );
-	bGoodCommand &= !StuffTextHasCommand( cmd, "_set", true );
-	bGoodCommand &= Q_stristr( cmd, "bind " ) == NULL;
-	bGoodCommand &= Q_stristr( cmd, "unbind " ) == NULL;
-	bGoodCommand &= !StuffTextHasCommand( cmd, "quit", true );
+	bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "alias", true );
+	bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "connect", true );
+	bGoodCommand &= !StuffTextHasCommand( cmd, "motd_write" );
+	bGoodCommand &= !StuffTextHasCommand( cmd, "motdfile" );
+	bGoodCommand &= !StuffTextHasCommand( cmd, "retry" );
+	bGoodCommand &= !StuffTextHasCommand( cmd, "_set" );
+	bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "bind" );
+	bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "unbind" );
+	bGoodCommand &= !StuffTextHasCommand( cmd, "quit" );
 	bGoodCommand &= Q_stristr( cmd, "_restart" ) == NULL;
-	bGoodCommand &= !StuffTextHasCommand( cmd, "kill", true );
+	bGoodCommand &= !StuffTextHasCommand( cmd, "kill" );
 	bGoodCommand &= Q_stristr( cmd, "exit" ) == NULL;
 	if ( !g_bIsTFC )
 		bGoodCommand &= Q_stristr( cmd, "exec" ) == NULL;
@@ -364,12 +376,12 @@ qboolean ValidStuffText( const char* cmd )
 
 	if ( cl_filterstuffcmd.value > 0.0f )
 	{
-		bGoodCommand &= Q_stristr( cmd, "ex_interp " ) == NULL;
-		bGoodCommand &= Q_stristr( cmd, "say " ) == NULL;
+		bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "ex_interp" );
+		bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "say" );
 		bGoodCommand &= Q_stristr( cmd, "developer" ) == NULL;
 		bGoodCommand &= Q_stristr( cmd, "timerefresh" ) == NULL;
 		bGoodCommand &= Q_stristr( cmd, "rate" ) == NULL;
-		bGoodCommand &= Q_stristr( cmd, "cd " ) == NULL;
+		bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "cd" );
 		bGoodCommand &= Q_stristr( cmd, "fps_max" ) == NULL;
 		bGoodCommand &= Q_stristr( cmd, "speak_enabled" ) == NULL;
 		bGoodCommand &= Q_stristr( cmd, "voice_enable" ) == NULL;
@@ -379,11 +391,11 @@ qboolean ValidStuffText( const char* cmd )
 		bGoodCommand &= Q_stristr( cmd, "removedemo" ) == NULL;
 		bGoodCommand &= Q_stristr( cmd, "volume" ) == NULL;
 		bGoodCommand &= Q_stristr( cmd, "mp3volume" ) == NULL;
-		bGoodCommand &= !StuffTextHasCommand( cmd, "cl_", false );
-		bGoodCommand &= !StuffTextHasCommand( cmd, "gl_", false );
-		bGoodCommand &= !StuffTextHasCommand( cmd, "m_", false );
-		bGoodCommand &= !StuffTextHasCommand( cmd, "r_", false );
-		bGoodCommand &= !StuffTextHasCommand( cmd, "hud_", false );
+		bGoodCommand &= !StuffTextHasCommand( cmd, "cl_" );
+		bGoodCommand &= !StuffTextHasCommand( cmd, "gl_" );
+		bGoodCommand &= !StuffTextHasCommand( cmd, "m_" );
+		bGoodCommand &= !StuffTextHasCommand( cmd, "r_" );
+		bGoodCommand &= !StuffTextHasCommand( cmd, "hud_" );
 
 		len = (int)strlen( cmd );
 		for ( i = 0; i < len; i++ )
@@ -1009,7 +1021,7 @@ void CL_AdjustClock()
 
 qboolean AllowedCommand( const char* pCmdString, const char* pBannedString )
 {
-	return !StuffTextHasCommand( pCmdString, pBannedString, true );
+	return !StuffTextHasCommand( pCmdString, pBannedString );
 }
 
 void CL_Parse_VoiceData()
