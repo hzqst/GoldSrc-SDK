@@ -279,6 +279,58 @@ static void QuotedBracesAreValues() {
  puts("PASS: quoted { and } are names and values, and only unquoted braces open and close blocks");
 }
 
+// the copy ends at its terminator, so AddressSanitizer reports any read past it
+static KeyValues* LoadExact(const char* text) {
+ size_t size = std::strlen(text) + 1;
+ char* copy = new char[size];
+ std::memcpy(copy, text, size);
+ KeyValues* data = Load(copy);
+ delete[] copy;
+ return data;
+}
+
+static void CompleteInputStaysInTheBuffer() {
+ KeyValues* data = LoadExact("root { a \"1\" }");
+ assert(1 == data->GetInt("a"));
+ data->deleteThis();
+ puts("PASS: a complete buffer is read up to its closing brace");
+}
+
+static void UnterminatedQuoteStaysInTheBuffer() {
+ KeyValues* data = LoadExact("root { a \"1\" b \"open");
+ assert(1 == data->GetInt("a"));
+ data->deleteThis();
+ puts("PASS: an unterminated quoted token stops at the end of the buffer");
+}
+
+static void TrailingCommentStaysInTheBuffer() {
+ KeyValues* data = LoadExact("root { a \"1\" // comment");
+ assert(1 == data->GetInt("a"));
+ data->deleteThis();
+ puts("PASS: a comment without a newline stops at the end of the buffer");
+}
+
+static void MissingCloseStaysInTheBuffer() {
+ KeyValues* data = LoadExact("root { a \"1\" ");
+ assert(1 == data->GetInt("a"));
+ data->deleteThis();
+ puts("PASS: a block without its closing brace stops at the end of the buffer");
+}
+
+static void EscapeAtTheEndStaysInTheBuffer() {
+ KeyValues* data = LoadExact("root { a \"1\" b \"x\\");
+ assert(1 == data->GetInt("a"));
+ data->deleteThis();
+ puts("PASS: a backslash before the end of the buffer stops there");
+}
+
+static void SlashAtTheEndStaysInTheBuffer() {
+ KeyValues* data = LoadExact("root { a \"1\" /");
+ assert(1 == data->GetInt("a"));
+ data->deleteThis();
+ puts("PASS: a slash before the end of the buffer stops there");
+}
+
 static void BufferWritesNumbersAndText() {
  CUtlBuffer text(0, 0, true);
  text.PutInt(-12);
@@ -308,6 +360,12 @@ int main() {
  SavesAndLoadsFiles();
  RepeatedKeysFreeTheOldValue();
  QuotedBracesAreValues();
+ CompleteInputStaysInTheBuffer();
+ UnterminatedQuoteStaysInTheBuffer();
+ TrailingCommentStaysInTheBuffer();
+ MissingCloseStaysInTheBuffer();
+ EscapeAtTheEndStaysInTheBuffer();
+ SlashAtTheEndStaysInTheBuffer();
  BufferWritesNumbersAndText();
  return 0;
 }
