@@ -61,6 +61,7 @@ foreach(name IN ITEMS
 		parse_event_args
 		perf_counter_init
 		scoreboard_selection
+		server_file_consistency
 		server_model
 		serverbrowser_filter_data
 		serverbrowser_filter_string
