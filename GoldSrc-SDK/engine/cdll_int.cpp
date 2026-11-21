@@ -169,7 +169,7 @@ void PlayerInfo_SetValueForKey( const char* key, const char* value )
 		return;
 
 	g_engdstAddrs.PlayerInfo_SetValueForKey( &key, &value );
-	Info_SetValueForKey( cls.userinfo, key, value, sizeof( cls.userinfo ) );
+	Info_SetValueForStarKey( cls.userinfo, key, value, sizeof( cls.userinfo ) );
 
 	if ( cls.state > ca_connecting )
 	{
@@ -232,7 +232,7 @@ model_t* CL_LoadModel( const char* modelname, int* index )
 
 	g_engdstAddrs.CL_LoadModel( &modelname, &index );
 
-	for ( i = 1; cl.model_precache[i]; i++ )
+	for ( i = 1; i < MAX_MODELS && cl.model_precache[i]; i++ )
 	{
 		if ( !Q_strcasecmp( modelname, cl.model_precache[i]->name ) )
 		{
@@ -763,7 +763,7 @@ unsigned short hudPrecacheEvent( int type, const char* psz )
 
 	g_engdstAddrs.pfnPrecacheEvent( &type, &psz );
 
-	for ( i = 1; cl.event_precache[i].filename; i++ )
+	for ( i = 1; i < MAX_EVENT_SCRIPTS && cl.event_precache[i].filename; i++ )
 	{
 		if ( !Q_strcasecmp( cl.event_precache[i].filename, psz ) )
 			return (unsigned short)i;
