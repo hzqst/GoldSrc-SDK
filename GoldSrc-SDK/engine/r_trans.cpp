@@ -701,7 +701,7 @@ void R_DrawTEntitiesOnList( qboolean clientOnly )
 				if ( currententity->curstate.body )
 				{
 					float* pAttachment = R_GetAttachmentPoint( currententity->curstate.skin, currententity->curstate.body );
-					VectorCopy( pAttachment, r_entorigin );
+					VectorCopy( pAttachment ? pAttachment : currententity->origin, r_entorigin );
 				}
 				else
 				{
@@ -984,7 +984,7 @@ void R_DrawTEntitiesOnList( qboolean clientOnly )
 				if ( currententity->curstate.body )
 				{
 					pAttachment = R_GetAttachmentPoint( currententity->curstate.skin, currententity->curstate.body );
-					VectorCopy( pAttachment, r_entorigin );
+					VectorCopy( pAttachment ? pAttachment : currententity->origin, r_entorigin );
 				}
 				else
 				{

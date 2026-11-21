@@ -427,7 +427,11 @@ void CL_Parse_StuffText()
 
 void CL_Parse_SetView()
 {
-	cl.viewentity = MSG_ReadShort();
+	const int entity = MSG_ReadShort();
+	if ( entity >= 0 && entity < cl.max_edicts )
+		cl.viewentity = entity;
+	else
+		Con_DPrintf( "CL_Parse_SetView: invalid entity %i\n", entity );
 }
 
 void CL_Parse_Print()

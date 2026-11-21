@@ -440,6 +440,12 @@ extern dlight_t cl_elights[MAX_ELIGHTS];
 extern lightstyle_t cl_lightstyle[MAX_LIGHTSTYLES];
 
 extern cl_entity_t* cl_entities;
+
+inline cl_entity_t* CL_GetEntityIfValid( int index )
+{
+	return cl_entities && index >= 0 && index < cl.max_edicts ? &cl_entities[index] : NULL;
+}
+
 extern int cl_numvisedicts;
 extern cl_entity_t* cl_visedicts[MAX_VISEDICTS];
 extern int cl_numbeamentities;

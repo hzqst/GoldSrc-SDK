@@ -1718,14 +1718,14 @@ void R_DecalShoot_( texture_t* texture, int index, int entity, int modelIndex, v
 	if ( g_bUsingInGameAdvertisements && texture && !Q_stricmp( texture->name, "}lambda06" ) )
 		flags |= FDECAL_CUSTOM;
 	VectorCopy( position, gDecalPos );
-	cl_entity_t* ent = &cl_entities[entity];
+	cl_entity_t* ent = CL_GetEntityIfValid( entity );
 	gDecalModel = ent ? ent->model : NULL;
 	if ( ent )
 	{
 		if ( !gDecalModel && modelIndex )
 			gDecalModel = CL_GetModelByIndex( modelIndex );
-		if ( !gDecalModel && sv.active )
-			gDecalModel = sv.models[sv.edicts[entity].v.modelindex];
+		if ( !gDecalModel && sv.active && sv.edicts && entity < sv.num_edicts )
+			gDecalModel = SV_ModelForIndex( sv.edicts[entity].v.modelindex );
 	}
 	if ( !gDecalModel || gDecalModel->type != mod_brush || !texture )
 	{

@@ -56,6 +56,7 @@ foreach(name IN ITEMS
 		localize_set_value
 		localize_utf8
 		mixer_failure
+		network_entity_bounds
 		parse_event_args
 		perf_counter_init
 		scoreboard_selection
