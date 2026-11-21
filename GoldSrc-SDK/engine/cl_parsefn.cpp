@@ -1022,7 +1022,7 @@ void CL_AdjustClock()
 
 qboolean AllowedCommand( const char* pCmdString, const char* pBannedString )
 {
-	return !StuffTextHasCommand( pCmdString, pBannedString, true );
+	return !StuffTextHasCommand( pCmdString, pBannedString );
 }
 
 void CL_Parse_VoiceData()

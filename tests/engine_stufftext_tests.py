@@ -46,6 +46,7 @@ TESTS = r'''
 int main()
 {
     assert(StuffTextHasCommand("unrestricted; restricted", "restricted"));
+    assert(!AllowedCommand("unrestricted; restricted", "restricted"));
     assert(StuffTextHasCommand("echo;\t\"restricted\"", "restricted"));
     assert(!StuffTextHasCommand("unrestricted", "restricted"));
     assert(StuffTextHasArgumentCommand("echo; restricted\tvalue", "restricted"));
@@ -69,6 +70,7 @@ def main():
         extract("cl_parsefn.cpp", "static bool StuffTextHasCommand("),
         extract("cl_parsefn.cpp", "static bool StuffTextHasArgumentCommand("),
         extract("cl_parsefn.cpp", "qboolean ValidStuffText("),
+        extract("cl_parsefn.cpp", "qboolean AllowedCommand("),
     ]
     with tempfile.TemporaryDirectory(prefix='goldsrc-engine-stufftext-') as folder:
         work = Path(folder)
