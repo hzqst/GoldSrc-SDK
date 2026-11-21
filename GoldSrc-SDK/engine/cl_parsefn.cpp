@@ -288,7 +288,7 @@ void CL_Send_CvarValue2()
 
 static bool StuffTextIsSpace( char c )
 {
-	return c != '\0' && static_cast<signed char>( c ) <= ' ';
+	return c != '\0' && static_cast<unsigned char>( c ) <= ' ';
 }
 
 static bool StuffTextStartsCommand( const char* text, const char* match )
@@ -306,15 +306,12 @@ static bool StuffTextHasCommand( const char* text, const char* command )
 	return false;
 }
 
-static bool StuffTextHasArgumentCommand( const char* text, const char* command, bool allowReconnect = false )
+static bool StuffTextHasArgumentCommand( const char* text, const char* command, bool requireCommandStart = false )
 {
 	const size_t length = strlen( command );
-	constexpr int reconnectPrefixLength = sizeof( "re" ) - 1;
 	for ( const char* match = Q_stristr( text, command ); match; match = Q_stristr( match + 1, command ) )
 	{
-		if ( allowReconnect && match - text >= reconnectPrefixLength
-			 && !_strnicmp( match - reconnectPrefixLength, "re", reconnectPrefixLength )
-			 && StuffTextStartsCommand( text, match - reconnectPrefixLength ) )
+		if ( requireCommandStart && !StuffTextStartsCommand( text, match ) )
 			continue;
 
 		const char* tail = match + length;
@@ -359,7 +356,7 @@ qboolean ValidStuffText( const char* cmd )
 			return false;
 	}
 
-	bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "alias" );
+	bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "alias", true );
 	bGoodCommand &= !StuffTextHasArgumentCommand( cmd, "connect", true );
 	bGoodCommand &= !StuffTextHasCommand( cmd, "motd_write" );
 	bGoodCommand &= !StuffTextHasCommand( cmd, "motdfile" );

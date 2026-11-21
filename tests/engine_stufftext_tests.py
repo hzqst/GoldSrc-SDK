@@ -53,6 +53,7 @@ int main()
     assert(StuffTextHasArgumentCommand("echo; restricted:value", "restricted"));
     assert(!StuffTextHasArgumentCommand("echo; restricted\n", "restricted"));
     assert(ValidStuffText("echo item; reconnect"));
+    assert(ValidStuffText("echo reconnect ready"));
     assert(ValidStuffText("echo item"));
 }
 '''
