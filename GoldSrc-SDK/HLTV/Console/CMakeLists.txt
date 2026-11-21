@@ -24,8 +24,8 @@ goldsrc_add_module(HLTV
 		# VGUI2 console window (Windows only).
 		vgui2/src/public/KeyValues.cpp
 		vgui2/src/public/UtlBuffer.cpp
-		engine/utlsymbol.cpp
-		engine/MemPool.cpp
+		vgui2/src/public/utlsymbol.cpp
+		vgui2/src/public/MemPool.cpp
 		engine/controls.cpp
 		vgui2/controls/controls.cpp
 		vgui2/controls/Panel.cpp

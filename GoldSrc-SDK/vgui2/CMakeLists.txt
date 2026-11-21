@@ -28,7 +28,6 @@ goldsrc_add_module(vgui2
 		vgui2/src/public/UtlBuffer.cpp
 		vgui2/src/public/utllinkedlist_inst.cpp
 		vgui2/src/public/utlpriorityqueue_inst.cpp
-		vgui2/src/public/utlrbtree.cpp
 		vgui2/src/public/utlsymbol.cpp
 		vgui2/src/public/utlvector_inst.cpp
 		vgui2/src/Scheme.cpp
@@ -53,6 +52,8 @@ goldsrc_add_module(vgui2
 		vgui2/src/public
 		vgui2/src/vgui_surfacelib
 		public
+	WINDOWS_DEFINES
+		UTL_ENGINE_ASSERTS
 	WINDOWS_LINK
 		shlwapi
 		winmm

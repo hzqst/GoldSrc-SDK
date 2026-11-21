@@ -17,7 +17,8 @@
 
 #include <string.h>
 
-#ifdef _WIN32
+#if defined( _WIN32 ) && ( !defined( NDEBUG ) || defined( UTL_ENGINE_ASSERTS ) )
+#define UTLSYMBOL_ASSERTS
 #define UTLSYMBOL_SOURCE_PATH	L"c:\\buildslave\\goldsrc_win32\\build\\GoldSrc\\public\\utlsymbol.cpp"
 #endif
 
@@ -197,7 +198,7 @@ const char* CUtlSymbolTable::String( CUtlSymbol id ) const
 		return "";
 	}
 
-#ifdef _WIN32
+#ifdef UTLSYMBOL_ASSERTS
 	if ( !m_Lookup.IsValidIndex( (UtlSymId_t)id ) )
 	{
 		_wassert( L"m_Lookup.IsValidIndex((UtlSymId_t)id)", UTLSYMBOL_SOURCE_PATH, 178 );

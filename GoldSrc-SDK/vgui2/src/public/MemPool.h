@@ -22,11 +22,11 @@
 class CMemoryPool
 {
 public:
-	CMemoryPool( int blockSize, int numElements );
+	CMemoryPool( int blockSize, int blocksPerBlob );
 	~CMemoryPool();
 
 	void* Alloc( unsigned int amount );
-	void Free( void* memBlock );
+	void Free( void* memory );
 
 	int Count();
 

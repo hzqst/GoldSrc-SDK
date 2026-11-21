@@ -123,7 +123,7 @@ goldsrc_add_module(GameUI
 		engine/interface.cpp
 		public/checksum_md5.cpp
 		vgui2/src/public/UtlBuffer.cpp
-		engine/utlsymbol.cpp
+		vgui2/src/public/utlsymbol.cpp
 		engine/BaseSystemModule.cpp
 		common/ObjectList.cpp
 		common/StringUtils.cpp
@@ -140,7 +140,7 @@ goldsrc_add_module(GameUI
 		public/characterset.cpp
 		vgui2/src/public/filesystem_helpers.cpp
 		vgui2/src/public/KeyValues.cpp
-		engine/MemPool.cpp
+		vgui2/src/public/MemPool.cpp
 		engine/controls.cpp
 	LINUX_SOURCES
 		# Used by the Linux CGameUI::RunVguiTestScript().

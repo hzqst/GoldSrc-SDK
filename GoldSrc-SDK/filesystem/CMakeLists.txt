@@ -14,12 +14,14 @@ goldsrc_add_module(filesystem_stdio
 		filesystem/dbg.cpp
 		filesystem/FileSystem_Stdio.cpp
 		filesystem/interface.cpp
-		filesystem/utlsymbol.cpp
+		vgui2/src/public/utlsymbol.cpp
 	LINUX_SOURCES
 		filesystem/linux_support.cpp
 		filesystem/pathmatch.cpp
 	INCLUDES
 		filesystem
+	WINDOWS_DEFINES
+		UTL_ENGINE_ASSERTS
 	LINUX_LINK
 		${CMAKE_DL_LIBS}
 )

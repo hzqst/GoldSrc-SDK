@@ -271,8 +271,8 @@ set(CZEROR_CLIENT_SOURCES
 	vgui2/controls/URLLabel.cpp
 	vgui2/src/public/KeyValues.cpp
 	vgui2/src/public/UtlBuffer.cpp
-	engine/utlsymbol.cpp
-	engine/MemPool.cpp
+	vgui2/src/public/utlsymbol.cpp
+	vgui2/src/public/MemPool.cpp
 	vgui2/controls/AnimatingImagePanel.cpp
 	vgui2/controls/BitmapImagePanel.cpp
 	vgui2/controls/BuildGroup.cpp

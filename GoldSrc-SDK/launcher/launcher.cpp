@@ -673,7 +673,7 @@ int WINAPI WinMain( _In_ HINSTANCE instance, _In_opt_ HINSTANCE, _In_ LPSTR comm
 		}
 
 		CreateInterfaceFn fileSystemFactory = Sys_GetFactory( fileSystemModule );
-		g_pFileSystem = (IFileSystem*)fileSystemFactory( kFileSystemVersion, NULL );
+		g_pFileSystem = (IFileSystem*)fileSystemFactory( FILESYSTEM_INTERFACE_VERSION, NULL );
 		if ( !g_pFileSystem )
 		{
 			_wassert( L"g_pFileSystem", LAUNCHER_SOURCE_PATH, 439 );
@@ -824,7 +824,7 @@ int main( int argc, const char** argv, const char** )
 		}
 
 		CreateInterfaceFn fileSystemFactory = Sys_GetFactory( fileSystemModule );
-		g_pFileSystem = (IFileSystem*)fileSystemFactory( kFileSystemVersion, NULL );
+		g_pFileSystem = (IFileSystem*)fileSystemFactory( FILESYSTEM_INTERFACE_VERSION, NULL );
 		g_pFileSystem->Mount();
 		g_pFileSystem->AddSearchPath( szBaseDir, "ROOT" );
 		szNewCommandParams[0] = '\0';
