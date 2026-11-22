@@ -111,17 +111,17 @@ CDialogGameInfo::CDialogGameInfo( vgui2::Panel *parent, int serverIP, int queryP
 //-----------------------------------------------------------------------------
 CDialogGameInfo::~CDialogGameInfo()
 {
-	if ( !SteamMatchmakingServers() )
+	if ( !SteamBridgeMatchmakingServers() )
 		return;
 
 	if ( m_hPingQuery != HSERVERQUERY_INVALID )
 	{
-		SteamMatchmakingServers()->CancelServerQuery( m_hPingQuery );
+		SteamBridgeMatchmakingServers()->CancelServerQuery( m_hPingQuery );
 	}
 
 	if ( m_hPlayersQuery != HSERVERQUERY_INVALID )
 	{
-		SteamMatchmakingServers()->CancelServerQuery( m_hPlayersQuery );
+		SteamBridgeMatchmakingServers()->CancelServerQuery( m_hPlayersQuery );
 	}
 }
 
@@ -182,14 +182,14 @@ void CDialogGameInfo::SetFriend( uint64 ulSteamIDFriend )
 {
 	// set the title to include the friends name
 	SetTitle( "#ServerBrowser_GameInfoWithNameTitle", true );
-	SetDialogVariable( "game", SteamFriends()->GetFriendPersonaName( CSteamID( ulSteamIDFriend ) ) );
-	SetDialogVariable( "friend", SteamFriends()->GetFriendPersonaName( CSteamID( ulSteamIDFriend ) ) );
+	SetDialogVariable( "game", SteamBridgeFriends()->GetFriendPersonaName( CSteamID( ulSteamIDFriend ) ) );
+	SetDialogVariable( "friend", SteamBridgeFriends()->GetFriendPersonaName( CSteamID( ulSteamIDFriend ) ) );
 
 	// store the friend we're associated with
 	m_SteamIDFriend = ulSteamIDFriend;
 
 	FriendGameInfo_t friendGameInfo;
-	if ( SteamFriends()->GetFriendGamePlayed( CSteamID( ulSteamIDFriend ), &friendGameInfo ) )
+	if ( SteamBridgeFriends()->GetFriendGamePlayed( CSteamID( ulSteamIDFriend ), &friendGameInfo ) )
 	{
 		ChangeGame( friendGameInfo.m_unGameIP, friendGameInfo.m_usQueryPort, friendGameInfo.m_usGamePort );
 	}
@@ -215,13 +215,13 @@ void CDialogGameInfo::PerformLayout()
 	SetControlString( "MapText", m_Server.m_szMap );
 	SetControlString( "GameTags", m_Server.m_szGameTags );
 
-	if ( !m_Server.m_szGameDescription[0] && m_SteamIDFriend && SteamFriends() )
+	if ( !m_Server.m_szGameDescription[0] && m_SteamIDFriend && SteamBridgeFriends() )
 	{
 		// no game description set yet; the public Steamworks API cannot resolve the
 		// friend's game name, so only report when they are not in a game and let the
 		// server reply fill in the description otherwise
 		FriendGameInfo_t friendGameInfo;
-		if ( !SteamFriends()->GetFriendGamePlayed( CSteamID( m_SteamIDFriend ), &friendGameInfo ) )
+		if ( !SteamBridgeFriends()->GetFriendGamePlayed( CSteamID( m_SteamIDFriend ), &friendGameInfo ) )
 		{
 			SetControlString( "GameText", "#ServerBrowser_NotInGame" );
 		}
@@ -350,9 +350,9 @@ void CDialogGameInfo::OnConnect()
 	m_iRequestRetry = vgui2::system()->GetTimeMillis() + RETRY_TIME;
 	if ( m_hPingQuery != HSERVERQUERY_INVALID )
 	{
-		SteamMatchmakingServers()->CancelServerQuery( m_hPingQuery );
+		SteamBridgeMatchmakingServers()->CancelServerQuery( m_hPingQuery );
 	}
-	m_hPingQuery = SteamMatchmakingServers()->PingServer( m_Server.m_NetAdr.GetIP(), m_Server.m_NetAdr.GetQueryPort(), this );
+	m_hPingQuery = SteamBridgeMatchmakingServers()->PingServer( m_Server.m_NetAdr.GetIP(), m_Server.m_NetAdr.GetQueryPort(), this );
 }
 
 //-----------------------------------------------------------------------------
@@ -453,9 +453,9 @@ void CDialogGameInfo::RequestInfo()
 	m_iRequestRetry = vgui2::system()->GetTimeMillis() + RETRY_TIME;
 	if ( m_hPingQuery != HSERVERQUERY_INVALID )
 	{
-		SteamMatchmakingServers()->CancelServerQuery( m_hPingQuery );
+		SteamBridgeMatchmakingServers()->CancelServerQuery( m_hPingQuery );
 	}
-	m_hPingQuery = SteamMatchmakingServers()->PingServer( m_Server.m_NetAdr.GetIP(), m_Server.m_NetAdr.GetQueryPort(), this );
+	m_hPingQuery = SteamBridgeMatchmakingServers()->PingServer( m_Server.m_NetAdr.GetIP(), m_Server.m_NetAdr.GetQueryPort(), this );
 }
 
 //-----------------------------------------------------------------------------
@@ -737,10 +737,10 @@ void CDialogGameInfo::SendPlayerQuery( uint32 unIP, uint16 usQueryPort )
 {
 	if ( m_hPlayersQuery != HSERVERQUERY_INVALID )
 	{
-		SteamMatchmakingServers()->CancelServerQuery( m_hPlayersQuery );
+		SteamBridgeMatchmakingServers()->CancelServerQuery( m_hPlayersQuery );
 	}
 
-	m_hPlayersQuery = SteamMatchmakingServers()->PlayerDetails( unIP, usQueryPort, this );
+	m_hPlayersQuery = SteamBridgeMatchmakingServers()->PlayerDetails( unIP, usQueryPort, this );
 	m_bPlayerListUpdatePending = true;
 }
 
@@ -770,7 +770,7 @@ void CDialogGameInfo::OnPersonaStateChange( PersonaStateChange_t *pPersonaStateC
 
 	// friend may have changed servers
 	FriendGameInfo_t friendGameInfo;
-	if ( !SteamFriends()->GetFriendGamePlayed( CSteamID( m_SteamIDFriend ), &friendGameInfo ) )
+	if ( !SteamBridgeFriends()->GetFriendGamePlayed( CSteamID( m_SteamIDFriend ), &friendGameInfo ) )
 		return;
 
 	if ( pPersonaStateChange->m_nChangeFlags & k_EPersonaChangeGamePlayed )

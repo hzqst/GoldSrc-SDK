@@ -55,7 +55,7 @@ void CFavoriteGames::RefreshComplete( HServerListRequest hRequest, EMatchMakingS
 {
 	SetRefreshing( false );
 
-	if ( SteamMatchmaking()->GetFavoriteGameCount() == 0 )
+	if ( SteamBridgeMatchmaking()->GetFavoriteGameCount() == 0 )
 	{
 		// no favorite servers
 		m_pGameList->SetEmptyListText( "#ServerBrowser_NoFavoriteServers" );
@@ -74,7 +74,7 @@ void CFavoriteGames::RefreshComplete( HServerListRequest hRequest, EMatchMakingS
 //-----------------------------------------------------------------------------
 void CFavoriteGames::LoadFavoritesList()
 {
-	if ( SteamMatchmaking()->GetFavoriteGameCount() == 0 )
+	if ( SteamBridgeMatchmaking()->GetFavoriteGameCount() == 0 )
 	{
 		m_pGameList->SetEmptyListText( "#ServerBrowser_NoFavoriteServers" );
 	}
@@ -98,7 +98,7 @@ void CFavoriteGames::OnAddCurrentServer()
 	gameserveritem_t *pConnected = ServerBrowserDialog().GetCurrentConnectedServer();
 	if ( pConnected )
 	{
-		SteamMatchmaking()->AddFavoriteGame( pConnected->m_nAppID,
+		SteamBridgeMatchmaking()->AddFavoriteGame( pConnected->m_nAppID,
 			IPHostToNetwork( pConnected->m_NetAdr.GetIP() ),
 			pConnected->m_NetAdr.GetConnectionPort(),
 			pConnected->m_NetAdr.GetQueryPort(),
@@ -188,10 +188,10 @@ void CFavoriteGames::OnRemoveFromFavorites()
 		int iItemID = m_pGameList->GetSelectedItem( i );
 		int iServerID = m_pGameList->GetItemUserData( iItemID );
 
-		gameserveritem_t *pServer = SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, iServerID );
+		gameserveritem_t *pServer = SteamBridgeMatchmakingServers()->GetServerDetails( m_hServerRequest, iServerID );
 		if ( pServer )
 		{
-			SteamMatchmaking()->RemoveFavoriteGame( pServer->m_nAppID,
+			SteamBridgeMatchmaking()->RemoveFavoriteGame( pServer->m_nAppID,
 				pServer->m_NetAdr.GetIP(),
 				pServer->m_NetAdr.GetConnectionPort(),
 				pServer->m_NetAdr.GetQueryPort(),

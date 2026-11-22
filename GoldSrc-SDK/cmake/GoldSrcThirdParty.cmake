@@ -40,6 +40,18 @@ else()
 	endif()
 endif()
 
+# SteamAPIBridge (MetaHookSv/SteamAPIBridge). The server browser uses the Steam client session
+# that the HLND2T engine opens in the bridge's host mode. A project that builds the bridge provides
+# the SteamAPIBridge target; otherwise GOLDSRC_STEAMAPIBRIDGE_SOURCE_PATH names a bridge checkout
+# (which reads the Steamworks SDK from STEAMSDK_SOURCE_PATH). Without either, the server browser
+# is not built.
+if(NOT TARGET SteamAPIBridge)
+	set(GOLDSRC_STEAMAPIBRIDGE_SOURCE_PATH "$ENV{GOLDSRC_STEAMAPIBRIDGE_SOURCE_PATH}" CACHE PATH "SteamAPIBridge source checkout")
+	if(GOLDSRC_STEAMAPIBRIDGE_SOURCE_PATH)
+		add_subdirectory("${GOLDSRC_STEAMAPIBRIDGE_SOURCE_PATH}" "${CMAKE_BINARY_DIR}/SteamAPIBridge")
+	endif()
+endif()
+
 # VGUI1. Windows builds it from utils/vgui (target "vgui"); Linux links the
 # prebuilt linux/release/vgui.so. That library has no SONAME, so it is linked
 # by file name to keep DT_NEEDED as a plain "vgui.so".

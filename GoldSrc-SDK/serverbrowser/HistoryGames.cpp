@@ -140,10 +140,10 @@ void CHistoryGames::OnRemoveFromHistory()
 		int iItemID = m_pGameList->GetSelectedItem( i );
 		int iServerID = m_pGameList->GetItemData( iItemID )->userData;
 
-		gameserveritem_t *pServer = SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, iServerID );
+		gameserveritem_t *pServer = SteamBridgeMatchmakingServers()->GetServerDetails( m_hServerRequest, iServerID );
 		if ( pServer )
 		{
-			SteamMatchmaking()->RemoveFavoriteGame( pServer->m_nAppID,
+			SteamBridgeMatchmaking()->RemoveFavoriteGame( pServer->m_nAppID,
 				pServer->m_NetAdr.GetIP(),
 				pServer->m_NetAdr.GetConnectionPort(),
 				pServer->m_NetAdr.GetQueryPort(),

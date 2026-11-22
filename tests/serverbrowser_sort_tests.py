@@ -79,7 +79,7 @@ std::map<int, gameserveritem_t> steamServers;
 struct Matchmaking {
  gameserveritem_t* GetServerDetails(HServerListRequest, int id) { auto entry=steamServers.find(id); return entry==steamServers.end()?nullptr:&entry->second; }
 } matchmaking;
-Matchmaking* SteamMatchmakingServers() { return &matchmaking; }
+Matchmaking* SteamBridgeMatchmakingServers() { return &matchmaking; }
 struct Browser { bool IsVACBannedFromGame(int) { return false; } } browser;
 Browser& ServerBrowser() { return browser; }
 namespace vgui2 {
