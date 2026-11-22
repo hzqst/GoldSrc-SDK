@@ -5,6 +5,13 @@ if(NOT TARGET SteamAPIBridge)
 	return()
 endif()
 
+# A 32-bit Linux game process has already loaded libtier0.so, so the 32-bit module leaves the Tier0
+# symbols (Plat_FloatTime, Error) to it. No 64-bit host loads it, so a 64-bit Linux build links Tier0.
+set(serverbrowser_linux_tier0)
+if(NOT WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+	set(serverbrowser_linux_tier0 tier0)
+endif()
+
 goldsrc_add_module(serverbrowser
 	TYPE SHARED
 	OUTPUT_DIR platform/servers
@@ -103,4 +110,5 @@ goldsrc_add_module(serverbrowser
 	LINUX_LINK
 		Threads::Threads
 		${CMAKE_DL_LIBS}
+		${serverbrowser_linux_tier0}
 )
