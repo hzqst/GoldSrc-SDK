@@ -156,6 +156,9 @@ int CHudDeathNotice::MsgFunc_DeathMsg( const char*, int size, void* buffer )
 	BEGIN_READ( buffer, size );
 	int killer = READ_BYTE();
 	int victim = READ_BYTE();
+	// Both index the player arrays; a victim of 255 is a non-player object
+	if ( killer > MAX_PLAYERS || ( victim > MAX_PLAYERS && victim != 255 ) )
+		return 0;
 	char killedwith[32] = "d_";
 	int headshot = READ_BYTE();
 	strncat( killedwith, READ_STRING(), 30 );

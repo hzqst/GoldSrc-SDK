@@ -204,7 +204,7 @@ int CHudMenu::MsgFunc_ShowMenu( const char*, int size, void* buffer )
 	if ( m_bitsValidSlots )
 	{
 		if ( m_fWaitingForMore )
-			strncat( g_szPrelocalisedMenuString, READ_STRING(), MAX_MENU_STRING - strlen( g_szPrelocalisedMenuString ) );
+			strncat( g_szPrelocalisedMenuString, READ_STRING(), MAX_MENU_STRING - strlen( g_szPrelocalisedMenuString ) - 1 );
 		else
 			strncpy( g_szPrelocalisedMenuString, READ_STRING(), MAX_MENU_STRING );
 		g_szPrelocalisedMenuString[MAX_MENU_STRING - 1] = 0;  // ensure null termination (strncat/strncpy does not)
