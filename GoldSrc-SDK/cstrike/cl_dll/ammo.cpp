@@ -531,6 +531,9 @@ int CHudAmmo::MsgFunc_AmmoX(const char *, int iSize, void *pbuf)
 	int iIndex = READ_BYTE();
 	int iCount = READ_BYTE();
 
+	if ( iIndex >= MAX_AMMO_TYPES )
+		return 0;
+
 	gWR.SetAmmo( iIndex, abs(iCount) );
 	gCSViewPortInterface->UpdateBuyPresets();
 
@@ -554,6 +557,9 @@ int CHudAmmo::MsgFunc_WeapPickup( const char *, int iSize, void *pbuf )
 {
 	BEGIN_READ( pbuf, iSize );
 	int iIndex = READ_BYTE();
+
+	if ( iIndex >= MAX_WEAPONS )
+		return 0;
 
 	// Add the weapon to the history
 	gHR.AddToHistory( HISTSLOT_WEAP, iIndex );
@@ -650,6 +656,10 @@ int CHudAmmo::MsgFunc_CurWeapon(const char *, int iSize, void *pbuf )
 		}
 		gHUD.m_fPlayerDead = FALSE;
 	}
+
+	// The observer crosshair passes id 0 through; negative ids would index before the array
+	if ( iId < 0 || iId >= MAX_WEAPONS )
+		return 0;
 
 	WEAPON *pWeapon = gWR.GetWeapon( iId );
 
