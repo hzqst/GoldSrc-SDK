@@ -166,15 +166,19 @@ function(goldsrc_add_module target)
 	endif()
 
 	if(MSVC AND arg_WHOLE_PROGRAM)
-		set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+		foreach(config IN LISTS GOLDSRC_RELEASE_CONFIGS)
+			string(TOUPPER "${config}" config)
+			set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION_${config} ON)
+		endforeach()
 	endif()
 
 	if(arg_KEEP_ASSERTS)
-		# CMake's default Release flags define NDEBUG; these targets keep asserts.
+		# CMake's default Release (and RelWithDebInfo, MinSizeRel) flags define NDEBUG; these
+		# targets keep asserts.
 		if(MSVC)
-			target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:/UNDEBUG>)
+			target_compile_options(${target} PRIVATE $<${GOLDSRC_RELEASE_CONFIG}:/UNDEBUG>)
 		else()
-			target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:-UNDEBUG>)
+			target_compile_options(${target} PRIVATE $<${GOLDSRC_RELEASE_CONFIG}:-UNDEBUG>)
 		endif()
 	endif()
 
@@ -233,9 +237,9 @@ macro(_goldsrc_apply_msvc_settings target)
 	endif()
 
 	if(arg_OPTIMIZE_SIZE)
-		target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:/O1>)
+		target_compile_options(${target} PRIVATE $<${GOLDSRC_RELEASE_CONFIG}:/O1>)
 	else()
-		target_compile_options(${target} PRIVATE $<$<CONFIG:Release>:/O2>)
+		target_compile_options(${target} PRIVATE $<${GOLDSRC_RELEASE_CONFIG}:/O2>)
 	endif()
 
 	# MFC headers select their libraries through #pragma comment(lib); the
