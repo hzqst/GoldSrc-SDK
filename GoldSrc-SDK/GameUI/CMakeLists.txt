@@ -168,7 +168,6 @@ goldsrc_add_module(GameUI
 		_ITERATOR_DEBUG_LEVEL=0
 	LINK
 		goldsrc::SDL2
-		goldsrc::steam_api
 		tier0
 )
 

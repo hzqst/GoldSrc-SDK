@@ -11,6 +11,7 @@
 #include "utlvector.h"
 
 struct cvar_s;
+struct cmd_function_s;
 class CNoKeyboardInputRichText;
 class TabCatchingTextEntry;
 
@@ -70,7 +71,7 @@ public:
 private:
 	struct cmdnode_t
 	{
-		unsigned int	cmd;
+		cmd_function_s*	cmd;
 		cvar_s*			cvar;
 	};
 

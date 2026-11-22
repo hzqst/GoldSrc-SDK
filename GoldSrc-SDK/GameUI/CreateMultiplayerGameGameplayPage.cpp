@@ -6,8 +6,11 @@
 //=============================================================================
 
 #include "CreateMultiplayerGameGameplayPage.h"
+#include "GameUI_Interface.h"
 #include "PanelListPanel.h"
 #include "ScriptObject.h"
+#include "wrect.h"
+#include "cl_dll.h"
 
 #include "CheckButton.h"
 #include "ComboBox.h"
@@ -16,7 +19,6 @@
 #include "vgui/ILocalize.h"
 #include "vgui/KeyValues.h"
 #include "vgui_controls/Controls.h"
-#include "../external/steamworks/isteamfriends.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -199,7 +201,8 @@ void CCreateMultiplayerGameGameplayPage::LoadGameOptionsList()
 	CScriptObject* object = m_pDescription->pObjList;
 	vgui2::Panel* parent = m_pOptionsList;
 	char hostName[256];
-	const char* personaName = SteamFriends() ? SteamFriends()->GetPersonaName() : NULL;
+	// GameUI does not link the Steam API; the player name stands in for the Steam persona name
+	const char* personaName = engine->pfnGetCvarString( "name" );
 	if ( !personaName || !personaName[0] )
 		personaName = "Someone";
 	const char suffix[] = "'s Server";

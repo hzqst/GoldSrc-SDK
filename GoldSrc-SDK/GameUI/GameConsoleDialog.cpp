@@ -193,7 +193,7 @@ void CHistoryItem::SetText( const char* text, const char* extra )
 
 CGameConsoleDialog::CompletionItem::CompletionItem() : iscommand( true ), m_text( NULL )
 {
-	cmd.cmd = 0;
+	cmd.cmd = NULL;
 	cmd.cvar = NULL;
 }
 
@@ -585,7 +585,7 @@ void CGameConsoleDialog::RebuildCompletionList( const char* text )
 	const char* space = strstr( text, " " );
 	if ( !space )
 	{
-		for ( unsigned int command = engine->GetFirstCmdFunctionHandle(); command;
+		for ( cmd_function_s* command = engine->GetFirstCmdFunctionHandle(); command;
 				command = engine->GetNextCmdFunctionHandle( command ) )
 		{
 			if ( !strnicmp( text, engine->GetCmdFunctionName( command ), length ) )
@@ -604,7 +604,7 @@ void CGameConsoleDialog::RebuildCompletionList( const char* text )
 			{
 				CompletionItem* item = &m_CompletionList[m_CompletionList.AddToTail()];
 				item->iscommand = true;
-				item->cmd.cmd = 0;
+				item->cmd.cmd = NULL;
 				item->cmd.cvar = cvar;
 				item->m_text = new CHistoryItem( cvar->name, cvar->string );
 			}
