@@ -24,7 +24,7 @@ namespace vgui2
 class Button;
 class Label;
 class ListPanel;
-class ListPanelItem;
+struct ListPanelItem;
 class Panel;
 class RadioButton;
 class ToggleButton;

@@ -56,7 +56,7 @@ private:
 	int LoadAppConfiguration( uint32 nAppID );
 
 	CUtlVector<CModList::mod_t> m_ModList;
-	CUtlVector<unsigned int> m_VGUIListeners;
+	CUtlVector<vgui2::VPANEL> m_VGUIListeners;
 };
 
 // singleton accessor

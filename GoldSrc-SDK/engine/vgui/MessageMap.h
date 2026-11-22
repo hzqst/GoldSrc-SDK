@@ -30,6 +30,8 @@ struct MessageMapItem_t
 	unsigned int : 32;
 	unsigned int : 32;
 	MessageFunc_t func;
+#elif defined( _WIN64 )
+	MessageFunc_t func;
 #else
 	alignas( 16 ) MessageFunc_t func;
 #endif

@@ -132,7 +132,7 @@ CThreadEvent::CThreadEvent( void* event, bool ownEvent )
 {
 	m_hSyncObject = event;
 	m_bOwnEvent = ownEvent;
-	AssertMsg1At( m_hSyncObject, "Bad Event handle (handle 0x%x)", (unsigned int)m_hSyncObject, 350 );
+	AssertMsg1At( m_hSyncObject, "Bad Event handle (handle 0x%p)", m_hSyncObject, 350 );
 }
 
 bool CThreadEvent::Set()
@@ -264,8 +264,7 @@ const char* CThread::GetName()
 	CAutoLockT<CThreadMutex> lock( m_Lock );
 	if ( !m_szName[0] )
 	{
-#pragma warning( suppress : 4473 )
-		_snprintf( m_szName, sizeof( m_szName ) - 1, "Thread(%0x%x/0x%x)", (unsigned int)this, (unsigned int)m_hThread );
+		_snprintf( m_szName, sizeof( m_szName ) - 1, "Thread(0x%p/0x%p)", this, m_hThread );
 		m_szName[sizeof( m_szName ) - 1] = '\0';
 	}
 	return m_szName;

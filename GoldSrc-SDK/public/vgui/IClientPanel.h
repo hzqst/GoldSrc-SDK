@@ -23,10 +23,12 @@ class KeyValues;
 #undef GetClassName
 #endif
 
+#include <stdint.h>
+
 namespace vgui2
 {
 
-typedef unsigned int VPANEL;
+typedef uintptr_t VPANEL;
 typedef unsigned long HScheme;
 
 class Panel;

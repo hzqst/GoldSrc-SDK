@@ -10,22 +10,26 @@ if(NOT WIN32)
 	find_package(Threads REQUIRED)
 endif()
 
-# SDL2: lib/public/SDL2.lib on Windows, linux/libSDL2-2.0.so.0 on Linux.
+# SDL2: lib/public/SDL2.lib on Windows, linux/libSDL2-2.0.so.0 on Linux. The
+# bundled import library is x86; a Windows x64 build passes its own.
 add_library(goldsrc_sdl2 INTERFACE)
 add_library(goldsrc::SDL2 ALIAS goldsrc_sdl2)
 target_include_directories(goldsrc_sdl2 SYSTEM INTERFACE "${GOLDSRC_ROOT}/external/SDL2")
 if(WIN32)
-	target_link_libraries(goldsrc_sdl2 INTERFACE "${GOLDSRC_ROOT}/lib/public/SDL2.lib")
+	set(GOLDSRC_SDL2_LIBRARY "${GOLDSRC_ROOT}/lib/public/SDL2.lib" CACHE FILEPATH "SDL2 import library")
+	target_link_libraries(goldsrc_sdl2 INTERFACE "${GOLDSRC_SDL2_LIBRARY}")
 else()
 	target_link_libraries(goldsrc_sdl2 INTERFACE "${GOLDSRC_ROOT}/linux/libSDL2-2.0.so.0")
 endif()
 
 # Steam API. The Linux library is optional: without it, Steam symbols are left
 # for the game process (which already has libsteam_api.so loaded) to resolve.
+# As with SDL2, a Windows x64 build passes its own import library.
 add_library(goldsrc_steam_api INTERFACE)
 add_library(goldsrc::steam_api ALIAS goldsrc_steam_api)
 if(WIN32)
-	target_link_libraries(goldsrc_steam_api INTERFACE "${GOLDSRC_ROOT}/lib/public/steam_api.lib")
+	set(GOLDSRC_STEAM_API_LIBRARY "${GOLDSRC_ROOT}/lib/public/steam_api.lib" CACHE FILEPATH "Steam API import library")
+	target_link_libraries(goldsrc_steam_api INTERFACE "${GOLDSRC_STEAM_API_LIBRARY}")
 else()
 	set(GOLDSRC_STEAM_API_LIBRARY "${GOLDSRC_ROOT}/lib/public/linux32/libsteam_api.so")
 	if(EXISTS "${GOLDSRC_STEAM_API_LIBRARY}")

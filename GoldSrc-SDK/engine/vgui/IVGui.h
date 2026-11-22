@@ -17,9 +17,11 @@
 
 class KeyValues;
 
+#include <stdint.h>
+
 namespace vgui2
 {
-typedef unsigned int VPANEL;
+typedef uintptr_t VPANEL;
 // safe handle to a panel - can be converted to and from a VPANEL
 typedef unsigned long HPanel;
 typedef int HContext;

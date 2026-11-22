@@ -3,11 +3,18 @@
 # Per-target differences (warning level, runtime library, language standard,
 # ...) are expressed through goldsrc_add_module() in GoldSrcTargets.cmake.
 
+# A project that embeds the SDK can build tier0, vgui2, GameUI and serverbrowser
+# for Windows x64. The engine, launchers and games remain 32-bit only.
+option(GOLDSRC_ALLOW_64BIT "Allow Windows x64 for the embeddable UI modules" OFF)
+
 if(WIN32)
-	if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+	if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND GOLDSRC_ALLOW_64BIT)
+		set(GOLDSRC_PLATFORM_DIR x64)
+	elseif(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
 		message(FATAL_ERROR "GoldSrc targets Win32 (x86) only. Configure with -A Win32.")
+	else()
+		set(GOLDSRC_PLATFORM_DIR Win32)
 	endif()
-	set(GOLDSRC_PLATFORM_DIR Win32)
 else()
 	if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
 		message(FATAL_ERROR "GoldSrc targets 32-bit x86 only. Configure with "
@@ -18,9 +25,14 @@ endif()
 
 # Runtime binaries land in bin/<platform>/<config>/..., matching the layout of
 # the former Visual Studio projects. Import libraries, PDBs and other linker
-# by-products go to bin/obj/<target>/<platform>/<config>/.
-set(GOLDSRC_BIN_DIR "${GOLDSRC_ROOT}/bin/${GOLDSRC_PLATFORM_DIR}/$<CONFIG>")
-set(GOLDSRC_OBJ_DIR "${GOLDSRC_ROOT}/bin/obj")
+# by-products go to bin/obj/<target>/<platform>/<config>/. An embedding project
+# may set both beforehand to keep build output out of the source tree.
+if(NOT DEFINED GOLDSRC_BIN_DIR)
+	set(GOLDSRC_BIN_DIR "${GOLDSRC_ROOT}/bin/${GOLDSRC_PLATFORM_DIR}/$<CONFIG>")
+endif()
+if(NOT DEFINED GOLDSRC_OBJ_DIR)
+	set(GOLDSRC_OBJ_DIR "${GOLDSRC_ROOT}/bin/obj")
+endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 

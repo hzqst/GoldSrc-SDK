@@ -487,7 +487,7 @@ void CBaseUI::Start( cl_enginefuncs_s* engineFuncs, int )
 
 	staticGameConsole->Initialize();
 	if ( staticGameConsole != nullptr )
-		staticGameConsole->SetParent( static_cast<int>( staticGameUIPanel->GetVPanel() ) );
+		staticGameConsole->SetParent( staticGameUIPanel->GetVPanel() );
 
 	staticSurface->m_bIgnoreMouseVisCalc = false;
 	staticGameUIFuncs->ActivateGameUI();

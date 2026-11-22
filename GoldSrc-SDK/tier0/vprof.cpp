@@ -77,7 +77,7 @@ void CVProfile::Start()
 	if ( ++m_enabled == 1 )
 	{
 		m_Root.EnterScope();
-		m_iThreadLocalSerial.Set( (void*)++m_iMainThreadSerial );
+		m_iThreadLocalSerial.Set( (void*)(intptr_t)++m_iMainThreadSerial );
 	}
 }
 
@@ -132,7 +132,7 @@ void CVProfile::EnterScope( const char* pName, int detailLevel, const char* pBud
 void CVProfile::EnterScope( const char* pName, int detailLevel, const char* pBudgetGroup, bool, int budgetFlags )
 {
 	if ( ( m_enabled || !m_fAtRoot )
-		&& ( !m_bThreadSafe || (int)m_iThreadLocalSerial.Get() == m_iMainThreadSerial ) )
+		&& ( !m_bThreadSafe || (int)(intptr_t)m_iThreadLocalSerial.Get() == m_iMainThreadSerial ) )
 	{
 		if ( pName != m_pCurNode->GetName() )
 			m_pCurNode = m_pCurNode->GetSubNode( pName, detailLevel, pBudgetGroup, budgetFlags );
@@ -146,7 +146,7 @@ void CVProfile::EnterScope( const char* pName, int detailLevel, const char* pBud
 void CVProfile::ExitScope()
 {
 	if ( ( !m_fAtRoot || m_enabled )
-		&& ( !m_bThreadSafe || (int)m_iThreadLocalSerial.Get() == m_iMainThreadSerial ) )
+		&& ( !m_bThreadSafe || (int)(intptr_t)m_iThreadLocalSerial.Get() == m_iMainThreadSerial ) )
 	{
 		if ( m_pCurNode->ExitScope() )
 			m_pCurNode = m_pCurNode->GetParent();

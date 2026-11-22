@@ -148,10 +148,10 @@ void CGameConsole::DPrintf( const char* format, ... )
 	m_pConsole->DPrint( message );
 }
 
-void CGameConsole::SetParent( int parent )
+void CGameConsole::SetParent( vgui2::VPANEL parent )
 {
 	if ( m_bInitialized )
-		m_pConsole->SetParent( (vgui2::VPANEL)parent );
+		m_pConsole->SetParent( parent );
 }
 
 //-----------------------------------------------------------------------------

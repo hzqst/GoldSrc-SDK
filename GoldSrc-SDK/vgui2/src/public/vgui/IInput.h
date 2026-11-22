@@ -21,10 +21,12 @@
 #include "vgui/KeyCode.h"
 #include "vgui/MouseCode.h"
 
+#include <stdint.h>
+
 namespace vgui2
 {
 
-typedef unsigned int VPANEL;
+typedef uintptr_t VPANEL;
 typedef unsigned long HCursor;
 
 class IInput : public IBaseInterface

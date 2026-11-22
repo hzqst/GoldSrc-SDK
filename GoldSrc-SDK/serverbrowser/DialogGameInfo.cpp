@@ -558,7 +558,7 @@ void CDialogGameInfo::ConstructConnectArgs( char *pchOptions, int cchOptions, co
 	snprintf( pchOptions, cchOptions, " +%s %s", m_bHLTVOnly ? "connect_hltv" : "connect", server.m_NetAdr.GetConnectionAddressString() );
 	if ( m_szPassword[0] )
 	{
-		int iLength = strlen( pchOptions );
+		int iLength = (int)strlen( pchOptions );
 		snprintf( pchOptions + iLength, cchOptions - iLength, " +password \"%s\"", m_szPassword );
 	}
 }

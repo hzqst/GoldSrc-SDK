@@ -150,7 +150,7 @@ public:
 	{
 		unsigned long thisThread = ThreadGetCurrentId();
 		if ( thisThread != m_ownerID
-			&& ThreadInterlockedCompareExchangePointer( (void* volatile*)&m_ownerID, (void*)thisThread, NULL ) != NULL )
+			&& ThreadInterlockedCompareExchange( (volatile int*)&m_ownerID, (int)thisThread, 0 ) != 0 )
 		{
 			return false;
 		}

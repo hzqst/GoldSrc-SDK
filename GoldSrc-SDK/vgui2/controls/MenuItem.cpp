@@ -253,7 +253,7 @@ void MenuItem::OnCursorEntered()
 	// post a message to the parent menu.
 	// forward the message on to the parent of this menu.
 	KeyValues* msg = new KeyValues( "CursorEnteredMenuItem" );
-	msg->SetInt( "VPanel", GetVPanel() );
+	msg->SetPtr( "VPanel", (void*)GetVPanel() );
 	ivgui()->PostMessage( GetVParent(), msg, 0, 0.0f );
 }
 
@@ -265,7 +265,7 @@ void MenuItem::OnCursorExited()
 	// post a message to the parent menu.
 	// forward the message on to the parent of this menu.
 	KeyValues* msg = new KeyValues( "CursorExitedMenuItem" );
-	msg->SetInt( "VPanel", GetVPanel() );
+	msg->SetPtr( "VPanel", (void*)GetVPanel() );
 	ivgui()->PostMessage( GetVParent(), msg, 0, 0.0f );
 }
 

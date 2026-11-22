@@ -147,8 +147,10 @@ void Panel::OnMouseWheeled( int delta )
 
 void Panel::OnRequestFocus( VPANEL subFocus, VPANEL defaultPanel )
 {
-	CallParentFunction( new KeyValues( "OnRequestFocus", "subFocus", static_cast<int>( subFocus ), "defaultPanel",
-		static_cast<int>( defaultPanel ) ) );
+	KeyValues* message = new KeyValues( "OnRequestFocus" );
+	message->SetPtr( "subFocus", (void*)subFocus );
+	message->SetPtr( "defaultPanel", (void*)defaultPanel );
+	CallParentFunction( message );
 }
 
 void Panel::OnKeyFocusTicked()
@@ -1689,6 +1691,14 @@ void Panel::OnMessage( const KeyValues* message, VPANEL sender )
 						( this->*reinterpret_cast<void ( Panel::* )( void*, const wchar_t* )>( function ) )(
 							firstValue, secondValue );
 					}
+					else if ( item.secondParamType == DATATYPE_PTR )
+					{
+						MessageFunc_t function = item.func;
+						void* secondValue = second->GetPtr( nullptr, nullptr );
+						void* firstValue = first->GetPtr( nullptr, nullptr );
+						( this->*reinterpret_cast<void ( Panel::* )( void*, void* )>( function ) )(
+							firstValue, secondValue );
+					}
 					else
 						validTypes = false;
 					break;
@@ -2372,6 +2382,12 @@ void Panel::OnOldMessage( KeyValues* message, VPANEL )
 				( this->*reinterpret_cast<void ( Panel::* )( void*, const wchar_t* )>( item->func ) )(
 					message->GetPtr( item->firstParamName, nullptr ),
 					message->GetWString( item->secondParamName, L"" ) );
+				return;
+			}
+			if ( item->secondParamType == DATATYPE_PTR )
+			{
+				( this->*reinterpret_cast<void ( Panel::* )( void*, void* )>( item->func ) )(
+					message->GetPtr( item->firstParamName, nullptr ), message->GetPtr( item->secondParamName, nullptr ) );
 				return;
 			}
 			break;
