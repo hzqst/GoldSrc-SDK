@@ -7,6 +7,12 @@
 # for Windows x64. The engine, launchers and games remain 32-bit only.
 option(GOLDSRC_ALLOW_64BIT "Allow Windows x64 for the embeddable UI modules" OFF)
 
+# The VGUI2 controls answer halflife-cli's "VGUI2.*" RequestInfo queries (HLND2T-DiligentGraphics, -hlcli).
+option(GOLDSRC_USE_HLCLI "Build the halflife-cli automation hooks into the VGUI2 controls" OFF)
+if(GOLDSRC_USE_HLCLI)
+	add_compile_definitions(USE_HLCLI=1)
+endif()
+
 if(WIN32)
 	if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND GOLDSRC_ALLOW_64BIT)
 		set(GOLDSRC_PLATFORM_DIR x64)

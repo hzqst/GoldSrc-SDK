@@ -44,6 +44,9 @@ class ListPanel : public Panel
 	DECLARE_CLASS_SIMPLE( ListPanel, Panel );
 
 public:
+#if USE_HLCLI
+	bool RequestInfo( KeyValues* data ) override;
+#endif
 	ListPanel( Panel* parent, const char* panelName );
 	~ListPanel() override;
 

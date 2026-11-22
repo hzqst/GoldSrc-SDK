@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "TextEntry.h"
 
 #include "Menu.h"
@@ -2894,6 +2897,47 @@ void TextEntry::OnMouseWheeled( int delta )
 //-----------------------------------------------------------------------------
 bool TextEntry::RequestInfo( KeyValues* outputData )
 {
+#if USE_HLCLI
+	if ( vgui2automation::IsRequest( outputData, "VGUI2.Text" ) )
+	{
+		if ( !vgui2automation::Begin( this, outputData ) )
+			return false;
+		outputData->SetInt( "editable", IsEditable() );
+		outputData->SetInt( "password", _hideText );
+		outputData->SetInt( "set_text", IsEditable() );
+		if ( !_hideText )
+			vgui2automation::Text( outputData, m_TextStream.Count() ? m_TextStream.Base() : L"", m_TextStream.Count() );
+		return true;
+	}
+	if ( vgui2automation::IsRequest( outputData, "VGUI2.SetText" ) )
+	{
+		if ( !vgui2automation::Begin( this, outputData ) )
+			return false;
+		const wchar_t* text = outputData->GetWString( "value", L"" );
+		const size_t length = wcslen( text );
+		if ( !IsEditable() || !IsEnabled() )
+			outputData->SetString( "error", "control is not editable" );
+		else if ( _maxCharCount >= 0 && length > static_cast<size_t>( _maxCharCount ) )
+			outputData->SetString( "error", "text exceeds control character limit" );
+		else
+		{
+			for ( size_t i = 0; i < length; ++i )
+			{
+				if ( ( !_multiline && ( text[i] == L'\n' || text[i] == L'\r' ) ) || text[i] == L'\t'
+					|| ( m_bAllowNumericInputOnly && !iswdigit( text[i] ) && text[i] != L'.' )
+					|| ( !m_bAllowNonAsciiCharacters && text[i] > 127 ) )
+				{
+					outputData->SetString( "error", "text violates control input restrictions" );
+					return true;
+				}
+			}
+			SetText( text );
+			FireActionSignal();
+			outputData->SetInt( "applied", 1 );
+		}
+		return true;
+	}
+#endif
 	if ( _stricmp( outputData->GetName(), "GetText" ) == 0 )
 	{
 		wchar_t wbuf[256];

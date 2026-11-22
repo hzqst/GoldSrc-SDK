@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "Slider.h"
 
 #include "TextImage.h"
@@ -21,6 +24,24 @@
 #include "vgui/KeyValues.h"
 
 #include <stdio.h>
+
+#if USE_HLCLI
+bool vgui2::Slider::RequestInfo( KeyValues* data )
+{
+	if ( vgui2automation::IsRequest( data, "VGUI2.Range" ) )
+	{
+		if ( !vgui2automation::Begin( this, data ) )
+			return false;
+		int low, high;
+		GetRange( low, high );
+		data->SetInt( "value", GetValue() );
+		data->SetInt( "minimum", low );
+		data->SetInt( "maximum", high );
+		return true;
+	}
+	return BaseClass::RequestInfo( data );
+}
+#endif
 
 using namespace vgui2;
 

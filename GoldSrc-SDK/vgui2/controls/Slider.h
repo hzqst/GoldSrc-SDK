@@ -28,6 +28,9 @@ class Slider : public Panel
 	DECLARE_CLASS_SIMPLE( Slider, Panel );
 
 public:
+#if USE_HLCLI
+	bool RequestInfo( KeyValues* data ) override;
+#endif
 	Slider( Panel* parent, const char* panelName );
 	~Slider() override;
 

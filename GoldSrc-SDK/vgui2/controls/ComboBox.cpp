@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "ComboBox.h"
 #include "Menu.h"
 #include "MenuItem.h"
@@ -25,6 +28,25 @@
 #include <cwchar>
 #include <cwctype>
 #include <memory>
+
+#if USE_HLCLI
+bool vgui2::ComboBox::RequestInfo( KeyValues* data )
+{
+	if ( vgui2automation::IsRequest( data, "VGUI2.Items" ) )
+	{
+		if ( !vgui2automation::Begin( this, data ) )
+			return false;
+		data->SetInt( "item_count", GetItemCount() );
+		data->SetInt( "selected_count", GetActiveItem() >= 0 ? 1 : 0 );
+		std::vector<wchar_t> text( vgui2automation::kLabelCapacity, 0 );
+		GetText( text.data(), static_cast<int>( text.size() ) );
+		if ( GetActiveItem() >= 0 )
+			vgui2automation::Item( data, GetActiveItem(), text.data() );
+		return true;
+	}
+	return BaseClass::RequestInfo( data );
+}
+#endif
 
 namespace vgui2
 {

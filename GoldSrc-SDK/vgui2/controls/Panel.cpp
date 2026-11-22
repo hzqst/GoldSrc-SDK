@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "Panel.h"
 #include "controls.h"
 #include "vgui/IPanel.h"
@@ -625,6 +628,15 @@ bool Panel::RequestFocusNext( VPANEL )
 
 bool Panel::RequestInfo( KeyValues* outputData )
 {
+#if USE_HLCLI
+	// Reserved automation requests must never bubble to a parent control.
+	if ( !strncmp( outputData->GetName(), "VGUI2.", 6 ) )
+	{
+		if ( vgui2automation::IsRequest( outputData, "VGUI2.Query" ) )
+			return vgui2automation::Begin( this, outputData );
+		return false;
+	}
+#endif
 	if ( !GetVParent() )
 		return false;
 	IPanel* panel = ipanel();

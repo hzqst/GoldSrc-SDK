@@ -36,6 +36,9 @@ class SectionedListPanel : public Panel
 	DECLARE_CLASS_SIMPLE( SectionedListPanel, Panel );
 
 public:
+#if USE_HLCLI
+	bool RequestInfo( KeyValues* data ) override;
+#endif
 	SectionedListPanel( Panel* parent, const char* name );
 	~SectionedListPanel() override;
 

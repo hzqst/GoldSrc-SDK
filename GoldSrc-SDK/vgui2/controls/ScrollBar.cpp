@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "ScrollBar.h"
 #include "Button.h"
 #include "ScrollBarSlider.h"
@@ -24,6 +27,25 @@
 
 #define SCROLL_BAR_DELAY 400
 #define SCROLL_BAR_SPEED 50
+
+#if USE_HLCLI
+bool vgui2::ScrollBar::RequestInfo( KeyValues* data )
+{
+	if ( vgui2automation::IsRequest( data, "VGUI2.Range" ) )
+	{
+		if ( !vgui2automation::Begin( this, data ) )
+			return false;
+		int low, high;
+		GetRange( low, high );
+		data->SetInt( "value", GetValue() );
+		data->SetInt( "minimum", low );
+		data->SetInt( "maximum", high );
+		data->SetInt( "range_window", GetRangeWindow() );
+		return true;
+	}
+	return BaseClass::RequestInfo( data );
+}
+#endif
 
 namespace vgui2
 {

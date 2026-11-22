@@ -29,6 +29,9 @@ class Frame : public EditablePanel
 	DECLARE_CLASS_SIMPLE( Frame, EditablePanel );
 
 public:
+#if USE_HLCLI
+	bool RequestInfo( KeyValues* data ) override;
+#endif
 	Frame( Panel* parent, const char* panelName, bool showTaskbarIcon, bool bForceProportional = false );
 	~Frame() override;
 
