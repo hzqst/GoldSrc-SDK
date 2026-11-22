@@ -50,6 +50,9 @@ class ComboBox : public TextEntry
 	DECLARE_CLASS_SIMPLE( ComboBox, TextEntry );
 
 public:
+#if USE_HLCLI
+	bool RequestInfo( KeyValues* data ) override;
+#endif
 	ComboBox( Panel* parent, const char* panelName, int numLines, bool allowEdit );
 	~ComboBox() override;
 

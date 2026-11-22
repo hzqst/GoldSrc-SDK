@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "RichText.h"
 #include "Menu.h"
 #include "ScrollBar.h"
@@ -241,6 +244,15 @@ const char* RichText::GetDescription()
 
 bool RichText::RequestInfo( KeyValues* outputData )
 {
+#if USE_HLCLI
+	if ( vgui2automation::IsRequest( outputData, "VGUI2.Text" ) )
+	{
+		if ( !vgui2automation::Begin( this, outputData ) )
+			return false;
+		vgui2automation::Text( outputData, m_TextStream.Count() ? m_TextStream.Base() : L"", m_TextStream.Count() );
+		return true;
+	}
+#endif
 	if ( _stricmp( outputData->GetName(), "GetText" ) != 0 )
 		return Panel::RequestInfo( outputData );
 

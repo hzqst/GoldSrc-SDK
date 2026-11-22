@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "Button.h"
 #include "controls.h"
 
@@ -408,6 +411,15 @@ void Button::SizeToContents()
 //-----------------------------------------------------------------------------
 bool Button::RequestInfo( KeyValues* outputData )
 {
+#if USE_HLCLI
+	if ( vgui2automation::IsRequest( outputData, "VGUI2.State" ) )
+	{
+		if ( !vgui2automation::Begin( this, outputData ) )
+			return false;
+		outputData->SetInt( "selected", IsSelected() );
+		return true;
+	}
+#endif
 	if ( !_stricmp( outputData->GetName(), "CanBeDefaultButton" ) )
 	{
 		outputData->SetInt( "result", CanBeDefaultButton() );

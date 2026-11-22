@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "Frame.h"
 #include "Button.h"
 #include "FocusNavGroup.h"
@@ -54,6 +57,22 @@
 
 #ifndef BSHIFT_CLIENT
 extern CUtlSymbolTable g_ButtonSoundNames;
+#endif
+
+#if USE_HLCLI
+bool vgui2::Frame::RequestInfo( KeyValues* data )
+{
+	if ( vgui2automation::IsRequest( data, "VGUI2.Text" ) )
+	{
+		if ( !vgui2automation::Begin( this, data ) )
+			return false;
+		if ( _title )
+			vgui2automation::LabelText( _title, data );
+		data->SetString( "text_role", "title" );
+		return true;
+	}
+	return BaseClass::RequestInfo( data );
+}
 #endif
 
 namespace

@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "ListPanel.h"
 
 #include "Button.h"
@@ -43,6 +46,43 @@
 #else
 #include <assert.h>
 #define ASSERT_AT( expression, line )	assert( expression )
+#endif
+
+#if USE_HLCLI
+// Selected rows reported per VGUI2.Items request
+static constexpr int kMaxReportedSelections = 8;
+#endif
+
+#if USE_HLCLI
+bool vgui2::ListPanel::RequestInfo( KeyValues* data )
+{
+	if ( vgui2automation::IsRequest( data, "VGUI2.Items" ) )
+	{
+		if ( !vgui2automation::Begin( this, data ) )
+			return false;
+		data->SetInt( "item_count", GetItemCount() );
+		data->SetInt( "selected_count", GetSelectedItemsCount() );
+		for ( int i = 0; i < ( std::min )( kMaxReportedSelections, GetSelectedItemsCount() ); ++i )
+		{
+			int id = GetSelectedItem( i );
+			std::wstring text;
+			for ( int col = 0; col < m_CurrentColumns.Count(); ++col )
+			{
+				const column_t& column = m_ColumnsData[m_CurrentColumns[col]];
+				if ( column.m_bHidden || !column.m_bTypeIsText )
+					continue;
+				wchar_t cell[256] = {};
+				GetCellText( id, col, cell, static_cast<int>( sizeof( cell ) / sizeof( cell[0] ) ) );
+				if ( !text.empty() )
+					text += L" | ";
+				text += cell;
+			}
+			vgui2automation::Item( data, id, text.c_str() );
+		}
+		return true;
+	}
+	return BaseClass::RequestInfo( data );
+}
 #endif
 
 using namespace vgui2;

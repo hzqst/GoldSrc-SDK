@@ -24,6 +24,9 @@ class ScrollBar : public Panel
 	DECLARE_CLASS_SIMPLE( ScrollBar, Panel );
 
 public:
+#if USE_HLCLI
+	bool RequestInfo( KeyValues* data ) override;
+#endif
 	ScrollBar( Panel* parent, const char* name, bool vertical );
 	~ScrollBar() override;
 

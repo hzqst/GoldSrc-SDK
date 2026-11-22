@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "SectionedListPanel.h"
 
 #include "ImageList.h"
@@ -33,6 +36,37 @@
 #else
 #include <assert.h>
 #define ASSERT_AT( expression, line )	assert( expression )
+#endif
+
+#if USE_HLCLI
+bool vgui2::SectionedListPanel::RequestInfo( KeyValues* data )
+{
+	if ( vgui2automation::IsRequest( data, "VGUI2.Items" ) )
+	{
+		if ( !vgui2automation::Begin( this, data ) )
+			return false;
+		data->SetInt( "item_count", GetItemCount() );
+		int id = GetSelectedItem();
+		data->SetInt( "selected_count", id >= 0 ? 1 : 0 );
+		if ( id >= 0 )
+		{
+			KeyValues* item = GetItemData( id );
+			int section = GetItemSection( id );
+			std::wstring text;
+			for ( int col = 0; col < GetColumnCountBySection( section ); ++col )
+			{
+				if ( GetColumnFlagsBySection( section, col ) & COLUMN_IMAGE )
+					continue;
+				if ( !text.empty() )
+					text += L" | ";
+				text += vgui2automation::DisplayValue( item, GetColumnNameBySection( section, col ) );
+			}
+			vgui2automation::Item( data, id, text.c_str() );
+		}
+		return true;
+	}
+	return BaseClass::RequestInfo( data );
+}
 #endif
 
 namespace vgui2

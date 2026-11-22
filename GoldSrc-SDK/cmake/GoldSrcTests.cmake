@@ -109,6 +109,7 @@ foreach(name IN ITEMS
 		vgui1_surface_mode_info
 		vgui1_textimage
 		vgui1_widget_ownership
+		vgui2_automation_text
 		vgui2_border_settings
 		vgui2_build_mode_dialog
 		vgui2_child_panel

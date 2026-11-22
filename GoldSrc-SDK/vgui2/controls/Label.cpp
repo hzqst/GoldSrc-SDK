@@ -10,6 +10,9 @@
 // $NoKeywords: $
 //=============================================================================
 
+#if USE_HLCLI
+#include "VGUI2Automation.h"
+#endif
 #include "Label.h"
 #include "TextImage.h"
 #include "controls.h"
@@ -1159,6 +1162,15 @@ void Label::GetSettings( KeyValues* settings )
 //-----------------------------------------------------------------------------
 bool Label::RequestInfo( KeyValues* output )
 {
+#if USE_HLCLI
+	if ( vgui2automation::IsRequest( output, "VGUI2.Text" ) )
+	{
+		if ( !vgui2automation::Begin( this, output ) )
+			return false;
+		vgui2automation::LabelText( this, output );
+		return true;
+	}
+#endif
 	if ( _stricmp( output->GetName(), "GetText" ) != 0 )
 		return Panel::RequestInfo( output );
 
