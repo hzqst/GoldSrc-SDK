@@ -141,19 +141,19 @@ CBaseGamesPage::CBaseGamesPage( vgui2::Panel *parent, const char *name, EMatchMa
 CBaseGamesPage::~CBaseGamesPage()
 {
 	// cancel standalone pings, their callbacks target this page
-	if ( SteamMatchmakingServers() )
+	if ( SteamBridgeMatchmakingServers() )
 	{
 		for ( int i = 0; i < m_vecPingQueries.Count(); i++ )
 		{
-			SteamMatchmakingServers()->CancelServerQuery( m_vecPingQueries[i] );
+			SteamBridgeMatchmakingServers()->CancelServerQuery( m_vecPingQueries[i] );
 		}
 	}
 	m_vecPingQueries.RemoveAll();
 
 	if ( m_hServerRequest )
 	{
-		if ( SteamMatchmakingServers() )
-			SteamMatchmakingServers()->ReleaseRequest( m_hServerRequest );
+		if ( SteamBridgeMatchmakingServers() )
+			SteamBridgeMatchmakingServers()->ReleaseRequest( m_hServerRequest );
 		m_hServerRequest = NULL;
 	}
 }
@@ -176,7 +176,7 @@ void CBaseGamesPage::OnAddToFavorites()
 	{
 		int serverID = m_pGameList->GetItemUserData( m_pGameList->GetSelectedItem( i ) );
 
-		gameserveritem_t *pServer = SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, serverID );
+		gameserveritem_t *pServer = SteamBridgeMatchmakingServers()->GetServerDetails( m_hServerRequest, serverID );
 		if ( pServer )
 		{
 			// add to favorites list
@@ -270,7 +270,7 @@ gameserveritem_t *CBaseGamesPage::GetServerInfo( int serverID )
 	if ( serverID < 0 )
 		return NULL;
 
-	return SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, serverID );
+	return SteamBridgeMatchmakingServers()->GetServerDetails( m_hServerRequest, serverID );
 }
 
 //-----------------------------------------------------------------------------
@@ -644,14 +644,14 @@ void CBaseGamesPage::ServerResponded( HServerListRequest hRequest, int iServer )
 	if ( hRequest != m_hServerRequest )
 		return;
 
-	gameserveritem_t *pServerItem = SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, iServer );
+	gameserveritem_t *pServerItem = SteamBridgeMatchmakingServers()->GetServerDetails( m_hServerRequest, iServer );
 	if ( !pServerItem )
 		return;
 
 	if ( m_eMatchMakingType == eFriendsServer )
 	{
 		// friends' servers are pinged directly to get their details
-		m_vecPingQueries.AddToTail( SteamMatchmakingServers()->PingServer( pServerItem->m_NetAdr.GetIP(), pServerItem->m_NetAdr.GetConnectionPort(), this ) );
+		m_vecPingQueries.AddToTail( SteamBridgeMatchmakingServers()->PingServer( pServerItem->m_NetAdr.GetIP(), pServerItem->m_NetAdr.GetConnectionPort(), this ) );
 	}
 	else
 	{
@@ -741,7 +741,7 @@ void CBaseGamesPage::ApplyGameFilters()
 			continue;
 
 		serverdisplay_t &server = m_mapServers[ i ];
-		gameserveritem_t *pServer = SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, server.m_iServerID );
+		gameserveritem_t *pServer = SteamBridgeMatchmakingServers()->GetServerDetails( m_hServerRequest, server.m_iServerID );
 		if ( !pServer )
 			continue;
 
@@ -759,7 +759,7 @@ void CBaseGamesPage::ApplyGameFilters()
 		{
 			// server passed filters, so it can be refreshed again
 			server.m_bDoNotRefresh = false;
-			gameserveritem_t *pServerItem = SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, server.m_iServerID );
+			gameserveritem_t *pServerItem = SteamBridgeMatchmakingServers()->GetServerDetails( m_hServerRequest, server.m_iServerID );
 			UpdateServerStrings( server, *pServerItem );
 
 			// re-add item to list
@@ -1309,7 +1309,7 @@ void CBaseGamesPage::StartRefresh()
 {
 	if ( m_hServerRequest )
 	{
-		SteamMatchmakingServers()->ReleaseRequest( m_hServerRequest );
+		SteamBridgeMatchmakingServers()->ReleaseRequest( m_hServerRequest );
 		m_hServerRequest = NULL;
 	}
 
@@ -1321,25 +1321,33 @@ void CBaseGamesPage::StartRefresh()
 	switch ( m_eMatchMakingType )
 	{
 	case eInternetServer:
-		m_hServerRequest = SteamMatchmakingServers()->RequestInternetServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
+		m_hServerRequest = SteamBridgeMatchmakingServers()->RequestInternetServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
 		break;
 	case eLANServer:
-		m_hServerRequest = SteamMatchmakingServers()->RequestLANServerList( m_iLimitToAppID.AppID(), this );
+		m_hServerRequest = SteamBridgeMatchmakingServers()->RequestLANServerList( m_iLimitToAppID.AppID(), this );
 		break;
 	case eFriendsServer:
-		m_hServerRequest = SteamMatchmakingServers()->RequestFriendsServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
+		m_hServerRequest = SteamBridgeMatchmakingServers()->RequestFriendsServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
 		break;
 	case eFavoritesServer:
-		m_hServerRequest = SteamMatchmakingServers()->RequestFavoritesServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
+		m_hServerRequest = SteamBridgeMatchmakingServers()->RequestFavoritesServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
 		break;
 	case eHistoryServer:
-		m_hServerRequest = SteamMatchmakingServers()->RequestHistoryServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
+		m_hServerRequest = SteamBridgeMatchmakingServers()->RequestHistoryServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
 		break;
 	case eSpectatorServer:
-		m_hServerRequest = SteamMatchmakingServers()->RequestSpectatorServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
+		m_hServerRequest = SteamBridgeMatchmakingServers()->RequestSpectatorServerList( m_iLimitToAppID.AppID(), &pFilters, nFilters, this );
 		break;
 	default:
 		break;
+	}
+
+	// Without a Steam client session (see SteamBridgeClient.h) no request starts and no answer
+	// would end the refresh, so end it now.
+	if ( !m_hServerRequest )
+	{
+		RefreshComplete( NULL, eServerFailedToRespond );
+		return;
 	}
 
 	SetRefreshing( true );
@@ -1364,9 +1372,9 @@ void CBaseGamesPage::StopRefresh()
 	m_iServerRefreshCount = 0;
 
 	// Stop the server list refreshing
-	if ( m_hServerRequest && SteamMatchmakingServers() )
+	if ( m_hServerRequest && SteamBridgeMatchmakingServers() )
 	{
-		SteamMatchmakingServers()->CancelQuery( m_hServerRequest );
+		SteamBridgeMatchmakingServers()->CancelQuery( m_hServerRequest );
 	}
 }
 
@@ -1375,10 +1383,10 @@ void CBaseGamesPage::StopRefresh()
 //-----------------------------------------------------------------------------
 bool CBaseGamesPage::IsRefreshing()
 {
-	if ( !SteamMatchmakingServers() )
+	if ( !SteamBridgeMatchmakingServers() )
 		return false;
 
-	return SteamMatchmakingServers()->IsRefreshing( m_hServerRequest );
+	return SteamBridgeMatchmakingServers()->IsRefreshing( m_hServerRequest );
 }
 
 //-----------------------------------------------------------------------------
@@ -1437,7 +1445,7 @@ void CBaseGamesPage::OnCommand( const char *command )
 	}
 	else if ( !stricmp( command, "refresh" ) )
 	{
-		SteamMatchmakingServers()->RefreshQuery( m_hServerRequest );
+		SteamBridgeMatchmakingServers()->RefreshQuery( m_hServerRequest );
 		SetRefreshing( true );
 		m_iServerRefreshCount = 0;
 	}
@@ -1536,7 +1544,7 @@ void CBaseGamesPage::OnRefreshServer( int serverID )
 		int iServerID = m_pGameList->GetItemUserData( m_pGameList->GetSelectedItem( i ) );
 
 		// refresh this server
-		SteamMatchmakingServers()->RefreshServer( m_hServerRequest, iServerID );
+		SteamBridgeMatchmakingServers()->RefreshServer( m_hServerRequest, iServerID );
 	}
 
 	SetRefreshing( IsRefreshing() );
@@ -1586,7 +1594,7 @@ void CBaseGamesPage::OnFavoritesMsg( FavoritesListChanged_t *pFavListChanged )
 
 	if ( pFavListChanged->m_bAdd )
 	{
-		m_vecPingQueries.AddToTail( SteamMatchmakingServers()->PingServer( pFavListChanged->m_nIP, pFavListChanged->m_nQueryPort, this ) );
+		m_vecPingQueries.AddToTail( SteamBridgeMatchmakingServers()->PingServer( pFavListChanged->m_nIP, pFavListChanged->m_nQueryPort, this ) );
 		return;
 	}
 
@@ -1606,8 +1614,8 @@ int CBaseGamesPage::PasswordCompare( vgui2::ListPanel *pPanel, const vgui2::List
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	gameserveritem_t *s1 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
+	gameserveritem_t *s2 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1632,8 +1640,8 @@ int CBaseGamesPage::BotsCompare( vgui2::ListPanel *pPanel, const vgui2::ListPane
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	gameserveritem_t *s1 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
+	gameserveritem_t *s2 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1658,8 +1666,8 @@ int CBaseGamesPage::SecureCompare( vgui2::ListPanel *pPanel, const vgui2::ListPa
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	gameserveritem_t *s1 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
+	gameserveritem_t *s2 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1684,8 +1692,8 @@ int CBaseGamesPage::IPAddressCompare( vgui2::ListPanel *pPanel, const vgui2::Lis
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	gameserveritem_t *s1 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
+	gameserveritem_t *s2 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1715,8 +1723,8 @@ int CBaseGamesPage::PingCompare( vgui2::ListPanel *pPanel, const vgui2::ListPane
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	gameserveritem_t *s1 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
+	gameserveritem_t *s2 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1818,8 +1826,8 @@ int CBaseGamesPage::PlayersCompare( vgui2::ListPanel *pPanel, const vgui2::ListP
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	gameserveritem_t *s1 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
+	gameserveritem_t *s2 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;
@@ -1864,8 +1872,8 @@ int CBaseGamesPage::LastPlayedCompare( vgui2::ListPanel *pPanel, const vgui2::Li
 	if ( !g_CurrentGamesPage )
 		return 0;
 
-	gameserveritem_t *s1 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
-	gameserveritem_t *s2 = SteamMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
+	gameserveritem_t *s1 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p1.userData );
+	gameserveritem_t *s2 = SteamBridgeMatchmakingServers()->GetServerDetails( g_CurrentGamesPage->m_hServerRequest, p2.userData );
 
 	if ( !s1 && s2 )
 		return -1;

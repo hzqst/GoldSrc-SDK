@@ -11,6 +11,7 @@
 #include "../external/steamworks/isteammatchmaking.h"
 #include "../external/steamworks/matchmakingtypes.h"
 #include "../external/steamworks/steam_api_common.h"
+#include "SteamBridgeClient.h"
 #include "tier0/platform.h"
 #include "Frame.h"
 #include "vgui/MessageMap.h"
@@ -97,7 +98,7 @@ private:
 	void ConstructConnectArgs( char *pchOptions, int cchOptions, const gameserveritem_t &server );
 	void ApplyConnectCommand( const gameserveritem_t &server );
 
-	CCallback<CDialogGameInfo, PersonaStateChange_t, false> m_CallbackPersonaStateChange;
+	CSteamBridgeCallback<CDialogGameInfo, PersonaStateChange_t> m_CallbackPersonaStateChange;
 
 	long m_iRequestRetry;	// time at which to retry the request
 

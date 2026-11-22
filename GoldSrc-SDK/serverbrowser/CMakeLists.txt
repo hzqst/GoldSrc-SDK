@@ -1,4 +1,9 @@
-# Server browser.
+# Server browser. Steam comes from the engine's SteamAPIBridge session (see GoldSrcThirdParty.cmake).
+
+if(NOT TARGET SteamAPIBridge)
+	message(STATUS "Skipping the server browser: no SteamAPIBridge target or GOLDSRC_STEAMAPIBRIDGE_SOURCE_PATH")
+	return()
+endif()
 
 goldsrc_add_module(serverbrowser
 	TYPE SHARED
@@ -27,6 +32,7 @@ goldsrc_add_module(serverbrowser
 		serverbrowser/ServerBrowserDialog.cpp
 		serverbrowser/ServerContextMenu.cpp
 		serverbrowser/SpectateGames.cpp
+		serverbrowser/SteamBridgeClient.cpp
 		serverbrowser/VACBannedConnRefusedDialog.cpp
 		vgui2/controls/AnimatingImagePanel.cpp
 		vgui2/controls/BitmapImagePanel.cpp
@@ -90,7 +96,7 @@ goldsrc_add_module(serverbrowser
 		UTL_ENGINE_ASSERTS
 		_ITERATOR_DEBUG_LEVEL=0
 	LINK
-		goldsrc::steam_api
+		SteamAPIBridge
 	WINDOWS_LINK
 		ws2_32
 		tier0

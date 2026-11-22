@@ -14,6 +14,7 @@
 #include "../external/steamworks/matchmakingtypes.h"
 #include "../external/steamworks/steam_api_common.h"
 #include "../external/steamworks/steamclientpublic.h"
+#include "SteamBridgeClient.h"
 #include "tier0/platform.h"
 #include "vgui/ISurface.h"
 #include "vgui/KeyCode.h"
@@ -102,7 +103,7 @@ protected:
 	virtual void OnKeyCodePressed( vgui2::KeyCode code );
 	virtual int GetRegionCodeToFilter();
 public:
-	CCallback<CBaseGamesPage, FavoritesListChanged_t, false> m_CallbackFavoritesMsg;
+	CSteamBridgeCallback<CBaseGamesPage, FavoritesListChanged_t> m_CallbackFavoritesMsg;
 protected:
 	MESSAGE_FUNC( OnItemSelected, "ItemSelected" );
 	void ApplyGameFilters();

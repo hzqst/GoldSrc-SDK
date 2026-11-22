@@ -13,9 +13,7 @@
 #include "../engine/controls.h"
 #include "vgui_controls/Controls.h"
 #include "tier0/dbg.h"
-#include "../external/steamworks/isteamapps.h"
-
-S_API bool S_CALLTYPE SteamAPI_Init();
+#include "SteamBridgeClient.h"
 
 IRunGameEngine *g_pRunGameEngine = NULL;
 
@@ -58,17 +56,14 @@ void CServerBrowser::CreateDialog()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Initializes Steam, vgui and the engine interface
+// Purpose: Initializes vgui and the engine interface. Steam is the engine's session
+//			(see SteamBridgeClient.h); without one the server lists stay empty.
 //-----------------------------------------------------------------------------
 bool CServerBrowser::Initialize( CreateInterfaceFn *factorylist, int factoryCount )
 {
 	g_pRunGameEngine = NULL;
 
-	if ( !SteamAPI_Init() )
-	{
-		Error( "Unable to initialize interface\n" );
-		return false;
-	}
+	SteamBridgeEvents_Connect();
 
 	IRunGameEngine *pRunGameEngine = g_pRunGameEngine;
 	for ( int i = 0; i < factoryCount; i++ )
@@ -115,10 +110,7 @@ bool CServerBrowser::PostInitialize( CreateInterfaceFn *modules, int factoryCoun
 //-----------------------------------------------------------------------------
 bool CServerBrowser::IsVACBannedFromGame( int nAppID )
 {
-	if ( !SteamApps() )
-		return false;
-
-	return SteamApps()->BIsVACBanned();
+	return SteamBridgeApps()->BIsVACBanned();
 }
 
 //-----------------------------------------------------------------------------
@@ -207,6 +199,8 @@ void CServerBrowser::SetParent( vgui2::VPANEL parent )
 //-----------------------------------------------------------------------------
 void CServerBrowser::Shutdown()
 {
+	SteamBridgeEvents_Disconnect();
+
 	if ( m_hInternetDlg.Get() )
 	{
 		m_hInternetDlg->Close();
@@ -215,11 +209,10 @@ void CServerBrowser::Shutdown()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: Runs the Steam callbacks once per frame
+// Purpose: The engine runs the Steam callbacks, which answer the server browser's queries
 //-----------------------------------------------------------------------------
 void CServerBrowser::RunFrame()
 {
-	SteamAPI_RunCallbacks();
 }
 
 //-----------------------------------------------------------------------------
@@ -240,7 +233,7 @@ bool CServerBrowser::OpenGameInfoDialog( uint64 ulSteamIDFriend )
 
 	// none yet, create a new dialog
 	FriendGameInfo_t friendGameInfo;
-	if ( SteamFriends()->GetFriendGamePlayed( CSteamID( ulSteamIDFriend ), &friendGameInfo ) )
+	if ( SteamBridgeFriends()->GetFriendGamePlayed( CSteamID( ulSteamIDFriend ), &friendGameInfo ) )
 	{
 		uint16 usQueryPort = friendGameInfo.m_usQueryPort;
 		uint16 usConnPort = friendGameInfo.m_usGamePort;

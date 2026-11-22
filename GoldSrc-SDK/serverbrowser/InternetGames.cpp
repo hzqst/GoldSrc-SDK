@@ -188,7 +188,7 @@ void CInternetGames::ServerFailedToRespond( HServerListRequest hRequest, int iSe
 {
 	m_bDirty = true;
 
-	gameserveritem_t *pServer = SteamMatchmakingServers()->GetServerDetails( m_hServerRequest, iServer );
+	gameserveritem_t *pServer = SteamBridgeMatchmakingServers()->GetServerDetails( m_hServerRequest, iServer );
 	if ( pServer->m_bHadSuccessfulResponse )
 	{
 		// it answered before, so keep it in the list

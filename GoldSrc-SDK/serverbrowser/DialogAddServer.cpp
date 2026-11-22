@@ -96,7 +96,7 @@ CDialogAddServer::~CDialogAddServer()
 {
 	for ( int i = 0; i < m_Queries.Count(); i++ )
 	{
-		SteamMatchmakingServers()->CancelServerQuery( m_Queries[i] );
+		SteamBridgeMatchmakingServers()->CancelServerQuery( m_Queries[i] );
 	}
 }
 
@@ -196,7 +196,7 @@ void CDialogAddServer::TestServers()
 	// cancel pings still pending from the previous test, their late replies would index the new round
 	for ( int i = 0; i < m_Queries.Count(); i++ )
 	{
-		SteamMatchmakingServers()->CancelServerQuery( m_Queries[i] );
+		SteamBridgeMatchmakingServers()->CancelServerQuery( m_Queries[i] );
 	}
 	m_Queries.RemoveAll();
 
@@ -257,7 +257,7 @@ void CDialogAddServer::TestServers()
 	// Start the servers refreshing
 	for ( int i = 0; i < vecAdress.Count(); i++ )
 	{
-		m_Queries.AddToTail( SteamMatchmakingServers()->PingServer( vecAdress[i].GetIP(), vecAdress[i].GetPort(), this ) );
+		m_Queries.AddToTail( SteamBridgeMatchmakingServers()->PingServer( vecAdress[i].GetIP(), vecAdress[i].GetPort(), this ) );
 	}
 }
 

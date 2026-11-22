@@ -9,6 +9,7 @@
 
 #include "utlvector.h"
 #include "../external/steamworks/isteammatchmaking.h"
+#include "SteamBridgeClient.h"
 #include "Frame.h"
 #include "vgui/MessageMap.h"
 

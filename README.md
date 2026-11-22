@@ -89,6 +89,8 @@ Like Valve's Linux `vgui2.so`, the Linux VGUI2 has no surface or fonts of its ow
 
 On Linux, `serverbrowser_linux.so` leaves the Tier0 symbols (`Plat_FloatTime`, `Error`) for the game's runtime libraries to resolve. Steam API modules link [`lib/public/linux32/libsteam_api.so`](GoldSrc-SDK/lib/public/linux32/), taken from the Linux Half-Life Dedicated Server (SteamCMD app 90). [`linux/libSDL2-2.0.so.0`](GoldSrc-SDK/linux/) is SDL 2.32.10 built with `vcpkg install --classic "sdl2[core,x11]" --triplet x86-linux --overlay-triplets=cmake/triplets` (X11, PulseAudio and PipeWire backends, loaded at run time). The build copies these libraries next to the binaries.
 
+The server browser does not link the Steam API. It uses the Steam client session that the HLND2T engine opens through [SteamAPIBridge](https://github.com/MetaHookSv/SteamAPIBridge) host mode ([`serverbrowser/SteamBridgeClient.h`](GoldSrc-SDK/serverbrowser/SteamBridgeClient.h)), so it is built only when the bridge is available: a parent project's `SteamAPIBridge` target, or a bridge checkout named by `GOLDSRC_STEAMAPIBRIDGE_SOURCE_PATH` (the bridge reads the Steamworks SDK from `STEAMSDK_SOURCE_PATH`). Without a Steam client session (the engine started without `-steam`), the server lists stay empty.
+
 Configure with `-DGOLDSRC_BUILD_TESTS=ON` to register the regression tests under [`tests/`](tests/) with CTest; run them with `ctest --test-dir bin/obj/cmake/<preset>`. The Python tests compile their C++ with [`tests/cxx_toolchain.py`](tests/cxx_toolchain.py): `CXX` when set, otherwise MSVC (found through `vswhere`) on Windows and `c++` elsewhere. AddressSanitizer and UndefinedBehaviorSanitizer are enabled where the compiler supports them; MSVC supports only AddressSanitizer.
 
 ### Static analysis

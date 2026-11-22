@@ -9,6 +9,7 @@
 
 #include "utlvector.h"
 #include "../external/steamworks/steamclientpublic.h"
+#include "SteamBridgeClient.h"
 #include "../external/steamworks/matchmakingtypes.h"
 #include "tier0/platform.h"
 #include "Frame.h"
