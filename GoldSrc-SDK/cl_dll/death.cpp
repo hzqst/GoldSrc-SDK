@@ -177,6 +177,10 @@ int CHudDeathNotice :: MsgFunc_DeathMsg( const char *pszName, int iSize, void *p
 	int killer = READ_BYTE();
 	int victim = READ_BYTE();
 
+	// Both index the player arrays; a victim of -1 is a non-player object
+	if ( killer > MAX_PLAYERS || ( victim > MAX_PLAYERS && ((char)victim) != -1 ) )
+		return 0;
+
 	char killedwith[32];
 	strcpy( killedwith, "d_" );
 	strncat( killedwith, READ_STRING(), sizeof( killedwith ) - strlen( killedwith ) - 1 );
