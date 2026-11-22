@@ -67,7 +67,6 @@ private:
 	CCvarToggleCheckButton*	m_pUseShaders;
 	CCvarSlider*			m_pBrightnessSlider;
 	CCvarSlider*			m_pGammaSlider;
-	char					m_pszRenderNames[3][32];
 	char					m_pszAspectName[2][32];
 	int						m_iStartRenderer;
 	int						m_iStartResolution;

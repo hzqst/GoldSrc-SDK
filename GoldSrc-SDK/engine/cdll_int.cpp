@@ -99,19 +99,19 @@ cvar_t* GetFirstCVarPtr()
 	return cvar_vars;
 }
 
-unsigned int GetFirstCmdFunctionHandle()
+cmd_function_t* GetFirstCmdFunctionHandle()
 {
-	return (unsigned int)Cmd_GetFirstCmd();
+	return Cmd_GetFirstCmd();
 }
 
-unsigned int GetNextCmdFunctionHandle( unsigned int handle )
+cmd_function_t* GetNextCmdFunctionHandle( cmd_function_t* handle )
 {
-	return (unsigned int)( (cmd_function_t*)handle )->next;
+	return handle->next;
 }
 
-const char* GetCmdFunctionName( unsigned int handle )
+const char* GetCmdFunctionName( cmd_function_t* handle )
 {
-	return ( (cmd_function_t*)handle )->name;
+	return handle->name;
 }
 
 char* COM_ParseFile( char* data, char* token )

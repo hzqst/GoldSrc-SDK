@@ -323,9 +323,10 @@ typedef void						(*pfnEngSrc_GetMousePos_t )(struct tagPOINT *ppt);
 typedef void						(*pfnEngSrc_SetMousePos_t )(int x, int y);
 typedef void						(*pfnEngSrc_SetMouseEnable_t)(qboolean fEnable);
 typedef struct cvar_s *				(*pfnEngSrc_GetFirstCVarPtr_t)();
-typedef unsigned int				(*pfnEngSrc_GetFirstCmdFunctionHandle_t)();
-typedef unsigned int				(*pfnEngSrc_GetNextCmdFunctionHandle_t)(unsigned int cmdhandle);
-typedef const char *				(*pfnEngSrc_GetCmdFunctionName_t)(unsigned int cmdhandle);
+// The handle is the engine's cmd_function_t pointer; an unsigned int would truncate it on x64
+typedef struct cmd_function_s *		(*pfnEngSrc_GetFirstCmdFunctionHandle_t)();
+typedef struct cmd_function_s *		(*pfnEngSrc_GetNextCmdFunctionHandle_t)(struct cmd_function_s *cmdhandle);
+typedef const char *				(*pfnEngSrc_GetCmdFunctionName_t)(struct cmd_function_s *cmdhandle);
 typedef float						(*pfnEngSrc_GetClientOldTime_t)();
 typedef float						(*pfnEngSrc_GetServerGravityValue_t)();
 typedef struct model_s	*			(*pfnEngSrc_GetModelByIndex_t)( int index );
