@@ -736,7 +736,7 @@ void vgui_strcpy( char* dst, int dstLen, const char* src )
 	ASSERT_AT( dstLen>=0, 942 );
 	ASSERT_AT( src!=null, 943 );
 
-	int length = strlen( src ) + 1;
+	int length = (int)strlen( src ) + 1;
 	if ( length > dstLen )
 	{
 		length = dstLen;

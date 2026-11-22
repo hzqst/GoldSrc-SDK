@@ -135,7 +135,7 @@ static ISchemeManager* scheme() { return &theScheme; }
 class Panel {
 public:
  Panel(const char* name, const char* module = controlsModule) : _panelName(name) {
-  // a small id, so that a VPANEL survives the int Menu takes it as on a 64-bit build
+  // a small id stands in for the VPanel pointer a real VPANEL holds
   static VPANEL nextPanel = 1;
   _vpanel = nextPanel++;
   panels.nodes[_vpanel] = Node{ module, this, 0 };
@@ -220,8 +220,8 @@ class Menu : public Panel {
 public:
  enum { MOUSE, KEYBOARD };
  Menu() : Panel("menu") {}
- void OnCursorEnteredMenuItem(int VPanel);
- void OnCursorExitedMenuItem(int VPanel);
+ void OnCursorEnteredMenuItem(Panel* VPanel);
+ void OnCursorExitedMenuItem(Panel* VPanel);
  int GetMenuItemID(MenuItem*) { return 0; }
  void SetCurrentlySelectedItem(int) { ++selections; }
  int m_iInputMode = MOUSE;
@@ -348,11 +348,12 @@ static void MenuIgnoresAnItemOfAnotherModule() {
  Menu menu;
  MenuItem foreign{ "foreign", "client" };
  MenuItem local{ "local" };
- menu.OnCursorEnteredMenuItem(static_cast<int>(foreign.GetVPanel()));
- menu.OnCursorExitedMenuItem(static_cast<int>(foreign.GetVPanel()));
+ // MenuItem posts its VPANEL as a pointer message parameter
+ menu.OnCursorEnteredMenuItem(reinterpret_cast<Panel*>(foreign.GetVPanel()));
+ menu.OnCursorExitedMenuItem(reinterpret_cast<Panel*>(foreign.GetVPanel()));
  assert(0 == foreign.arms && 0 == foreign.disarms && 0 == menu.selections);
- menu.OnCursorEnteredMenuItem(static_cast<int>(local.GetVPanel()));
- menu.OnCursorExitedMenuItem(static_cast<int>(local.GetVPanel()));
+ menu.OnCursorEnteredMenuItem(reinterpret_cast<Panel*>(local.GetVPanel()));
+ menu.OnCursorExitedMenuItem(reinterpret_cast<Panel*>(local.GetVPanel()));
  assert(1 == local.arms && 1 == local.disarms && 1 == menu.selections);
  puts("PASS: Menu ignores the cursor on an item of another module and arms and disarms its own item");
 }
@@ -378,7 +379,7 @@ SOURCES = {
     'EditablePanel.cpp': ('void EditablePanel::ApplyUserConfigSettings( KeyValues* userConfig )',
                           'void EditablePanel::GetUserConfigSettings( KeyValues* userConfig )'),
     'Panel.cpp': ('void Panel::SetProportional( bool state )', 'Panel* Panel::FindSiblingByName( const char* siblingName )'),
-    'Menu.cpp': ('void Menu::OnCursorEnteredMenuItem( int VPanel )', 'void Menu::OnCursorExitedMenuItem( int VPanel )'),
+    'Menu.cpp': ('void Menu::OnCursorEnteredMenuItem( Panel* VPanel )', 'void Menu::OnCursorExitedMenuItem( Panel* VPanel )'),
 }
 
 

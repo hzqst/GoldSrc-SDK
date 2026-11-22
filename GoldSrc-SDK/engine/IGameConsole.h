@@ -2,6 +2,13 @@
 
 #include "interface.h"
 
+#include <stdint.h>
+
+namespace vgui2
+{
+typedef uintptr_t VPANEL;
+}
+
 #ifdef _MSC_VER
 class __declspec( novtable ) IGameConsole : public IBaseInterface
 #else
@@ -18,5 +25,5 @@ public:
 	virtual void Printf( const char* format, ... ) = 0;
 	virtual void DPrintf( const char* format, ... ) = 0;
 
-	virtual void SetParent( int parent ) = 0;
+	virtual void SetParent( vgui2::VPANEL parent ) = 0;
 };

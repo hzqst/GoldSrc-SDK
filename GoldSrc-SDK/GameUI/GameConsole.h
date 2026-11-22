@@ -25,7 +25,7 @@ public:
 	bool IsConsoleVisible() override;
 	void Printf( const char* format, ... ) override;
 	void DPrintf( const char* format, ... ) override;
-	void SetParent( int parent ) override;
+	void SetParent( vgui2::VPANEL parent ) override;
 
 	// activates the console after a delay
 	void ActivateDelayed( float time );

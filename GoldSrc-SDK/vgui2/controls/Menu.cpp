@@ -757,13 +757,13 @@ int Menu::GetMenuItemID( MenuItem* item )
 	return m_MenuItems.InvalidIndex();
 }
 
-void Menu::OnCursorEnteredMenuItem( int VPanel )
+void Menu::OnCursorEnteredMenuItem( Panel* VPanel )
 {
 	if ( m_iInputMode == MOUSE )
 	{
 		IPanel* panels = ipanel();
 		const char* module = GetModuleName();
-		MenuItem* item = static_cast<MenuItem*>( panels->GetPanel( VPanel, module ) );
+		MenuItem* item = static_cast<MenuItem*>( panels->GetPanel( (vgui2::VPANEL)VPanel, module ) );
 		if ( !item )
 			return;
 
@@ -778,13 +778,13 @@ void Menu::OnCursorEnteredMenuItem( int VPanel )
 	}
 }
 
-void Menu::OnCursorExitedMenuItem( int VPanel )
+void Menu::OnCursorExitedMenuItem( Panel* VPanel )
 {
 	if ( m_iInputMode == MOUSE )
 	{
 		IPanel* panels = ipanel();
 		const char* module = GetModuleName();
-		MenuItem* item = static_cast<MenuItem*>( panels->GetPanel( VPanel, module ) );
+		MenuItem* item = static_cast<MenuItem*>( panels->GetPanel( (vgui2::VPANEL)VPanel, module ) );
 		if ( item )
 			item->DisarmItem();
 	}

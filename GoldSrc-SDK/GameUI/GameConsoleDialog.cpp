@@ -529,7 +529,7 @@ void CGameConsoleDialog::DumpConsoleTextToFile()
 		{
 			m_pHistory->GetText( offset, text, sizeof( text ) );
 			// GetText keeps one slot for the terminator, so advance by what was read
-			int count = wcslen( text );
+			int count = (int)wcslen( text );
 			if ( !count )
 				break;
 
@@ -540,7 +540,7 @@ void CGameConsoleDialog::DumpConsoleTextToFile()
 
 			if ( !vgui2::localize()->ConvertUnicodeToANSI( text, ansi, sizeof( ansi ) ) )
 				break;
-			int length = strlen( ansi );
+			int length = (int)strlen( ansi );
 			for ( int i = 0; i < length; i++ )
 			{
 				if ( ansi[i] == '\n' )
@@ -568,7 +568,7 @@ void CGameConsoleDialog::RebuildCompletionList( const char* text )
 	m_CompletionList.RemoveAll();
 
 	// we need the length of the text for the partial string compares
-	int length = strlen( text );
+	int length = (int)strlen( text );
 	if ( length < 1 )
 	{
 		// Fill the completion list with history instead
@@ -645,7 +645,7 @@ void CGameConsoleDialog::AddToHistory( const char* commandText, const char* extr
 #ifdef _MSC_VER
 #pragma warning( suppress: 6053 )
 #endif
-			for ( int i = strlen( extra ) - 1; i >= 0; --i )
+			for ( int i = (int)strlen( extra ) - 1; i >= 0; --i )
 			{
 				if ( extra[i] != ' ' )
 					break;
@@ -735,7 +735,7 @@ void CGameConsoleDialog::OnTextChanged( vgui2::Panel* panel )
 
 	// get the partial text the user type
 	m_pEntry->GetText( m_szPartialText, sizeof( m_szPartialText ) );
-	int length = strlen( m_szPartialText );
+	int length = (int)strlen( m_szPartialText );
 	if ( !m_bAutoCompleteMode && length > 0 && m_szPartialText[length - 1] == ' ' )
 	{
 		m_iNextCompletion = 0;

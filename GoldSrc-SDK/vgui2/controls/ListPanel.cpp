@@ -154,8 +154,8 @@ static int DefaultSortFunc( ListPanel*, const ListPanelItem& item1, const ListPa
 			item2.kv->GetString( s_pCurrentSortingColumn ) );
 	}
 
-	unsigned int first = (unsigned int)item1.kv->GetPtr( s_pCurrentSortingColumn, (void*)"" );
-	unsigned int second = (unsigned int)item2.kv->GetPtr( s_pCurrentSortingColumn, (void*)"" );
+	uintptr_t first = (uintptr_t)item1.kv->GetPtr( s_pCurrentSortingColumn, (void*)"" );
+	uintptr_t second = (uintptr_t)item2.kv->GetPtr( s_pCurrentSortingColumn, (void*)"" );
 	if ( first < second )
 		return -1;
 	return first > second;

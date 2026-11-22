@@ -176,8 +176,9 @@ protected:
 
 	void SetCurrentlySelectedItem( MenuItem* item );
 	void SetCurrentlySelectedItem( int itemID );
-	MESSAGE_FUNC_INT( OnCursorEnteredMenuItem, "CursorEnteredMenuItem", VPanel );
-	MESSAGE_FUNC_INT( OnCursorExitedMenuItem, "CursorExitedMenuItem", VPanel );
+	// MenuItem posts its VPANEL as a pointer, which an int would truncate on x64
+	MESSAGE_FUNC_PTR( OnCursorEnteredMenuItem, "CursorEnteredMenuItem", VPanel );
+	MESSAGE_FUNC_PTR( OnCursorExitedMenuItem, "CursorExitedMenuItem", VPanel );
 
 	void MoveAlongMenuItemList( int direction, int loopCount );
 

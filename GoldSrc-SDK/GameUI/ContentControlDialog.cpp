@@ -204,7 +204,7 @@ void CContentControlDialog::HashPassword( const char* password, char* hashBuffer
 	MD5Context_t context;
 	unsigned char digest[16];
 	MD5Init( &context );
-	MD5Update( &context, (const unsigned char*)password, strlen( password ) );
+	MD5Update( &context, (const unsigned char*)password, (unsigned int)strlen( password ) );
 	MD5Final( digest, &context );
 	strcpy( hashBuffer, BinPrintf( digest, sizeof( digest ) ) );
 }

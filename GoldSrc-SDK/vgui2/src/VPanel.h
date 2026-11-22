@@ -19,12 +19,14 @@
 
 class KeyValues;
 
+#include <stdint.h>
+
 namespace vgui2
 {
 
 typedef unsigned short HPanelList; // MUST be smaller than HPanel, see CVGui::HandleToPanel()
 typedef unsigned long HScheme;
-typedef unsigned int VPANEL;
+typedef uintptr_t VPANEL;
 
 class IClientPanel;
 class SurfacePlat;

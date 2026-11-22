@@ -185,6 +185,13 @@ void CSmallBlockPool::Free( void* p )
 #pragma warning( disable: 26495 )
 CSmallBlockHeap::CSmallBlockHeap()
 {
+#ifdef _WIN64
+	// The pools hand out 4-byte aligned blocks, and the 4-byte pool cannot hold a free list pointer. x64 needs the
+	// 16-byte alignment of malloc, so every allocation goes to the CRT heap, as when the reservation below fails.
+	m_bEnabled = false;
+	m_pBase = NULL;
+	m_pLimit = NULL;
+#else
 	m_bEnabled = true;
 	m_pBase = (unsigned char*)VirtualAlloc( NULL, NUM_POOLS * POOL_RESERVE_SIZE, MEM_RESERVE, PAGE_NOACCESS );
 	if ( !m_pBase )
@@ -211,6 +218,7 @@ CSmallBlockHeap::CSmallBlockHeap()
 		m_PoolLookup[i] = &m_Pools[iCurPool - 1];
 	}
 	AssertAt( iCurPool == NUM_POOLS, 351 );
+#endif
 }
 #pragma warning( pop )
 

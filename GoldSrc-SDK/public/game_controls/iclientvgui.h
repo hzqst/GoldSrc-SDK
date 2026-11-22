@@ -4,9 +4,11 @@
 
 #define CLIENTVGUI_INTERFACE_VERSION "VClientVGUI001"
 
+#include <stdint.h>
+
 namespace vgui2
 {
-	typedef unsigned int VPANEL;
+	typedef uintptr_t VPANEL;
 }
 
 class IClientVGUI : public IBaseInterface

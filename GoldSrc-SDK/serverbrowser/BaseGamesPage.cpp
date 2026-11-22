@@ -1295,7 +1295,7 @@ bool CBaseGamesPage::CheckSecondaryFilters( gameserveritem_t &server )
 		return false;
 
 	// compare the first few characters of the filter
-	int count = strlen( m_szMapFilter );
+	int count = (int)strlen( m_szMapFilter );
 	if ( count && strnicmp( server.m_szMap, m_szMapFilter, count ) )
 		return false;
 

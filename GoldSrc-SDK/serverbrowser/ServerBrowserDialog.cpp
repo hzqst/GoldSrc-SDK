@@ -405,7 +405,7 @@ CServerBrowserDialog *CServerBrowserDialog::GetInstance()
 //-----------------------------------------------------------------------------
 void CServerBrowserDialog::AddServerToFavorites( gameserveritem_t &server )
 {
-	SteamMatchmaking()->AddFavoriteGame( server.m_nAppID, server.m_NetAdr.GetIP(), server.m_NetAdr.GetConnectionPort(), server.m_NetAdr.GetQueryPort(), k_unFavoriteFlagFavorite, time( NULL ) );
+	SteamMatchmaking()->AddFavoriteGame( server.m_nAppID, server.m_NetAdr.GetIP(), server.m_NetAdr.GetConnectionPort(), server.m_NetAdr.GetQueryPort(), k_unFavoriteFlagFavorite, (uint32)time( NULL ) );
 }
 
 //-----------------------------------------------------------------------------
@@ -643,7 +643,7 @@ void CServerBrowserDialog::OnConnectToGame( KeyValues *pMessageValues )
 
 	if ( m_pHistory && SteamMatchmaking() )
 	{
-		SteamMatchmaking()->AddFavoriteGame( 0, IPHostToNetwork( ip ), connectionPort, queryPort, k_unFavoriteFlagHistory, time( NULL ) );
+		SteamMatchmaking()->AddFavoriteGame( 0, IPHostToNetwork( ip ), connectionPort, queryPort, k_unFavoriteFlagHistory, (uint32)time( NULL ) );
 		m_pHistory->SetRefreshOnReload();
 	}
 

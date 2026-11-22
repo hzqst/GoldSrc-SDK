@@ -239,8 +239,9 @@ public:
 	virtual bool IsMouseInputEnabled();
 	virtual bool IsKeyBoardInputEnabled();
 
-	_MessageFuncCommon( OnRequestFocus, "OnRequestFocus", (void ( Panel::* )( int, int ))&Panel::OnRequestFocus, 2,
-		DATATYPE_INT, "subFocus", DATATYPE_INT, "defaultPanel" );
+	// The panels travel as pointers, which ints would truncate on x64; on x86 an int receiver still reads them whole
+	_MessageFuncCommon( OnRequestFocus, "OnRequestFocus", (void ( Panel::* )( void*, void* ))&Panel::OnRequestFocus, 2,
+		DATATYPE_PTR, "subFocus", DATATYPE_PTR, "defaultPanel" );
 	virtual void OnRequestFocus( VPANEL subFocus, VPANEL defaultPanel );
 
 	MESSAGE_FUNC_INT_INT( InternalCursorMoved, "CursorMoved", xpos, ypos );
