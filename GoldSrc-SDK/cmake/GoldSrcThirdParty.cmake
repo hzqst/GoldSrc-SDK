@@ -11,7 +11,7 @@ if(NOT WIN32)
 endif()
 
 # SDL2: lib/public/SDL2.lib on Windows, linux/libSDL2-2.0.so.0 on Linux. The
-# bundled import library is x86; a Windows x64 build passes its own.
+# bundled libraries are 32-bit; a 64-bit build passes its own.
 add_library(goldsrc_sdl2 INTERFACE)
 add_library(goldsrc::SDL2 ALIAS goldsrc_sdl2)
 target_include_directories(goldsrc_sdl2 SYSTEM INTERFACE "${GOLDSRC_ROOT}/external/SDL2")
@@ -19,7 +19,8 @@ if(WIN32)
 	set(GOLDSRC_SDL2_LIBRARY "${GOLDSRC_ROOT}/lib/public/SDL2.lib" CACHE FILEPATH "SDL2 import library")
 	target_link_libraries(goldsrc_sdl2 INTERFACE "${GOLDSRC_SDL2_LIBRARY}")
 else()
-	target_link_libraries(goldsrc_sdl2 INTERFACE "${GOLDSRC_ROOT}/linux/libSDL2-2.0.so.0")
+	set(GOLDSRC_SDL2_LIBRARY "${GOLDSRC_ROOT}/linux/libSDL2-2.0.so.0" CACHE FILEPATH "SDL2 shared library")
+	target_link_libraries(goldsrc_sdl2 INTERFACE "${GOLDSRC_SDL2_LIBRARY}")
 endif()
 
 # Steam API. The Linux library is optional: without it, Steam symbols are left
@@ -95,9 +96,10 @@ if(WIN32)
 		"${vcpkg_lib_dir}/libexpat${debug_suffix}MD.lib"
 		"${vcpkg_lib_dir}/libpng16${debug_suffix}.lib"
 		"${vcpkg_lib_dir}/zs${debug_suffix}.lib")
-else()
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
 	# Linux takes the same libraries from the vcpkg manifest (vcpkg.json), plus
-	# OpenAL for voice capture.
+	# OpenAL for voice capture. The engine is 32-bit only, so a 64-bit build of
+	# the UI modules looks for none of them.
 	find_package(unofficial-brotli CONFIG QUIET)
 	find_package(BZip2 QUIET)
 	find_package(EXPAT QUIET)
@@ -142,8 +144,8 @@ else()
 	endif()
 endif()
 
-# Copies the prebuilt Linux runtime libraries next to the engine binaries.
-if(NOT WIN32)
+# Copies the prebuilt (32-bit) Linux runtime libraries next to the engine binaries.
+if(NOT WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
 	set(runtime_files
 		"${GOLDSRC_ROOT}/linux/libSDL2-2.0.so.0"
 		"${GOLDSRC_VGUI1_DIR}/vgui.so")

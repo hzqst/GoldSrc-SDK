@@ -4,8 +4,8 @@
 # ...) are expressed through goldsrc_add_module() in GoldSrcTargets.cmake.
 
 # A project that embeds the SDK can build tier0, vgui2, GameUI and serverbrowser
-# for Windows x64. The engine, launchers and games remain 32-bit only.
-option(GOLDSRC_ALLOW_64BIT "Allow Windows x64 for the embeddable UI modules" OFF)
+# for Windows x64 and Linux x86-64. The engine, launchers and games remain 32-bit only.
+option(GOLDSRC_ALLOW_64BIT "Allow 64-bit (Windows x64, Linux x86-64) for the embeddable UI modules" OFF)
 
 # The VGUI2 controls answer halflife-cli's "VGUI2.*" RequestInfo queries (HLND2T-DiligentGraphics, -hlcli).
 option(GOLDSRC_USE_HLCLI "Build the halflife-cli automation hooks into the VGUI2 controls" OFF)
@@ -22,11 +22,14 @@ if(WIN32)
 		set(GOLDSRC_PLATFORM_DIR Win32)
 	endif()
 else()
-	if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+	if(CMAKE_SIZEOF_VOID_P EQUAL 8 AND GOLDSRC_ALLOW_64BIT)
+		set(GOLDSRC_PLATFORM_DIR Linux64)
+	elseif(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
 		message(FATAL_ERROR "GoldSrc targets 32-bit x86 only. Configure with "
 			"-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/linux-i686.cmake (see CMakePresets.json).")
+	else()
+		set(GOLDSRC_PLATFORM_DIR Linux32)
 	endif()
-	set(GOLDSRC_PLATFORM_DIR Linux32)
 endif()
 
 # Runtime binaries land in bin/<platform>/<config>/..., matching the layout of
@@ -82,10 +85,11 @@ else()
 		_LINUX
 		GNUC
 	)
-	add_compile_options(
+	if(CMAKE_SIZEOF_VOID_P EQUAL 4)
 		# Match the x87 floating point used by the historical Linux builds.
-		-march=pentium-m
-		-mfpmath=387
+		add_compile_options(-march=pentium-m -mfpmath=387)
+	endif()
+	add_compile_options(
 		-fno-strict-aliasing
 		-g
 		"SHELL:-include \"${GOLDSRC_ROOT}/common/posix_compat.h\""

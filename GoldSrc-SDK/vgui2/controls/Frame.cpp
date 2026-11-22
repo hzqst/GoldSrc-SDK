@@ -118,8 +118,8 @@ public:
 	bool getOutsideSnapPosition( int x, int y, int wide, int tall, int& newX, int& newY );
 };
 
-// Layout checks against the original 32-bit vgui2 binaries; x64 has no original to match.
-#if !defined( BSHIFT_CLIENT ) && !defined( _WIN64 )
+// Layout checks against the original 32-bit vgui2 binaries; 64-bit builds have no original to match.
+#if !defined( BSHIFT_CLIENT ) && !defined( _WIN64 ) && !defined( __x86_64__ )
 static_assert( sizeof( GripPanel ) == 160 );
 static_assert( sizeof( CaptionGripPanel ) == 160 );
 #endif
@@ -335,7 +335,7 @@ private:
 	bool	_respond;
 };
 
-#if !defined( BSHIFT_CLIENT ) && !defined( _WIN64 )
+#if !defined( BSHIFT_CLIENT ) && !defined( _WIN64 ) && !defined( __x86_64__ )
 static_assert( sizeof( FrameButton ) == 304 );
 static_assert( sizeof( FrameSystemButton ) == 308 );
 #endif
