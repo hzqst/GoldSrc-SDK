@@ -45,6 +45,11 @@ endif()
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# The SDK builds Debug and Release. An embedding project may build RelWithDebInfo or MinSizeRel,
+# which take the Release settings.
+set(GOLDSRC_RELEASE_CONFIGS Release RelWithDebInfo MinSizeRel)
+set(GOLDSRC_RELEASE_CONFIG "$<CONFIG:Release,RelWithDebInfo,MinSizeRel>")
+
 if(MSVC)
 	# The per-target RUNTIME option selects /MT or /MD; CMake adds the "d" suffix.
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
@@ -53,7 +58,14 @@ if(MSVC)
 	# goldsrc_add_module(); drop CMake's defaults so they are not overridden.
 	string(REPLACE "/EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 	foreach(lang IN ITEMS C CXX)
-		string(REPLACE "/O2" "" CMAKE_${lang}_FLAGS_RELEASE "${CMAKE_${lang}_FLAGS_RELEASE}")
+		foreach(config IN ITEMS RELEASE RELWITHDEBINFO MINSIZEREL)
+			string(REGEX REPLACE "/O[12]" "" CMAKE_${lang}_FLAGS_${config} "${CMAKE_${lang}_FLAGS_${config}}")
+		endforeach()
+	endforeach()
+	# RelWithDebInfo links incrementally by default, which /OPT:REF and /OPT:ICF turn off with a warning.
+	foreach(kind IN ITEMS EXE SHARED MODULE)
+		string(REGEX REPLACE "/INCREMENTAL( |$)" "" CMAKE_${kind}_LINKER_FLAGS_RELWITHDEBINFO
+			"${CMAKE_${kind}_LINKER_FLAGS_RELWITHDEBINFO}")
 	endforeach()
 
 	add_compile_definitions(
@@ -68,14 +80,14 @@ if(MSVC)
 	add_compile_options(
 		/MP
 		/Zi
-		$<$<CONFIG:Release>:/Oi>
-		$<$<CONFIG:Release>:/Gy>
+		$<${GOLDSRC_RELEASE_CONFIG}:/Oi>
+		$<${GOLDSRC_RELEASE_CONFIG}:/Gy>
 	)
 	add_link_options(
 		/DEBUG
-		$<$<CONFIG:Release>:/OPT:REF>
-		$<$<CONFIG:Release>:/OPT:ICF>
-		$<$<CONFIG:Release>:/INCREMENTAL:NO>
+		$<${GOLDSRC_RELEASE_CONFIG}:/OPT:REF>
+		$<${GOLDSRC_RELEASE_CONFIG}:/OPT:ICF>
+		$<${GOLDSRC_RELEASE_CONFIG}:/INCREMENTAL:NO>
 	)
 else()
 	add_compile_definitions(
