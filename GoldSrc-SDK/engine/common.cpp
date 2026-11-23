@@ -863,10 +863,11 @@ int Q_memcmp( const void* first, const void* second, int count )
 			return STRING_NOT_EQUAL;
 	}
 
+	int tailOffset = wordCount * MEMORY_WORD_BYTES;
 	int remainder = count & ( MEMORY_WORD_BYTES - 1 );
 	for ( int index = 0; index < remainder; ++index )
 	{
-		if ( firstBytes[index] != secondBytes[index] )
+		if ( firstBytes[tailOffset + index] != secondBytes[tailOffset + index] )
 			return STRING_NOT_EQUAL;
 	}
 	return 0;
@@ -1961,7 +1962,8 @@ void COM_CreatePath( char* path )
 int COM_ExpandFilename( char* filename )
 {
 	char localPath[GAME_DIRECTORY_BYTES];
-	FS_GetLocalPath( filename, localPath, sizeof( localPath ) );
+	if ( !FS_GetLocalPath( filename, localPath, sizeof( localPath ) ) )
+		return 0;
 
 	const char* source = localPath;
 	char* destination = filename;

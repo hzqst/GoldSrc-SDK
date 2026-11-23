@@ -20,6 +20,7 @@ foreach(name IN ITEMS
 		client_statusbar_localise
 		commandmenu
 		common_bitstream_szprint
+		common_memcmp_expand
 		common_normalize_angles
 		common_q_strcpy
 		common_va
