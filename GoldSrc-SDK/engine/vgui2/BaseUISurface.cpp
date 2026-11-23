@@ -394,7 +394,11 @@ void BaseUISurface::Shutdown()
 
 #if defined( _WIN32 )
 	for ( int i = 0; i < m_CustomFontFileNames.Count(); i++ )
-		RemoveFontResourceExA( m_CustomFontFileNames[i].String(), FR_PRIVATE, NULL );
+	{
+		const char* fontPath = m_CustomFontFileNames[i].String();
+		if ( !RemoveFontResourceExA( fontPath, FR_PRIVATE, NULL ) )
+			RemoveFontResourceA( fontPath );
+	}
 #endif
 	m_CustomFontFileNames.RemoveAll();
 
@@ -949,15 +953,27 @@ bool BaseUISurface::AddCustomFontFile( const char* filename )
 {
 #if defined( _WIN32 )
 	char localPath[MAX_PATH];
-	vgui2::filesystem()->GetLocalPath( filename, localPath, sizeof( localPath ) );
-	m_CustomFontFileNames.AddToTail( CUtlSymbol( filename ) );
-	return AddFontResourceExA( localPath, FR_PRIVATE, NULL ) > 0 || AddFontResourceA( localPath ) > 0;
 #else
 	char localPath[4096];
-	vgui2::filesystem()->GetLocalPath( filename, localPath, sizeof( localPath ) );
-	m_CustomFontFileNames.AddToTail( CUtlSymbol( filename ) );
-	return FcInit() == FcTrue && FcConfigAppFontAddFile( NULL, (const FcChar8*)localPath ) == FcTrue;
 #endif
+	if ( !vgui2::filesystem()->GetLocalPath( filename, localPath, sizeof( localPath ) ) )
+		return false;
+
+	CUtlSymbol sym( localPath );
+	for ( int i = 0; i < m_CustomFontFileNames.Count(); i++ )
+	{
+		if ( m_CustomFontFileNames[i] == sym )
+			return true;
+	}
+
+#if defined( _WIN32 )
+	bool added = AddFontResourceExA( localPath, FR_PRIVATE, NULL ) > 0 || AddFontResourceA( localPath ) > 0;
+#else
+	bool added = FcInit() == FcTrue && FcConfigAppFontAddFile( NULL, (const FcChar8*)localPath ) == FcTrue;
+#endif
+	if ( added )
+		m_CustomFontFileNames.AddToTail( sym );
+	return added;
 }
 
 void BaseUISurface::DrawSetSubTextureRGBA( int texture, int x, int y, const unsigned char* rgba, int width, int height )
