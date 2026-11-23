@@ -29,6 +29,7 @@ foreach(name IN ITEMS
 		cxx_toolchain
 		czeror_material_file
 		dedicated_mod_list
+		delta_description_lookup
 		demo_edit_commands
 		dod_vgui2print
 		engine_client_api

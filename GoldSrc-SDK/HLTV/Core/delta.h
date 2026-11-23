@@ -104,7 +104,8 @@ int						DELTA_CheckDelta( unsigned char* from, unsigned char* to, delta_s* pFie
 void					DELTA_WriteHeader( BitBuffer* stream, deltacallback_t* header );
 int						DELTA_WriteDelta( BitBuffer* stream, unsigned char* from, unsigned char* to, bool force,
 							delta_s* pFields, deltacallback_t* header );
-int						DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to, delta_s* pFields );
+int						DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to, delta_s* pFields,
+							int bufferSize );
 int						DELTA_TestDelta( unsigned char* from, unsigned char* to, delta_s* pFields );
 
 void					DELTA_AddEncoder( char* name, encoder_t conditionalencode );

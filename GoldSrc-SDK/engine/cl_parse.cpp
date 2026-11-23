@@ -813,7 +813,9 @@ void CL_Parse_DeltaDescription()
 	Q_strncpy( name, descriptionName, sizeof( name ) - 1 );
 	name[sizeof( name ) - 1] = '\0';
 	delta_t** description = DELTA_LookupRegistration( name );
-	if ( description && *description )
+	if ( !description )
+		Host_Error( "CL_Parse_DeltaDescription:  Unregistered description name %s\n", name );
+	if ( *description )
 		DELTA_FreeDescription( description );
 	MSG_StartBitReading( &net_message );
 	int fieldCount = static_cast<int>( MSG_ReadBits( DELTA_DESCRIPTION_COUNT_BITS ) );
