@@ -338,6 +338,11 @@ void CGameStudioModelRenderer::SavePlayerState( entity_state_t* pplayer )
 
 void GetSequenceInfo( void* pmodel, client_anim_state_t* state, float* frameRate, float* groundSpeed )
 {
+	if ( frameRate )
+		*frameRate = 0;
+	if ( groundSpeed )
+		*groundSpeed = 0;
+
 	if ( !pmodel )
 		return;
 	studiohdr_t* pHeader = (studiohdr_t*)pmodel;
@@ -420,7 +425,7 @@ void CGameStudioModelRenderer::SetupClientAnimation( entity_state_t* pplayer )
 		memcpy( g_clientstate.lv.prevcontroller, g_clientstate.controller, sizeof( g_clientstate.controller ) );
 	}
 	void* pModel = IEngineStudio.Mod_Extradata( ent->model );
-	float frameRate, groundSpeed;
+	float frameRate = 0, groundSpeed = 0;
 	GetSequenceInfo( pModel, &g_clientstate, &frameRate, &groundSpeed );
 	g_clientstate.m_fSequenceLoops = GetSequenceFlags( pModel, &g_clientstate ) & STUDIO_LOOPING;
 	StudioFrameAdvance( &g_clientstate, frameRate, (float)interval );

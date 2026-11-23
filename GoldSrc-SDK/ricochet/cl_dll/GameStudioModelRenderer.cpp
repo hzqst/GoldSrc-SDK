@@ -470,6 +470,11 @@ void CGameStudioModelRenderer::SavePlayerState( entity_state_t *pplayer )
 
 void GetSequenceInfo( void *pmodel, client_anim_state_t *pev, float *pflFrameRate, float *pflGroundSpeed )
 {
+	if ( pflFrameRate )
+		*pflFrameRate = 0.0f;
+	if ( pflGroundSpeed )
+		*pflGroundSpeed = 0.0f;
+
 	studiohdr_t *pstudiohdr;
 	
 	pstudiohdr = (studiohdr_t *)pmodel;
@@ -478,10 +483,8 @@ void GetSequenceInfo( void *pmodel, client_anim_state_t *pev, float *pflFrameRat
 
 	mstudioseqdesc_t	*pseqdesc;
 
-	if (pev->sequence >= pstudiohdr->numseq)
+	if (pev->sequence < 0 || pev->sequence >= pstudiohdr->numseq)
 	{
-		*pflFrameRate = 0.0;
-		*pflGroundSpeed = 0.0;
 		return;
 	}
 
@@ -505,7 +508,7 @@ int GetSequenceFlags( void *pmodel, client_anim_state_t *pev )
 	studiohdr_t *pstudiohdr;
 	
 	pstudiohdr = (studiohdr_t *)pmodel;
-	if ( !pstudiohdr || pev->sequence >= pstudiohdr->numseq )
+	if ( !pstudiohdr || pev->sequence < 0 || pev->sequence >= pstudiohdr->numseq )
 		return 0;
 
 	mstudioseqdesc_t	*pseqdesc;
@@ -556,7 +559,7 @@ void CGameStudioModelRenderer::SetupClientAnimation( entity_state_t *pplayer )
 	double curtime, dt;
 
 	client_anim_state_t *st;
-	float fr, gs;
+	float fr = 0.0f, gs = 0.0f;
 
 	cl_entity_t *ent = IEngineStudio.GetCurrentEntity();
 	assert( ent );

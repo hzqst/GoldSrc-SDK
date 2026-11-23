@@ -77,6 +77,11 @@ static const char* s_boneNames[BONE_MAX] =
 
 void GetSequenceInfo( void* model, client_anim_state_t* state, float* frameRate, float* groundSpeed )
 {
+	if ( frameRate )
+		*frameRate = 0;
+	if ( groundSpeed )
+		*groundSpeed = 0;
+
 	if ( !model )
 		return;
 
@@ -457,8 +462,8 @@ void CGameStudioModelRenderer::SetupClientAnimation( entity_state_t* player )
 		memcpy( g_clientstate.lv.prevcontroller, g_clientstate.controller, sizeof( g_clientstate.controller ) );
 	}
 	void* model = IEngineStudio.Mod_Extradata( ent->model );
-	float frameRate;
-	float groundSpeed;
+	float frameRate = 0;
+	float groundSpeed = 0;
 	GetSequenceInfo( model, &g_clientstate, &frameRate, &groundSpeed );
 	g_clientstate.m_fSequenceLoops = GetSequenceFlags( model, &g_clientstate ) & STUDIO_LOOPING;
 	StudioFrameAdvance( &g_clientstate, frameRate, elapsed );
