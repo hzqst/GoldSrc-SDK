@@ -990,9 +990,8 @@ void SZ_Print( sizebuf_t* buffer, const char* text )
 {
 	int length = Q_strlen( text );
 	std::uint32_t copyLength = static_cast<std::uint32_t>( length ) + 1u;
-	std::uint32_t previousIndex = static_cast<std::uint32_t>( buffer->cursize ) - 1u;
 	byte* destination;
-	if ( buffer->data[static_cast<int>( previousIndex )] )
+	if ( !buffer->cursize || buffer->data[buffer->cursize - 1] )
 		destination = static_cast<byte*>( SZ_GetSpace( buffer, static_cast<int>( copyLength ) ) );
 	else
 		destination = static_cast<byte*>( SZ_GetSpace( buffer, length ) ) - 1;
@@ -1551,13 +1550,15 @@ char* MSG_ReadBitString()
 	qboolean badRead = msg_badread;
 	string[0] = 0;
 	char* output = string;
+	char* outputEnd = string + BIT_STRING_BUFFER_SIZE - 1;
 	while ( !badRead )
 	{
 		char character = static_cast<char>( MSG_ReadBits( CHAR_BIT ) );
 		badRead = msg_badread;
-		if ( !character )
+		if ( badRead || !character )
 			break;
-		*output++ = character;
+		if ( output < outputEnd )
+			*output++ = character;
 	}
 	*output = 0;
 	return string;
@@ -1728,8 +1729,8 @@ void MSG_WriteBitCoord( float coordinate )
 
 	int truncated = static_cast<int>( coordinate );
 	std::uint32_t integer = MSG_CoordinateMagnitude( truncated );
-	int shifted = static_cast<int>( static_cast<std::uint32_t>( truncated ) << 3 );
-	std::uint32_t fraction = MSG_CoordinateMagnitude( shifted ) & 7u;
+	int scaled = static_cast<int>( coordinate * 8.0f );
+	std::uint32_t fraction = MSG_CoordinateMagnitude( scaled ) & 7u;
 	qboolean negative = coordinate <= -COORDINATE_RESOLUTION;
 #if ( defined( HL25_HW_ENGINE ) || defined( SW_RENDERER ) ) && defined( _WIN32 )
 	ASSERT_AT( MSG_IsBitWriting(), 1414 );
