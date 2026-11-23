@@ -74,6 +74,7 @@ foreach(name IN ITEMS
 		scoreboard_selection
 		server_file_consistency
 		server_model
+		server_resource_list
 		serverbrowser_filter_data
 		serverbrowser_filter_string
 		serverbrowser_join_game
