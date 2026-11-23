@@ -91,6 +91,7 @@ foreach(name IN ITEMS
 		spr_load_name
 		static_analysis
 		stream_sound
+		sv_log_address
 		sv_pmove_visibility
 		teamplay_userinfo
 		tfc_text_window
