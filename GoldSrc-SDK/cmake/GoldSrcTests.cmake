@@ -81,6 +81,7 @@ foreach(name IN ITEMS
 		serverbrowser_last_played
 		serverbrowser_password
 		serverbrowser_sort
+		serverinfo_mapcycle
 		skeletal_model
 		sound_msg
 		sound_resample
