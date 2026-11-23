@@ -298,6 +298,50 @@ void CUtlBuffer::GetString( char* pString )
 }
 
 //-----------------------------------------------------------------------------
+// Reads a string into a buffer of maxLength characters, which GetString( char* ) does not bound
+//-----------------------------------------------------------------------------
+void CUtlBuffer::GetString( char* pString, int maxLength )
+{
+	if ( m_Error || maxLength <= 0 )
+	{
+		if ( maxLength > 0 )
+			*pString = 0;
+		return;
+	}
+
+	if ( IsText() )
+	{
+		EatWhiteSpace();
+
+		int count = 0;
+		int lastpos = m_Memory.NumAllocated();
+		while ( m_Get < lastpos )
+		{
+			char c = (char)m_Memory[m_Get];
+			if ( isspace( c ) || !c )
+				break;
+			if ( count < maxLength - 1 )
+				pString[count++] = c;
+			m_Get++;
+		}
+
+		pString[count] = 0;
+		return;
+	}
+
+	int len = (int)strlen( (const char*)&m_Memory[m_Get] ) + 1;
+	if ( len <= maxLength )
+	{
+		Get( pString, len );
+		return;
+	}
+
+	Get( pString, maxLength );
+	pString[maxLength - 1] = 0;
+	SeekGet( SEEK_CURRENT, len - maxLength );
+}
+
+//-----------------------------------------------------------------------------
 // Serialization
 //-----------------------------------------------------------------------------
 

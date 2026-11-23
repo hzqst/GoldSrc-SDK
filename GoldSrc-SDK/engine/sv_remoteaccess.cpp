@@ -96,22 +96,22 @@ void CServerRemoteAccess::WriteDataRequest( const void* buffer, int bufferSize )
 	{
 		char variable[256];
 		char value[512];
-		cmd.GetString( variable );
-		cmd.GetString( value );
+		cmd.GetString( variable, sizeof( variable ) );
+		cmd.GetString( value, sizeof( value ) );
 		SetValue( variable, value );
 		break;
 	}
 	case SERVERDATA_EXECCOMMAND:
 	{
 		char command[512];
-		cmd.GetString( command );
+		cmd.GetString( command, sizeof( command ) );
 		ExecCommand( command );
 		break;
 	}
 	case SERVERDATA_REQUESTVALUE:
 	{
 		char variable[512];
-		cmd.GetString( variable );
+		cmd.GetString( variable, sizeof( variable ) );
 		RequestValue( requestID, variable );
 		break;
 	}

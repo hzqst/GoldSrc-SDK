@@ -48,6 +48,8 @@ public:
 	//		GetString will read a string until a space is reaced
 	int GetInt();
 	void GetString( char* pString );
+	// Copies at most maxLength - 1 characters and always terminates; the rest of the string is skipped.
+	void GetString( char* pString, int maxLength );
 	void Get( void* pMem, int size );
 
 	// Just like scanf, but doesn't work in binary mode
