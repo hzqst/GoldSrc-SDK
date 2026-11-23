@@ -99,6 +99,7 @@ foreach(name IN ITEMS
 		spr_load_name
 		static_analysis
 		stream_sound
+		studio_bounds_bone_anim
 		sv_log_address
 		sv_pmove_visibility
 		teamplay_userinfo

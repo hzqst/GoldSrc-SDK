@@ -565,7 +565,7 @@ int R_StudioComputeBounds( byte* buffer, float* mins, float* maxs )
 		{
 			for ( k = 0; k < pseqdesc[i].numframes; k++ )
 			{
-				R_StudioCalcBonePosition( k, 0.0f, &pbones[j], panim, NULL, pos );
+				R_StudioCalcBonePosition( k, 0.0f, &pbones[j], &panim[j], NULL, pos );
 				R_StudioBoundBone( bonemins, bonemaxs, &bonecount, pos );
 			}
 		}
@@ -4487,7 +4487,7 @@ int R_StudioComputeBounds( byte* buffer, float* mins, float* maxs )
 		{
 			for ( k = 0; k < pseqdesc[i].numframes; k++ )
 			{
-				R_StudioCalcBonePosition( k, 0.0f, &pbones[j], panim, NULL, pos );
+				R_StudioCalcBonePosition( k, 0.0f, &pbones[j], &panim[j], NULL, pos );
 				R_StudioBoundBone( bonemins, bonemaxs, &bonecount, pos );
 			}
 		}
