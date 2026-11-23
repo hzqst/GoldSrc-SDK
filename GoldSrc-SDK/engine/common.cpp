@@ -557,18 +557,17 @@ char* Q_strstr( const char* text, const char* substring )
 char* va( const char* format, ... )
 {
 	constexpr int VA_BUFFER_COUNT = 16;
-	constexpr int VA_BUFFER_STRIDE = 16;
 	constexpr int VA_FORMAT_SIZE = 1024;
-	constexpr int VA_STORAGE_SIZE = 16384;
-	static char string[VA_STORAGE_SIZE];
+	static char string[VA_BUFFER_COUNT][VA_FORMAT_SIZE];
 	static int current;
 
 	va_list arguments;
 	va_start( arguments, format );
 	current = ( current + 1 ) & ( VA_BUFFER_COUNT - 1 );
-	_vsnprintf( string + current * VA_BUFFER_STRIDE, VA_FORMAT_SIZE, format, arguments );
+	_vsnprintf( string[current], VA_FORMAT_SIZE, format, arguments );
+	string[current][VA_FORMAT_SIZE - 1] = 0;
 	va_end( arguments );
-	return string + current * VA_BUFFER_STRIDE;
+	return string[current];
 }
 
 char* vstr( vec_t* vector )
