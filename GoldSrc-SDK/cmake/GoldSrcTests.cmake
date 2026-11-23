@@ -16,6 +16,7 @@ add_test(NAME vgui_game_controls COMMAND vgui_game_controls_tests)
 # One test per line, in alphabetical order, so that tests added in parallel rarely conflict.
 foreach(name IN ITEMS
 		baseui_shutdown
+		bot_isintersecting2d
 		bsp_pas
 		cl_prediction_error
 		client_statusbar_localise

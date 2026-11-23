@@ -248,12 +248,6 @@ inline bool IsIntersecting2D( const Vector &startA, const Vector &endA,
 	}
 
 	float numS = (startA.y - startB.y) * (endB.x - startB.x) - (startA.x - startB.x) * (endB.y - startB.y);
-	if (numS == 0.0f)
-	{
-		// coincident
-		return true;
-	}
-
 	float numT = (startA.y - startB.y) * (endA.x - startA.x) - (startA.x - startB.x) * (endA.y - startA.y);
 
 	float s = numS / denom;
