@@ -685,6 +685,7 @@ qboolean Netchan_Process( netchan_t* chan )
 				SZ_Write( &pbuf->frag_message, net_message.data + msg_readcount + frag_offset[i], frag_length[i] );
 				if ( pbuf->frag_message.flags & FSB_OVERFLOWED )
 				{
+					Netchan_FlushIncoming( chan, i );
 					if ( chan != &cls.netchan )
 						chan->message.flags |= FSB_OVERFLOWED;
 					return FALSE;
@@ -897,6 +898,15 @@ void Netchan_FlushIncoming( netchan_t* chan, int stream )
 	chan->incomingbufs[stream] = NULL;
 }
 
+static void Netchan_DropCopiedFileFragments( netchan_t* chan )
+{
+	SZ_Clear( &net_message );
+	msg_readcount = 0;
+
+	chan->incomingbufs[FRAG_FILE_STREAM] = NULL;
+	chan->incomingready[FRAG_FILE_STREAM] = FALSE;
+}
+
 qboolean Netchan_CopyFileFragments( netchan_t* chan )
 {
 	fragbuf_t *p, *n;
@@ -1065,7 +1075,8 @@ qboolean Netchan_CopyFileFragments( netchan_t* chan )
 		if ( !handle )
 		{
 			Con_Printf( "File open failed %s\n", filename );
-			Netchan_FlushIncoming( chan, FRAG_FILE_STREAM );
+			Mem_Free( buffer );
+			Netchan_DropCopiedFileFragments( chan );
 			return FALSE;
 		}
 
@@ -1132,7 +1143,7 @@ qboolean Netchan_CopyNormalFragments( netchan_t* chan )
 		p = n;
 	}
 
-	if ( !memcmp( net_message.data, hdr, sizeof( hdr ) ) )
+	if ( success && net_message.cursize >= (int)sizeof( hdr ) && !memcmp( net_message.data, hdr, sizeof( hdr ) ) )
 	{
 		uncompressedSize = sizeof( uncompressed );
 		BZ2_bzBuffToBuffDecompress( uncompressed, &uncompressedSize, (char*)( net_message.data + sizeof( hdr ) ),
@@ -1596,40 +1607,36 @@ Netchan_AddBufferToList
 void Netchan_AddBufferToList( fragbuf_t** pplist, fragbuf_t* pbuf )
 {
 	fragbuf_t *p, *n;
+	unsigned short newId;
 
 	pbuf->next = NULL;
 
 	if ( !pplist )
 		return;
 
-	if ( !*pplist )
+	newId = (unsigned short)( (unsigned int)pbuf->bufferid >> 16 );
+	if ( !*pplist || newId < (unsigned short)( (unsigned int)( *pplist )->bufferid >> 16 ) )
 	{
+		pbuf->next = *pplist;
 		*pplist = pbuf;
 		return;
 	}
 
 	p = *pplist;
-	while ( 1 )
+	while ( ( n = p->next ) != NULL )
 	{
-		n = p->next; // Next item in list
-
-		if ( !n )
-		{
-			p->next = pbuf;
-			return;
-		}
-
-		if ( (unsigned short)( (unsigned int)pbuf->bufferid >> 16 )
-			 < (unsigned short)( (unsigned int)n->bufferid >> 16 ) )
+		if ( newId < (unsigned short)( (unsigned int)n->bufferid >> 16 ) )
 		{
 			// Insert here
-			pbuf->next = n->next;
+			pbuf->next = n;
 			p->next = pbuf;
 			return;
 		}
 
 		p = n;
 	}
+
+	p->next = pbuf;
 }
 
 /*
