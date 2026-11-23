@@ -273,12 +273,15 @@ int CKnife::Swing( int fFirst )
 	CBaseEntity* hit = CBaseEntity::Instance( trace.pHit );
 	SetPlayerShieldAnim();
 	m_pPlayer->SetAnimation( PLAYER_ATTACK1 );
-	ClearMultiDamage();
-	if ( m_flNextPrimaryAttack + 0.4 < 0 )
-		hit->TraceAttack( m_pPlayer->pev, 20, gpGlobals->v_forward, &trace, DMG_BULLET | DMG_NEVERGIB );
-	else
-		hit->TraceAttack( m_pPlayer->pev, 15, gpGlobals->v_forward, &trace, DMG_BULLET | DMG_NEVERGIB );
-	ApplyMultiDamage( m_pPlayer->pev, m_pPlayer->pev );
+	if ( hit )
+	{
+		ClearMultiDamage();
+		if ( m_flNextPrimaryAttack + 0.4 < 0 )
+			hit->TraceAttack( m_pPlayer->pev, 20, gpGlobals->v_forward, &trace, DMG_BULLET | DMG_NEVERGIB );
+		else
+			hit->TraceAttack( m_pPlayer->pev, 15, gpGlobals->v_forward, &trace, DMG_BULLET | DMG_NEVERGIB );
+		ApplyMultiDamage( m_pPlayer->pev, m_pPlayer->pev );
+	}
 	if ( hit && hit->Classify() != CLASS_NONE && hit->Classify() != CLASS_MACHINE )
 	{
 		switch ( RANDOM_LONG( 0, 3 ) )
@@ -362,9 +365,12 @@ int CKnife::Stab( int fFirst )
 			damage *= 3;
 	}
 	UTIL_MakeVectors( m_pPlayer->pev->v_angle );
-	ClearMultiDamage();
-	hit->TraceAttack( m_pPlayer->pev, damage, gpGlobals->v_forward, &trace, DMG_BULLET | DMG_NEVERGIB );
-	ApplyMultiDamage( m_pPlayer->pev, m_pPlayer->pev );
+	if ( hit )
+	{
+		ClearMultiDamage();
+		hit->TraceAttack( m_pPlayer->pev, damage, gpGlobals->v_forward, &trace, DMG_BULLET | DMG_NEVERGIB );
+		ApplyMultiDamage( m_pPlayer->pev, m_pPlayer->pev );
+	}
 	if ( hit && hit->Classify() != CLASS_NONE && hit->Classify() != CLASS_MACHINE )
 	{
 		EMIT_SOUND( m_pPlayer->edict(), CHAN_WEAPON, "weapons/knife_stab.wav", 1, ATTN_NORM );
