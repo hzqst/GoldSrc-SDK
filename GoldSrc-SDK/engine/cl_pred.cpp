@@ -54,7 +54,7 @@ void CL_CheckPredictionError()
 		Con_NPrintf( ( pos & 3 ) + 10, "pred. error %.3f units", len );
 	}
 
-	VectorCopy( cl.frames[frame].playerstate[cl.playernum].origin, cl.predicted_origins[frame] );
+	VectorCopy( cl.frames[frame].playerstate[cl.playernum].origin, cl.predicted_origins[cmd] );
 	VectorCopy( delta, cl.prediction_error );
 
 	if ( len > 0.25f && cl.maxclients != 1 )

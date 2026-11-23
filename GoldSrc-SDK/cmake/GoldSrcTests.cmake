@@ -17,6 +17,7 @@ add_test(NAME vgui_game_controls COMMAND vgui_game_controls_tests)
 foreach(name IN ITEMS
 		baseui_shutdown
 		bsp_pas
+		cl_prediction_error
 		client_statusbar_localise
 		commandmenu
 		common_bitstream_szprint
