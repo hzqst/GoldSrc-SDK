@@ -20,6 +20,7 @@ foreach(name IN ITEMS
 		client_statusbar_localise
 		commandmenu
 		common_q_strcpy
+		common_va
 		cstrike_avatar_image
 		cxx_toolchain
 		czeror_material_file
