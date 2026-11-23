@@ -273,13 +273,53 @@ int main()
         assert(0 == g_liveAllocs);
     }
 
-    // 5. Valid BZ2 decompression writes exact uncompressed payload and frees buffers cleanly.
+    // 5. BZ_OK decompression whose actual length is shorter than declared header length is rejected (file).
     {
         ResetCounters();
         netchan_t chan;
-        SetupCompressedFile(chan, "maps/good.bsp", 32);
+        SetupCompressedFile(chan, "maps/short.bsp", 32);
         g_bzResult = BZ_OK;
+        g_bzOutput = "too-short";
+
+        assert(FALSE == Netchan_CopyFileFragments(&chan));
+        assert(1 == g_bzCalls);
+        assert(0 == g_openCalls);
+        assert(0 == g_writeCalls);
+        assert(nullptr == chan.incomingbufs[FRAG_FILE_STREAM]);
+        assert(FALSE == chan.incomingready[FRAG_FILE_STREAM]);
+        assert(0 == g_liveAllocs);
+    }
+
+    // 6. BZ_OK decompression whose actual length is shorter than declared header length is rejected ('!' decal).
+    {
+        ResetCounters();
+        netchan_t chan;
+        char* prior = static_cast<char*>(Mem_Malloc(4));
+        std::memcpy(prior, "keep", 4);
+        chan.tempbuffer = prior;
+        chan.tempbuffersize = 4;
+
+        SetupCompressedFile(chan, "!MD5short", 32);
+        g_bzResult = BZ_OK;
+        g_bzOutput = "too-short";
+
+        assert(FALSE == Netchan_CopyFileFragments(&chan));
+        assert(1 == g_bzCalls);
+        assert(prior == chan.tempbuffer);
+        assert(4 == chan.tempbuffersize);
+        assert(nullptr == chan.incomingbufs[FRAG_FILE_STREAM]);
+        assert(FALSE == chan.incomingready[FRAG_FILE_STREAM]);
+        Mem_Free(chan.tempbuffer);
+        assert(0 == g_liveAllocs);
+    }
+
+    // 7. Valid BZ2 decompression whose actual length matches declared header length writes exact payload.
+    {
+        ResetCounters();
+        netchan_t chan;
         g_bzOutput = "hello-uncompressed";
+        SetupCompressedFile(chan, "maps/good.bsp", static_cast<unsigned int>(g_bzOutput.size()));
+        g_bzResult = BZ_OK;
 
         assert(TRUE == Netchan_CopyFileFragments(&chan));
         assert(1 == g_bzCalls);
