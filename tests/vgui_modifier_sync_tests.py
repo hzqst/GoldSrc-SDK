@@ -124,7 +124,7 @@ int main()
 
 def main():
     v2 = extract('vgui2/BaseUISurface.cpp', 'static void CheckModState()')
-    v1 = extract('vgui_EngineSurfaceWrap.cpp', 'static void CheckModState( vgui::App* app, vgui::SurfaceBase* surface )')
+    v1 = extract('VGUI_EngineSurfaceWrap.cpp', 'static void CheckModState( vgui::App* app, vgui::SurfaceBase* surface )')
     with tempfile.TemporaryDirectory(prefix='goldsrc-vgui-modifier-sync-') as folder:
         work = Path(folder)
         source = work / 'test.cpp'
