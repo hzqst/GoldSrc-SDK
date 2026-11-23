@@ -86,6 +86,7 @@ foreach(name IN ITEMS
 		static_analysis
 		stream_sound
 		sv_pmove_visibility
+		teamplay_userinfo
 		tfc_text_window
 		transparent_entity
 		utl_containers
