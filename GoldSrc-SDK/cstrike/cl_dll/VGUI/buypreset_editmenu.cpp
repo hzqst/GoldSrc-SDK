@@ -203,15 +203,19 @@ void CBuyPresetEditMenu::OnCommand( const char* command )
 			next = SharedParse( next );
 		}
 	}
-	BuyPreset* preset = TheBuyPresets->GetEditPreset( thePresetIndex );
-	if ( !preset && stricmp( command, "Cancel" ) )
-		command = "vguicancel";
 	if ( !stricmp( commandBuf, "Cancel" ) )
 	{
 		if ( numArgs == 1 && !stricmp( args[0], "clear" ) )
 			m_selectedIndex = -1;
 		UpdateButtons();
 		Frame::OnCommand( command );
+		return;
+	}
+	BuyPreset* preset = TheBuyPresets->GetEditPreset( thePresetIndex );
+	if ( !preset )
+	{
+		ShowBuyPresetMainMenu( false, REOPEN_DONTCHANGE );
+		Frame::OnCommand( "vguicancel" );
 		return;
 	}
 	if ( !stricmp( command, "close_with_save_check" ) )

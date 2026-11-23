@@ -26,6 +26,7 @@ foreach(name IN ITEMS
 		common_q_strcpy
 		common_va
 		cstrike_avatar_image
+		cstrike_buypreset_editmenu
 		cxx_toolchain
 		czeror_material_file
 		dedicated_mod_list
