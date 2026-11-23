@@ -312,6 +312,9 @@ void CHalfLifeTeamplay::ChangePlayerTeam( CBasePlayer *pPlayer, const char *pTea
 //=========================================================
 void CHalfLifeTeamplay::ClientUserInfoChanged( CBasePlayer *pPlayer, char *infobuffer )
 {
+	// Set preferences
+	CHalfLifeMultiplay::ClientUserInfoChanged( pPlayer, infobuffer );
+
 	char text[1024];
 
 	// prevent skin/color/model changes
