@@ -64,6 +64,7 @@ foreach(name IN ITEMS
 		localize_utf8
 		mixer_failure
 		network_entity_bounds
+		pack_dead_player_items
 		parse_event_args
 		perf_counter_init
 		playback_demo_commands
