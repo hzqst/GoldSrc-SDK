@@ -36,6 +36,8 @@ public:
 
 	~CBitmapImagePanel() override
 	{
+		delete[] m_pszImageName;
+		delete[] m_pszColorName;
 	}
 
 	void PaintBackground() override;

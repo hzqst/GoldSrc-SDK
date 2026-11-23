@@ -46,6 +46,9 @@ Slider::Slider( Panel* parent, const char* panelName ) : BaseClass( parent, pane
 
 Slider::~Slider()
 {
+	// the captions are text images the slider creates, not child panels
+	delete _leftCaption;
+	delete _rightCaption;
 }
 
 //-----------------------------------------------------------------------------
