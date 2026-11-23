@@ -532,7 +532,6 @@ static qboolean R_StudioBoundsRangeValid( int offset, int count, size_t stride, 
 static qboolean R_StudioBoundsValidateSeqAnim(
 	const byte* data,
 	size_t limit,
-	size_t lookaheadLimit,
 	const mstudioseqdesc_t* pseq,
 	int numbones )
 {
@@ -571,12 +570,6 @@ static qboolean R_StudioBoundsValidateSeqAnim(
 					return FALSE;
 
 				if ( ( (size_t)pspan->num.valid + 1 ) * sizeof( mstudioanimvalue_t ) > limit - offset )
-					return FALSE;
-
-				if ( pspan->num.valid < pspan->num.total &&
-					covered + pspan->num.total <= pseq->numframes &&
-					( offset > lookaheadLimit ||
-						( (size_t)pspan->num.valid + 3 ) * sizeof( mstudioanimvalue_t ) > lookaheadLimit - offset ) )
 					return FALSE;
 
 				covered += pspan->num.total;
@@ -651,18 +644,15 @@ int R_StudioComputeBounds( byte* buffer, int length, float* mins, float* maxs )
 	pseqdesc = (mstudioseqdesc_t*)( buffer + phdr->seqindex );
 	for ( i = 0; i < phdr->numseq; i++ )
 	{
-		byte* groupBuffer = NULL;
+		byte* rawGroup = NULL;
 		const byte* animData = buffer;
 		size_t animLimit = limit;
-		size_t animLookahead = limit;
 
 		if ( pseqdesc[i].seqgroup != 0 )
 		{
 			const mstudioseqgroup_t* pseqgroups;
 			const mstudioseqgroup_t* pseqgroup;
-			byte* rawGroup;
 			int groupLength = 0;
-			const size_t tailBytes = 2 * sizeof( mstudioanimvalue_t );
 
 			if ( pseqdesc[i].seqgroup < 0 || pseqdesc[i].seqgroup >= phdr->numseqgroups )
 				return 0;
@@ -684,25 +674,14 @@ int R_StudioComputeBounds( byte* buffer, int length, float* mins, float* maxs )
 				return 0;
 			}
 
-			groupBuffer = (byte*)Mem_ZeroMalloc( (size_t)groupLength + tailBytes );
-			if ( !groupBuffer )
-			{
-				COM_FreeFile( rawGroup );
-				return 0;
-			}
-
-			Q_memcpy( groupBuffer, rawGroup, groupLength );
-			COM_FreeFile( rawGroup );
-
-			animData = groupBuffer;
+			animData = rawGroup;
 			animLimit = (size_t)groupLength;
-			animLookahead = (size_t)groupLength + tailBytes;
 		}
 
-		if ( !R_StudioBoundsValidateSeqAnim( animData, animLimit, animLookahead, &pseqdesc[i], phdr->numbones ) )
+		if ( !R_StudioBoundsValidateSeqAnim( animData, animLimit, &pseqdesc[i], phdr->numbones ) )
 		{
-			if ( groupBuffer )
-				Mem_Free( groupBuffer );
+			if ( rawGroup )
+				COM_FreeFile( rawGroup );
 			return 0;
 		}
 
@@ -723,8 +702,8 @@ int R_StudioComputeBounds( byte* buffer, int length, float* mins, float* maxs )
 		}
 
 		R_StudioAccumulateBoneVerts( vertmins, vertmaxs, &vertcount, bonemins, bonemaxs, &bonecount );
-		if ( groupBuffer )
-			Mem_Free( groupBuffer );
+		if ( rawGroup )
+			COM_FreeFile( rawGroup );
 	}
 
 	VectorCopy( vertmins, mins );
@@ -1039,7 +1018,7 @@ void R_StudioCalcBonePosition( int frame, float s, mstudiobone_t* pbone, mstudio
 			else
 			{
 				// are we at the end of the repeating values section and there's another section with data?
-				if ( panimvalue->num.total > k + 1 )
+				if ( panimvalue->num.total > k + 1 || s == 0.0f )
 				{
 					value += panimvalue[panimvalue->num.valid].value * pbone->scale[j];
 				}
@@ -4608,7 +4587,6 @@ static qboolean R_StudioBoundsRangeValid( int offset, int count, size_t stride, 
 static qboolean R_StudioBoundsValidateSeqAnim(
 	const byte* data,
 	size_t limit,
-	size_t lookaheadLimit,
 	const mstudioseqdesc_t* pseq,
 	int numbones )
 {
@@ -4647,12 +4625,6 @@ static qboolean R_StudioBoundsValidateSeqAnim(
 					return FALSE;
 
 				if ( ( (size_t)pspan->num.valid + 1 ) * sizeof( mstudioanimvalue_t ) > limit - offset )
-					return FALSE;
-
-				if ( pspan->num.valid < pspan->num.total &&
-					covered + pspan->num.total <= pseq->numframes &&
-					( offset > lookaheadLimit ||
-						( (size_t)pspan->num.valid + 3 ) * sizeof( mstudioanimvalue_t ) > lookaheadLimit - offset ) )
 					return FALSE;
 
 				covered += pspan->num.total;
@@ -4727,18 +4699,15 @@ int R_StudioComputeBounds( byte* buffer, int length, float* mins, float* maxs )
 	pseqdesc = (mstudioseqdesc_t*)( buffer + phdr->seqindex );
 	for ( i = 0; i < phdr->numseq; i++ )
 	{
-		byte* groupBuffer = NULL;
+		byte* rawGroup = NULL;
 		const byte* animData = buffer;
 		size_t animLimit = limit;
-		size_t animLookahead = limit;
 
 		if ( pseqdesc[i].seqgroup != 0 )
 		{
 			const mstudioseqgroup_t* pseqgroups;
 			const mstudioseqgroup_t* pseqgroup;
-			byte* rawGroup;
 			int groupLength = 0;
-			const size_t tailBytes = 2 * sizeof( mstudioanimvalue_t );
 
 			if ( pseqdesc[i].seqgroup < 0 || pseqdesc[i].seqgroup >= phdr->numseqgroups )
 				return 0;
@@ -4760,25 +4729,14 @@ int R_StudioComputeBounds( byte* buffer, int length, float* mins, float* maxs )
 				return 0;
 			}
 
-			groupBuffer = (byte*)Mem_ZeroMalloc( (size_t)groupLength + tailBytes );
-			if ( !groupBuffer )
-			{
-				COM_FreeFile( rawGroup );
-				return 0;
-			}
-
-			Q_memcpy( groupBuffer, rawGroup, groupLength );
-			COM_FreeFile( rawGroup );
-
-			animData = groupBuffer;
+			animData = rawGroup;
 			animLimit = (size_t)groupLength;
-			animLookahead = (size_t)groupLength + tailBytes;
 		}
 
-		if ( !R_StudioBoundsValidateSeqAnim( animData, animLimit, animLookahead, &pseqdesc[i], phdr->numbones ) )
+		if ( !R_StudioBoundsValidateSeqAnim( animData, animLimit, &pseqdesc[i], phdr->numbones ) )
 		{
-			if ( groupBuffer )
-				Mem_Free( groupBuffer );
+			if ( rawGroup )
+				COM_FreeFile( rawGroup );
 			return 0;
 		}
 
@@ -4799,8 +4757,8 @@ int R_StudioComputeBounds( byte* buffer, int length, float* mins, float* maxs )
 		}
 
 		R_StudioAccumulateBoneVerts( vertmins, vertmaxs, &vertcount, bonemins, bonemaxs, &bonecount );
-		if ( groupBuffer )
-			Mem_Free( groupBuffer );
+		if ( rawGroup )
+			COM_FreeFile( rawGroup );
 	}
 
 	VectorCopy( vertmins, mins );
@@ -5118,7 +5076,7 @@ void R_StudioCalcBonePosition( int frame, float s, mstudiobone_t* pbone, mstudio
 			else
 			{
 				// are we at the end of the repeating values section and there's another section with data?
-				if ( panimvalue->num.total > k + 1 )
+				if ( panimvalue->num.total > k + 1 || s == 0.0f )
 				{
 					value += panimvalue[panimvalue->num.valid].value * pbone->scale[j];
 				}
