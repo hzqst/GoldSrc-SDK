@@ -2029,7 +2029,9 @@ static void SV_WriteDeltaDescriptionsToClient( sizebuf_t* message )
 void SV_SendServerinfo( sizebuf_t* message, client_t* client )
 {
 	constexpr int SERVER_INFO_TEXT_BYTES = 2048;
-	constexpr int MAPCYCLE_TEXT_BYTES = 8192;
+	// MSG_ReadString stops after 8191 characters without consuming the terminator,
+	// so cap mapcycle text at 8190 characters to keep the stream aligned.
+	constexpr int MAX_MAPCYCLE_TEXT_LENGTH = 8190;
 	constexpr int SERVER_PRINT_COLOR = 2;
 	char text[SERVER_INFO_TEXT_BYTES];
 	if ( developer.value != 0 || svs.maxclients > 1 )
@@ -2060,8 +2062,8 @@ void SV_SendServerinfo( sizebuf_t* message, client_t* client )
 	byte* mapcycle = COM_LoadFileForMe( mapcyclefile.string, &length );
 	if ( mapcycle && length )
 	{
-		if ( length > MAPCYCLE_TEXT_BYTES )
-			mapcycle[MAPCYCLE_TEXT_BYTES - 1] = 0;
+		if ( length > MAX_MAPCYCLE_TEXT_LENGTH )
+			mapcycle[MAX_MAPCYCLE_TEXT_LENGTH] = 0;
 		MSG_WriteString( message, reinterpret_cast<char*>( mapcycle ) );
 		COM_FreeFile( mapcycle );
 	}
