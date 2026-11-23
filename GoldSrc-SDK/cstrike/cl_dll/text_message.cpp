@@ -38,9 +38,12 @@ int CHudTextMessage::Init()
 
 char* CHudTextMessage::LocaliseTextString( const char* message, char* buffer, int size )
 {
-	int remaining = size;
+	if ( size <= 0 )
+		return buffer;
+
 	char* destination = buffer;
-	for ( const char* source = message; *source && remaining > 0; remaining-- )
+	char* destinationEnd = buffer + size - 1;
+	for ( const char* source = message; *source && destination < destinationEnd; )
 	{
 		if ( *source == '#' )
 		{
@@ -48,7 +51,7 @@ char* CHudTextMessage::LocaliseTextString( const char* message, char* buffer, in
 			static char word_buf[255];
 			char* word = word_buf;
 			const char* start = source++;
-			while ( ( *source >= 'A' && *source <= 'z' ) || ( *source >= '0' && *source <= '9' ) )
+			while ( ( ( *source >= 'A' && *source <= 'z' ) || ( *source >= '0' && *source <= '9' ) ) && word < word_buf + sizeof( word_buf ) - 1 )
 				*word++ = *source++;
 			*word = 0;
 			client_textmessage_t* text = TextMessageGet( word_buf );
@@ -58,17 +61,15 @@ char* CHudTextMessage::LocaliseTextString( const char* message, char* buffer, in
 				*destination++ = *source++;
 				continue;
 			}
-			for ( const char* textSource = text->pMessage; *textSource; textSource++ )
+			for ( const char* textSource = text->pMessage; *textSource && destination < destinationEnd; textSource++ )
 				*destination++ = *textSource;
-			*destination = 0;
 		}
 		else
 		{
 			*destination++ = *source++;
-			*destination = 0;
 		}
 	}
-	buffer[size - 1] = 0;
+	*destination = 0;
 	return buffer;
 }
 

@@ -330,9 +330,12 @@ int CHudSayText::MsgFunc_SendAudio( const char*, int size, void* buffer )
 	char* text = READ_STRING();
 	int pitch = READ_SHORT();
 	FindAudMessage( text, size, pitch );
-	g_PlayerExtraInfo[client].radarflashon = 1;
-	g_PlayerExtraInfo[client].radarflash = gHUD.m_flTime;
-	g_PlayerExtraInfo[client].radarflashes = 22;
+	if ( client > 0 && client <= MAX_PLAYERS )
+	{
+		g_PlayerExtraInfo[client].radarflashon = 1;
+		g_PlayerExtraInfo[client].radarflash = gHUD.m_flTime;
+		g_PlayerExtraInfo[client].radarflashes = 22;
+	}
 	return 1;
 }
 
