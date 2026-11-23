@@ -945,14 +945,17 @@ model_t* R_LoadMapSprite( const char* filename )
 	}
 	model_t* model = Mod_FindName( FALSE, name );
 	model->needload = FALSE;
-	byte* palette;
-	int paletteCount, width, height;
+	byte* palette = NULL;
+	int paletteCount = 0, width = 0, height = 0;
 	LoadBMP8( file, &palette, &paletteCount, &image, &width, &height );
-	if ( width * height == 0 || ( ( width | height ) & 127 ) )
+	if ( !image || !palette || width <= 0 || height <= 0 || ( ( width | height ) & 127 )
+		 || (long long)width * height > 0xC0000 )
 	{
 		Con_Printf( "Wrong image dimesions/color depth in %s\n", name );
-		Mem_Free( palette );
-		Mem_Free( image );
+		if ( palette )
+			Mem_Free( palette );
+		if ( image )
+			Mem_Free( image );
 		Mem_Free( tiles );
 		return NULL;
 	}
