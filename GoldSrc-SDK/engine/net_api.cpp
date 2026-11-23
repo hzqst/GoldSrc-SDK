@@ -361,17 +361,14 @@ static void NET_ParseServerInfoResponse( char* returninfo )
 	Info_SetValueForKey( returninfo, "map", MSG_ReadString(), NETAPI_RESPONSE_SIZE );
 	Info_SetValueForKey( returninfo, "gamedir", MSG_ReadString(), NETAPI_RESPONSE_SIZE );
 	Info_SetValueForKey( returninfo, "gamedesc", MSG_ReadString(), NETAPI_RESPONSE_SIZE );
-	Info_SetValueForKey( returninfo, "current", va( "%i", MSG_ReadLong() ), NETAPI_RESPONSE_SIZE );
-	Info_SetValueForKey( returninfo, "max", va( "%i", MSG_ReadLong() ), NETAPI_RESPONSE_SIZE );
+	Info_SetValueForKey( returninfo, "current", va( "%i", MSG_ReadByte() ), NETAPI_RESPONSE_SIZE );
+	Info_SetValueForKey( returninfo, "max", va( "%i", MSG_ReadByte() ), NETAPI_RESPONSE_SIZE );
 	Info_SetValueForKey( returninfo, "protocol", va( "%i", MSG_ReadByte() ), NETAPI_RESPONSE_SIZE );
 	Info_SetValueForKey( returninfo, "type", va( "%c", MSG_ReadByte() ), NETAPI_RESPONSE_SIZE );
 	Info_SetValueForKey( returninfo, "os", va( "%c", MSG_ReadByte() ), NETAPI_RESPONSE_SIZE );
 
 	const char* password = MSG_ReadByte() == 0 ? "N" : "Y";
 	Info_SetValueForKey( returninfo, "pw", password, NETAPI_RESPONSE_SIZE );
-
-	const char* secure = MSG_ReadByte() == 0 ? "0" : "1";
-	Info_SetValueForKey( returninfo, "secure", secure, NETAPI_RESPONSE_SIZE );
 
 	if ( MSG_ReadByte() != 0 )
 	{
@@ -392,6 +389,9 @@ static void NET_ParseServerInfoResponse( char* returninfo )
 	{
 		Info_SetValueForKey( returninfo, "mod", "N", NETAPI_RESPONSE_SIZE );
 	}
+
+	const char* secure = MSG_ReadByte() == 0 ? "0" : "1";
+	Info_SetValueForKey( returninfo, "secure", secure, NETAPI_RESPONSE_SIZE );
 }
 
 static int NET_ParseServerList()
