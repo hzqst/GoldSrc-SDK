@@ -374,8 +374,8 @@ void EngineSurface::drawSetTextureFile( int id, const char* filename, int hardwa
 	}
 
 	byte* pixels = (byte*)malloc( 1024 * 1024 );
-	int wide;
-	int tall;
+	int wide = 0;
+	int tall = 0;
 #ifdef _WIN32
 	char name[MAX_PATH];
 #else
@@ -390,9 +390,8 @@ void EngineSurface::drawSetTextureFile( int id, const char* filename, int hardwa
 	{
 		_snprintf( name, sizeof( name ), "%s.bmp", filename );
 		FileHandle_t file = FS_Open( name, "rb" );
-		if ( file )
+		if ( file && VGui_LoadBMP( file, pixels, 1024 * 1024, &wide, &tall ) )
 		{
-			VGui_LoadBMP( file, pixels, 1024 * 1024, &wide, &tall );
 			drawSetTextureRGBA( id, (const char*)pixels, wide, tall, hardwareFilter, 0 );
 		}
 	}

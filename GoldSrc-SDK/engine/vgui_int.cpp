@@ -81,6 +81,11 @@ int VGui_LoadBMP( FileHandle_t file, byte* buffer, int bufferSize, int* width, i
 	BITMAPFILEHEADER bmfh;
 	int loaded = 0;
 
+	if ( width )
+		*width = 0;
+	if ( height )
+		*height = 0;
+
 	unsigned int fileSize = FS_Size( file );
 	if ( bufferSize > 0
 		 && fileSize >= sizeof( bmfh ) + sizeof( BITMAPINFOHEADER )

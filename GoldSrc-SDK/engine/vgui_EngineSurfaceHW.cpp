@@ -500,7 +500,8 @@ void EngineSurface::drawSetTextureFile( int id, const char* filename, int hardwa
 		return;
 	}
 	byte* pixels = static_cast<byte*>( std::malloc( SURFACE_IMAGE_BYTES ) );
-	int width, height;
+	int width = 0, height = 0;
+	bool loaded = false;
 	char path[SURFACE_IMAGE_PATH_BYTES];
 	_snprintf( path, sizeof( path ), "%s.tga", filename );
 	if ( LoadTGA( path, pixels, SURFACE_IMAGE_BYTES, &width, &height ) )
@@ -510,19 +511,20 @@ void EngineSurface::drawSetTextureFile( int id, const char* filename, int hardwa
 #endif
 		drawSetTextureRGBA( id, reinterpret_cast<const char*>( pixels ), width, height, hardwareFilter, 0 );
 		texture = staticGetTextureById( id );
+		loaded = true;
 	}
 	else
 	{
 		_snprintf( path, sizeof( path ), "%s.bmp", filename );
 		FileHandle_t file = FS_Open( path, "rb" );
-		if ( file )
+		if ( file && VGui_LoadBMP( file, pixels, SURFACE_IMAGE_BYTES, &width, &height ) )
 		{
-			VGui_LoadBMP( file, pixels, SURFACE_IMAGE_BYTES, &width, &height );
 			drawSetTextureRGBA( id, reinterpret_cast<const char*>( pixels ), width, height, hardwareFilter, 0 );
 			texture = staticGetTextureById( id );
+			loaded = true;
 		}
 	}
-	if ( fs_perf_warnings.value != 0.0f && ( !IsPowerOfTwo( width ) || !IsPowerOfTwo( height ) ) )
+	if ( loaded && fs_perf_warnings.value != 0.0f && ( !IsPowerOfTwo( width ) || !IsPowerOfTwo( height ) ) )
 		Con_DPrintf( "fs_perf_warnings: Resampling non-power-of-2 image '%s' (%dx%d)\n", filename, width, height );
 	std::free( pixels );
 	if ( texture )
