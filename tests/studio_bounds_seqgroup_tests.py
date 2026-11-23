@@ -185,29 +185,11 @@ struct mstudiomodel_t {
     int groupindex;
 };
 
-static int g_liveMemAllocs = 0;
 static int g_liveFileAllocs = 0;
 static int g_loadCalls = 0;
 static std::string g_lastLoadedName;
 static std::map<std::string, std::vector<byte>> g_virtualFiles;
 
-static void* Mem_ZeroMalloc(size_t n)
-{
-    ++g_liveMemAllocs;
-    return std::calloc(1, n);
-}
-static void Mem_Free(void* p)
-{
-    if (p)
-    {
-        --g_liveMemAllocs;
-        std::free(p);
-    }
-}
-static void Q_memcpy(void* d, const void* s, int n)
-{
-    std::memcpy(d, s, static_cast<size_t>(n));
-}
 static byte* COM_LoadFileForMe(char* filename, int* pLength)
 {
     ++g_loadCalls;
@@ -348,12 +330,11 @@ static void RunSuite(ComputeFn computeBounds)
         CheckClose( 60.0f, maxs[0]);
         CheckClose( -2.0f, mins[1]);
         CheckClose(  2.0f, maxs[1]);
-        assert(0 == g_liveMemAllocs);
         assert(0 == g_liveFileAllocs);
     }
 
-    // 2. Repeating span ending at exact EOF of sequence group file (valid=1, total=2, numframes=2):
-    //    R_StudioCalcBonePosition reads panimvalue[valid + 2] on frame 1; zero-padded copy keeps ASan clean.
+    // 2a. Repeating span ending at exact EOF of sequence group file (valid=1, total=2, numframes=2):
+    //     R_StudioCalcBonePosition with s == 0.0f must not read panimvalue[valid + 2] past EOF.
     {
         g_virtualFiles.clear();
         const int groupAnimIndex = sizeof(studioseqhdr_t);
@@ -364,7 +345,38 @@ static void RunSuite(ComputeFn computeBounds)
         assert(1 == computeBounds(mainBuf.data(), static_cast<int>(mainBuf.size()), mins, maxs));
         CheckClose(-2.0f, mins[0]);
         CheckClose( 2.0f, maxs[0]);
-        assert(0 == g_liveMemAllocs);
+        assert(0 == g_liveFileAllocs);
+    }
+
+    // 2b. Repeating span ending at exact EOF of the main MDL buffer (seqgroup == 0):
+    //     Must succeed identically to external sequence groups without OOB read under ASan.
+    {
+        g_virtualFiles.clear();
+        auto base = BuildMainModel(0, 0, 3);
+        const size_t animOff = base.size();
+        // Two spans: [frame 0 -> val 0] then [frames 1..2 repeating val 100], ending at exact EOF.
+        const size_t animBytes = sizeof(mstudioanim_t) + 4 * sizeof(mstudioanimvalue_t);
+        base.resize(animOff + animBytes, 0);
+
+        auto* hdr = reinterpret_cast<studiohdr_t*>(base.data());
+        hdr->length = static_cast<int>(base.size());
+        auto* seq = reinterpret_cast<mstudioseqdesc_t*>(base.data() + hdr->seqindex);
+        seq->animindex = static_cast<int>(animOff);
+
+        auto* anim = reinterpret_cast<mstudioanim_t*>(base.data() + animOff);
+        anim->offset[0] = static_cast<unsigned short>(sizeof(mstudioanim_t));
+        auto* vals = reinterpret_cast<mstudioanimvalue_t*>(base.data() + animOff + sizeof(mstudioanim_t));
+        vals[0].num.valid = 1;
+        vals[0].num.total = 1;
+        vals[1].value = 0;
+        vals[2].num.valid = 1;
+        vals[2].num.total = 2;
+        vals[3].value = 100;
+
+        vec3_t mins, maxs;
+        assert(1 == computeBounds(base.data(), static_cast<int>(base.size()), mins, maxs));
+        CheckClose(-50.0f, mins[0]);
+        CheckClose( 50.0f, maxs[0]);
         assert(0 == g_liveFileAllocs);
     }
 
@@ -374,7 +386,6 @@ static void RunSuite(ComputeFn computeBounds)
         auto mainBuf = BuildMainModel(1, sizeof(studioseqhdr_t), 2);
         vec3_t mins, maxs;
         assert(0 == computeBounds(mainBuf.data(), static_cast<int>(mainBuf.size()), mins, maxs));
-        assert(0 == g_liveMemAllocs);
         assert(0 == g_liveFileAllocs);
     }
 
@@ -386,7 +397,6 @@ static void RunSuite(ComputeFn computeBounds)
         assert(0 == computeBounds(mainTooHigh.data(), static_cast<int>(mainTooHigh.size()), mins, maxs));
         auto mainNeg = BuildMainModel(-1, sizeof(studioseqhdr_t), 2);
         assert(0 == computeBounds(mainNeg.data(), static_cast<int>(mainNeg.size()), mins, maxs));
-        assert(0 == g_liveMemAllocs);
         assert(0 == g_liveFileAllocs);
     }
 
@@ -405,7 +415,6 @@ static void RunSuite(ComputeFn computeBounds)
         truncGroup.pop_back();
         g_virtualFiles["models/test01.mdl"] = truncGroup;
         assert(0 == computeBounds(mainBuf.data(), static_cast<int>(mainBuf.size()), mins, maxs));
-        assert(0 == g_liveMemAllocs);
         assert(0 == g_liveFileAllocs);
     }
 
@@ -422,7 +431,6 @@ static void RunSuite(ComputeFn computeBounds)
 
         vec3_t mins, maxs;
         assert(0 == computeBounds(mainBuf.data(), static_cast<int>(mainBuf.size()), mins, maxs));
-        assert(0 == g_liveMemAllocs);
         assert(0 == g_liveFileAllocs);
     }
 
@@ -442,7 +450,6 @@ static void RunSuite(ComputeFn computeBounds)
         assert(0 == computeBounds(badVerts.data(), static_cast<int>(badVerts.size()), mins, maxs));
 
         assert(0 == computeBounds(badVerts.data(), static_cast<int>(sizeof(studiohdr_t)) - 1, mins, maxs));
-        assert(0 == g_liveMemAllocs);
         assert(0 == g_liveFileAllocs);
     }
 }
@@ -465,8 +472,9 @@ def main():
     ):
         assert extract('r_studio.cpp', sig, 0) == extract('r_studio.cpp', sig, 1), f'SW/HW mismatch for {sig}'
 
-    calc_pos = extract('r_studio.cpp', 'void R_StudioCalcBonePosition(', 1)
+    calc_pos_sig = 'void R_StudioCalcBonePosition( int frame, float s, mstudiobone_t* pbone, mstudioanim_t* panim, float* adj, float* pos )\n{'
     sw_helpers = '\n'.join([
+        extract('r_studio.cpp', calc_pos_sig, 0),
         extract('r_studio.cpp', 'void R_StudioBoundBone(', 0),
         extract('r_studio.cpp', 'vec_t* R_StudioBoundVertex(', 0),
         extract('r_studio.cpp', 'void R_StudioAccumulateBoneVerts(', 0),
@@ -475,6 +483,7 @@ def main():
         extract('r_studio.cpp', 'int R_StudioComputeBounds( byte* buffer,', 0),
     ])
     hw_helpers = '\n'.join([
+        extract('r_studio.cpp', calc_pos_sig, 1),
         extract('r_studio.cpp', 'void R_StudioBoundBone(', 1),
         extract('r_studio.cpp', 'vec_t* R_StudioBoundVertex(', 1),
         extract('r_studio.cpp', 'void R_StudioAccumulateBoneVerts(', 1),
@@ -485,7 +494,6 @@ def main():
 
     wrapped = [
         STUBS,
-        calc_pos,
         'namespace sw_bounds {\n' + sw_helpers + '\n}',
         'namespace hw_bounds {\n' + hw_helpers + '\n}',
         TESTS,
