@@ -141,7 +141,7 @@ static void CheckModState( vgui::App* app, vgui::SurfaceBase* surface )
 	report( KMOD_LSHIFT, vgui::KEY_LSHIFT );
 	report( KMOD_LALT, vgui::KEY_LALT );
 	report( KMOD_LCTRL, vgui::KEY_LCONTROL );
-	report( KMOD_RSHIFT, vgui::KEY_LSHIFT );
+	report( KMOD_RSHIFT, vgui::KEY_RSHIFT );
 	report( KMOD_RALT, vgui::KEY_RALT );
 	report( KMOD_RCTRL, vgui::KEY_RCONTROL );
 	report( KMOD_CAPS, vgui::KEY_CAPSLOCK );
