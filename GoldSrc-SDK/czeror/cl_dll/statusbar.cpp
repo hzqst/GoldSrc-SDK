@@ -105,7 +105,7 @@ void CHudStatusBar::ParseStatusString( int line_num )
 		while ( *src == '\n' )
 			src++; // skip over any newlines
 
-		if ( ( ( src - src_start ) >= MAX_STATUSTEXT_LENGTH ) || ( ( dst - dst_start ) >= MAX_STATUSTEXT_LENGTH ) )
+		if ( ( ( src - src_start ) >= MAX_STATUSTEXT_LENGTH ) || ( ( dst - dst_start ) >= MAX_STATUSTEXT_LENGTH - 1 ) )
 			break;
 
 		int index = atoi( src );
@@ -121,10 +121,11 @@ void CHudStatusBar::ParseStatusString( int line_num )
 			// copy the text, char by char, until we hit a % or a \n
 			while ( *src != '\n' && *src != 0 )
 			{
+				if ( ( dst - dst_start ) >= MAX_STATUSTEXT_LENGTH - 1 )
+					break;
+
 				if ( *src != '%' )
 				{ // just copy the character
-					if ( ( dst - dst_start ) >= MAX_STATUSTEXT_LENGTH )
-						break;
 					*dst = *src;
 					dst++, src++;
 				}
@@ -136,8 +137,6 @@ void CHudStatusBar::ParseStatusString( int line_num )
 					// if it's a %, draw a % sign
 					if ( valtype == '%' )
 					{
-						if ( ( dst - dst_start ) >= MAX_STATUSTEXT_LENGTH )
-							break;
 						*dst = valtype;
 						dst++, src++;
 						continue;
@@ -157,10 +156,11 @@ void CHudStatusBar::ParseStatusString( int line_num )
 
 						// get the string to substitute in place of the %XX
 						char szRepString[MAX_PLAYER_NAME_LENGTH];
+						szRepString[0] = 0;
 						switch ( valtype )
 						{
 						case 'p': // player name
-							if ( indexval < 0 || indexval > MAX_PLAYERS )
+							if ( indexval < 1 || indexval > MAX_PLAYERS )
 							{
 								strcpy( szRepString, "******" );
 								break;
@@ -169,6 +169,7 @@ void CHudStatusBar::ParseStatusString( int line_num )
 							if ( g_PlayerInfoList[indexval].name != NULL )
 							{
 								strncpy( szRepString, g_PlayerInfoList[indexval].name, MAX_PLAYER_NAME_LENGTH );
+								szRepString[MAX_PLAYER_NAME_LENGTH - 1] = 0;
 								m_pflNameColors[line_num] = GetClientColor( indexval );
 							}
 							else
@@ -185,7 +186,7 @@ void CHudStatusBar::ParseStatusString( int line_num )
 							szRepString[0] = 0;
 						}
 
-						for ( char* cp = szRepString; *cp != 0 && ( ( dst - dst_start ) < MAX_STATUSTEXT_LENGTH ); cp++, dst++ )
+						for ( char* cp = szRepString; *cp != 0 && ( ( dst - dst_start ) < MAX_STATUSTEXT_LENGTH - 1 ); cp++, dst++ )
 							*dst = *cp;
 					}
 				}
@@ -198,6 +199,7 @@ void CHudStatusBar::ParseStatusString( int line_num )
 				src++;
 		}
 	}
+	*dst = 0;
 }
 
 int CHudStatusBar::Draw( float )

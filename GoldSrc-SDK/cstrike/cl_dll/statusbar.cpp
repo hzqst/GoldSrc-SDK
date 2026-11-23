@@ -76,7 +76,7 @@ void CHudStatusBar::ParseStatusString(int line)
 	{
 		while (*src == '\n')
 			src++;  // skip over any newlines
-		if (src - text >= 128 || dst - dstStart >= 128)
+		if (src - text >= 128 || dst - dstStart >= 127)
 			break;
 		int index = atoi(src);
 		if (index >= 0 && index < 8 && m_iStatusValues[index])
@@ -89,6 +89,8 @@ void CHudStatusBar::ParseStatusString(int line)
 			// copy the text, char by char, until we hit a % or a \n
 			while (*src != '\n' && *src)
 			{
+				if (dst - dstStart >= 127)
+					break;
 				if (*src != '%')
 				{  // just copy the character
 					*dst++ = *src++;
@@ -100,6 +102,8 @@ void CHudStatusBar::ParseStatusString(int line)
 					*dst++ = *src++;
 					continue;
 				}
+				if (type == 0)
+					break;
 
 				// move over descriptor, then get and move over the index
 				index = atoi(++src);
@@ -109,13 +113,20 @@ void CHudStatusBar::ParseStatusString(int line)
 					continue;
 				int value = m_iStatusValues[index];
 				client_textmessage_t *message;
+				replacement[0] = 0;
 				switch (type)
 				{
 				case 'p':
+					if (value < 1 || value > MAX_PLAYERS)
+					{
+						strcpy(replacement, "******");
+						break;
+					}
 					gEngfuncs.pfnGetPlayerInfo(value, &g_PlayerInfoList[value]);
 					if (g_PlayerInfoList[value].name)
 					{
 						strncpy(replacement, g_PlayerInfoList[value].name, sizeof(replacement));
+						replacement[sizeof(replacement) - 1] = 0;
 						gHUD.m_Health.m_iPlayerLastPointedAt = value;
 						m_pflNameColors[line] = GetClientColor(value);
 					}
@@ -125,14 +136,21 @@ void CHudStatusBar::ParseStatusString(int line)
 					}
 					break;
 				case 'i':  // number
-					g_PlayerExtraInfo[gHUD.m_Health.m_iPlayerLastPointedAt].health = value;
-					g_PlayerExtraInfo[gHUD.m_Health.m_iPlayerLastPointedAt].showhealth = gHUD.m_flTime + 5.0f;
+					if (gHUD.m_Health.m_iPlayerLastPointedAt >= 0 && gHUD.m_Health.m_iPlayerLastPointedAt <= MAX_PLAYERS)
+					{
+						g_PlayerExtraInfo[gHUD.m_Health.m_iPlayerLastPointedAt].health = value;
+						g_PlayerExtraInfo[gHUD.m_Health.m_iPlayerLastPointedAt].showhealth = gHUD.m_flTime + 5.0f;
+					}
 					_snprintf(replacement, sizeof(replacement), "%d", value);
+					replacement[sizeof(replacement) - 1] = 0;
 					break;
 				case 'h':
 					message = TextMessageGet("Health");
 					if (message)
+					{
 						strncpy(replacement, message->pMessage, sizeof(replacement));
+						replacement[sizeof(replacement) - 1] = 0;
+					}
 					else
 						strcpy(replacement, "Health");
 					break;
@@ -142,21 +160,30 @@ void CHudStatusBar::ParseStatusString(int line)
 					case 1:
 						message = TextMessageGet("Friend");
 						if (message)
+						{
 							strncpy(replacement, message->pMessage, sizeof(replacement));
+							replacement[sizeof(replacement) - 1] = 0;
+						}
 						else
 							strcpy(replacement, "Friend");
 						break;
 					case 2:
 						message = TextMessageGet("Enemy");
 						if (message)
+						{
 							strncpy(replacement, message->pMessage, sizeof(replacement));
+							replacement[sizeof(replacement) - 1] = 0;
+						}
 						else
 							strcpy(replacement, "Enemy");
 						break;
 					case 3:
 						message = TextMessageGet("Hostage");
 						if (message)
+						{
 							strncpy(replacement, message->pMessage, sizeof(replacement));
+							replacement[sizeof(replacement) - 1] = 0;
+						}
 						else
 							strcpy(replacement, "Hostage");
 						break;
@@ -165,7 +192,7 @@ void CHudStatusBar::ParseStatusString(int line)
 				default:
 					continue;
 				}
-				for (char *copy = replacement; *copy && dst - dstStart < 128; copy++, dst++)
+				for (char *copy = replacement; *copy && dst - dstStart < 127; copy++, dst++)
 					*dst = *copy;
 			}
 		}
@@ -176,6 +203,7 @@ void CHudStatusBar::ParseStatusString(int line)
 				src++;
 		}
 	}
+	*dst = 0;
 }
 #ifdef _MSC_VER
 #pragma warning(pop)
