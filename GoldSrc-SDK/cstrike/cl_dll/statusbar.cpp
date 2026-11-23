@@ -187,6 +187,9 @@ void CHudStatusBar::ParseStatusString(int line)
 						else
 							strcpy(replacement, "Hostage");
 						break;
+					default:
+						replacement[0] = 0;
+						break;
 					}
 					break;
 				default:

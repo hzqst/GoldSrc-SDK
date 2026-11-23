@@ -233,6 +233,19 @@ int main()
         assert(0 == sb.m_szStatusBar[0][127]);
         assert(127 == std::strlen(sb.m_szStatusBar[0]));
         assert(0x24681357 == sb.sentinel);
+
+        // #512: unknown %c values must produce an empty replacement instead of reading
+        // uninitialized or stale stack bytes from an earlier descriptor.
+        sb.m_iStatusValues[1] = 1;
+        sb.m_iStatusValues[2] = 2;
+        sb.m_iStatusValues[3] = 3;
+        sb.m_iStatusValues[4] = 99;
+        sb.m_iStatusValues[5] = -1;
+        sb.m_iStatusValues[6] = 0;
+        std::strcpy(sb.m_szStatusText[0], "0 %c1|%c2|%c3|[%c4][%c5][%c6]");
+        sb.ParseStatusString(0);
+        assert(0 == std::strcmp(" Friend|Enemy|Hostage|[][][]", sb.m_szStatusBar[0]));
+        assert(0x24681357 == sb.sentinel);
     }
 
     // 5. CStrike SendAudio: out-of-range client index must not write past g_PlayerExtraInfo
