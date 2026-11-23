@@ -362,7 +362,19 @@ vgui2::VPANEL CEnginePanel::IsWithinTraverse( int x, int y, bool traversePopups 
 void CBaseUI::Shutdown()
 {
 	vgui2::ivgui()->RunFrame();
-	staticGameUIFuncs->Shutdown();
+
+	// Delete the root panel before GameUI shuts down and unloads platform modules
+	// (such as ServerBrowser, whose dialogs are only marked for deletion).
+	if ( staticPanel != nullptr )
+	{
+		delete staticPanel;
+		staticPanel = nullptr;
+		staticGameUIPanel = nullptr;
+		staticClientDLLPanel = nullptr;
+	}
+
+	if ( staticGameUIFuncs != nullptr )
+		staticGameUIFuncs->Shutdown();
 
 	char gameDir[32];
 	std::strncpy( gameDir, gEngfuncs.pfnGetGameDirectory(), 31 );
