@@ -100,6 +100,7 @@ foreach(name IN ITEMS
 		static_analysis
 		stream_sound
 		studio_bounds_bone_anim
+		studio_bounds_seqgroup
 		sv_log_address
 		sv_pmove_visibility
 		teamplay_userinfo

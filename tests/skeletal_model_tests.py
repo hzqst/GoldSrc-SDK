@@ -42,7 +42,7 @@ static FileHandle_t FS_Open(const char*, const char*) { return 1; }
 static void* FS_GetReadBuffer(FileHandle_t, int* length) { *length = size; return mapped ? &input : nullptr; }
 static byte* COM_LoadFileForMe(char*, int* length) { *length = size; return reinterpret_cast<byte*>(&input); }
 static int LittleLong(int v) { return v; }
-static int R_StudioComputeBounds(byte*, float*, float*) { ++computed; return 1; }
+static int R_StudioComputeBounds(byte*, int, float*, float*) { ++computed; return 1; }
 static void FS_ReleaseReadBuffer(FileHandle_t, byte*) { ++released; }
 static void COM_FreeFile(byte*) { ++freed; }
 static void FS_Close(FileHandle_t) { ++closed; }
