@@ -81,6 +81,7 @@ foreach(name IN ITEMS
 		perf_counter_init
 		playback_demo_commands
 		scoreboard_selection
+		sequence_info_null_model
 		server_file_consistency
 		server_model
 		server_resource_list
