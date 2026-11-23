@@ -71,6 +71,7 @@ foreach(name IN ITEMS
 		localize_utf8
 		map_sprite_bmp_bounds
 		mixer_failure
+		netapi_serverinfo
 		network_entity_bounds
 		pack_dead_player_items
 		parse_event_args
