@@ -351,6 +351,37 @@ static void BufferWritesNumbersAndText() {
  puts("PASS: CUtlBuffer writes text and binary values and stops at the end of an external buffer");
 }
 
+// sv_remoteaccess.cpp reads RCON request strings into fixed stack buffers with it
+static void BufferReadsBoundedStrings() {
+ const int capacity = 4;
+ char out[capacity + 1];
+ const char textSource[] = "  hello world";
+ std::vector<char> text(textSource, textSource + sizeof(textSource) - 1);
+ CUtlBuffer textBuffer(text.data(), (int)text.size(), true);
+ memset(out, '#', sizeof(out));
+ textBuffer.GetString(out, capacity);
+ assert(std::string("hel") == out && '#' == out[capacity]);
+ textBuffer.GetString(out, capacity);
+ assert(std::string("wor") == out && (int)text.size() == textBuffer.TellGet());
+ CUtlBuffer exactBuffer(text.data(), (int)text.size(), true);
+ char exact[sizeof("hello")];
+ exactBuffer.GetString(exact, sizeof(exact));
+ assert(std::string("hello") == exact);
+ const char binary[] = "hello\0world";
+ std::vector<char> binaryBlock(binary, binary + sizeof(binary));
+ CUtlBuffer binaryBuffer(binaryBlock.data(), (int)binaryBlock.size(), false);
+ memset(out, '#', sizeof(out));
+ binaryBuffer.GetString(out, capacity);
+ assert(std::string("hel") == out && '#' == out[capacity]);
+ binaryBuffer.GetString(out, sizeof(out));
+ assert(std::string("worl") == out && (int)binaryBlock.size() == binaryBuffer.TellGet());
+ CUtlBuffer emptyBuffer(text.data(), (int)text.size(), true);
+ memset(out, '#', sizeof(out));
+ emptyBuffer.GetString(out, 0);
+ assert('#' == out[0] && 0 == emptyBuffer.TellGet());
+ puts("PASS: CUtlBuffer::GetString with a capacity truncates, terminates and skips the rest of the string");
+}
+
 int main() {
  ParsesBlocksCommentsAndEscapes();
  OverlongTokensAreTruncated();
@@ -367,6 +398,7 @@ int main() {
  EscapeAtTheEndStaysInTheBuffer();
  SlashAtTheEndStaysInTheBuffer();
  BufferWritesNumbersAndText();
+ BufferReadsBoundedStrings();
  return 0;
 }
 '''
