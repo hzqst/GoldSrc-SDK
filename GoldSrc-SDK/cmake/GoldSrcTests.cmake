@@ -19,6 +19,7 @@ foreach(name IN ITEMS
 		bsp_pas
 		client_statusbar_localise
 		commandmenu
+		common_normalize_angles
 		common_q_strcpy
 		common_va
 		cstrike_avatar_image

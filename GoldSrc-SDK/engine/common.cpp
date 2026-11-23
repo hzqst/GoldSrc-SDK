@@ -2236,15 +2236,14 @@ void COM_NormalizeAngles( vec_t* angles )
 	for ( int i = 0; i < 3; ++i )
 	{
 		float angle = angles[i];
-		if ( angle > HALF_TURN_DEGREES )
+		if ( angle > HALF_TURN_DEGREES || angle < -HALF_TURN_DEGREES )
 		{
-			float remainder = static_cast<float>( std::fmod( static_cast<double>( angle ), DEGREES_PER_TURN ) );
-			angles[i] = static_cast<float>( static_cast<double>( remainder ) - DEGREES_PER_TURN );
-		}
-		else if ( -HALF_TURN_DEGREES > angle )
-		{
-			float remainder = static_cast<float>( std::fmod( static_cast<double>( angle ), DEGREES_PER_TURN ) );
-			angles[i] = static_cast<float>( static_cast<double>( remainder ) + DEGREES_PER_TURN );
+			double remainder = std::fmod( static_cast<double>( angle ), DEGREES_PER_TURN );
+			if ( remainder > HALF_TURN_DEGREES )
+				remainder -= DEGREES_PER_TURN;
+			else if ( remainder < -HALF_TURN_DEGREES )
+				remainder += DEGREES_PER_TURN;
+			angles[i] = static_cast<float>( remainder );
 		}
 	}
 }
