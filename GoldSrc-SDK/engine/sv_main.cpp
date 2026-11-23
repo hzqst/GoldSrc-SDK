@@ -1662,6 +1662,8 @@ void SV_CreateResourceList()
 	for ( i = 1; sv.generic_precache[i]; i++ )
 	{
 		nSize = ( svs.maxclients > 1 ) ? FS_FileSize( sv.generic_precache[i] ) : 0;
+		if ( nSize < 0 )
+			nSize = 0;
 		SV_AddResource( t_generic, sv.generic_precache[i], nSize, RES_FATALIFMISSING, i );
 	}
 
@@ -1679,6 +1681,8 @@ void SV_CreateResourceList()
 		}
 
 		nSize = ( svs.maxclients > 1 ) ? FS_FileSize( va( "sound/%s", sv.sound_precache[i] ) ) : 0;
+		if ( nSize < 0 )
+			nSize = 0;
 		SV_AddResource( t_sound, sv.sound_precache[i], nSize, 0, i );
 	}
 
@@ -1687,6 +1691,8 @@ void SV_CreateResourceList()
 		nSize = 0;
 		if ( svs.maxclients > 1 && sv.model_precache[i][0] != '*' )
 			nSize = FS_FileSize( sv.model_precache[i] );
+		if ( nSize < 0 )
+			nSize = 0;
 
 		SV_AddResource( t_model, sv.model_precache[i], nSize, sv.model_precache_flags[i], i );
 	}
