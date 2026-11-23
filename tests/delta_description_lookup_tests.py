@@ -247,6 +247,7 @@ static int g_AllocCount = 0;
 static int g_FreeDescCount = 0;
 static int g_ParseDeltaCount = 0;
 static int g_UpdateDescriptionsCount = 0;
+static bool g_TriggerSizeErrorOnParse = false;
 
 struct BitBuffer
 {
@@ -304,6 +305,7 @@ static void ResetCounters()
 	g_FreeDescCount = 0;
 	g_ParseDeltaCount = 0;
 	g_UpdateDescriptionsCount = 0;
+	g_TriggerSizeErrorOnParse = false;
 }
 
 static delta_t** DELTA_LookupRegistration( const char* name )
@@ -331,12 +333,15 @@ static void* Mem_ZeroMalloc( size_t size )
 	return std::calloc( 1, size > 0 ? size : 1 );
 }
 
-static void DELTA_ParseDelta( BitBuffer*, unsigned char* from, unsigned char* to, delta_t* meta )
+static void DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to, delta_t* meta, int bufferSize )
 {
 	assert( meta == &g_MetaDelta );
+	assert( static_cast<int>( sizeof( delta_description_t ) ) == bufferSize );
 	std::memcpy( to, from, sizeof( delta_description_t ) );
 	reinterpret_cast<delta_description_t*>( to )->fieldOffset = 200 + g_ParseDeltaCount;
 	++g_ParseDeltaCount;
+	if ( g_TriggerSizeErrorOnParse )
+		stream->sizeError = true;
 }
 
 static void DELTA_UpdateDescriptions()
@@ -438,13 +443,301 @@ static void RunTests()
 
 	DELTA_FreeDescription( &g_RegisteredDesc );
 	assert( nullptr == g_RegisteredDesc );
+
+	// 6. Stream sizeError mid-loop stops parsing remaining fields early.
+	ResetCounters();
+	g_TriggerSizeErrorOnParse = true;
+	BitBuffer truncatedStream;
+	truncatedStream.nextName = "entity_state_t";
+	truncatedStream.nextFieldCount = 500;
+	world.ParseDeltaDescription( &truncatedStream );
+	assert( true == truncatedStream.sizeError );
+	assert( 1 == g_ParseDeltaCount );
+
+	DELTA_FreeDescription( &g_RegisteredDesc );
+	assert( nullptr == g_RegisteredDesc );
 }
 } // namespace hltv_test
+
+namespace hltv_parse_delta_test
+{
+#define DT_BYTE				1
+#define DT_SHORT			2
+#define DT_FLOAT			4
+#define DT_INTEGER			8
+#define DT_ANGLE			16
+#define DT_TIMEWINDOW_8		32
+#define DT_TIMEWINDOW_BIG	64
+#define DT_STRING			128
+#define DT_SIGNED			( 1u << 31 )
+
+struct delta_stats_t
+{
+	int sendcount;
+	int receivedcount;
+};
+
+struct delta_description_t
+{
+	int fieldType;
+	char fieldName[32];
+	int fieldOffset;
+	short fieldSize;
+	int significant_bits;
+	float premultiply;
+	float postmultiply;
+	short flags;
+	delta_stats_t stats;
+};
+
+struct delta_s
+{
+	int dynamic;
+	int fieldCount;
+	char conditionalencodename[32];
+	void* conditionalencode;
+	delta_description_t* pdd;
+};
+
+static bool g_large_Time_Buffers = false;
+static double g_delta_Time = 0.0;
+
+static bool DELTA_ScaleNearOne( float scale )
+{
+	return scale >= 0.9999f && scale <= 1.0001f;
+}
+
+class BitBuffer
+{
+public:
+	unsigned char* data = nullptr;
+	int maxSize = 0;
+	int bitPos = 0;
+	bool sizeError = false;
+
+	BitBuffer( unsigned char* buf, int size ) : data( buf ), maxSize( size ) {}
+
+	int CurrentBit() const { return bitPos; }
+
+	unsigned int ReadBits( int n )
+	{
+		if ( sizeError || ( bitPos / 8 ) >= maxSize )
+		{
+			sizeError = true;
+			return static_cast<unsigned int>( -1 );
+		}
+		unsigned int result = 0;
+		for ( int i = 0; i < n; ++i )
+		{
+			int byteIdx = bitPos / 8;
+			int bitIdx = bitPos % 8;
+			if ( byteIdx >= maxSize )
+			{
+				sizeError = true;
+				return static_cast<unsigned int>( -1 );
+			}
+			unsigned int bit = ( data[byteIdx] >> bitIdx ) & 1u;
+			result |= ( bit << i );
+			++bitPos;
+		}
+		return result;
+	}
+
+	int ReadSBits( int n )
+	{
+		unsigned int sign = ReadBits( 1 );
+		int val = static_cast<int>( ReadBits( n - 1 ) );
+		return sign ? -val : val;
+	}
+
+	float ReadBitAngle( int n )
+	{
+		unsigned int ui = ReadBits( n );
+		return static_cast<float>( ui ) * ( 360.0f / static_cast<float>( 1 << n ) );
+	}
+
+	float ReadFloat()
+	{
+		unsigned int raw = ReadBits( 32 );
+		float f = 0.0f;
+		std::memcpy( &f, &raw, sizeof( f ) );
+		return f;
+	}
+};
+
+struct BitWriter
+{
+	unsigned char buf[128] = {};
+	int bitPos = 0;
+
+	void WriteBits( unsigned int value, int n )
+	{
+		for ( int i = 0; i < n; ++i )
+		{
+			if ( ( value >> i ) & 1u )
+				buf[bitPos / 8] |= static_cast<unsigned char>( 1u << ( bitPos % 8 ) );
+			++bitPos;
+		}
+	}
+
+	int ByteCount() const { return ( bitPos + 7 ) / 8; }
+};
+'''
+
+HLTV_PARSE_DELTA_CLOSE = r'''
+static void RunTests()
+{
+	// 1. Truncated DT_STRING (hits sizeError mid-string): must terminate and NUL-terminate without OOB/infinite loop.
+	{
+		BitWriter w;
+		w.WriteBits( 1, 3 );    // byteCount = 1
+		w.WriteBits( 0x01, 8 ); // field 0 marked
+		w.WriteBits( 'A', 8 );
+		w.WriteBits( 'B', 8 );  // truncated before NUL!
+
+		BitBuffer stream( w.buf, w.ByteCount() );
+		delta_description_t desc[1] = {};
+		desc[0].fieldType = DT_STRING;
+		desc[0].fieldOffset = 0;
+		delta_s fields = { 0, 1, "", nullptr, desc };
+
+		unsigned char from[8] = {};
+		unsigned char* to = static_cast<unsigned char*>( std::malloc( 8 ) );
+		std::memset( to, 0xCC, 8 );
+		DELTA_ParseDelta( &stream, from, to, &fields, 8 );
+		assert( true == stream.sizeError );
+		assert( 'A' == to[0] );
+		assert( 'B' == to[1] );
+		assert( '\0' == to[2] );
+		std::free( to );
+	}
+
+	// 2. Overlong DT_STRING: clamps writes to bufferSize-1 + NUL and drains remaining wire bytes so field 1 stays aligned.
+	{
+		BitWriter w;
+		w.WriteBits( 1, 3 );    // byteCount = 1
+		w.WriteBits( 0x03, 8 ); // fields 0 and 1 marked
+		const char* longStr = "0123456789ABCDEF";
+		for ( const char* p = longStr; ; ++p )
+		{
+			w.WriteBits( static_cast<unsigned char>( *p ), 8 );
+			if ( *p == '\0' )
+				break;
+		}
+		w.WriteBits( 0x5A, 8 ); // field 1 (DT_BYTE)
+
+		BitBuffer stream( w.buf, w.ByteCount() );
+		delta_description_t desc[2] = {};
+		desc[0].fieldType = DT_STRING;
+		desc[0].fieldOffset = 2; // only 6 bytes remain in 8-byte buffer
+		desc[1].fieldType = DT_BYTE;
+		desc[1].fieldOffset = 0;
+		desc[1].significant_bits = 8;
+		desc[1].premultiply = 1.0f;
+		delta_s fields = { 0, 2, "", nullptr, desc };
+
+		unsigned char from[8] = {};
+		unsigned char* to = static_cast<unsigned char*>( std::calloc( 1, 8 ) );
+		DELTA_ParseDelta( &stream, from, to, &fields, 8 );
+		assert( false == stream.sizeError );
+		assert( 0x5A == to[0] );
+		assert( 0 == std::strcmp( reinterpret_cast<char*>( to + 2 ), "01234" ) );
+		std::free( to );
+	}
+
+	// 3. Unmarked DT_STRING: stops at NUL even when non-zero bytes follow, and clamps non-NUL-terminated source.
+	{
+		BitWriter w;
+		w.WriteBits( 0, 3 ); // byteCount = 0 (all unmarked)
+		BitBuffer stream( w.buf, w.ByteCount() );
+
+		delta_description_t desc[1] = {};
+		desc[0].fieldType = DT_STRING;
+		desc[0].fieldOffset = 0;
+		delta_s fields = { 0, 1, "", nullptr, desc };
+
+		unsigned char from1[6] = { '\0', 'X', 'Y', 'Z', 'W', '!' };
+		unsigned char* to1 = static_cast<unsigned char*>( std::malloc( 6 ) );
+		std::memset( to1, 0xAA, 6 );
+		DELTA_ParseDelta( &stream, from1, to1, &fields, 6 );
+		assert( '\0' == to1[0] );
+		assert( 0xAA == to1[1] ); // must NOT read/copy past leading NUL
+		std::free( to1 );
+
+		BitBuffer stream2( w.buf, w.ByteCount() );
+		unsigned char from2[4] = { 'A', 'B', 'C', 'D' }; // no NUL
+		unsigned char* to2 = static_cast<unsigned char*>( std::malloc( 4 ) );
+		std::memset( to2, 0xAA, 4 );
+		DELTA_ParseDelta( &stream2, from2, to2, &fields, 4 );
+		assert( 0 == std::strcmp( reinterpret_cast<char*>( to2 ), "ABC" ) );
+		std::free( to2 );
+	}
+
+	// 4. Out-of-bounds fieldOffset (negative, >= bufferSize, or partial overflow) must not write outside bufferSize.
+	{
+		BitWriter w;
+		w.WriteBits( 1, 3 );
+		w.WriteBits( 0x0F, 8 ); // 4 fields marked
+		BitBuffer stream( w.buf, w.ByteCount() );
+
+		delta_description_t desc[4] = {};
+		desc[0].fieldType = DT_BYTE;
+		desc[0].fieldOffset = -1;
+		desc[1].fieldType = DT_BYTE;
+		desc[1].fieldOffset = 4;
+		desc[2].fieldType = DT_SHORT;
+		desc[2].fieldOffset = 3; // needs 2 bytes, only 1 left
+		desc[3].fieldType = DT_INTEGER;
+		desc[3].fieldOffset = 2; // needs 4 bytes, only 2 left
+		delta_s fields = { 0, 4, "", nullptr, desc };
+
+		unsigned char from[4] = {};
+		unsigned char* to = static_cast<unsigned char*>( std::calloc( 1, 4 ) );
+		DELTA_ParseDelta( &stream, from, to, &fields, 4 );
+		for ( int i = 0; i < 4; ++i )
+			assert( 0 == to[i] );
+		std::free( to );
+	}
+
+	// 5. fieldCount > 64: index 64 must not alias bit 32 in words[1].
+	{
+		BitWriter w;
+		w.WriteBits( 5, 3 ); // 5 mask bytes (bits 0..39)
+		w.WriteBits( 0, 8 );
+		w.WriteBits( 0, 8 );
+		w.WriteBits( 0, 8 );
+		w.WriteBits( 0, 8 );
+		w.WriteBits( 0x01, 8 ); // bit 32 set!
+		w.WriteBits( 0x77, 8 ); // value for field 32
+		BitBuffer stream( w.buf, w.ByteCount() );
+
+		delta_description_t desc[65] = {};
+		for ( int i = 0; i < 65; ++i )
+		{
+			desc[i].fieldType = DT_BYTE;
+			desc[i].fieldOffset = 2; // scratch offset
+			desc[i].significant_bits = 8;
+			desc[i].premultiply = 1.0f;
+		}
+		desc[32].fieldOffset = 0;
+		desc[64].fieldOffset = 1;
+		delta_s fields = { 0, 65, "", nullptr, desc };
+
+		unsigned char from[4] = { 0x11, 0x22, 0x00, 0x00 };
+		unsigned char to[4] = {};
+		DELTA_ParseDelta( &stream, from, to, &fields, 4 );
+		assert( false == stream.sizeError );
+		assert( 0x77 == to[0] ); // field 32 read from stream
+		assert( 0x22 == to[1] ); // field 64 copied from baseline, NOT read from stream
+	}
+}
+} // namespace hltv_parse_delta_test
 
 int main()
 {
 	engine_test::RunTests();
 	hltv_test::RunTests();
+	hltv_parse_delta_test::RunTests();
 	return 0;
 }
 '''
@@ -453,16 +746,24 @@ int main()
 def main():
     engine_fn = extract('engine/cl_parse.cpp', 'void CL_Parse_DeltaDescription()\n{')
     hltv_fn = extract('HLTV/Core/World.cpp', 'void World::ParseDeltaDescription( BitBuffer* stream )\n{')
+    hltv_parse_delta_fn = extract(
+        'HLTV/Core/delta.cpp',
+        'int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to, delta_s* pFields, int bufferSize )\n{',
+    )
     with tempfile.TemporaryDirectory(prefix='goldsrc-delta-description-lookup-') as folder:
         work = Path(folder)
         source = work / 'test.cpp'
         source.write_text(
-            '\n'.join([ENGINE_STUBS, engine_fn, ENGINE_CLOSE, HLTV_STUBS, hltv_fn, HLTV_CLOSE]),
+            '\n'.join([
+                ENGINE_STUBS, engine_fn, ENGINE_CLOSE,
+                HLTV_STUBS, hltv_fn, HLTV_CLOSE,
+                hltv_parse_delta_fn, HLTV_PARSE_DELTA_CLOSE,
+            ]),
             encoding='utf-8',
         )
         executable = compile_program([source], work / 'test', sanitizers=['address', 'undefined'])
         subprocess.run([str(executable)], cwd=work, check=True)
-    print('PASS: delta description lookup rejects unregistered names in Engine and HLTV')
+    print('PASS: delta description lookup and HLTV DELTA_ParseDelta bounds checks')
 
 
 if __name__ == '__main__':

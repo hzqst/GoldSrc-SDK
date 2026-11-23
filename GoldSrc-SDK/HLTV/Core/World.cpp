@@ -356,7 +356,8 @@ void World::ParseEvent( BitBuffer* stream )
 {
 	event_args_t nullargs;
 
-	DELTA_ParseDelta( stream, (unsigned char*)&nullargs, (unsigned char*)&nullargs, g_peventdelta );
+	DELTA_ParseDelta( stream, (unsigned char*)&nullargs, (unsigned char*)&nullargs, g_peventdelta,
+			sizeof( nullargs ) );
 }
 
 void World::WriteSigonData( BitBuffer* stream )
@@ -456,7 +457,12 @@ void World::ParseDeltaDescription( BitBuffer* stream )
 	( *ppdelta )->dynamic = 1;
 	( *ppdelta )->fieldCount = count;
 	for ( i = 0; i < count; ++i )
-		DELTA_ParseDelta( stream, (unsigned char*)&nulldesc, (unsigned char*)&pdesc[i], &g_MetaDelta );
+	{
+		if ( stream->sizeError )
+			break;
+		DELTA_ParseDelta( stream, (unsigned char*)&nulldesc, (unsigned char*)&pdesc[i], &g_MetaDelta,
+				sizeof( delta_description_t ) );
+	}
 	( *ppdelta )->pdd = pdesc;
 	stream->EndBitMode();
 	DELTA_UpdateDescriptions();
@@ -620,7 +626,8 @@ void World::ParseBaseline( BitBuffer* stream )
 			fields = *playerDelta;
 		else
 			fields = *entityDelta;
-		DELTA_ParseDelta( stream, (unsigned char*)&nullstate, (unsigned char*)&entstate, fields );
+		DELTA_ParseDelta( stream, (unsigned char*)&nullstate, (unsigned char*)&entstate, fields,
+				sizeof( entstate ) );
 		entstate.entityType = type;
 		AddBaselineEntity( index, &entstate );
 		++count;
@@ -632,7 +639,8 @@ void World::ParseBaseline( BitBuffer* stream )
 	for ( i = 0; (int)i < max_instanced_baseline; ++i )
 	{
 		memset( &entstate, 0, sizeof( entstate ) );
-		DELTA_ParseDelta( stream, (unsigned char*)&nullstate, (unsigned char*)&entstate, *entityDelta );
+		DELTA_ParseDelta( stream, (unsigned char*)&nullstate, (unsigned char*)&entstate, *entityDelta,
+				sizeof( entstate ) );
 		AddInstancedBaselineEntity( (int)i, &entstate );
 	}
 	if ( max_instanced_baseline != 0 )
@@ -708,12 +716,13 @@ bool World::UncompressEntitiesFromStream( frame_t* frame, BitBuffer* stream )
 
 			if ( !custom )
 			{
-				DELTA_ParseDelta( stream, from, (unsigned char*)to, DeltaFields( false, entityNumber, this ) );
+				DELTA_ParseDelta( stream, from, (unsigned char*)to, DeltaFields( false, entityNumber, this ),
+						sizeof( entity_state_t ) );
 				to->entityType = 1;
 			}
 			else
 			{
-				DELTA_ParseDelta( stream, from, (unsigned char*)to, g_pcustomentitydelta );
+				DELTA_ParseDelta( stream, from, (unsigned char*)to, g_pcustomentitydelta, sizeof( entity_state_t ) );
 				to->entityType = 2;
 			}
 			to->number = entityNumber;
@@ -1382,7 +1391,8 @@ bool World::GetClientData( frame_t* frame, clientdata_t* clientData )
 	{
 		BitBuffer stream( frame->clientData, frame->clientDataSize );
 		stream.StartBitMode();
-		DELTA_ParseDelta( &stream, (unsigned char*)&baseline, (unsigned char*)clientData, g_pclientdelta );
+		DELTA_ParseDelta( &stream, (unsigned char*)&baseline, (unsigned char*)clientData, g_pclientdelta,
+				sizeof( clientdata_t ) );
 	}
 	return true;
 }
@@ -1509,13 +1519,14 @@ bool World::UncompressEntitiesFromStream( frame_t* frame, BitBuffer* stream, uns
 				dest = (unsigned char*)&newEnts[newindex];
 				if ( custom )
 				{
-					DELTA_ParseDelta( stream, (unsigned char*)&oldEnts[oldindex], dest, g_pcustomentitydelta );
+					DELTA_ParseDelta( stream, (unsigned char*)&oldEnts[oldindex], dest, g_pcustomentitydelta,
+							sizeof( entity_state_t ) );
 					newEnts[newindex].entityType = 2;
 				}
 				else
 				{
 					DELTA_ParseDelta( stream, (unsigned char*)&oldEnts[oldindex], dest,
-							DeltaFields( false, newnum, this ) );
+							DeltaFields( false, newnum, this ), sizeof( entity_state_t ) );
 					newEnts[newindex].entityType = 1;
 				}
 				newEnts[newindex].number = newnum;
@@ -1541,12 +1552,13 @@ bool World::UncompressEntitiesFromStream( frame_t* frame, BitBuffer* stream, uns
 			dest = (unsigned char*)&newEnts[newindex];
 			if ( custom )
 			{
-				DELTA_ParseDelta( stream, fromState, dest, g_pcustomentitydelta );
+				DELTA_ParseDelta( stream, fromState, dest, g_pcustomentitydelta, sizeof( entity_state_t ) );
 				newEnts[newindex].entityType = 2;
 			}
 			else
 			{
-				DELTA_ParseDelta( stream, fromState, dest, DeltaFields( false, newnum, this ) );
+				DELTA_ParseDelta( stream, fromState, dest, DeltaFields( false, newnum, this ),
+						sizeof( entity_state_t ) );
 				newEnts[newindex].entityType = 1;
 			}
 			newEnts[newindex].number = newnum;
@@ -1588,14 +1600,16 @@ void World::ParseClientData( BitBuffer* stream, unsigned int deltaSeqNr, BitBuff
 	if ( deltaSeqNr != 0 && !GetClientData( deltaSeqNr, &fromClientData ) )
 		m_System->Printf( "WARNING! World::ParseClientData: couldn't uncompress delta frame %i\n", deltaSeqNr );
 
-	DELTA_ParseDelta( stream, (unsigned char*)&fromClientData, (unsigned char*)clientData, g_pclientdelta );
+	DELTA_ParseDelta( stream, (unsigned char*)&fromClientData, (unsigned char*)clientData, g_pclientdelta,
+			sizeof( clientdata_t ) );
 	to->StartBitMode();
 	DELTA_WriteDelta( to, (unsigned char*)&nullClientData, (unsigned char*)clientData, true, g_pclientdelta, NULL );
 	to->EndBitMode();
 	while ( stream->ReadBit() != 0 )
 	{
 		stream->ReadBits( 6 );
-		DELTA_ParseDelta( stream, (unsigned char*)&nullWeaponData, (unsigned char*)&nullWeaponData, g_pweapondelta );
+		DELTA_ParseDelta( stream, (unsigned char*)&nullWeaponData, (unsigned char*)&nullWeaponData, g_pweapondelta,
+				sizeof( nullWeaponData ) );
 	}
 }
 

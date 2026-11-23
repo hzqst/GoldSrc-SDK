@@ -766,7 +766,7 @@ int DELTA_WriteDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 	return 1;
 }
 
-int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to, delta_s* pFields )
+int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to, delta_s* pFields, int bufferSize )
 {
 	int startbit;
 	int bits[2];
@@ -779,9 +779,16 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 	bits[0] = 0;
 	bits[1] = 0;
 	byteCount = (int)stream->ReadBits( 3 );
+	if ( stream->sizeError || byteCount < 0 || byteCount > (int)sizeof( bits ) )
+		return stream->CurrentBit() - startbit;
+
 	packed = (unsigned char*)bits;
 	for ( i = 0; i < byteCount; i++ )
+	{
 		packed[i] = (unsigned char)stream->ReadBits( 8 );
+		if ( stream->sizeError )
+			return stream->CurrentBit() - startbit;
+	}
 
 	words = (unsigned int*)bits;
 	for ( i = 0; i < pFields->fieldCount; i++ )
@@ -794,11 +801,14 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 		int marked;
 
 		pdd = &pFields->pdd[i];
+		offset = pdd->fieldOffset;
+		if ( offset < 0 || offset >= bufferSize )
+			continue;
+
 		raw = (unsigned int)pdd->fieldType;
 		type = raw & ~DT_SIGNED;
 		isSigned = ( raw & DT_SIGNED ) != 0;
-		offset = pdd->fieldOffset;
-		marked = ( words[i > 31] & ( 1u << ( i & 31 ) ) ) != 0;
+		marked = ( i < 64 ) && ( ( words[i > 31] & ( 1u << ( i & 31 ) ) ) != 0 );
 
 		if ( !marked )
 		{
@@ -808,28 +818,47 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 			}
 			else if ( type == DT_SHORT )
 			{
-				*(unsigned short*)( to + offset ) = *(unsigned short*)( from + offset );
+				if ( bufferSize - offset >= (int)sizeof( unsigned short ) )
+					*(unsigned short*)( to + offset ) = *(unsigned short*)( from + offset );
 			}
 			else if ( type == DT_FLOAT || type == DT_INTEGER || type == DT_ANGLE ||
 				type == DT_TIMEWINDOW_8 || type == DT_TIMEWINDOW_BIG )
 			{
-				*(unsigned int*)( to + offset ) = *(unsigned int*)( from + offset );
+				if ( bufferSize - offset >= (int)sizeof( unsigned int ) )
+					*(unsigned int*)( to + offset ) = *(unsigned int*)( from + offset );
 			}
 			else if ( type == DT_STRING )
 			{
 				unsigned char* src;
 				unsigned char* dst;
+				int copied;
+				bool ended;
 
 				src = from + offset;
 				dst = to + offset;
-				do
+				copied = 0;
+				ended = false;
+				while ( copied < bufferSize - offset )
 				{
-					*dst++ = *src++;
+					unsigned char ch;
+
+					ch = *src++;
+					*dst++ = ch;
+					copied++;
+					if ( ch == 0 )
+					{
+						ended = true;
+						break;
+					}
 				}
-				while ( *src != 0 );
+				if ( !ended && copied > 0 )
+					dst[-1] = 0;
 			}
 			continue;
 		}
+
+		if ( stream->sizeError )
+			break;
 
 		pdd->stats.receivedcount++;
 
@@ -856,6 +885,9 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 		}
 		else if ( type == DT_SHORT )
 		{
+			if ( bufferSize - offset < (int)sizeof( short ) )
+				continue;
+
 			if ( isSigned )
 			{
 				int value;
@@ -879,6 +911,9 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 		{
 			float decoded;
 
+			if ( bufferSize - offset < (int)sizeof( float ) )
+				continue;
+
 			if ( isSigned )
 				decoded = (float)stream->ReadSBits( pdd->significant_bits );
 			else
@@ -889,6 +924,9 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 		}
 		else if ( type == DT_INTEGER )
 		{
+			if ( bufferSize - offset < (int)sizeof( int ) )
+				continue;
+
 			if ( isSigned )
 			{
 				int value;
@@ -912,11 +950,17 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 		}
 		else if ( type == DT_ANGLE )
 		{
+			if ( bufferSize - offset < (int)sizeof( float ) )
+				continue;
+
 			*(float*)( to + offset ) = stream->ReadBitAngle( pdd->significant_bits );
 		}
 		else if ( type == DT_TIMEWINDOW_8 )
 		{
 			float value;
+
+			if ( bufferSize - offset < (int)sizeof( float ) )
+				continue;
 
 			if ( g_large_Time_Buffers )
 				value = stream->ReadFloat();
@@ -927,6 +971,9 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 		else if ( type == DT_TIMEWINDOW_BIG )
 		{
 			float value;
+
+			if ( bufferSize - offset < (int)sizeof( float ) )
+				continue;
 
 			if ( g_large_Time_Buffers )
 			{
@@ -945,16 +992,42 @@ int DELTA_ParseDelta( BitBuffer* stream, unsigned char* from, unsigned char* to,
 		}
 		else if ( type == DT_STRING )
 		{
-			unsigned char* text;
-			unsigned char ch;
+			unsigned char* dst;
+			int copied;
+			bool ended;
 
-			text = to + offset;
-			do
+			dst = to + offset;
+			copied = 0;
+			ended = false;
+			while ( !stream->sizeError )
 			{
+				unsigned char ch;
+
 				ch = (unsigned char)stream->ReadBits( 8 );
-				*text++ = ch;
+				if ( stream->sizeError )
+					break;
+				if ( copied < bufferSize - offset )
+				{
+					*dst++ = ch;
+					copied++;
+					if ( ch == 0 )
+					{
+						ended = true;
+						break;
+					}
+				}
+				else if ( ch == 0 )
+				{
+					break;
+				}
 			}
-			while ( ch != 0 );
+			if ( !ended )
+			{
+				if ( copied < bufferSize - offset )
+					*dst = 0;
+				else if ( copied > 0 )
+					dst[-1] = 0;
+			}
 		}
 	}
 
