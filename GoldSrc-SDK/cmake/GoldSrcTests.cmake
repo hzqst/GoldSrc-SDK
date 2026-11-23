@@ -64,6 +64,7 @@ foreach(name IN ITEMS
 		localize_save
 		localize_set_value
 		localize_utf8
+		map_sprite_bmp_bounds
 		mixer_failure
 		network_entity_bounds
 		pack_dead_player_items

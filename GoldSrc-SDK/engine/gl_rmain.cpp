@@ -1181,8 +1181,11 @@ model_t* R_LoadMapSprite( const char* filename )
 			return NULL;
 		}
 
+		width = 0;
+		height = 0;
 		LoadBMP8( file, &palette, &numcolors, &indexed, &width, &height );
-		if ( !indexed || !palette )
+		if ( !indexed || !palette || width <= 0 || height <= 0
+			 || (long long)width * height * 4 > MAP_IMAGE_SIZE )
 		{
 			Con_Printf( "Error loading %s\n", path );
 			Mem_Free( pixels );
