@@ -718,7 +718,9 @@ void ListPanel::DeleteAllItems()
 		m_ColumnsData[m_ColumnsHistory[i]].m_SortedTree.RemoveAll();
 	for ( int i = m_DataItems.Head(); i != m_DataItems.InvalidIndex(); i = m_DataItems.Next( i ) )
 	{
-		ListPanelItem* item = m_DataItems[i];
+		// AddItem creates FastSortListPanelItem and ListPanelItem has no virtual destructor, so delete it as
+		// that type, as RemoveItem does
+		FastSortListPanelItem* item = (FastSortListPanelItem*)m_DataItems[i];
 		if ( item )
 		{
 			if ( item->kv )
