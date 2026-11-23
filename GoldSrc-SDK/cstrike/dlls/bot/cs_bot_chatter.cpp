@@ -1008,14 +1008,22 @@ void BotChatterInterface::ReportEnemies( void )
 
 void BotChatterInterface::AddStatement( BotStatement *statement, bool mustSpeak )
 {
+	if ( !statement )
+		return;
 	if ( cv_bot_chatter.string )
 	{
 		int mode = toupper( static_cast<unsigned char>(cv_bot_chatter.string[0]) );
 		if ( mode == 'O' || (mode == 'M' && !statement->IsImportant()) )
+		{
+			delete statement;
 			return;
+		}
 	}
 	if ( !m_bot->IsAlive() && !mustSpeak )
+	{
+		delete statement;
 		return;
+	}
 	if ( statement->m_phraseCount == 0 )
 	{
 		delete statement;
