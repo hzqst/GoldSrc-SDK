@@ -726,14 +726,18 @@ void CBasePlayer::PackDeadPlayerItems( void )
 						// this is the active item. Pack it.
 						rgpPackWeapons[nIndex] = pWeapon;
 
-						//Reload the weapon before dropping it if we have ammo
-						int j = min( pWeapon->iMaxClip() - pWeapon->m_iClip, m_rgAmmo[pWeapon->m_iPrimaryAmmoType] );
+						// Reload the weapon before dropping it if we have ammo. Weapons without a clip
+						// (or without ammo at all, whose ammo index is -1) have nothing to reload.
+						if ( pWeapon->iMaxClip() != WEAPON_NOCLIP && pWeapon->m_iPrimaryAmmoType >= 0 && pWeapon->m_iPrimaryAmmoType < MAX_AMMO_SLOTS )
+						{
+							int j = min( pWeapon->iMaxClip() - pWeapon->m_iClip, m_rgAmmo[pWeapon->m_iPrimaryAmmoType] );
 
-						// Add them to the clip
-						pWeapon->m_iClip += j;
-						m_rgAmmo[pWeapon->m_iPrimaryAmmoType] -= j;
+							// Add them to the clip
+							pWeapon->m_iClip += j;
+							m_rgAmmo[pWeapon->m_iPrimaryAmmoType] -= j;
 
-						TabulateAmmo();
+							TabulateAmmo();
+						}
 					}
 					break;
 
