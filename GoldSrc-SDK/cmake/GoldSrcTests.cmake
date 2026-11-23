@@ -26,6 +26,7 @@ foreach(name IN ITEMS
 		common_q_strcpy
 		common_va
 		cstrike_avatar_image
+		cstrike_bot_chatter_leak
 		cstrike_buypreset_editmenu
 		cstrike_knife_null_hit
 		cstrike_select_next_item
