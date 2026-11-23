@@ -39,6 +39,7 @@ constexpr int FRAG_NORMAL_STREAM = 0;
 constexpr int FRAG_FILE_STREAM = 1;
 constexpr int MAX_STREAMS = 2;
 constexpr int FRAGMENT_SIZE = 1400;
+constexpr int BZ_OK = 0;
 constexpr std::uint16_t FSB_ALLOWOVERFLOW = 1;
 constexpr std::uint16_t FSB_OVERFLOWED = 2;
 using FileHandle_t = void*;

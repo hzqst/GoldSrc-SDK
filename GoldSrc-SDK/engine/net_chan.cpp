@@ -1038,9 +1038,18 @@ qboolean Netchan_CopyFileFragments( netchan_t* chan )
 
 	if ( bCompressed )
 	{
-		uncompressed = (char*)Mem_Malloc( uncompressedSize );
+		uncompressed = uncompressedSize ? (char*)Mem_Malloc( uncompressedSize ) : NULL;
 		Con_DPrintf( "Decompressing file %s (%d -> %d)\n", filename, nsize, (int)uncompressedSize );
-		BZ2_bzBuffToBuffDecompress( uncompressed, &uncompressedSize, buffer, nsize, 1, 0 );
+		if ( !uncompressed ||
+			BZ2_bzBuffToBuffDecompress( uncompressed, &uncompressedSize, buffer, nsize, 1, 0 ) != BZ_OK )
+		{
+			Con_Printf( "Decompression failed for %s\n", filename );
+			if ( uncompressed )
+				Mem_Free( uncompressed );
+			Mem_Free( buffer );
+			Netchan_DropCopiedFileFragments( chan );
+			return FALSE;
+		}
 		Mem_Free( buffer );
 		filesize = uncompressedSize;
 		buffer = uncompressed;
