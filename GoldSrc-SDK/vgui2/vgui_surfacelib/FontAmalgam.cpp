@@ -28,6 +28,9 @@ CFontAmalgam::CFontAmalgam()
 	m_Fonts.EnsureCapacity( 4 );
 	m_iMaxHeight = 0;
 	m_iMaxWidth = 0;
+	// CFontManager::GetFontByName compares the name of every font, including those CreateFont made that
+	// AddGlyphSetToFont has not named yet.
+	m_szName[0] = 0;
 }
 
 CFontAmalgam::~CFontAmalgam()
