@@ -201,24 +201,20 @@ void SV_AddLogAddress_f()
 
 	if ( firstLog )
 	{
-		for ( list = firstLog; list->next; list = list->next )
+		LOGLIST_T* tail = NULL;
+		for ( list = firstLog; list; list = list->next )
 		{
 			if ( !memcmp( list->log.net_address.ip, adr.ip, sizeof( adr.ip ) ) && list->log.net_address.port == adr.port )
 			{
 				Con_Printf( "logaddress_add:  address already in list\n" );
 				return;
 			}
-		}
-
-		if ( !memcmp( firstLog->log.net_address.ip, adr.ip, sizeof( adr.ip ) ) && firstLog->log.net_address.port == adr.port )
-		{
-			Con_Printf( "logaddress_add:  address already in list\n" );
-			return;
+			tail = list;
 		}
 
 		node = (LOGLIST_T*)malloc( sizeof( LOGLIST_T ) );
 		if ( node )
-			list->next = node;
+			tail->next = node;
 	}
 	else
 	{
@@ -297,7 +293,7 @@ void SV_DelLogAddress_f()
 	if ( prev )
 		prev->next = list->next;
 	else
-		firstLog = NULL;
+		firstLog = list->next;
 
 	Con_Printf( "deleting:  %s\n", NET_AdrToString( adr ) );
 	free( list );
