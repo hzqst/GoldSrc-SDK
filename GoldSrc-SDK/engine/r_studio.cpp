@@ -520,10 +520,79 @@ void R_StudioAccumulateBoneVerts(
 	*bonecount = 0;
 }
 
-int R_StudioComputeBounds( byte* buffer, float* mins, float* maxs )
+static qboolean R_StudioBoundsRangeValid( int offset, int count, size_t stride, size_t limit )
+{
+	if ( offset < 0 || count < 0 || stride == 0 )
+		return FALSE;
+	if ( (size_t)offset > limit )
+		return FALSE;
+	return (size_t)count <= ( limit - (size_t)offset ) / stride;
+}
+
+static qboolean R_StudioBoundsValidateSeqAnim(
+	const byte* data,
+	size_t limit,
+	size_t lookaheadLimit,
+	const mstudioseqdesc_t* pseq,
+	int numbones )
+{
+	int j, ch, covered;
+	size_t animBase, offset;
+	const mstudioanim_t* panim;
+	const mstudioanimvalue_t* pspan;
+
+	if ( pseq->numframes < 0 || pseq->numframes > 65536 || numbones < 0 || numbones > MAXSTUDIOBONES )
+		return FALSE;
+	if ( pseq->numframes == 0 || numbones == 0 )
+		return TRUE;
+
+	if ( !R_StudioBoundsRangeValid( pseq->animindex, numbones, sizeof( mstudioanim_t ), limit ) )
+		return FALSE;
+
+	for ( j = 0; j < numbones; j++ )
+	{
+		animBase = (size_t)pseq->animindex + (size_t)j * sizeof( mstudioanim_t );
+		panim = (const mstudioanim_t*)( data + animBase );
+
+		for ( ch = 0; ch < 3; ch++ )
+		{
+			if ( panim->offset[ch] == 0 )
+				continue;
+
+			offset = animBase + (size_t)panim->offset[ch];
+			covered = 0;
+			while ( covered < pseq->numframes )
+			{
+				if ( offset > limit || sizeof( mstudioanimvalue_t ) > limit - offset )
+					return FALSE;
+
+				pspan = (const mstudioanimvalue_t*)( data + offset );
+				if ( pspan->num.total == 0 || pspan->num.valid == 0 || pspan->num.valid > pspan->num.total )
+					return FALSE;
+
+				if ( ( (size_t)pspan->num.valid + 1 ) * sizeof( mstudioanimvalue_t ) > limit - offset )
+					return FALSE;
+
+				if ( pspan->num.valid < pspan->num.total &&
+					covered + pspan->num.total <= pseq->numframes &&
+					( offset > lookaheadLimit ||
+						( (size_t)pspan->num.valid + 3 ) * sizeof( mstudioanimvalue_t ) > lookaheadLimit - offset ) )
+					return FALSE;
+
+				covered += pspan->num.total;
+				offset += ( (size_t)pspan->num.valid + 1 ) * sizeof( mstudioanimvalue_t );
+			}
+		}
+	}
+
+	return TRUE;
+}
+
+int R_StudioComputeBounds( byte* buffer, int length, float* mins, float* maxs )
 {
 	int i, j, k;
-	int totalmodels, vertcount, bonecount;
+	int vertcount, bonecount;
+	size_t limit;
 	vec3_t vertmins, vertmaxs, bonemins, bonemaxs, pos;
 	vec3_t* pverts;
 	studiohdr_t* phdr;
@@ -533,44 +602,129 @@ int R_StudioComputeBounds( byte* buffer, float* mins, float* maxs )
 	mstudioseqdesc_t* pseqdesc;
 	mstudioanim_t* panim;
 
+	if ( !buffer || length < (int)sizeof( studiohdr_t ) )
+		return 0;
+
+	limit = (size_t)length;
 	phdr = (studiohdr_t*)buffer;
+
+	if ( phdr->numbodyparts < 0 || phdr->numbodyparts > MAXSTUDIOBODYPARTS ||
+		!R_StudioBoundsRangeValid( phdr->bodypartindex, phdr->numbodyparts, sizeof( mstudiobodyparts_t ), limit ) )
+		return 0;
+
+	if ( phdr->numbones < 0 || phdr->numbones > MAXSTUDIOBONES ||
+		!R_StudioBoundsRangeValid( phdr->boneindex, phdr->numbones, sizeof( mstudiobone_t ), limit ) )
+		return 0;
+
+	if ( phdr->numseq < 0 || phdr->numseq > MAXSTUDIOSEQUENCES ||
+		!R_StudioBoundsRangeValid( phdr->seqindex, phdr->numseq, sizeof( mstudioseqdesc_t ), limit ) )
+		return 0;
+
+	if ( phdr->numseqgroups < 0 || phdr->numseqgroups > MAXSTUDIOGROUPS ||
+		( phdr->numseqgroups > 0 &&
+			!R_StudioBoundsRangeValid( phdr->seqgroupindex, phdr->numseqgroups, sizeof( mstudioseqgroup_t ), limit ) ) )
+		return 0;
+
 	pbodyparts = (mstudiobodyparts_t*)( buffer + phdr->bodypartindex );
-
-	totalmodels = 0;
-	for ( i = 0; i < phdr->numbodyparts; i++ )
-		totalmodels += pbodyparts[i].nummodels;
-
-	pmodel = (mstudiomodel_t*)( pbodyparts + phdr->numbodyparts );
 
 	VectorClear( vertmins );
 	VectorClear( vertmaxs );
 	vertcount = 0;
-	for ( i = 0; i < totalmodels; i++ )
+	for ( i = 0; i < phdr->numbodyparts; i++ )
 	{
-		pverts = (vec3_t*)( buffer + pmodel[i].vertindex );
-		for ( j = 0; j < pmodel[i].numverts; j++ )
-			R_StudioBoundBone( vertmins, vertmaxs, &vertcount, pverts[j] );
+		if ( !R_StudioBoundsRangeValid( pbodyparts[i].modelindex, pbodyparts[i].nummodels, sizeof( mstudiomodel_t ), limit ) )
+			return 0;
+
+		pmodel = (mstudiomodel_t*)( buffer + pbodyparts[i].modelindex );
+		for ( j = 0; j < pbodyparts[i].nummodels; j++ )
+		{
+			if ( !R_StudioBoundsRangeValid( pmodel[j].vertindex, pmodel[j].numverts, sizeof( vec3_t ), limit ) )
+				return 0;
+
+			pverts = (vec3_t*)( buffer + pmodel[j].vertindex );
+			for ( k = 0; k < pmodel[j].numverts; k++ )
+				R_StudioBoundBone( vertmins, vertmaxs, &vertcount, pverts[k] );
+		}
 	}
 
 	pbones = (mstudiobone_t*)( buffer + phdr->boneindex );
 	pseqdesc = (mstudioseqdesc_t*)( buffer + phdr->seqindex );
 	for ( i = 0; i < phdr->numseq; i++ )
 	{
-		panim = (mstudioanim_t*)( buffer + pseqdesc[i].animindex );
+		byte* groupBuffer = NULL;
+		const byte* animData = buffer;
+		size_t animLimit = limit;
+		size_t animLookahead = limit;
+
+		if ( pseqdesc[i].seqgroup != 0 )
+		{
+			const mstudioseqgroup_t* pseqgroups;
+			const mstudioseqgroup_t* pseqgroup;
+			byte* rawGroup;
+			int groupLength = 0;
+			const size_t tailBytes = 2 * sizeof( mstudioanimvalue_t );
+
+			if ( pseqdesc[i].seqgroup < 0 || pseqdesc[i].seqgroup >= phdr->numseqgroups )
+				return 0;
+
+			pseqgroups = (const mstudioseqgroup_t*)( buffer + phdr->seqgroupindex );
+			pseqgroup = &pseqgroups[pseqdesc[i].seqgroup];
+			if ( !memchr( pseqgroup->name, 0, sizeof( pseqgroup->name ) ) || pseqgroup->name[0] == '\0' )
+				return 0;
+
+			rawGroup = COM_LoadFileForMe( (char*)pseqgroup->name, &groupLength );
+			if ( !rawGroup )
+				return 0;
+
+			if ( groupLength < (int)sizeof( studioseqhdr_t ) ||
+				memcmp( rawGroup, "IDSQ", 4 ) != 0 ||
+				( (const studioseqhdr_t*)rawGroup )->version != STUDIO_VERSION )
+			{
+				COM_FreeFile( rawGroup );
+				return 0;
+			}
+
+			groupBuffer = (byte*)Mem_ZeroMalloc( (size_t)groupLength + tailBytes );
+			if ( !groupBuffer )
+			{
+				COM_FreeFile( rawGroup );
+				return 0;
+			}
+
+			Q_memcpy( groupBuffer, rawGroup, groupLength );
+			COM_FreeFile( rawGroup );
+
+			animData = groupBuffer;
+			animLimit = (size_t)groupLength;
+			animLookahead = (size_t)groupLength + tailBytes;
+		}
+
+		if ( !R_StudioBoundsValidateSeqAnim( animData, animLimit, animLookahead, &pseqdesc[i], phdr->numbones ) )
+		{
+			if ( groupBuffer )
+				Mem_Free( groupBuffer );
+			return 0;
+		}
 
 		VectorClear( bonemins );
 		VectorClear( bonemaxs );
 		bonecount = 0;
-		for ( j = 0; j < phdr->numbones; j++ )
+		if ( phdr->numbones > 0 && pseqdesc[i].numframes > 0 )
 		{
-			for ( k = 0; k < pseqdesc[i].numframes; k++ )
+			panim = (mstudioanim_t*)( animData + pseqdesc[i].animindex );
+			for ( j = 0; j < phdr->numbones; j++ )
 			{
-				R_StudioCalcBonePosition( k, 0.0f, &pbones[j], &panim[j], NULL, pos );
-				R_StudioBoundBone( bonemins, bonemaxs, &bonecount, pos );
+				for ( k = 0; k < pseqdesc[i].numframes; k++ )
+				{
+					R_StudioCalcBonePosition( k, 0.0f, &pbones[j], &panim[j], NULL, pos );
+					R_StudioBoundBone( bonemins, bonemaxs, &bonecount, pos );
+				}
 			}
 		}
 
 		R_StudioAccumulateBoneVerts( vertmins, vertmaxs, &vertcount, bonemins, bonemaxs, &bonecount );
+		if ( groupBuffer )
+			Mem_Free( groupBuffer );
 	}
 
 	VectorCopy( vertmins, mins );
@@ -602,7 +756,7 @@ int R_GetStudioBounds( const char* filename, float* mins, float* maxs )
 
 	result = 0;
 	if ( buffer && length >= (int)sizeof( studiohdr_t ) && LittleLong( *(int*)buffer ) == IDSTUDIOHEADER )
-		result = R_StudioComputeBounds( buffer, mins, maxs );
+		result = R_StudioComputeBounds( buffer, length, mins, maxs );
 
 	if ( usingReadBuffer )
 		FS_ReleaseReadBuffer( fp, buffer );
@@ -4442,10 +4596,79 @@ void R_StudioAccumulateBoneVerts(
 	*bonecount = 0;
 }
 
-int R_StudioComputeBounds( byte* buffer, float* mins, float* maxs )
+static qboolean R_StudioBoundsRangeValid( int offset, int count, size_t stride, size_t limit )
+{
+	if ( offset < 0 || count < 0 || stride == 0 )
+		return FALSE;
+	if ( (size_t)offset > limit )
+		return FALSE;
+	return (size_t)count <= ( limit - (size_t)offset ) / stride;
+}
+
+static qboolean R_StudioBoundsValidateSeqAnim(
+	const byte* data,
+	size_t limit,
+	size_t lookaheadLimit,
+	const mstudioseqdesc_t* pseq,
+	int numbones )
+{
+	int j, ch, covered;
+	size_t animBase, offset;
+	const mstudioanim_t* panim;
+	const mstudioanimvalue_t* pspan;
+
+	if ( pseq->numframes < 0 || pseq->numframes > 65536 || numbones < 0 || numbones > MAXSTUDIOBONES )
+		return FALSE;
+	if ( pseq->numframes == 0 || numbones == 0 )
+		return TRUE;
+
+	if ( !R_StudioBoundsRangeValid( pseq->animindex, numbones, sizeof( mstudioanim_t ), limit ) )
+		return FALSE;
+
+	for ( j = 0; j < numbones; j++ )
+	{
+		animBase = (size_t)pseq->animindex + (size_t)j * sizeof( mstudioanim_t );
+		panim = (const mstudioanim_t*)( data + animBase );
+
+		for ( ch = 0; ch < 3; ch++ )
+		{
+			if ( panim->offset[ch] == 0 )
+				continue;
+
+			offset = animBase + (size_t)panim->offset[ch];
+			covered = 0;
+			while ( covered < pseq->numframes )
+			{
+				if ( offset > limit || sizeof( mstudioanimvalue_t ) > limit - offset )
+					return FALSE;
+
+				pspan = (const mstudioanimvalue_t*)( data + offset );
+				if ( pspan->num.total == 0 || pspan->num.valid == 0 || pspan->num.valid > pspan->num.total )
+					return FALSE;
+
+				if ( ( (size_t)pspan->num.valid + 1 ) * sizeof( mstudioanimvalue_t ) > limit - offset )
+					return FALSE;
+
+				if ( pspan->num.valid < pspan->num.total &&
+					covered + pspan->num.total <= pseq->numframes &&
+					( offset > lookaheadLimit ||
+						( (size_t)pspan->num.valid + 3 ) * sizeof( mstudioanimvalue_t ) > lookaheadLimit - offset ) )
+					return FALSE;
+
+				covered += pspan->num.total;
+				offset += ( (size_t)pspan->num.valid + 1 ) * sizeof( mstudioanimvalue_t );
+			}
+		}
+	}
+
+	return TRUE;
+}
+
+int R_StudioComputeBounds( byte* buffer, int length, float* mins, float* maxs )
 {
 	int i, j, k;
-	int totalmodels, vertcount, bonecount;
+	int vertcount, bonecount;
+	size_t limit;
 	vec3_t vertmins, vertmaxs, bonemins, bonemaxs, pos;
 	vec3_t* pverts;
 	studiohdr_t* phdr;
@@ -4455,44 +4678,129 @@ int R_StudioComputeBounds( byte* buffer, float* mins, float* maxs )
 	mstudioseqdesc_t* pseqdesc;
 	mstudioanim_t* panim;
 
+	if ( !buffer || length < (int)sizeof( studiohdr_t ) )
+		return 0;
+
+	limit = (size_t)length;
 	phdr = (studiohdr_t*)buffer;
+
+	if ( phdr->numbodyparts < 0 || phdr->numbodyparts > MAXSTUDIOBODYPARTS ||
+		!R_StudioBoundsRangeValid( phdr->bodypartindex, phdr->numbodyparts, sizeof( mstudiobodyparts_t ), limit ) )
+		return 0;
+
+	if ( phdr->numbones < 0 || phdr->numbones > MAXSTUDIOBONES ||
+		!R_StudioBoundsRangeValid( phdr->boneindex, phdr->numbones, sizeof( mstudiobone_t ), limit ) )
+		return 0;
+
+	if ( phdr->numseq < 0 || phdr->numseq > MAXSTUDIOSEQUENCES ||
+		!R_StudioBoundsRangeValid( phdr->seqindex, phdr->numseq, sizeof( mstudioseqdesc_t ), limit ) )
+		return 0;
+
+	if ( phdr->numseqgroups < 0 || phdr->numseqgroups > MAXSTUDIOGROUPS ||
+		( phdr->numseqgroups > 0 &&
+			!R_StudioBoundsRangeValid( phdr->seqgroupindex, phdr->numseqgroups, sizeof( mstudioseqgroup_t ), limit ) ) )
+		return 0;
+
 	pbodyparts = (mstudiobodyparts_t*)( buffer + phdr->bodypartindex );
-
-	totalmodels = 0;
-	for ( i = 0; i < phdr->numbodyparts; i++ )
-		totalmodels += pbodyparts[i].nummodels;
-
-	pmodel = (mstudiomodel_t*)( pbodyparts + phdr->numbodyparts );
 
 	VectorClear( vertmins );
 	VectorClear( vertmaxs );
 	vertcount = 0;
-	for ( i = 0; i < totalmodels; i++ )
+	for ( i = 0; i < phdr->numbodyparts; i++ )
 	{
-		pverts = (vec3_t*)( buffer + pmodel[i].vertindex );
-		for ( j = 0; j < pmodel[i].numverts; j++ )
-			R_StudioBoundBone( vertmins, vertmaxs, &vertcount, pverts[j] );
+		if ( !R_StudioBoundsRangeValid( pbodyparts[i].modelindex, pbodyparts[i].nummodels, sizeof( mstudiomodel_t ), limit ) )
+			return 0;
+
+		pmodel = (mstudiomodel_t*)( buffer + pbodyparts[i].modelindex );
+		for ( j = 0; j < pbodyparts[i].nummodels; j++ )
+		{
+			if ( !R_StudioBoundsRangeValid( pmodel[j].vertindex, pmodel[j].numverts, sizeof( vec3_t ), limit ) )
+				return 0;
+
+			pverts = (vec3_t*)( buffer + pmodel[j].vertindex );
+			for ( k = 0; k < pmodel[j].numverts; k++ )
+				R_StudioBoundBone( vertmins, vertmaxs, &vertcount, pverts[k] );
+		}
 	}
 
 	pbones = (mstudiobone_t*)( buffer + phdr->boneindex );
 	pseqdesc = (mstudioseqdesc_t*)( buffer + phdr->seqindex );
 	for ( i = 0; i < phdr->numseq; i++ )
 	{
-		panim = (mstudioanim_t*)( buffer + pseqdesc[i].animindex );
+		byte* groupBuffer = NULL;
+		const byte* animData = buffer;
+		size_t animLimit = limit;
+		size_t animLookahead = limit;
+
+		if ( pseqdesc[i].seqgroup != 0 )
+		{
+			const mstudioseqgroup_t* pseqgroups;
+			const mstudioseqgroup_t* pseqgroup;
+			byte* rawGroup;
+			int groupLength = 0;
+			const size_t tailBytes = 2 * sizeof( mstudioanimvalue_t );
+
+			if ( pseqdesc[i].seqgroup < 0 || pseqdesc[i].seqgroup >= phdr->numseqgroups )
+				return 0;
+
+			pseqgroups = (const mstudioseqgroup_t*)( buffer + phdr->seqgroupindex );
+			pseqgroup = &pseqgroups[pseqdesc[i].seqgroup];
+			if ( !memchr( pseqgroup->name, 0, sizeof( pseqgroup->name ) ) || pseqgroup->name[0] == '\0' )
+				return 0;
+
+			rawGroup = COM_LoadFileForMe( (char*)pseqgroup->name, &groupLength );
+			if ( !rawGroup )
+				return 0;
+
+			if ( groupLength < (int)sizeof( studioseqhdr_t ) ||
+				memcmp( rawGroup, "IDSQ", 4 ) != 0 ||
+				( (const studioseqhdr_t*)rawGroup )->version != STUDIO_VERSION )
+			{
+				COM_FreeFile( rawGroup );
+				return 0;
+			}
+
+			groupBuffer = (byte*)Mem_ZeroMalloc( (size_t)groupLength + tailBytes );
+			if ( !groupBuffer )
+			{
+				COM_FreeFile( rawGroup );
+				return 0;
+			}
+
+			Q_memcpy( groupBuffer, rawGroup, groupLength );
+			COM_FreeFile( rawGroup );
+
+			animData = groupBuffer;
+			animLimit = (size_t)groupLength;
+			animLookahead = (size_t)groupLength + tailBytes;
+		}
+
+		if ( !R_StudioBoundsValidateSeqAnim( animData, animLimit, animLookahead, &pseqdesc[i], phdr->numbones ) )
+		{
+			if ( groupBuffer )
+				Mem_Free( groupBuffer );
+			return 0;
+		}
 
 		VectorClear( bonemins );
 		VectorClear( bonemaxs );
 		bonecount = 0;
-		for ( j = 0; j < phdr->numbones; j++ )
+		if ( phdr->numbones > 0 && pseqdesc[i].numframes > 0 )
 		{
-			for ( k = 0; k < pseqdesc[i].numframes; k++ )
+			panim = (mstudioanim_t*)( animData + pseqdesc[i].animindex );
+			for ( j = 0; j < phdr->numbones; j++ )
 			{
-				R_StudioCalcBonePosition( k, 0.0f, &pbones[j], &panim[j], NULL, pos );
-				R_StudioBoundBone( bonemins, bonemaxs, &bonecount, pos );
+				for ( k = 0; k < pseqdesc[i].numframes; k++ )
+				{
+					R_StudioCalcBonePosition( k, 0.0f, &pbones[j], &panim[j], NULL, pos );
+					R_StudioBoundBone( bonemins, bonemaxs, &bonecount, pos );
+				}
 			}
 		}
 
 		R_StudioAccumulateBoneVerts( vertmins, vertmaxs, &vertcount, bonemins, bonemaxs, &bonecount );
+		if ( groupBuffer )
+			Mem_Free( groupBuffer );
 	}
 
 	VectorCopy( vertmins, mins );
@@ -4524,7 +4832,7 @@ int R_GetStudioBounds( const char* filename, float* mins, float* maxs )
 
 	result = 0;
 	if ( buffer && length >= (int)sizeof( studiohdr_t ) && LittleLong( *(int*)buffer ) == IDSTUDIOHEADER )
-		result = R_StudioComputeBounds( buffer, mins, maxs );
+		result = R_StudioComputeBounds( buffer, length, mins, maxs );
 
 	if ( usingReadBuffer )
 		FS_ReleaseReadBuffer( fp, buffer );

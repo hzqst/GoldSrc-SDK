@@ -23,13 +23,28 @@ STUBS = r'''
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
 using byte = unsigned char;
+using qboolean = int;
 using vec_t = float;
 using vec3_t = vec_t[3];
 using int32 = std::int32_t;
+constexpr qboolean FALSE = 0;
+constexpr qboolean TRUE = 1;
+constexpr int STUDIO_VERSION = 10;
+constexpr int MAXSTUDIOBONES = 128;
+constexpr int MAXSTUDIOBODYPARTS = 32;
+constexpr int MAXSTUDIOSEQUENCES = 2048;
+constexpr int MAXSTUDIOGROUPS = 16;
+
+static void* Mem_ZeroMalloc(size_t n) { return std::calloc(1, n); }
+static void Mem_Free(void* p) { std::free(p); }
+static void Q_memcpy(void* d, const void* s, int n) { std::memcpy(d, s, static_cast<size_t>(n)); }
+static byte* COM_LoadFileForMe(char*, int*) { return nullptr; }
+static void COM_FreeFile(byte*) {}
 
 static void VectorClear(vec3_t v) { v[0] = v[1] = v[2] = 0.0f; }
 static void VectorCopy(const vec3_t src, vec3_t dst) { dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2]; }
@@ -83,6 +98,20 @@ struct studiohdr_t {
     int soundgroupindex;
     int numtransitions;
     int transitionindex;
+};
+
+struct studioseqhdr_t {
+    int id;
+    int version;
+    char name[64];
+    int length;
+};
+
+struct mstudioseqgroup_t {
+    char label[32];
+    char name[64];
+    int32 unused1;
+    int unused2;
 };
 
 struct mstudiobone_t {
@@ -261,7 +290,7 @@ static void RunBoundsChecks(ComputeFn computeBounds)
     {
         TestModel m = BuildTwoBoneModel(false, 0, true, 200, 1.0f, 1.0f);
         vec3_t mins, maxs;
-        assert(1 == computeBounds(m.buf.data(), mins, maxs));
+        assert(1 == computeBounds(m.buf.data(), static_cast<int>(m.buf.size()), mins, maxs));
         CheckClose(-100.0f, mins[0]);
         CheckClose( 100.0f, maxs[0]);
         CheckClose(  -1.0f, mins[1]);
@@ -273,7 +302,7 @@ static void RunBoundsChecks(ComputeFn computeBounds)
     {
         TestModel m = BuildTwoBoneModel(true, 100, false, 0, 1.0f, 10.0f);
         vec3_t mins, maxs;
-        assert(1 == computeBounds(m.buf.data(), mins, maxs));
+        assert(1 == computeBounds(m.buf.data(), static_cast<int>(m.buf.size()), mins, maxs));
         CheckClose(-50.0f, mins[0]);
         CheckClose( 50.0f, maxs[0]);
     }
@@ -294,12 +323,16 @@ def main():
         extract('r_studio.cpp', 'void R_StudioBoundBone(', 0),
         extract('r_studio.cpp', 'vec_t* R_StudioBoundVertex(', 0),
         extract('r_studio.cpp', 'void R_StudioAccumulateBoneVerts(', 0),
+        extract('r_studio.cpp', 'static qboolean R_StudioBoundsRangeValid(', 0),
+        extract('r_studio.cpp', 'static qboolean R_StudioBoundsValidateSeqAnim(', 0),
         extract('r_studio.cpp', 'int R_StudioComputeBounds( byte* buffer,', 0),
     ])
     hw_helpers = '\n'.join([
         extract('r_studio.cpp', 'void R_StudioBoundBone(', 1),
         extract('r_studio.cpp', 'vec_t* R_StudioBoundVertex(', 1),
         extract('r_studio.cpp', 'void R_StudioAccumulateBoneVerts(', 1),
+        extract('r_studio.cpp', 'static qboolean R_StudioBoundsRangeValid(', 1),
+        extract('r_studio.cpp', 'static qboolean R_StudioBoundsValidateSeqAnim(', 1),
         extract('r_studio.cpp', 'int R_StudioComputeBounds( byte* buffer,', 1),
     ])
 
