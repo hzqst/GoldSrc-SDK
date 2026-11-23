@@ -433,6 +433,7 @@ void World::ParseDeltaDescription( BitBuffer* stream )
 	if ( name == NULL || name[0] == 0 )
 	{
 		m_System->Errorf( "ParseDeltaDescription:  Illegible description name\n" );
+		stream->sizeError = true;
 		return;
 	}
 
@@ -440,7 +441,13 @@ void World::ParseDeltaDescription( BitBuffer* stream )
 	szDesc[255] = 0;
 	m_System->DPrintf( "Reading delta description for: %s.\n", name );
 	ppdelta = DELTA_LookupRegistration( szDesc );
-	if ( ppdelta != NULL && *ppdelta != NULL )
+	if ( ppdelta == NULL )
+	{
+		m_System->Printf( "WARNING! World::ParseDeltaDescription: unregistered description name %s.\n", szDesc );
+		stream->sizeError = true;
+		return;
+	}
+	if ( *ppdelta != NULL )
 		DELTA_FreeDescription( ppdelta );
 	stream->StartBitMode();
 	count = stream->ReadBits( 16 );
