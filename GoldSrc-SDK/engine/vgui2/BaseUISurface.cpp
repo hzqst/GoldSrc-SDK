@@ -81,7 +81,7 @@ static void CheckModState()
 		{ KMOD_LSHIFT, vgui2::KEY_LSHIFT },
 		{ KMOD_LALT, vgui2::KEY_LALT },
 		{ KMOD_LCTRL, vgui2::KEY_LCONTROL },
-		{ KMOD_RSHIFT, vgui2::KEY_LSHIFT },
+		{ KMOD_RSHIFT, vgui2::KEY_RSHIFT },
 		{ KMOD_RALT, vgui2::KEY_RALT },
 		{ KMOD_RCTRL, vgui2::KEY_RCONTROL },
 		{ KMOD_CAPS, vgui2::KEY_CAPSLOCK },

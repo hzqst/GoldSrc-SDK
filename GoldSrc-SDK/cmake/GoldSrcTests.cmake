@@ -145,6 +145,7 @@ foreach(name IN ITEMS
 		vgui2_wide_copy
 		vgui2_wizard_panel
 		vgui_font_glyph
+		vgui_modifier_sync
 		viewport
 		viewport_command_menu
 		voice_callback
