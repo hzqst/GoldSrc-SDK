@@ -144,6 +144,7 @@ foreach(name IN ITEMS
 		vgui2_unicode_token
 		vgui2_wide_copy
 		vgui2_wizard_panel
+		vgui_bmp_loading
 		vgui_font_glyph
 		vgui_modifier_sync
 		viewport
