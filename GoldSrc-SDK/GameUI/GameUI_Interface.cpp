@@ -517,7 +517,9 @@ void CGameUI::ConnectToServer( const char* game, int address, int port )
 			engine->pfnClientCmd( "mp3 stop\n" );
 		char command[128];
 		char cvarName[] = "ui_cmd_on_connect";
-		strncpy( command, engine->pfnGetCvarString( cvarName ), sizeof( command ) );
+		// An engine without this cvar returns NULL
+		const char* pszCommand = engine->pfnGetCvarString( cvarName );
+		strncpy( command, pszCommand ? pszCommand : "", sizeof( command ) );
 		command[sizeof( command ) - 1] = 0;
 		if ( strlen( command ) > 2 )
 		{
