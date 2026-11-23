@@ -27,6 +27,7 @@ foreach(name IN ITEMS
 		common_va
 		cstrike_avatar_image
 		cstrike_buypreset_editmenu
+		cstrike_select_next_item
 		cxx_toolchain
 		czeror_material_file
 		dedicated_mod_list

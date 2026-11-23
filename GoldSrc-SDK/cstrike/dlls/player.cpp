@@ -2207,7 +2207,8 @@ void CBasePlayer::SelectNextItem( int slot )
 		m_pActiveItem->Holster();
 	if ( m_bOwnsShield )
 	{
-		( (CBasePlayerWeapon*)m_pActiveItem )->m_iWeaponState &= ~WPNSTATE_SHIELD_DRAWN;
+		if ( m_pActiveItem != NULL )
+			( (CBasePlayerWeapon*)m_pActiveItem )->m_iWeaponState &= ~WPNSTATE_SHIELD_DRAWN;
 		m_bShieldDrawn = false;
 	}
 	m_pLastItem = m_pActiveItem;
