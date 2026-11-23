@@ -284,27 +284,38 @@ static void CheckClose(float expected, float actual)
 template <typename ComputeFn>
 static void RunBoundsChecks(ComputeFn computeBounds)
 {
-    // 1. Bone 0 static, bone 1 moves X from 0 to 200 -> bone delta X = 200 -> bounds [-100, 100].
-    //    With the old bug (passing panim instead of &panim[j]), bone 1 used bone 0's empty channel
-    //    and bounds remained [-1, 1].
+    // 1. Bone 0 static, bone 1 moves X from 0 to 200:
+    //    - Fixed mode (STUDIO_BOUNDS_COMPAT_MODE=0): bone delta X = 200 -> bounds [-100, 100].
+    //    - Compat mode (STUDIO_BOUNDS_COMPAT_MODE=1): bone 1 reads bone 0's empty channel -> bounds [-1, 1].
     {
         TestModel m = BuildTwoBoneModel(false, 0, true, 200, 1.0f, 1.0f);
         vec3_t mins, maxs;
         assert(1 == computeBounds(m.buf.data(), static_cast<int>(m.buf.size()), mins, maxs));
+#if defined(STUDIO_BOUNDS_COMPAT_MODE) && STUDIO_BOUNDS_COMPAT_MODE
+        CheckClose(-1.0f, mins[0]);
+        CheckClose( 1.0f, maxs[0]);
+#else
         CheckClose(-100.0f, mins[0]);
         CheckClose( 100.0f, maxs[0]);
-        CheckClose(  -1.0f, mins[1]);
-        CheckClose(   1.0f, maxs[1]);
+#endif
+        CheckClose(-1.0f, mins[1]);
+        CheckClose( 1.0f, maxs[1]);
     }
 
-    // 2. Bone 0 moves X from 0 to 100 (scale=1), bone 1 static (scale=10) -> bone delta X = 100 -> bounds [-50, 50].
-    //    With the old bug, bone 1 would inherit bone 0's channel * 10 = 1000 -> bounds [-500, 500].
+    // 2. Bone 0 moves X from 0 to 100 (scale=1), bone 1 static (scale=10):
+    //    - Fixed mode (STUDIO_BOUNDS_COMPAT_MODE=0): bone delta X = 100 -> bounds [-50, 50].
+    //    - Compat mode (STUDIO_BOUNDS_COMPAT_MODE=1): bone 1 inherits bone 0's channel * 10 = 1000 -> bounds [-500, 500].
     {
         TestModel m = BuildTwoBoneModel(true, 100, false, 0, 1.0f, 10.0f);
         vec3_t mins, maxs;
         assert(1 == computeBounds(m.buf.data(), static_cast<int>(m.buf.size()), mins, maxs));
+#if defined(STUDIO_BOUNDS_COMPAT_MODE) && STUDIO_BOUNDS_COMPAT_MODE
+        CheckClose(-500.0f, mins[0]);
+        CheckClose( 500.0f, maxs[0]);
+#else
         CheckClose(-50.0f, mins[0]);
         CheckClose( 50.0f, maxs[0]);
+#endif
     }
 }
 
@@ -318,8 +329,9 @@ int main()
 
 
 def main():
-    calc_pos = extract('r_studio.cpp', 'void R_StudioCalcBonePosition(', 1)
+    calc_pos_sig = 'void R_StudioCalcBonePosition( int frame, float s, mstudiobone_t* pbone, mstudioanim_t* panim, float* adj, float* pos )\n{'
     sw_helpers = '\n'.join([
+        extract('r_studio.cpp', calc_pos_sig, 0),
         extract('r_studio.cpp', 'void R_StudioBoundBone(', 0),
         extract('r_studio.cpp', 'vec_t* R_StudioBoundVertex(', 0),
         extract('r_studio.cpp', 'void R_StudioAccumulateBoneVerts(', 0),
@@ -328,6 +340,7 @@ def main():
         extract('r_studio.cpp', 'int R_StudioComputeBounds( byte* buffer,', 0),
     ])
     hw_helpers = '\n'.join([
+        extract('r_studio.cpp', calc_pos_sig, 1),
         extract('r_studio.cpp', 'void R_StudioBoundBone(', 1),
         extract('r_studio.cpp', 'vec_t* R_StudioBoundVertex(', 1),
         extract('r_studio.cpp', 'void R_StudioAccumulateBoneVerts(', 1),
@@ -336,21 +349,21 @@ def main():
         extract('r_studio.cpp', 'int R_StudioComputeBounds( byte* buffer,', 1),
     ])
 
-    wrapped = [
-        STUBS,
-        calc_pos,
-        'namespace sw_bounds {\n' + sw_helpers + '\n}',
-        'namespace hw_bounds {\n' + hw_helpers + '\n}',
-        TESTS,
-    ]
-
-    with tempfile.TemporaryDirectory(prefix='goldsrc-studio-bounds-anim-') as folder:
-        work = Path(folder)
-        source = work / 'test.cpp'
-        source.write_text('\n'.join(wrapped), encoding='utf-8')
-        executable = compile_program([source], work / 'test', sanitizers=['address', 'undefined'])
-        subprocess.run([str(executable)], cwd=work, check=True)
-    print('PASS: R_StudioComputeBounds indexes per-bone animation channels in SW and HW renderers')
+    for compat_mode in (0, 1):
+        wrapped = [
+            f'#define STUDIO_BOUNDS_COMPAT_MODE {compat_mode}',
+            STUBS,
+            'namespace sw_bounds {\n' + sw_helpers + '\n}',
+            'namespace hw_bounds {\n' + hw_helpers + '\n}',
+            TESTS,
+        ]
+        with tempfile.TemporaryDirectory(prefix=f'goldsrc-studio-bounds-anim-{compat_mode}-') as folder:
+            work = Path(folder)
+            source = work / 'test.cpp'
+            source.write_text('\n'.join(wrapped), encoding='utf-8')
+            executable = compile_program([source], work / 'test', sanitizers=['address', 'undefined'])
+            subprocess.run([str(executable)], cwd=work, check=True)
+    print('PASS: R_StudioComputeBounds verified for both fixed (compat=0) and legacy (compat=1) modes in SW and HW renderers')
 
 
 if __name__ == '__main__':

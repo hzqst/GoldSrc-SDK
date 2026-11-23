@@ -30,6 +30,13 @@ else()
 	add_compile_definitions(VGUI_ABI_COMPAT_MODE=0)
 endif()
 
+option(GOLDSRC_STUDIO_BOUNDS_COMPAT_MODE "Keep R_StudioComputeBounds compatible with the original engine bone-0 animation bug for force_model_samebounds" OFF)
+if(GOLDSRC_STUDIO_BOUNDS_COMPAT_MODE)
+	add_compile_definitions(STUDIO_BOUNDS_COMPAT_MODE=1)
+else()
+	add_compile_definitions(STUDIO_BOUNDS_COMPAT_MODE=0)
+endif()
+
 include(GoldSrcPlatform)
 include(GoldSrcTargets)
 include(GoldSrcThirdParty)
