@@ -72,6 +72,7 @@ foreach(name IN ITEMS
 		map_sprite_bmp_bounds
 		mixer_failure
 		netapi_serverinfo
+		netchan_fragment_reassembly
 		network_entity_bounds
 		pack_dead_player_items
 		parse_event_args
