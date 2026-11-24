@@ -449,6 +449,16 @@ void CCSClientScoreBoardDialog::UpdateTeamInfo()
 	}
 }
 
+static bool HasVisibleScoreboardHealth( const extra_player_info_t& player )
+{
+	return player.teamnumber != 0 && player.sb_health >= 0 && !player.dead;
+}
+
+static bool HasVisibleScoreboardAccount( const extra_player_info_t& player )
+{
+	return player.teamnumber != 0 && player.sb_account >= 0;
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Adds a new row to the scoreboard, from the playerinfo structure
 //-----------------------------------------------------------------------------
@@ -472,7 +482,7 @@ bool CCSClientScoreBoardDialog::GetPlayerScoreInfo( int playerIndex, KeyValues* 
 				kv->SetString( "ping", "" );
 		}
 		char buffer[128];
-		if ( player.sb_health >= 0 && !player.dead )
+		if ( HasVisibleScoreboardHealth( player ) )
 		{
 			if ( (int)m_pShowHealth->value )
 			{
@@ -481,7 +491,7 @@ bool CCSClientScoreBoardDialog::GetPlayerScoreInfo( int playerIndex, KeyValues* 
 			}
 			m_bHealthUpdateReceived = true;
 		}
-		if ( player.sb_account >= 0 )
+		if ( HasVisibleScoreboardAccount( player ) )
 		{
 			if ( (int)m_pShowMoney->value )
 			{
@@ -724,7 +734,14 @@ void CCSClientScoreBoardDialog::UpdatePlayerInfo()
 	{
 		VGuiLibraryPlayer_t player = gViewPortInterface->GetClientDllInterface()->CallEnghudGetPlayerInfo( i );
 		if ( player.name )
+		{
 			++playersToShow;
+			const extra_player_info_t& extra = g_PlayerExtraInfo[i];
+			if ( HasVisibleScoreboardHealth( extra ) )
+				m_bHealthUpdateReceived = true;
+			if ( HasVisibleScoreboardAccount( extra ) )
+				m_bMoneyUpdateReceived = true;
+		}
 	}
 	m_iPlayersToShow = playersToShow;
 	m_pPlayerList->OverrideLineSpacing( playersToShow > 23 ? 11 : playersToShow <= 17 ? 21 : 15 );

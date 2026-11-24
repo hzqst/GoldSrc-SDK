@@ -30,6 +30,7 @@ foreach(name IN ITEMS
 		cstrike_bot_chatter_leak
 		cstrike_buypreset_editmenu
 		cstrike_knife_null_hit
+		cstrike_scoreboard_columns
 		cstrike_select_next_item
 		cxx_toolchain
 		czeror_material_file
