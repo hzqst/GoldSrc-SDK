@@ -3588,6 +3588,16 @@ static bool CanSeeUseable( CBasePlayer* player, CBaseEntity* entity )
 	return trace.flFraction >= 1;
 }
 
+// The player stops driving the func_vehicle they drive, if any. The vehicle keeps its driver only while it is this
+// player, so a player who never drove it does not clear another player's record.
+void CBasePlayer::StopDrivingVehicle()
+{
+	CFuncVehicle* vehicle = (CFuncVehicle*)(CBaseEntity*)m_hDrivenVehicle;
+	if ( vehicle && (CBaseEntity*)vehicle->m_hDriver == this )
+		vehicle->m_hDriver = NULL;
+	m_hDrivenVehicle = NULL;
+}
+
 void CBasePlayer::PlayerUse()
 {
 	if ( !( ( m_afButtonReleased | m_afButtonPressed | pev->button ) & IN_USE ) )
@@ -3608,8 +3618,7 @@ void CBasePlayer::PlayerUse()
 		{
 			m_afPhysicsFlags &= ~PFLAG_ONTRAIN;
 			m_iTrain = 0xC0;
-			if ( ground != NULL && ground->Classify() == CLASS_VEHICLE )
-				( (CFuncVehicle*)ground )->m_pDriver = NULL;
+			StopDrivingVehicle();
 			return;
 		}
 		if ( ground != NULL && !( pev->button & IN_JUMP ) && ( pev->flags & FL_ONGROUND ) &&
@@ -3620,7 +3629,8 @@ void CBasePlayer::PlayerUse()
 			if ( ground->Classify() == CLASS_VEHICLE )
 			{
 				EMIT_SOUND( edict(), CHAN_ITEM, "plats/vehicle_ignition.wav", 0.8f, ATTN_NORM );
-				( (CFuncVehicle*)ground )->m_pDriver = this;
+				( (CFuncVehicle*)ground )->m_hDriver = this;
+				m_hDrivenVehicle = ground;
 			}
 			else
 				EMIT_SOUND( edict(), CHAN_ITEM, "plats/train_use1.wav", 0.8f, ATTN_NORM );
@@ -4846,6 +4856,7 @@ int CBasePlayer::TakeDamage(entvars_t *pevInflictor, entvars_t *pevAttacker, flo
 
 void CBasePlayer::Killed(entvars_t *pevAttacker, int iGib)
 {
+	StopDrivingVehicle();
 	m_canSwitchObserverModes = false;
 	if (m_LastHitGroup == HITGROUP_HEAD)
 		m_bHeadshotKilled = true;
@@ -6122,7 +6133,7 @@ void CBasePlayer::PreThink()
 		{
 			m_afPhysicsFlags &= ~PFLAG_ONTRAIN;
 			m_iTrain = TRAIN_NEW;
-			((CFuncVehicle*)train)->m_pDriver = NULL;
+			StopDrivingVehicle();
 			return;
 		}
 		pev->velocity = g_vecZero;
