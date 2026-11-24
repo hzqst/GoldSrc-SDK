@@ -267,10 +267,10 @@ int main()
 
 def main():
     valve_prod = [
-        extract('cl_dll/text_message.cpp', 'char *CHudTextMessage::LocaliseTextString( const char *msg, char *dst_buffer, int buffer_size )'),
-        extract('cl_dll/statusbar.cpp', 'void CHudStatusBar :: ParseStatusString( int line_num )'),
-        extract('cl_dll/statusbar.cpp', 'int CHudStatusBar :: MsgFunc_StatusText( const char *pszName, int iSize, void *pbuf )'),
-        extract('cl_dll/statusbar.cpp', 'int CHudStatusBar :: MsgFunc_StatusValue( const char *pszName, int iSize, void *pbuf )'),
+        extract('valve/cl_dll/text_message.cpp', 'char *CHudTextMessage::LocaliseTextString( const char *msg, char *dst_buffer, int buffer_size )'),
+        extract('valve/cl_dll/statusbar.cpp', 'void CHudStatusBar :: ParseStatusString( int line_num )'),
+        extract('valve/cl_dll/statusbar.cpp', 'int CHudStatusBar :: MsgFunc_StatusText( const char *pszName, int iSize, void *pbuf )'),
+        extract('valve/cl_dll/statusbar.cpp', 'int CHudStatusBar :: MsgFunc_StatusValue( const char *pszName, int iSize, void *pbuf )'),
     ]
     cstrike_prod = [
         extract('cstrike/cl_dll/text_message.cpp', 'char* CHudTextMessage::LocaliseTextString( const char* message, char* buffer, int size )'),

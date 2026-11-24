@@ -40,7 +40,7 @@ python -I tools/static_analysis.py analyzer -j 8          # 子命令：cppcheck
 ```
 
 - **编译数据库**：Windows 用 `windows-x86-analyze` preset（Ninja + MSVC x86，只 configure 不构建，`compile_commands.json` 在 configure 时生成），Linux 用 `linux-x86-debug`；`--preset` 可改。数据库不存在时脚本自动 configure；Windows 下通过 vswhere 进入 vcvarsall **x86** 环境（复用 `tests/cxx_toolchain.py` 的 `vcvars_environment`），不需要开发者命令行。
-- **分析范围**：去掉 `external/`、`lib/`、构建目录内生成的源文件和 `.rc`，同一源文件被多个模块编译时只保留第一条（例如 `dlls/` 被多个 mod 共享，只按第一个模块的宏分析一次）；结果写到 `GoldSrc-SDK/bin/static-analysis/compile_commands.json`，三个工具共用。`--changed` 选中的头文件只提示、不展开成包含它的源文件。
+- **分析范围**：去掉 `external/`、`lib/`、构建目录内生成的源文件和 `.rc`，同一源文件被多个模块编译时只保留第一条（例如 `game_shared/`、`pm_shared/` 等共享源码，只按第一个模块的宏分析一次）；结果写到 `GoldSrc-SDK/bin/static-analysis/compile_commands.json`，三个工具共用。`--changed` 选中的头文件只提示、不展开成包含它的源文件。
 - **只出报告**：报告位于 `GoldSrc-SDK/bin/static-analysis/`（`cppcheck.xml` / `cppcheck.txt`、`clang-tidy.txt`、`clang-analyzer.txt`）；退出码只在工具缺失或崩溃时非零，告警数量不影响退出码。尚无基线比较，判断「本次 PR 新增」时请对比改动前后的报告。
 - **Cppcheck 参数**：`--enable=warning,performance,portability`、`--platform=win32A`（Windows）/ `unix32`（Linux）、`--library=windows` / `posix` 加 [`docs/cppcheck-goldsrc.cfg`](cppcheck-goldsrc.cfg)、`--inline-suppr`、`--cppcheck-build-dir` 增量缓存，第三方目录的告警被抑制。`--cppcheck <path>` 指定可执行文件。
 - **全局抑制**（`CPPCHECK_SUPPRESSED_IDS`）：`uninitMemberVarNoCtor`（C 结构体没有构造函数）、`duplInheritedMember`（每个实体类都有自己的 `m_SaveData`）、`dangerousTypeCast`（C 风格转换）、`passedByValue`（按值传 `Vector` 是游戏导出/虚函数接口，改成引用会破坏 ABI）、`ctuOneDefinitionRuleViolation`（各游戏 DLL 各有自己的 `Vector` 等同名类，放在同一个编译数据库里会被误判为违反 ODR）。在 4 个代表性文件上，这几项占了 649 条告警中的 635 条。

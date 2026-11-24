@@ -66,8 +66,7 @@ add_subdirectory(serverbrowser)
 add_subdirectory(particleman)
 
 # Games
-add_subdirectory(dlls)
-add_subdirectory(cl_dll)
+add_subdirectory(valve)
 add_subdirectory(gearbox)
 add_subdirectory(bshift)
 add_subdirectory(cstrike)

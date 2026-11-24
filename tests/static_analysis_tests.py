@@ -28,7 +28,7 @@ def selection_keeps_one_entry_per_project_source():
     entries = [
         entry(SOURCE_ROOT / 'engine' / 'common.cpp', command='first'),
         entry(SOURCE_ROOT / 'engine' / 'common.cpp', command='second'),
-        entry('../../../../dlls/combat.cpp'),
+        entry('../../../../valve/dlls/combat.cpp'),
         entry(SOURCE_ROOT / 'external' / 'SDL2' / 'sdl.c'),
         entry(SOURCE_ROOT / 'lib' / 'public' / 'stub.cpp'),
         entry(BUILD_DIR / 'a3dapi' / 'generated.cpp'),
@@ -42,11 +42,11 @@ def selection_keeps_one_entry_per_project_source():
 
 
 def selection_keeps_only_selected_sources():
-    entries = [entry(SOURCE_ROOT / 'engine' / 'common.cpp'), entry(SOURCE_ROOT / 'dlls' / 'combat.cpp')]
-    selected, headers = static_analysis.split_selection([SOURCE_ROOT / 'dlls' / 'combat.cpp',
-                                                         SOURCE_ROOT / 'dlls' / 'cbase.h',
+    entries = [entry(SOURCE_ROOT / 'engine' / 'common.cpp'), entry(SOURCE_ROOT / 'valve' / 'dlls' / 'combat.cpp')]
+    selected, headers = static_analysis.split_selection([SOURCE_ROOT / 'valve' / 'dlls' / 'combat.cpp',
+                                                         SOURCE_ROOT / 'valve' / 'dlls' / 'cbase.h',
                                                          SOURCE_ROOT.parent / 'README.md'])
-    assert [SOURCE_ROOT / 'dlls' / 'cbase.h'] == headers, headers
+    assert [SOURCE_ROOT / 'valve' / 'dlls' / 'cbase.h'] == headers, headers
     kept = static_analysis.select_entries(entries, BUILD_DIR, selected, source_root=SOURCE_ROOT)
     assert ['combat.cpp'] == [static_analysis.entry_path(e).name for e in kept], kept
     assert [] == static_analysis.select_entries(entries, BUILD_DIR, set(), source_root=SOURCE_ROOT)
