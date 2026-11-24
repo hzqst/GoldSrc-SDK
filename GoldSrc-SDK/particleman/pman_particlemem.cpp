@@ -163,26 +163,12 @@ void CMiniMem::ProcessAll()
 		CCoreTriangleEffect* effect = (CCoreTriangleEffect*)currentBlock->Memory();
 
 		if ( !effect )
+		{
+			currentBlock = currentBlock->next;
 			continue;
+		}
 
 		m_iTotalParticles++;
-
-		if ( effect->CheckVisibility() == true )
-		{
-			Vector playerOrigin = gEngfuncs.GetLocalPlayer()->origin;
-			float distance = 0;
-
-			for ( int axis = 0; axis < 3; axis++ )
-			{
-				float delta = playerOrigin[axis] - effect->m_vOrigin[axis];
-				distance += delta * delta;
-			}
-
-			effect->SetPlayerDistance( distance );
-
-			m_pVisibleParticles[m_iParticlesDrawn].pVisibleParticle = effect;
-			CMiniMem::Instance()->IncreaseParticlesDrawn();
-		}
 
 		if ( !IsGamePaused() )
 			effect->Think( time );
@@ -194,11 +180,28 @@ void CMiniMem::ProcessAll()
 			MemoryBlock* deadBlock = currentBlock;
 			currentBlock = currentBlock->next;
 			deleteBlock( deadBlock );
+			continue;
 		}
-		else
+
+		if ( effect->CheckVisibility() == true )
 		{
-			currentBlock = currentBlock->next;
+			cl_entity_t* localPlayer = gEngfuncs.GetLocalPlayer();
+			Vector playerOrigin = localPlayer ? localPlayer->origin : Vector( 0, 0, 0 );
+			float distance = 0;
+
+			for ( int axis = 0; axis < 3; axis++ )
+			{
+				float delta = playerOrigin[axis] - effect->m_vOrigin[axis];
+				distance += delta * delta;
+			}
+
+			effect->SetPlayerDistance( distance );
+
+			m_pVisibleParticles[m_iParticlesDrawn].pVisibleParticle = effect;
+			IncreaseParticlesDrawn();
 		}
+
+		currentBlock = currentBlock->next;
 	}
 
 	qsort( m_pVisibleParticles, m_iParticlesDrawn, sizeof( visibleparticles_t ), ParticleSortFn );
