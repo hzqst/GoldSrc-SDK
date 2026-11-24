@@ -87,6 +87,7 @@ foreach(name IN ITEMS
 		parse_event_args
 		particleman_allocation
 		particleman_classname
+		particleman_processall
 		perf_counter_init
 		playback_demo_commands
 		scoreboard_selection
