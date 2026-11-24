@@ -3,9 +3,16 @@
 #include "wrect.h"
 #include "cl_dll.h"
 #include "triangleapi.h"
-#include "SDL2/SDL_opengl.h"
 
 #include <math.h>
+
+#ifndef GL_MODELVIEW_MATRIX
+#define GL_MODELVIEW_MATRIX 0x0BA6
+#endif
+
+#ifndef GL_PROJECTION_MATRIX
+#define GL_PROJECTION_MATRIX 0x0BA7
+#endif
 
 CFrustum g_cFrustum;
 

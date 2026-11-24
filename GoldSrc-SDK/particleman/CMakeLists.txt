@@ -22,7 +22,6 @@ goldsrc_add_module(particleman
 		common
 		public
 		pm_shared
-		external
 		dlls
 	DEFINES
 		CLIENT_DLL
