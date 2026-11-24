@@ -201,7 +201,7 @@ public:
 	Vector		m_vBackRight;
 	Vector		m_vSurfaceNormal;
 	Vector		m_vVehicleDirection;
-	CBasePlayer *m_pDriver;
+	EHANDLE		m_hDriver;
 
 	// GOOSEMAN
 	void Restart();

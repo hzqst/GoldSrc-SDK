@@ -105,6 +105,10 @@ GLOBALS ASSUMED SET:  g_fGameOver
 */
 void ClientDisconnect( edict_t *pEntity )
 {
+	CBaseEntity *pPlayer = CBaseEntity::Instance( pEntity );
+	if ( pPlayer && pPlayer->IsPlayer() )
+		((CBasePlayer*)pPlayer)->StopDrivingVehicle();
+
 	if (g_fGameOver)
 		return;
 

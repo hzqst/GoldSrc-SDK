@@ -284,6 +284,7 @@ public:
 	void WaterMove( void );
 	void EXPORT PlayerDeathThink( void );
 	void PlayerUse( void );
+	void StopDrivingVehicle( void );
 
 	void CheckSuitUpdate();
 	void SetSuitUpdate(char *name, int fgroup, int iNoRepeat);
@@ -327,6 +328,7 @@ public:
 	float m_flNextChatTime;
 	
 	int	m_iAutoWepSwitch;
+	EHANDLE m_hDrivenVehicle;	// The vehicle can outlive the player's ground contact.
 
 #ifdef _MSC_VER
 #pragma warning( suppress : 26495 )

@@ -1014,7 +1014,7 @@ void CFuncVehicle :: Restart( void )
 	m_dir = 1;
 	m_flTurnStartTime = -1;
 	m_flUpdateSound = -1;
-	m_pDriver = NULL;
+	m_hDriver = NULL;
 
 	if ( FStringNull(pev->target) )
 		ALERT( at_console, "Vehicle with no target" );
