@@ -882,6 +882,9 @@ int CBaseMonster :: TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker,
 
 		pev->dmg_take += flTake;
 
+		// check for godmode or invincibility
+		if ( pev->flags & FL_GODMODE )
+			return 0;
 	}
 
 	// do the damage

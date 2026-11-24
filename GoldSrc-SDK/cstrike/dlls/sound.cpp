@@ -1118,7 +1118,7 @@ int USENTENCEG_PickSequential(int isentenceg, char *szfound, int ipick, int fres
 	if (!fSentencesInit)
 		return -1;
 
-	if (isentenceg < 0)
+	if (isentenceg < 0 || isentenceg >= CSENTENCEG_MAX)
 		return -1;
 
 	szgroupname = rgsentenceg[isentenceg].szgroupname;
@@ -1168,12 +1168,18 @@ int USENTENCEG_Pick(int isentenceg, char *szfound)
 	if (!fSentencesInit)
 		return -1;
 
-	if (isentenceg < 0)
+	if (isentenceg < 0 || isentenceg >= CSENTENCEG_MAX)
 		return -1;
 
 	szgroupname = rgsentenceg[isentenceg].szgroupname;
 	count = (unsigned char)rgsentenceg[isentenceg].count;
 	plru = rgsentenceg[isentenceg].rgblru;
+
+	// rgblru holds at most CSENTENCE_LRU_MAX entries, and an empty group would loop forever below
+	if (rgsentenceg[isentenceg].count > CSENTENCE_LRU_MAX)
+		count = CSENTENCE_LRU_MAX;
+	if (count == 0)
+		return -1;
 
 	for (;;)
 	{
@@ -1209,7 +1215,7 @@ int SENTENCEG_GetIndex(const char *szgroupname)
 	// search rgsentenceg for match on szgroupname
 
 	i = 0;
-	while (rgsentenceg[i].count)
+	while (i < CSENTENCEG_MAX && rgsentenceg[i].count)
 	{
 		if (!strcmp(szgroupname, rgsentenceg[i].szgroupname))
 			return i;
