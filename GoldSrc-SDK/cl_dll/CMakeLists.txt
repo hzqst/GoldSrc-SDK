@@ -100,6 +100,7 @@ goldsrc_add_module(hl_cdll
 		utils/vgui/include
 		game_shared
 		external
+		.
 	DEFINES
 		CLIENT_DLL
 		CLIENT_WEAPONS

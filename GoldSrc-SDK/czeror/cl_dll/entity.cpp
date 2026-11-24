@@ -8,7 +8,7 @@
 #include "event_api.h"
 #include "../../pm_shared/pm_defs.h"
 #include "../../pm_shared/pm_shared.h"
-#include "../../cl_dll/bench.h"
+#include "bench.h"
 #include "particleman.h"
 #include "../game_shared/voice_status.h"
 #include "../../cl_dll/Exports.h"

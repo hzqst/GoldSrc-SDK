@@ -74,7 +74,6 @@ goldsrc_add_module(hlds
 		dedicated
 		vgui2/compat
 		vgui2/controls
-		cl_dll
 		engine
 		vgui2/src/public
 		common

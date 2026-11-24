@@ -18,7 +18,7 @@
 
 #include "hud.h"
 #include "cl_util.h"
-#include "../../cl_dll/bench.h"
+#include "bench.h"
 #include "../public/game_controls/legacy_iviewport.h"
 #include "z_weather.h"
 
