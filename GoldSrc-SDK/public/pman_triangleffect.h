@@ -9,8 +9,8 @@
 #define TRI_COLLIDEALL		0x00001000 // will collide with world and slideboxes
 #define TRI_COLLIDEKILL		0x00004000 // tent is removed upon collision with anything
 #define TRI_SPIRAL			0x00008000
-#define TRI_ANIMATEDIE		0x00016000 //animate once and then die
-#define TRI_WATERTRACE		0x00032000
+#define TRI_ANIMATEDIE		0x00010000 //animate once and then die
+#define TRI_WATERTRACE		0x00020000
 
 
 #define CULL_FRUSTUM_POINT ( 1 << 0 )
