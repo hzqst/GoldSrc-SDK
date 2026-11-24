@@ -329,6 +329,7 @@ void CCoreTriangleEffect::CheckCollision( float time )
 	float traceFraction = 1;
 	Vector endpos;
 	int entIndex;
+	const bool killOnCollide = ( m_iCollisionFlags & TRI_COLLIDEKILL ) != 0;
 
 	if ( m_iCollisionFlags & TRI_COLLIDEALL )
 	{
@@ -396,7 +397,7 @@ void CCoreTriangleEffect::CheckCollision( float time )
 			m_iCollisionFlags = 0;
 		}
 
-		if ( m_iCollisionFlags & TRI_COLLIDEKILL )
+		if ( killOnCollide )
 		{
 			m_flDieTime = gEngfuncs.GetClientTime();
 		}
