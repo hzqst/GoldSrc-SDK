@@ -107,13 +107,14 @@ goldsrc_add_module(hldll
 		valve/dlls/xen.cpp
 		valve/dlls/zombie.cpp
 		game_shared/voice_gamemgr.cpp
-		pm_shared/pm_debug.c
-		pm_shared/pm_math.c
-		pm_shared/pm_shared.c
+		valve/pm_shared/pm_debug.c
+		valve/pm_shared/pm_math.c
+		valve/pm_shared/pm_shared.c
 	INCLUDES
 		valve/dlls
 		dlls
 		common
+		valve/pm_shared
 		pm_shared
 		game_shared
 		public
@@ -213,9 +214,9 @@ goldsrc_add_module(hl_cdll
 		game_shared/vgui_scrollbar2.cpp
 		game_shared/vgui_slider2.cpp
 		game_shared/voice_banmgr.cpp
-		pm_shared/pm_debug.c
-		pm_shared/pm_math.c
-		pm_shared/pm_shared.c
+		valve/pm_shared/pm_debug.c
+		valve/pm_shared/pm_math.c
+		valve/pm_shared/pm_shared.c
 		public/interface.cpp
 	INCLUDES
 		valve/dlls
@@ -224,6 +225,7 @@ goldsrc_add_module(hl_cdll
 		cl_dll
 		public
 		common
+		valve/pm_shared
 		pm_shared
 		engine
 		utils/vgui/include
