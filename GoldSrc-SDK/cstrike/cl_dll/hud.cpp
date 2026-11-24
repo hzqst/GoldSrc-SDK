@@ -697,6 +697,11 @@ CHud::~CHud()
 		m_pHudList = element->pNext;
 		free( element );
 	}
+	if ( m_pSpriteList )
+	{
+		gEngfuncs.COM_FreeFile( m_pSpriteList );
+		m_pSpriteList = NULL;
+	}
 	g_ShellQueue.Update( 99999 );
 }
 

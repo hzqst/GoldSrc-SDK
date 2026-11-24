@@ -540,6 +540,12 @@ void CCareerTaskManager::Create()
 		TheCareerTasks = new CCareerTaskManager;
 }
 
+CCareerTaskManager::~CCareerTaskManager()
+{
+	for ( CareerTaskList::iterator i = m_tasks.begin(); i != m_tasks.end(); ++i )
+		delete *i;
+}
+
 void CCareerTaskManager::Reset( bool deleteTasks )
 {
 	if ( deleteTasks )

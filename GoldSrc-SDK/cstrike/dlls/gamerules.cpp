@@ -24,6 +24,9 @@
 #include "gamerules.h"
 #include "skill.h"
 #include "bot/cs_bot_manager.h"
+#include "career_tasks.h"
+#include "tutor.h"
+#include "hostage/hostage.h"
 
 extern edict_t *EntSelectSpawnPoint(CBaseEntity *pPlayer);
 
@@ -36,6 +39,21 @@ CGameRules *InstallGameRules()
 	if (!gpGlobals->deathmatch)
 		return new CHalfLifeTraining;
 	return new CHalfLifeMultiplay;
+}
+
+// Frees the game rules and the managers they install, which otherwise live until the next map
+void ShutdownGameRules()
+{
+	delete g_pGameRules;
+	g_pGameRules = NULL;
+	delete TheBots;
+	TheBots = NULL;
+	delete g_pHostages;
+	g_pHostages = NULL;
+	delete TheTutor;
+	TheTutor = NULL;
+	delete TheCareerTasks;
+	TheCareerTasks = NULL;
 }
 
 void CGameRules::RefreshSkillData()

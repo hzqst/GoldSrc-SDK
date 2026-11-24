@@ -38,6 +38,7 @@ BotSpeakable::~BotSpeakable()
 
 BotPhrase::BotPhrase( unsigned int id, bool isPlace )
 {
+	m_name = NULL;
 	m_id = id;
 	m_radioEvent = EVENT_INVALID;
 	m_isImportant = false;
@@ -57,6 +58,7 @@ BotPhrase::~BotPhrase()
 			delete (*voiceBank)[i];
 		delete voiceBank;
 	}
+	delete[] m_name;
 }
 
 void BotPhrase::InitVoiceBank( int voiceBank )
@@ -172,6 +174,7 @@ bool BotPhraseManager::Initialize( const char *filename, int voiceBank )
 		if ( data == NULL )
 		{
 			CONSOLE_ECHO( "Error parsing '%s' - expected identifier\n", filename );
+			delete phrase;
 			g_engfuncs.pfnFreeFile( file );
 			return false;
 		}

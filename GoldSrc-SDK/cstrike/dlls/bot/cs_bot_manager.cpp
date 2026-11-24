@@ -105,6 +105,15 @@ CCSBotManager::CCSBotManager()
 		TheBotPhrases->Initialize( (*banks)[bank], bank );
 }
 
+CCSBotManager::~CCSBotManager()
+{
+	DestroyNavigationMap();
+	delete TheBotPhrases;
+	TheBotPhrases = NULL;
+	delete TheBotProfiles;
+	TheBotProfiles = NULL;
+}
+
 void CCSBotManager::StartFrame()
 {
 	CBotManager::StartFrame();

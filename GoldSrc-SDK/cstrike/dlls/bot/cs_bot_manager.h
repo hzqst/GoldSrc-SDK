@@ -13,6 +13,7 @@ class CCSBotManager : public CBotManager
 {
 public:
 	CCSBotManager();
+	~CCSBotManager() override;
 	void ClientDisconnect( CBasePlayer* player ) override;
 	BOOL ClientCommand( CBasePlayer* player, const char* command ) override;
 	void ServerActivate() override;

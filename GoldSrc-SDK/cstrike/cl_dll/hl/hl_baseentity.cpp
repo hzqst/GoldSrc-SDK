@@ -981,3 +981,7 @@ void CGrenade::Explode( TraceResult* trace, int damageType )
 void CGrenade::Explode( Vector source, Vector direction )
 {
 }
+
+void CHintMessageQueue::Reset()
+{
+}

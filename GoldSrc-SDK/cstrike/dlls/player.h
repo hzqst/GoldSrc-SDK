@@ -377,6 +377,7 @@ public:
 	int m_iLastClientHealth;
 	float m_tmNextAccountHealthUpdate;
 
+	~CBasePlayer() { delete[] m_rebuyString; }
 	void SpawnClientSideCorpse();
 	void Observer_FindNextPlayer( bool reverse, const char* name );
 	CBaseEntity* Observer_IsValidTarget( int index, bool sameTeam );
