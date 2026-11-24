@@ -105,23 +105,55 @@ void CCoreTriangleEffect::InitializeSprite( Vector origin, Vector normal, model_
 
 bool CCoreTriangleEffect::CheckVisibility()
 {
-	float radius = m_flSize / 5.0f;
+	Vector angles = m_vAngles;
+	if ( m_iRenderFlags & ( RENDER_FACEPLAYER | RENDER_FACEPLAYER_ROTATEZ ) )
+	{
+		angles.x = g_vViewAngles.x;
+		angles.y = g_vViewAngles.y;
+
+		if ( !( m_iRenderFlags & RENDER_FACEPLAYER_ROTATEZ ) )
+			angles.z = g_vViewAngles.z;
+	}
+
+	Vector forward, right, up;
+	gEngfuncs.pfnAngleVectors( angles, forward, right, up );
+	right = right * ( m_flSize * m_flStretchX );
+	Vector lowLeft = m_vOrigin - right * 0.5f - up * m_flSize * 0.5f;
+	Vector lowRight = lowLeft + right;
+	up = up * ( m_flSize * m_flStretchY );
+	Vector topLeft = lowLeft + up;
+	Vector topRight = lowRight + up;
+
+	Vector mins = lowLeft;
+	Vector maxs = lowLeft;
+	const Vector corners[3] = { lowRight, topLeft, topRight };
+	for ( int i = 0; i < 3; i++ )
+	{
+		for ( int axis = 0; axis < 3; axis++ )
+		{
+			if ( corners[i][axis] < mins[axis] )
+				mins[axis] = corners[i][axis];
+			if ( corners[i][axis] > maxs[axis] )
+				maxs[axis] = corners[i][axis];
+		}
+	}
+
 	if ( gEngfuncs.GetClientTime() >= m_flNextPVSCheck )
 	{
-		Vector mins = m_vOrigin - Vector( radius, radius, radius );
-		Vector maxs = m_vOrigin + Vector( radius, radius, radius );
 		m_bInPVS = gEngfuncs.pTriAPI->BoxInPVS( mins, maxs ) != 0;
 		m_flNextPVSCheck = gEngfuncs.GetClientTime() + 0.1f;
 	}
 
 	if ( m_iRenderFlags & CULL_FRUSTUM_SPHERE )
 	{
-		if ( !g_cFrustum.SphereInsideFrustum( m_vOrigin.x, m_vOrigin.y, m_vOrigin.z, radius ) )
+		Vector center = ( lowLeft + topRight ) * 0.5f;
+		float radius = ( topRight - center ).Length();
+		if ( !g_cFrustum.SphereInsideFrustum( center.x, center.y, center.z, radius ) )
 			return false;
 	}
 	else if ( m_iRenderFlags & CULL_FRUSTUM_PLANE )
 	{
-		if ( !g_cFrustum.PlaneInsideFrustum( m_vOrigin.x, m_vOrigin.y, m_vOrigin.z, radius ) )
+		if ( !g_cFrustum.BoxInsideFrustum( mins.x, mins.y, mins.z, maxs.x, maxs.y, maxs.z ) )
 			return false;
 	}
 	else if ( m_iRenderFlags & CULL_FRUSTUM_POINT )

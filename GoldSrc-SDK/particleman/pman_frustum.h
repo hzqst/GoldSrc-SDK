@@ -28,6 +28,7 @@ public:
 	bool PointInsideFrustum( float x, float y, float z );
 	bool SphereInsideFrustum( float x, float y, float z, float radius );
 	bool PlaneInsideFrustum( float x, float y, float z, float size );
+	bool BoxInsideFrustum( float minX, float minY, float minZ, float maxX, float maxY, float maxZ );
 };
 
 extern CFrustum g_cFrustum;

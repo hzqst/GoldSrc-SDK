@@ -111,23 +111,28 @@ bool CFrustum::SphereInsideFrustum( float x, float y, float z, float radius )
 
 bool CFrustum::PlaneInsideFrustum( float x, float y, float z, float size )
 {
+	return BoxInsideFrustum( x - size, y - size, z - size, x + size, y + size, z + size );
+}
+
+bool CFrustum::BoxInsideFrustum( float minX, float minY, float minZ, float maxX, float maxY, float maxZ )
+{
 	for ( int i = 0; i < 6; i++ )
 	{
-		if ( g_flFrustum[i][A] * ( x - size ) + g_flFrustum[i][B] * ( y - size ) + g_flFrustum[i][C] * ( z - size ) + g_flFrustum[i][D] > 0 )
+		if ( g_flFrustum[i][A] * minX + g_flFrustum[i][B] * minY + g_flFrustum[i][C] * minZ + g_flFrustum[i][D] > 0 )
 			continue;
-		if ( g_flFrustum[i][A] * ( x + size ) + g_flFrustum[i][B] * ( y - size ) + g_flFrustum[i][C] * ( z - size ) + g_flFrustum[i][D] > 0 )
+		if ( g_flFrustum[i][A] * maxX + g_flFrustum[i][B] * minY + g_flFrustum[i][C] * minZ + g_flFrustum[i][D] > 0 )
 			continue;
-		if ( g_flFrustum[i][A] * ( x - size ) + g_flFrustum[i][B] * ( y + size ) + g_flFrustum[i][C] * ( z - size ) + g_flFrustum[i][D] > 0 )
+		if ( g_flFrustum[i][A] * minX + g_flFrustum[i][B] * maxY + g_flFrustum[i][C] * minZ + g_flFrustum[i][D] > 0 )
 			continue;
-		if ( g_flFrustum[i][A] * ( x + size ) + g_flFrustum[i][B] * ( y + size ) + g_flFrustum[i][C] * ( z - size ) + g_flFrustum[i][D] > 0 )
+		if ( g_flFrustum[i][A] * maxX + g_flFrustum[i][B] * maxY + g_flFrustum[i][C] * minZ + g_flFrustum[i][D] > 0 )
 			continue;
-		if ( g_flFrustum[i][A] * ( x - size ) + g_flFrustum[i][B] * ( y - size ) + g_flFrustum[i][C] * ( z + size ) + g_flFrustum[i][D] > 0 )
+		if ( g_flFrustum[i][A] * minX + g_flFrustum[i][B] * minY + g_flFrustum[i][C] * maxZ + g_flFrustum[i][D] > 0 )
 			continue;
-		if ( g_flFrustum[i][A] * ( x + size ) + g_flFrustum[i][B] * ( y - size ) + g_flFrustum[i][C] * ( z + size ) + g_flFrustum[i][D] > 0 )
+		if ( g_flFrustum[i][A] * maxX + g_flFrustum[i][B] * minY + g_flFrustum[i][C] * maxZ + g_flFrustum[i][D] > 0 )
 			continue;
-		if ( g_flFrustum[i][A] * ( x - size ) + g_flFrustum[i][B] * ( y + size ) + g_flFrustum[i][C] * ( z + size ) + g_flFrustum[i][D] > 0 )
+		if ( g_flFrustum[i][A] * minX + g_flFrustum[i][B] * maxY + g_flFrustum[i][C] * maxZ + g_flFrustum[i][D] > 0 )
 			continue;
-		if ( g_flFrustum[i][A] * ( x + size ) + g_flFrustum[i][B] * ( y + size ) + g_flFrustum[i][C] * ( z + size ) + g_flFrustum[i][D] > 0 )
+		if ( g_flFrustum[i][A] * maxX + g_flFrustum[i][B] * maxY + g_flFrustum[i][C] * maxZ + g_flFrustum[i][D] > 0 )
 			continue;
 
 		return false;

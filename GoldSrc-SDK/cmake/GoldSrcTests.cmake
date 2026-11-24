@@ -92,6 +92,7 @@ foreach(name IN ITEMS
 		particleman_flags
 		particleman_forcelist
 		particleman_processall
+		particleman_visibility
 		perf_counter_init
 		playback_demo_commands
 		scoreboard_selection
