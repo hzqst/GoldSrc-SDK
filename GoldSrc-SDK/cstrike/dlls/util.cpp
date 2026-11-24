@@ -1915,6 +1915,13 @@ unsigned int CSaveRestoreBuffer :: HashString( const char *pszToken )
 
 unsigned short CSaveRestoreBuffer :: TokenHash( const char *pszToken )
 {
+	// an empty token table would divide by zero below
+	if ( !m_pdata || m_pdata->tokenCount <= 0 || !m_pdata->pTokens || !pszToken )
+	{
+		ALERT( at_error, "No token table array in TokenHash()!" );
+		return 0;
+	}
+
 	unsigned short	hash = (unsigned short)(HashString( pszToken ) % (unsigned)m_pdata->tokenCount );
 
 #if _DEBUG

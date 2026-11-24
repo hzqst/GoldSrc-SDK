@@ -2250,9 +2250,9 @@ void Host_Say( edict_t* entity, int teamOnly )
 	else
 	{
 		if ( CMD_ARGC() > 1 )
-			sprintf( temporary, "%s %s", command, CMD_ARGS() );
+			snprintf( temporary, sizeof( temporary ), "%s %s", command, CMD_ARGS() );
 		else
-			sprintf( temporary, "%s", command );
+			snprintf( temporary, sizeof( temporary ), "%s", command );
 		message = temporary;
 	}
 
