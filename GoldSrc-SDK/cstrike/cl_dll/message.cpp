@@ -479,6 +479,9 @@ int CHudMessage::Draw( float time )
 				endTime = m_startTime[i] + message->fadein + message->fadeout + message->holdtime;
 			break;
 		default:
+			// an unknown effect would never end, so drop the message
+			m_pMessages[i].pMessage = NULL;
+			m_pMessages[i].font = 0;
 			continue;
 		}
 		if ( time <= endTime )

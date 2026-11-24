@@ -211,10 +211,12 @@ int CHudMenu::MsgFunc_ShowMenu( const char*, int size, void* buffer )
 		if ( !more )
 		{
 			strncpy( g_szMenuString, gHUD.m_TextMessage.BufferedLocaliseTextString( g_szPrelocalisedMenuString ), MAX_MENU_STRING );
+			g_szMenuString[MAX_MENU_STRING - 1] = 0;
 			char* converted = NULL;
 			if ( KB_ConvertString( g_szMenuString, &converted ) )
 			{
 				strncpy( g_szMenuString, converted, MAX_MENU_STRING );
+				g_szMenuString[MAX_MENU_STRING - 1] = 0;
 				free( converted );
 			}
 		}

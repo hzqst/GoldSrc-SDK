@@ -54,6 +54,13 @@ CClientScoreBoardDialog::CClientScoreBoardDialog( vgui2::Panel* parent )
 	m_pPlayerList->SetVisible( false ); // hide this until we load the images in applyschemesettings
 }
 
+CClientScoreBoardDialog::~CClientScoreBoardDialog()
+{
+	// SetTeamName allocates the team names
+	for ( int i = 0; i < TeamInfoCount; ++i )
+		free( (void*)m_TeamInfo[i].name );
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: clears everything in the scoreboard and all it's state
 //-----------------------------------------------------------------------------

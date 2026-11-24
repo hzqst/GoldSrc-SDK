@@ -655,7 +655,7 @@ void CGameStudioModelRenderer::StudioSetupBones( void )
 		m_nPlayerGaitSequences[index] = m_pPlayerInfo->gaitsequence;
 	}
 	float frame = StudioEstimateFrame( sequence );
-	if ( m_pPlayerInfo->gaitsequence == 3 )
+	if ( m_pPlayerInfo && m_pPlayerInfo->gaitsequence == 3 )
 	{
 		byte& blend = m_pCurrentEntity->curstate.blending[0];
 		blend = blend > 26 ? blend - 26 : 0;

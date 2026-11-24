@@ -236,7 +236,8 @@ void CVoiceStatus::HandleVoiceMaskMsg( int size, void* buffer )
 			gEngfuncs.pfnConsolePrint( text );
 		}
 	}
-	m_bServerModEnable = READ_BYTE();
+	// The VoiceMask of this server holds only the audible and banned player masks;
+	// m_bServerModEnable tracks the value UpdateServerState sends.
 }
 
 void CVoiceStatus::HandleReqStateMsg( int, void* )
