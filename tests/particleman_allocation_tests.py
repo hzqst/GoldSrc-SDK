@@ -112,9 +112,19 @@ struct EngineFuncs {
     int (*pfnSPR_Load)(const char*);
     const model_s* (*GetSpritePointer)(int);
     pmtrace_t* (*PM_TraceLine)(float*, float*, int, int, int);
+    cvar_t* (*pfnRegisterVariable)(const char*, const char*, int);
 };
+using cl_enginefunc_t = EngineFuncs;
 
 static model_s g_stubSprite;
+static cvar_t g_pmanstats{0.0f};
+static cvar_t* cl_pmanstats = nullptr;
+static long g_lMaxParticleClassSize = 0;
+static long MaxParticleClassSize(unsigned long size) {
+    if (size > static_cast<unsigned long>(g_lMaxParticleClassSize))
+        g_lMaxParticleClassSize = static_cast<long>(size);
+    return g_lMaxParticleClassSize;
+}
 static void StubDPrintf(const char*, ...) {}
 static cl_entity_t* StubLocalPlayer() { return &g_player; }
 static float StubTime() { return 10.0f; }
@@ -123,10 +133,11 @@ static long StubRandLong(long a, long) { return a; }
 static int StubSprLoad(const char*) { return 1; }
 static const model_s* StubGetSprite(int) { return &g_stubSprite; }
 static pmtrace_t* StubTraceLine(float*, float*, int, int, int) { return &g_trace; }
+static cvar_t* StubRegisterVariable(const char*, const char*, int) { return &g_pmanstats; }
 
 static EngineFuncs gEngfuncs = {
     StubDPrintf, StubLocalPlayer, StubTime, StubRandFloat, StubRandLong,
-    StubSprLoad, StubGetSprite, StubTraceLine
+    StubSprLoad, StubGetSprite, StubTraceLine, StubRegisterVariable
 };
 
 enum {
@@ -170,6 +181,7 @@ struct CBaseParticle;
 
 struct IParticleMan {
     virtual ~IParticleMan() = default;
+    virtual void SetUp(cl_enginefunc_t* engine) = 0;
     virtual char* RequestNewMemBlock(int size) = 0;
     virtual CBaseParticle* CreateParticle(Vector origin, Vector normal, model_s* sprite, float size,
         float brightness, const char* classname) = 0;
@@ -211,6 +223,7 @@ struct CBaseParticle {
 };
 
 struct IParticleMan_Active : IParticleMan {
+    void SetUp(cl_enginefunc_t* engine) override;
     char* RequestNewMemBlock(int size) override;
     CBaseParticle* CreateParticle(Vector origin, Vector normal, model_s* sprite, float size,
         float brightness, const char* classname) override;
@@ -320,6 +333,16 @@ int main() {
     assert((new CBaseParticle) == nullptr);
     std::puts("PASS: null g_pParticleMan returns null safely from both operator new overloads");
 
+    // 5. SetUp() must bind g_pParticleMan so CreateParticle() works before the first Update().
+    CMiniMem::Instance()->Reset();
+    g_iRenderMode = 1;
+    g_pParticleMan = nullptr;
+    cl_enginefunc_t setupEngfuncs = gEngfuncs;
+    pman.SetUp(&setupEngfuncs);
+    assert(g_pParticleMan == &pman);
+    assert(pman.CreateParticle(Vector(), Vector(), &sprite, 1.0f, 255.0f, "before_update") != nullptr);
+    std::puts("PASS: SetUp binds g_pParticleMan before the first Update");
+
     return 0;
 }
 '''
@@ -328,6 +351,7 @@ int main() {
 def main():
     source = '\n'.join([
         STUBS.replace('CLASS_OPERATORS', extract_class_operators()),
+        extract_function('particleman/pman_main.cpp', 'void IParticleMan_Active::SetUp('),
         extract_function('particleman/pman_main.cpp', 'char* IParticleMan_Active::RequestNewMemBlock('),
         extract_function('particleman/pman_main.cpp', 'CBaseParticle* IParticleMan_Active::CreateParticle('),
         extract_function('dod/cl_dll/tri.cpp', 'void CreateDebrisWallPuff('),

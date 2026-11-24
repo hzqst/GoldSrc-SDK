@@ -51,6 +51,7 @@ bool IsGamePaused()
 
 void IParticleMan_Active::SetUp( cl_enginefunc_t* engine )
 {
+	g_pParticleMan = this;
 	memcpy( &gEngfuncs, engine, sizeof( gEngfuncs ) );
 	cl_pmanstats = gEngfuncs.pfnRegisterVariable( "cl_pmanstats", "0", 0 );
 
