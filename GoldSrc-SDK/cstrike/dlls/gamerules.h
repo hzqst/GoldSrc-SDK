@@ -59,6 +59,7 @@ enum
 class CGameRules
 {
 public:
+	virtual ~CGameRules() {}
 	virtual void RefreshSkillData();
 	virtual void Think() = 0;
 	virtual BOOL IsAllowedToSpawn(CBaseEntity *pEntity) = 0;  // Can this item spawn (eg monsters don't spawn in deathmatch).
@@ -416,6 +417,7 @@ public:
 };
 
 CGameRules *InstallGameRules();
+void ShutdownGameRules();
 char *GetTeam(int teamNo);
 int GetMapCount();
 extern DLL_GLOBAL CGameRules *g_pGameRules;

@@ -51,6 +51,7 @@ enum state
 class CHostage : public CBaseMonster
 {
 public:
+	~CHostage();
 	void Spawn() override;
 	void Precache() override;
 	void EXPORT IdleThink();

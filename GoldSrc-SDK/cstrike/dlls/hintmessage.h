@@ -26,6 +26,7 @@ private:
 class CHintMessageQueue
 {
 public:
+	~CHintMessageQueue() { Reset(); }
 	void Reset();
 	void Update( CBaseEntity& client );
 	bool AddMessage( const char* message, float duration, bool isHint, CUtlVector<const char*>* args );

@@ -2119,6 +2119,7 @@ void ClientPutInServer( edict_t* entity )
 	player->m_fDeadTime = 0;
 	player->has_disconnected = false;
 	player->ClearAutoBuyData();
+	delete[] player->m_rebuyString;
 	player->m_rebuyString = NULL;
 	g_engfuncs.pfnSetClientMaxspeed( player->edict(), 1 );
 	SET_MODEL( player->edict(), "models/player.mdl" );

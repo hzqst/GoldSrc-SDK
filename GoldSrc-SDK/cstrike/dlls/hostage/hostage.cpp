@@ -278,6 +278,12 @@ void CHostage::SetActivity( int activity )
 	ResetSequenceInfo();
 }
 
+CHostage::~CHostage()
+{
+	delete m_improv;
+	delete m_LocalNav;
+}
+
 void CHostage::Spawn()
 {
 	if ( !g_pHostages )

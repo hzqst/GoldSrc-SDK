@@ -37,11 +37,7 @@ cvar_t cv_bot_profile_db = { "bot_profile_db", "BotProfile.db", FCVAR_SERVER, 0.
 
 void InstallBotControl()
 {
-	if ( TheBots != NULL )
-	{
-		TheBots->~CBotManager();
-		::operator delete( TheBots );
-	}
+	delete TheBots;
 	TheBots = new CCSBotManager;
 }
 

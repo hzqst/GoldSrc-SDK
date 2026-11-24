@@ -180,6 +180,9 @@ public:
 	CBaseEntity			*m_pGoalEnt;// path corner we are heading towards
 	CBaseEntity			*m_pLink;// used for temporary link-list operations. 
 
+	// OnFreeEntPrivateData destroys the entity before the engine frees its private data
+	virtual ~CBaseEntity() {}
+
 	// initialization functions
 	virtual void	Spawn( void ) { return; }
 	virtual void	Precache( void ) { return; }

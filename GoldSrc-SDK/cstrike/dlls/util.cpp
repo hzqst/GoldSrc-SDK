@@ -1671,7 +1671,7 @@ void UTIL_Remove( CBaseEntity *pEntity )
 	if ( !pEntity )
 		return;
 
-	pEntity->UpdateOnRemove();
+	// OnFreeEntPrivateData calls UpdateOnRemove when the engine frees the entity
 	pEntity->pev->flags |= FL_KILLME;
 	pEntity->pev->targetname = 0;
 }

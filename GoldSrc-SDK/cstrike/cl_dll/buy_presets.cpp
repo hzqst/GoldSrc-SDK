@@ -72,7 +72,6 @@ BuyPresetManager::BuyPresetManager()
 
 void BuyPresetManager::Save()
 {
-	new KeyValues( "Presets" );
 	KeyValues* data = new KeyValues( "Presets" );
 	for ( BuyPresetList::iterator preset = m_presets.begin(); preset != m_presets.end(); ++preset )
 		preset->Save( data );

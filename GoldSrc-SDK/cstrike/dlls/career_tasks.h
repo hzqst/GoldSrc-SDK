@@ -62,6 +62,7 @@ class CCareerTaskManager
 public:
 	static void Create();
 	CCareerTaskManager();
+	~CCareerTaskManager();
 	void Reset( bool deleteTasks );
 	void AddTask( const char* taskName, const char* weaponName, int eventCount,
 		bool mustLive, bool crossRounds, bool isComplete );

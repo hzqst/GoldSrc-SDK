@@ -391,8 +391,7 @@ void CWorld::Precache()
 	CVAR_SET_STRING( "room_type", "0" ); // clear DSP
 
 	// Set up game rules
-	if ( g_pGameRules )
-		::operator delete( g_pGameRules );
+	delete g_pGameRules;
 	g_pGameRules = InstallGameRules();
 
 	//!!!UNDONE why is there so much Spawn code in the Precache function? I'll just keep it here 

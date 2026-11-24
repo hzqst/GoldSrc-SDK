@@ -112,13 +112,16 @@ void CBaseEntity::UpdateOnRemove( void )
 		}
 	}
 	if ( pev->globalname )
+	{
 		gGlobalState.EntitySetState( pev->globalname, GLOBAL_DEAD );
+		pev->globalname = 0;
+	}
 }
 
 // Convenient way to delay removing oneself
+// OnFreeEntPrivateData calls UpdateOnRemove when the engine frees the entity
 void CBaseEntity :: SUB_Remove( void )
 {
-	UpdateOnRemove();
 	if (pev->health > 0)
 	{
 		// this situation can screw up monsters who can't tell their entity pointers are invalid.

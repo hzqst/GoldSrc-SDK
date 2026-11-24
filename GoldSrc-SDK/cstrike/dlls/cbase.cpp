@@ -32,7 +32,8 @@ CMemoryPool hashItemMemPool( sizeof( hash_item_t ), 64 );
 static void CONSOLE_ECHO( char *pszMsg, ... );
 
 void OnFreeEntPrivateData( edict_t *pEnt );
-NEW_DLL_FUNCTIONS gNewDLLFunctions = { OnFreeEntPrivateData, NULL, NULL, NULL, NULL };
+void OnGameShutdown();
+NEW_DLL_FUNCTIONS gNewDLLFunctions = { OnFreeEntPrivateData, OnGameShutdown, NULL, NULL, NULL };
 
 int GetNewDLLFunctions( NEW_DLL_FUNCTIONS *pFunctionTable, int *interfaceVersion )
 {
@@ -189,7 +190,16 @@ void OnFreeEntPrivateData( edict_t *pEnt )
 	{
 		entity->UpdateOnRemove();
 		RemoveEntityHashValue( entity->pev, STRING( entity->pev->classname ), CLASSNAME );
+		// The engine frees the memory without running the destructors
+		entity->~CBaseEntity();
 	}
+}
+
+// The engine frees all entities before it calls this
+void OnGameShutdown()
+{
+	ShutdownGameRules();
+	EmptyEntityHashTable();
 }
 
 void REMOVE_ENTITY( edict_t *entity )
