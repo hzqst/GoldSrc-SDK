@@ -169,6 +169,8 @@ CClientMOTD::CClientMOTD( vgui2::Panel* parent ) : vgui2::Frame( parent, "Client
 	// created after the HTML control so that it draws over it; PerformLayout gives it the HTML control's bounds
 	m_pTextMessage = new vgui2::RichText( this, "TextMessage", false ); // the server sends the text
 	m_pTextMessage->SetVerticalScrollbar( true );
+	// the frame handles the keys: RichText keeps the space and scoreboard keys from reaching OnKeyCodeTyped
+	m_pTextMessage->SetKeyBoardInputEnabled( false );
 	m_pTextMessage->SetVisible( false );
 	InvalidateLayout( false, false );
 	m_pServerName = new vgui2::Label( this, "serverName", "" );
