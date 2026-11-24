@@ -128,7 +128,9 @@ void CreateDebrisWallPuff( Vector origin, Vector velocity, Vector color, int puf
 		size *= (distance - 500) / 500 + 1;
 		brightness = 225;
 	}
-	TriangleWallPuff *particle = new TriangleWallPuff;
+	TriangleWallPuff *particle = new ( std::nothrow ) TriangleWallPuff;
+	if ( !particle )
+		return;
 	particle->InitializeSprite( origin, Vector( 0, 0, 1 ), sprite, size, brightness );
 	particle->SetCollisionFlags( TRI_COLLIDEWORLD );
 	particle->m_flGravity = -0.1;
@@ -359,7 +361,9 @@ void CDoDParticle::Touch( Vector, Vector normal, int )
 	model_t *sprite = gHUD.m_Weather.GetSplashSprite();
 	if ( !sprite )
 		return;
-	CBaseParticle *particle = new CBaseParticle;
+	CBaseParticle *particle = new ( std::nothrow ) CBaseParticle;
+	if ( !particle )
+		return;
 	float size = gEngfuncs.pfnRandomLong( 25, 30 );
 	particle->InitializeSprite( m_vOrigin + normal, Vector( 90, 0, 0 ), sprite, size, 150 );
 	particle->m_iRendermode = kRenderTransAdd;
@@ -395,7 +399,9 @@ CDoDParticle *CDoDParticle::Create( Vector org, Vector normal, model_s *sprite, 
 		if ( !(distance.Length() <= cl_weatherdis->value) )
 			return NULL;
 	}
-	CDoDParticle *particle = new CDoDParticle;
+	CDoDParticle *particle = new ( std::nothrow ) CDoDParticle;
+	if ( !particle )
+		return NULL;
 	particle->InitializeSprite( org, normal, sprite, size, brightness );
 	particle->m_bInsideSmoke = false;
 	particle->m_bSpawnInside = false;
@@ -468,7 +474,9 @@ CDoDRocketTrail *CDoDRocketTrail::Create( Vector org, Vector normal, model_s *sp
 	}
 	if ( !IEngineStudio.IsHardware() )
 		return NULL;
-	CDoDRocketTrail *particle = new CDoDRocketTrail;
+	CDoDRocketTrail *particle = new ( std::nothrow ) CDoDRocketTrail;
+	if ( !particle )
+		return NULL;
 	particle->InitializeSprite( org, normal, sprite, size, brightness );
 	particle->m_iNumFrames = sprite->numframes;
 	particle->m_vVelocity.x += CDoDParticle::m_vGlobalWind.x;
@@ -501,7 +509,9 @@ CDoDDirtExploDust *CDoDDirtExploDust::Create( Vector org, Vector normal, model_s
 	}
 	if ( !IEngineStudio.IsHardware() )
 		return NULL;
-	CDoDDirtExploDust *particle = new CDoDDirtExploDust;
+	CDoDDirtExploDust *particle = new ( std::nothrow ) CDoDDirtExploDust;
+	if ( !particle )
+		return NULL;
 	particle->InitializeSprite( org, normal, sprite, size, brightness );
 	particle->m_iNumFrames = sprite->numframes;
 	particle->m_vVelocity.x += CDoDParticle::m_vGlobalWind.x;

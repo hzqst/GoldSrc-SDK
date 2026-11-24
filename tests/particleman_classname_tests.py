@@ -35,6 +35,7 @@ STUBS = r'''
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <new>
 #include <string>
 
 struct Vector {

@@ -1,6 +1,7 @@
 #ifndef PARTICLEMAN_H
 #define PARTICLEMAN_H
 
+#include <new>
 #include "interface.h"
 #include "pman_triangleffect.h"
 
@@ -85,16 +86,16 @@ public:
 		g_pParticleMan->CoreInitializeSprite ( this, org, normal, sprite, size, brightness );
 	}
 
-	void * operator new( size_t size ) //this asks for a new block of memory from the MiniMem class
+	void * operator new( size_t size ) noexcept //this asks for a new block of memory from the MiniMem class
 	{
-	   return( g_pParticleMan->RequestNewMemBlock( size ) );
+	   return g_pParticleMan ? g_pParticleMan->RequestNewMemBlock( static_cast<int>( size ) ) : NULL;
 	}
-#ifdef POSIX
-	void * operator new( size_t size, const std::nothrow_t&) throw() //this asks for a new block of memory from the MiniMem class
+	void * operator new( size_t size, const std::nothrow_t& ) noexcept //this asks for a new block of memory from the MiniMem class
 	{
-	   return( g_pParticleMan->RequestNewMemBlock( size ) );
+	   return g_pParticleMan ? g_pParticleMan->RequestNewMemBlock( static_cast<int>( size ) ) : NULL;
 	}
-#endif
+	void operator delete( void* ) noexcept {}
+	void operator delete( void*, const std::nothrow_t& ) noexcept {}
 };
 
 

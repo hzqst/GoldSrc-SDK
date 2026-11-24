@@ -1966,7 +1966,7 @@ void DoTeleporterParticles( event_args_t* args )
 		float angleZ = gEngfuncs.pfnRandomFloat( 0, 255 );
 		float angleY = gEngfuncs.pfnRandomFloat( 0, 255 );
 		float angleX = gEngfuncs.pfnRandomFloat( 0, 255 );
-		CBaseParticle* particle = new CBaseParticle;
+		CBaseParticle* particle = new ( std::nothrow ) CBaseParticle;
 		if ( !particle )
 			break;
 		particle->InitializeSprite( origin, Vector( 0, 0, 1 ), sprite, 3, 255 );

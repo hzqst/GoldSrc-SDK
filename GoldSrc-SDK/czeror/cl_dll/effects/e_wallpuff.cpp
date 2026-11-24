@@ -15,7 +15,7 @@ void CreateDebrisWallPuff(Vector origin, Vector velocity, Vector color, int puff
 	if (puff > 0)
 		scale = gEngfuncs.pfnRandomFloat(static_cast<float>(5 * puff), static_cast<float>(10 * puff));
 	float brightness = blood ? 215.0f : (puff != 0 ? 100.0f : 255.0f);
-	CTriangleWallPuff *particle = new CTriangleWallPuff;
+	CTriangleWallPuff *particle = new (std::nothrow) CTriangleWallPuff;
 	if (!particle)
 		return;
 	particle->InitializeSprite(origin, Vector(0, 0, 1), sprite, scale, brightness);

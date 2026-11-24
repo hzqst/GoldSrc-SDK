@@ -23,7 +23,7 @@ void CreateSpark(Vector origin, Vector normal, const char *spriteName)
 	float rightSpeed = gEngfuncs.pfnRandomFloat(-speed, speed);
 	float forwardSpeed = gEngfuncs.pfnRandomFloat(speed * 0.5f, speed);
 	Vector velocity = up * upSpeed + right * rightSpeed + forward * forwardSpeed;
-	CBaseParticle *particle = new CBaseParticle;
+	CBaseParticle *particle = new (std::nothrow) CBaseParticle;
 	if (!particle)
 		return;
 	particle->InitializeSprite(origin, Vector(0, 0, 1), sprite, 0.25f, 255.0f);
@@ -82,7 +82,8 @@ void CreateParticles(Vector origin, Vector direction, int count, float speed, in
 		{
 		case PARTICLE_SPRITE:
 			particle = g_pParticleMan->CreateParticle(origin, Vector(0, 0, 0), sprite, particleScale, brightness, "CreateParticles");
-			particle->SetRenderFlag(RENDER_FACEPLAYER);
+			if (particle)
+				particle->SetRenderFlag(RENDER_FACEPLAYER);
 			break;
 		case PARTICLE_PLANE:
 		case PARTICLE_CYLINDER:

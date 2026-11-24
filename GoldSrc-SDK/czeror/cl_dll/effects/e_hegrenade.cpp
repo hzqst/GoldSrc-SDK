@@ -11,7 +11,7 @@ void CreateDustRing(Vector origin, Vector velocity, float scale)
 		gEngfuncs.Con_DPrintf("Couldn't load Sprite: sprites/gas_puff_01.spr\n");
 		return;
 	}
-	CTriangleDust *particle = new CTriangleDust;
+	CTriangleDust *particle = new (std::nothrow) CTriangleDust;
 	if (!particle)
 		return;
 	particle->InitializeSprite(origin, Vector(0, 0, 1), sprite, scale, 235.0f);
@@ -43,7 +43,7 @@ void CreateGrenadeSmoke(Vector origin, Vector velocity, bool insideSmoke)
 		return;
 	}
 	float scale = gEngfuncs.pfnRandomFloat(140.0f, 180.0f);
-	CHEGrenadeSmoke *particle = new CHEGrenadeSmoke;
+	CHEGrenadeSmoke *particle = new (std::nothrow) CHEGrenadeSmoke;
 	if (!particle)
 		return;
 	particle->InitializeSprite(origin, Vector(0, 0, 1), sprite, scale, 255.0f);
@@ -93,7 +93,7 @@ void CreateHEGrenadeFlash(Vector origin)
 	CreateHEGrenadeFlashGlow(origin, 1);
 	CreateHEGrenadeFlashGlow(origin, 3);
 	gEngfuncs.GetLocalPlayer();
-	CBaseParticle *particle = new CBaseParticle;
+	CBaseParticle *particle = new (std::nothrow) CBaseParticle;
 	if (!particle)
 		return;
 	particle->InitializeSprite(origin, Vector(0, 0, 0), sprite, 175.0f, 234.0f);
@@ -122,7 +122,7 @@ void CreateHEGrenadeFlashGlow(Vector origin, int flare)
 		return;
 	}
 	gEngfuncs.GetLocalPlayer();
-	CBaseParticle *particle = new CBaseParticle;
+	CBaseParticle *particle = new (std::nothrow) CBaseParticle;
 	if (!particle)
 		return;
 	particle->InitializeSprite(origin, Vector(0, 0, 0), sprite, flare == 1 ? 75.0f : 135.0f, 255.0f);
