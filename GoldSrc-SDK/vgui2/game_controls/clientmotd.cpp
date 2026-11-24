@@ -8,6 +8,7 @@
 #include "clientmotd.h"
 #include "HTML.h"
 #include "../../vgui2/controls/Label.h"
+#include "../../vgui2/controls/RichText.h"
 #include "../controls/controls.h"
 #include "../../engine/controls.h"
 #include "../../public/FileSystem.h"
@@ -18,6 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <ctype.h>
+#include <string>
 
 extern IGameUIFuncs* gameuifuncs; // for key binding details
 
@@ -27,7 +30,7 @@ static const size_t MaxMultiByteCharLength = 4;
 class ClientMOTDHTML : public vgui2::HTML
 {
 public:
-	ClientMOTDHTML( vgui2::Panel* parent, const char* name ) : vgui2::HTML( parent, name, false, false )
+	ClientMOTDHTML( CClientMOTD* parent, const char* name ) : vgui2::HTML( parent, name, false, false ), m_pMOTD( parent )
 	{
 	}
 
@@ -35,7 +38,117 @@ public:
 	{
 		return _strnicmp( "steam://", url, 8 ) != 0;
 	}
+
+	void OnFinishRequest( const char* url, const char* pageTitle ) override
+	{
+		vgui2::HTML::OnFinishRequest( url, pageTitle );
+		m_pMOTD->OnPageLoaded();
+	}
+
+private:
+	CClientMOTD* m_pMOTD;
 };
+
+// Elements whose content is not text of the page
+static bool IsHiddenElement( const std::string& tag )
+{
+	return tag == "head" || tag == "style" || tag == "script" || tag == "title";
+}
+
+// Elements that start a new line
+static bool IsLineBreakElement( const std::string& tag )
+{
+	return tag == "br" || tag == "p" || tag == "/p" || tag == "div" || tag == "/div" || tag == "li" || tag == "tr"
+		|| tag == "/tr" || tag == "hr" || ( tag.size() == 2 && tag[0] == 'h' && isdigit( (unsigned char)tag[1] ) )
+		|| ( tag.size() == 3 && tag[0] == '/' && tag[1] == 'h' && isdigit( (unsigned char)tag[2] ) );
+}
+
+// Reads the entity at text (after the '&'), appends its character and returns its length, or 0 if it is not one
+static size_t AppendEntity( const char* text, std::string& out )
+{
+	static const struct
+	{
+		const char* name;
+		char character;
+	} Entities[] = { { "amp;", '&' }, { "lt;", '<' }, { "gt;", '>' }, { "quot;", '"' }, { "#39;", '\'' },
+		{ "apos;", '\'' }, { "nbsp;", ' ' } };
+	for ( const auto& entity : Entities )
+	{
+		const size_t length = strlen( entity.name );
+		if ( !_strnicmp( text, entity.name, length ) )
+		{
+			out += entity.character;
+			return length;
+		}
+	}
+	return 0;
+}
+
+// The text of an HTML message, with line breaks where the page would break lines; plain text is kept as it is
+static std::string MOTDPlainText( const char* message )
+{
+	if ( !strchr( message, '<' ) )
+		return message;
+
+	std::string out;
+	bool pendingSpace = false;
+	const char* text = message;
+	while ( *text )
+	{
+		if ( *text == '<' )
+		{
+			const char* end = strchr( text, '>' );
+			if ( !end )
+				break;
+			std::string tag;
+			for ( const char* scan = text + 1; scan < end && !isspace( (unsigned char)*scan ) && *scan != '>'; scan++ )
+				tag += (char)tolower( (unsigned char)*scan );
+			if ( !tag.empty() && tag.back() == '/' )
+				tag.pop_back();
+			text = end + 1;
+			if ( IsHiddenElement( tag ) )
+			{
+				// skip to the closing tag
+				const std::string closing = "</" + tag;
+				const char* scan = text;
+				while ( *scan && _strnicmp( scan, closing.c_str(), closing.size() ) )
+					scan++;
+				const char* close = *scan ? strchr( scan, '>' ) : NULL;
+				text = close ? close + 1 : scan;
+			}
+			else if ( IsLineBreakElement( tag ) )
+			{
+				if ( !out.empty() && out.back() != '\n' )
+					out += '\n';
+				pendingSpace = false;
+			}
+			continue;
+		}
+		if ( isspace( (unsigned char)*text ) )
+		{
+			// runs of white space are one space, and none at the start of a line
+			pendingSpace = !out.empty() && out.back() != '\n';
+			text++;
+			continue;
+		}
+		if ( pendingSpace )
+		{
+			out += ' ';
+			pendingSpace = false;
+		}
+		if ( *text == '&' )
+		{
+			const size_t length = AppendEntity( text + 1, out );
+			if ( length )
+			{
+				text += length + 1;
+				continue;
+			}
+		}
+		out += *text++;
+	}
+	return out;
+}
 
 CClientMOTD::CClientMOTD( vgui2::Panel* parent ) : vgui2::Frame( parent, "ClientMOTD", true, false )
 {
@@ -53,8 +166,25 @@ CClientMOTD::CClientMOTD( vgui2::Panel* parent ) : vgui2::Frame( parent, "Client
 	SetProportional( true );
 	m_pMessage = new ClientMOTDHTML( this, "Message" );
 	LoadControlSettings( "Resource/UI/MOTD.res", NULL );
+	// created after the HTML control so that it draws over it; PerformLayout gives it the HTML control's bounds
+	m_pTextMessage = new vgui2::RichText( this, "TextMessage", false ); // the server sends the text
+	m_pTextMessage->SetVerticalScrollbar( true );
+	m_pTextMessage->SetVisible( false );
 	InvalidateLayout( false, false );
 	m_pServerName = new vgui2::Label( this, "serverName", "" );
+}
+
+void CClientMOTD::PerformLayout()
+{
+	vgui2::Frame::PerformLayout();
+	int x, y, wide, tall;
+	m_pMessage->GetBounds( x, y, wide, tall );
+	m_pTextMessage->SetBounds( x, y, wide, tall );
+}
+
+void CClientMOTD::OnPageLoaded()
+{
+	m_pTextMessage->SetVisible( false );
 }
 
 //-----------------------------------------------------------------------------
@@ -112,6 +242,11 @@ void CClientMOTD::Activate( const wchar_t* title, const wchar_t* message )
 //-----------------------------------------------------------------------------
 bool CClientMOTD::ShowMessage( const char* message )
 {
+	// shown until the HTML control loads the page, which it never does without an HTML renderer
+	m_pTextMessage->SetText( MOTDPlainText( message ).c_str() );
+	m_pTextMessage->GotoTextStart();
+	m_pTextMessage->SetVisible( true );
+
 	if ( IsURL( message ) )
 	{
 		m_pMessage->OpenURL( message, NULL, false );
@@ -121,7 +256,10 @@ bool CClientMOTD::ShowMessage( const char* message )
 	if ( vgui2::filesystem()->FileExists( m_szTempFileName ) )
 		vgui2::filesystem()->RemoveFile( m_szTempFileName, "GAMECONFIG" );
 	if ( strstr( message, "img src=\"view-source:" ) || strstr( message, "<style>;@/*" ) )
+	{
+		m_pTextMessage->SetVisible( false );
 		return false;
+	}
 
 	FileHandle_t file = vgui2::filesystem()->Open( m_szTempFileName, "w+", "GAMECONFIG" );
 	if ( file )

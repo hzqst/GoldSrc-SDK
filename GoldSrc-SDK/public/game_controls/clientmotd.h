@@ -13,6 +13,7 @@ namespace vgui2
 {
 class HTML;
 class Label;
+class RichText;
 }
 
 //-----------------------------------------------------------------------------
@@ -34,10 +35,19 @@ public:
 	// helper functions
 	void SetLabelText( const char* textEntryName, const wchar_t* text );
 
+	// the HTML control finished loading a page: it renders, so the text copy is not needed
+	void OnPageLoaded();
+
+protected:
+	void PerformLayout() override;
+
 private:
 	bool ShowMessage( const char* message );
 
 	vgui2::HTML*	m_pMessage;
+	// The message as plain text over the HTML control, for engines without an HTML renderer (no chromehtml):
+	// there the HTML control never loads a page and stays empty.
+	vgui2::RichText*	m_pTextMessage;
 	vgui2::Label*	m_pServerName;
 	bool			m_bFileWritten;
 	char			m_szTempFileName[4096];
