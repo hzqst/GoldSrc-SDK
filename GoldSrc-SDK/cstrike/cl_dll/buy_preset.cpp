@@ -168,7 +168,7 @@ const char* ImageFnameFromWeaponID( WeaponIdType weaponID, bool isPrimary )
 	switch ( weaponID )
 	{
 	case WEAPON_NONE:
-		if ( g_pCareerUI->IsPlayingMatch() )
+		if ( g_pCareerUI && g_pCareerUI->IsPlayingMatch() )
 			return isPrimary ? "gfx/vgui/buy_presets/defaultrifle_career" : "gfx/vgui/buy_presets/defaultpistol_career";
 		return isPrimary ? "gfx/vgui/buy_presets/defaultrifle" : "gfx/vgui/buy_presets/defaultpistol";
 	case WEAPON_P228: return "gfx/vgui/buy_presets/p228";

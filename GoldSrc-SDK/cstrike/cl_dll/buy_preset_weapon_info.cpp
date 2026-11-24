@@ -308,7 +308,7 @@ static std::vector<BuyPresetWeapon> CareerWeaponListOrganized(
 std::vector<BuyPresetWeapon> CareerWeaponList( const std::vector<BuyPresetWeapon>& source,
 	bool isPrimary, ClientWeaponIdType currentClientID )
 {
-	if ( !g_pCareerUI->IsPlayingMatch() )
+	if ( !g_pCareerUI || !g_pCareerUI->IsPlayingMatch() )
 		return source;
 
 	ITaskVec* tasks = g_pCareerUI->GetCurrentTaskVec();
