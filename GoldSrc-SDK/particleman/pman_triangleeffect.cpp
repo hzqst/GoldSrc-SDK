@@ -13,6 +13,17 @@
 
 const Vector g_vecZero = Vector( 0, 0, 0 );
 
+static const int TRI_LEGACY_FLAG_BIT = 0x00002000;
+static const int TRI_LEGACY_ANIMATEDIE = 0x00016000;
+
+static bool HasAnimateDieFlag( int collisionFlags )
+{
+	if ( collisionFlags & TRI_LEGACY_FLAG_BIT )
+		return ( collisionFlags & TRI_LEGACY_ANIMATEDIE ) == TRI_LEGACY_ANIMATEDIE;
+
+	return ( collisionFlags & TRI_ANIMATEDIE ) != 0;
+}
+
 void CCoreTriangleEffect::InitializeSprite( Vector origin, Vector normal, model_s* sprite, float size,
 		float brightness )
 {
@@ -454,7 +465,7 @@ void CCoreTriangleEffect::Force()
 
 void CCoreTriangleEffect::Think( float time )
 {
-	if ( m_iCollisionFlags & TRI_ANIMATEDIE )
+	if ( HasAnimateDieFlag( m_iCollisionFlags ) )
 		AnimateAndDie( time );
 	else
 		Animate( time );

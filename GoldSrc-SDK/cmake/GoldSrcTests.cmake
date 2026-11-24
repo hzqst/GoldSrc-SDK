@@ -89,6 +89,7 @@ foreach(name IN ITEMS
 		particleman_classname
 		particleman_collideall
 		particleman_collidekill
+		particleman_flags
 		particleman_processall
 		perf_counter_init
 		playback_demo_commands
