@@ -508,7 +508,8 @@ int CCSBot::UpdatePathMovement( bool allowSpeedChange )
 	if ( m_ladder == NULL )
 	{
 		bool crouch = false;
-		for ( int i = behind; i < m_pathLength; ++i )
+		// behind is -1 when we are not on the path
+		for ( int i = std::max( behind, 0 ); i < m_pathLength; ++i )
 		{
 			CNavArea* area = m_path[i].area;
 			if ( area->GetAttributes() & NAV_JUMP )
