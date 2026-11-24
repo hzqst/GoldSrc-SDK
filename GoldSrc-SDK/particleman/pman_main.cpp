@@ -100,7 +100,11 @@ CBaseParticle* IParticleMan_Active::CreateParticle( Vector origin, Vector normal
 		return NULL;
 
 	particle->InitializeSprite( origin, normal, sprite, size, brightness );
-	strcpy( particle->m_szClassname, classname );
+	if ( classname )
+	{
+		strncpy( particle->m_szClassname, classname, sizeof( particle->m_szClassname ) - 1 );
+		particle->m_szClassname[sizeof( particle->m_szClassname ) - 1] = '\0';
+	}
 	return particle;
 }
 
