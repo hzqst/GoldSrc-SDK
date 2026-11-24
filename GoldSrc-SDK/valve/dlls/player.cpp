@@ -931,6 +931,7 @@ entvars_t *g_pevLastInflictor;  // Set in combat.cpp.  Used to pass the damage i
 void CBasePlayer::Killed( entvars_t *pevAttacker, int iGib )
 {
 	CSound *pSound;
+	StopDrivingVehicle();
 
 	// Holster weapon immediately, to allow it to cleanup
 	if ( m_pActiveItem )
@@ -1569,6 +1570,14 @@ void CBasePlayer::StartObserver( Vector vecPosition, Vector vecViewAngle )
 	Observer_SetMode( m_iObserverLastMode );
 }
 
+void CBasePlayer::StopDrivingVehicle( void )
+{
+	CFuncVehicle *pVehicle = (CFuncVehicle*)(CBaseEntity*)m_hDrivenVehicle;
+	if ( pVehicle && (CBaseEntity*)pVehicle->m_hDriver == this )
+		pVehicle->m_hDriver = NULL;
+	m_hDrivenVehicle = NULL;
+}
+
 // 
 // PlayerUse - handles USE keypress
 //
@@ -1600,9 +1609,7 @@ void CBasePlayer::PlayerUse ( void )
 			{
 				m_afPhysicsFlags &= ~PFLAG_ONTRAIN;
 				m_iTrain = TRAIN_NEW|TRAIN_OFF;
-				CBaseEntity *pTrain = CBaseEntity::Instance( pev->groundentity );
-				if (pTrain && (pTrain->Classify() == CLASS_VEHICLE))
-					((CFuncVehicle*)pTrain)->m_pDriver = NULL;
+				StopDrivingVehicle();
 				return;
 			}
 			else
@@ -1617,7 +1624,8 @@ void CBasePlayer::PlayerUse ( void )
 					if (pTrain->Classify() == CLASS_VEHICLE)
 					{
 						EMIT_SOUND( ENT(pev), CHAN_ITEM, "plats/vehicle_ignition.wav", 0.8, ATTN_NORM);
-						((CFuncVehicle*)pTrain)->m_pDriver = this;
+						((CFuncVehicle*)pTrain)->m_hDriver = this;
+						m_hDrivenVehicle = pTrain;
 					}
 					else
 						EMIT_SOUND( ENT(pev), CHAN_ITEM, "plats/train_use1.wav", 0.8, ATTN_NORM);
@@ -2027,8 +2035,7 @@ void CBasePlayer::PreThink(void)
 				//ALERT( at_error, "In train mode with no train!\n" );
 				m_afPhysicsFlags &= ~PFLAG_ONTRAIN;
 				m_iTrain = TRAIN_NEW|TRAIN_OFF;
-				if (pTrain->Classify() == CLASS_VEHICLE)
-					((CFuncVehicle*)pTrain)->m_pDriver = NULL;
+				StopDrivingVehicle();
 				return;
 			}
 		}
@@ -2038,8 +2045,7 @@ void CBasePlayer::PreThink(void)
 			// and it isn't a func_vehicle.
 			m_afPhysicsFlags &= ~PFLAG_ONTRAIN;
 			m_iTrain = TRAIN_NEW|TRAIN_OFF;
-			if (pTrain->Classify() == CLASS_VEHICLE)
-				((CFuncVehicle*)pTrain)->m_pDriver = NULL;
+			StopDrivingVehicle();
 			return;
 		}
 

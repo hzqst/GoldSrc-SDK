@@ -498,6 +498,8 @@ void SV_DropClient( client_t* client, qboolean crash, const char* format, ... )
 	NET_CheckCleanupFakeIPConnection( client->netchan.sock, &client->netchan.remote_address );
 	Netchan_Clear( &client->netchan );
 	Steam_NotifyClientDisconnect( client );
+	if ( client->edict )
+		++client->edict->serialnumber;
 	client->active = 0;
 	client->connected = 0;
 	client->hasusrmsgs = 0;
