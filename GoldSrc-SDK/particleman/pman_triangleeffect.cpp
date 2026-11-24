@@ -341,13 +341,8 @@ void CCoreTriangleEffect::CheckCollision( float time )
 		{
 			gEngfuncs.pEventAPI->EV_GetPhysent( pmtrace.ent );
 			entIndex = pmtrace.ent;
-
-			if ( !pmtrace.ent )
-			{
-				traceFraction = pmtrace.fraction;
-				traceNormal = Vector( pmtrace.plane.normal );
-			}
-
+			traceFraction = pmtrace.fraction;
+			traceNormal = Vector( pmtrace.plane.normal );
 			endpos = Vector( pmtrace.endpos );
 		}
 	}
