@@ -16,7 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../common/nowin.h"
+#include "nowin.h"
 
 typedef int BOOL;
 #define TRUE	 1	
@@ -25,7 +25,7 @@ typedef int BOOL;
 // hack into header files that we can ship
 typedef int qboolean;
 typedef unsigned char byte;
-#include "../utils/common/mathlib.h"
+#include "utils/common/mathlib.h"
 #include "const.h"
 #include "progdefs.h"
 #include "edict.h"

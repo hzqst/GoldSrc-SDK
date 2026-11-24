@@ -22,7 +22,7 @@
 #include "cl_util.h"
 #include "parsemsg.h"
 #include "demo_api.h"
-#include "../../cl_dll/demo.h"
+#include "demo.h"
 #include "../game_shared/voice_status.h"
 #include "../public/game_controls/legacy_iviewport.h"
 #include "../public/game_controls/legacy_iviewportmsgs.h"

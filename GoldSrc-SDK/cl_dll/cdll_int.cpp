@@ -22,7 +22,7 @@
 #include "cl_util.h"
 #include "netadr.h"
 #undef INTERFACE_H
-#include "../public/interface.h"
+#include "interface.h"
 //#include "vgui_schememanager.h"
 
 extern "C"
@@ -44,7 +44,7 @@ extern "C"
 #
 #include "tri.h"
 #include "vgui_TeamFortressViewport.h"
-#include "../public/interface.h"
+#include "interface.h"
 
 cl_enginefunc_t gEngfuncs;
 CHud gHUD;

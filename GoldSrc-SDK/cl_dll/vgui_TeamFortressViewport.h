@@ -28,7 +28,7 @@
 
 #define TF_DEFS_ONLY
 #ifdef _TFC
-#include "../tfc/tf_defs.h"
+#include "tfc/tf_defs.h"
 #else
 #define PC_LASTCLASS 10
 #define PC_UNDEFINED 0

@@ -19,7 +19,7 @@ extern "C"
 #include <ctype.h>
 #include "game_controls/legacy_iviewport.h"
 #include "voice_status.h"
-#include "../../cl_dll/bench.h"
+#include "bench.h"
 
 
 

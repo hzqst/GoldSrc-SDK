@@ -15,7 +15,7 @@
 #include "extdll.h"
 #include "util.h"
 #include "cbase.h"
-#include "../../dlls/effects.h"
+#include "effects.h"
 #include "weapons.h"
 
 #include "player.h"

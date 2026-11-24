@@ -117,6 +117,7 @@ goldsrc_add_module(hldll
 		game_shared
 		public
 		engine
+		.
 	DEFINES
 		QUIVER
 		VOXEL
