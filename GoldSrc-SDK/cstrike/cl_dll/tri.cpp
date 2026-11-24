@@ -48,7 +48,7 @@ void CreateGasSmoke( Vector origin, Vector velocity, bool insideSmoke, bool spaw
 	}
 
 	float scale = gEngfuncs.pfnRandomFloat( 175, 225 );
-	CPartSmokeGrenade* smoke = new CPartSmokeGrenade;
+	CPartSmokeGrenade* smoke = new ( std::nothrow ) CPartSmokeGrenade;
 	if ( !smoke )
 		return;
 
@@ -192,8 +192,10 @@ void CPartSmokeGrenade::Think( float time )
 CPartSmokeGrenade* CPartSmokeGrenade::Create( Vector origin, Vector normal, model_s* sprite,
 	float size, float brightness, const char* )
 {
-	CPartSmokeGrenade* particle = new CPartSmokeGrenade;
-	if ( !sprite || !particle )
+	if ( !sprite )
+		return NULL;
+	CPartSmokeGrenade* particle = new ( std::nothrow ) CPartSmokeGrenade;
+	if ( !particle )
 		return NULL;
 	particle->InitializeSprite( origin, normal, sprite, size, brightness );
 	return particle;

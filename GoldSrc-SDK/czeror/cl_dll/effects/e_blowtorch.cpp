@@ -14,7 +14,7 @@ void CreatePilotFlame(Vector origin)
 		gEngfuncs.Con_DPrintf("Couldn't load Sprite: sprites/adrian/flare1.spr\n");
 		return;
 	}
-	CPartBlowTorchPilot *particle = new CPartBlowTorchPilot;
+	CPartBlowTorchPilot *particle = new (std::nothrow) CPartBlowTorchPilot;
 	if (!particle)
 		return;
 	particle->InitializeSprite(origin, Vector(0, 0, 1), sprite, blowTorchFiring == 2 ? 1.1f : 1.0f, 255.0f);
@@ -43,7 +43,7 @@ void CreateBlowTorchGlow()
 		gEngfuncs.Con_DPrintf("Couldn't load Sprite: sprites/adrian/flare1.spr\n");
 		return;
 	}
-	CPartBlowTorchGlow *particle = new CPartBlowTorchGlow;
+	CPartBlowTorchGlow *particle = new (std::nothrow) CPartBlowTorchGlow;
 	if (!particle)
 		return;
 	float size = gEngfuncs.pfnRandomFloat(4.0f, 5.0f);

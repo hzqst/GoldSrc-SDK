@@ -67,7 +67,9 @@ CDoDSnowFlake *CDoDSnowFlake::Create( Vector org, Vector normal, model_s *sprite
 	}
 	if ( !(cl_particlefx->value > 0) )
 		return NULL;
-	CDoDSnowFlake *particle = new CDoDSnowFlake;
+	CDoDSnowFlake *particle = new ( std::nothrow ) CDoDSnowFlake;
+	if ( !particle )
+		return NULL;
 	particle->InitializeSprite( org, normal, sprite, size, brightness );
 	particle->m_bInsideSmoke = false;
 	particle->m_bSpawnInside = false;
@@ -87,7 +89,9 @@ CDoDSnowFlake *CDoDSnowFlake::Create( Vector org, Vector normal, model_s *sprite
 void CWeatherManager::CreateRainParticle( float *origin )
 {
 	float time = gEngfuncs.GetClientTime();
-	CDoDRainDrop *particle = new CDoDRainDrop;
+	CDoDRainDrop *particle = new ( std::nothrow ) CDoDRainDrop;
+	if ( !particle )
+		return;
 	particle->InitializeSprite( origin, Vector( 0, 0, 0 ), m_pRainSprite, 2, 1 );
 	particle->m_bInsideSmoke = false;
 	particle->m_bSpawnInside = false;

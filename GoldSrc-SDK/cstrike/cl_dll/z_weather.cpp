@@ -284,7 +284,7 @@ void CEnvironment::CreateRaindrop( float* origin )
 {
 	if ( !g_Environment.GetRainSprite() )
 		return;
-	CPartRainDrop* particle = new CPartRainDrop;
+	CPartRainDrop* particle = new ( std::nothrow ) CPartRainDrop;
 	if ( !particle )
 		return;
 	float time = gEngfuncs.GetClientTime();
@@ -308,7 +308,7 @@ void CEnvironment::CreateSnowFlake( float* origin )
 {
 	if ( !g_Environment.GetSnowSprite() )
 		return;
-	CPartSnowFlake* particle = new CPartSnowFlake;
+	CPartSnowFlake* particle = new ( std::nothrow ) CPartSnowFlake;
 	if ( !particle )
 		return;
 	float size = gEngfuncs.pfnRandomFloat( 2, 2.5 );
@@ -355,7 +355,7 @@ void CEnvironment::CreateGrassPiece( float* origin, Vector normal )
 	if ( !sprite )
 		return;
 	float size = gEngfuncs.pfnRandomFloat( 60, 75 ) * 0.5;
-	CPartGrassPiece* particle = new CPartGrassPiece;
+	CPartGrassPiece* particle = new ( std::nothrow ) CPartGrassPiece;
 	if ( !particle )
 		return;
 	origin[2] += 10;
@@ -381,7 +381,7 @@ void CEnvironment::CreateWindParticle( float* origin )
 	model_s* sprite = const_cast<model_s*>( gEngfuncs.GetSpritePointer( gEngfuncs.pfnSPR_Load( "sprites/gas_puff_01.spr" ) ) );
 	if ( !sprite )
 		return;
-	CPartWind* particle = new CPartWind;
+	CPartWind* particle = new ( std::nothrow ) CPartWind;
 	if ( !particle )
 		return;
 	origin[2] += 10;
@@ -441,7 +441,7 @@ void CPartRainDrop::Touch( Vector, Vector normal, int )
 	Vector point;
 	if ( WaterEntryPoint( &trace, start, point ) )
 	{
-		CBaseParticle* ripple = new CBaseParticle;
+		CBaseParticle* ripple = new ( std::nothrow ) CBaseParticle;
 		if ( !ripple )
 			return;
 		ripple->InitializeSprite( point, rippleAngles, g_Environment.GetRippleSprite(), 15, 110 );
@@ -456,7 +456,7 @@ void CPartRainDrop::Touch( Vector, Vector normal, int )
 	else
 	{
 		float time = gEngfuncs.GetClientTime();
-		CBaseParticle* splash = new CBaseParticle;
+		CBaseParticle* splash = new ( std::nothrow ) CBaseParticle;
 		if ( !splash )
 			return;
 		float size = gEngfuncs.pfnRandomLong( 20, 25 );

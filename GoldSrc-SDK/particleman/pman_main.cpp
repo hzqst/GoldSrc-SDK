@@ -95,7 +95,7 @@ void IParticleMan_Active::ResetParticles()
 CBaseParticle* IParticleMan_Active::CreateParticle( Vector origin, Vector normal, model_s* sprite, float size,
 		float brightness, const char* classname )
 {
-	CBaseParticle* particle = new CBaseParticle;
+	CBaseParticle* particle = new ( std::nothrow ) CBaseParticle;
 	if ( !particle )
 		return NULL;
 

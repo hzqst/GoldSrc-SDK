@@ -33,7 +33,7 @@ void CreateCustomGib(Vector origin, Vector normal, const char *spriteName, float
 	float forwardSpeed = gEngfuncs.pfnRandomFloat(speed * 0.5f, speed);
 	Vector velocity = up * upSpeed + right * rightSpeed + forward * (forwardSpeed * dampingModifier);
 	velocity.z = gEngfuncs.pfnRandomFloat(-speed / 5.0f, speed * 1.25f);
-	CTriangleCustomGib *particle = new CTriangleCustomGib;
+	CTriangleCustomGib *particle = new (std::nothrow) CTriangleCustomGib;
 	if (!particle)
 		return;
 	particle->InitializeSprite(origin, Vector(0, 0, 1), sprite, scale, 255.0f);

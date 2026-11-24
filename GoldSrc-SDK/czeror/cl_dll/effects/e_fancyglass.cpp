@@ -21,7 +21,7 @@ void CreateTriangle(Vector position, Vector normal, float width, float height, i
 		{
 			Vector origin = position + up * static_cast<float>(y) + right * static_cast<float>(x);
 			model_s *sprite = const_cast<model_s *>(gEngfuncs.GetSpritePointer(gEngfuncs.pfnSPR_Load("sprites/glass_01.spr")));
-			CTriGlass *particle = new CTriGlass;
+			CTriGlass *particle = new (std::nothrow) CTriGlass;
 			if (!particle)
 				return;
 			particle->InitializeSprite(origin, normal, sprite, 20.0f, 220.0f);
