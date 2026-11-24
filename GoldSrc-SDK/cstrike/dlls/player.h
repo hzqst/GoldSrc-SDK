@@ -376,6 +376,8 @@ public:
 	int m_iLastAccount;
 	int m_iLastClientHealth;
 	float m_tmNextAccountHealthUpdate;
+	// After the members of the original layout. The vehicle can outlive the player's ground contact.
+	EHANDLE m_hDrivenVehicle;
 
 	~CBasePlayer() { delete[] m_rebuyString; }
 	void SpawnClientSideCorpse();
@@ -494,6 +496,7 @@ public:
 	void WaterMove();
 	void EXPORT PlayerDeathThink();
 	void PlayerUse();
+	void StopDrivingVehicle();
 	void HostageUsed();
 	void JoiningThink();
 	void RemoveLevelText();

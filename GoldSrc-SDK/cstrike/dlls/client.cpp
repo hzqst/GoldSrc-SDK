@@ -1220,6 +1220,8 @@ void Radio3( CBasePlayer* player, int slot )
 void ClientDisconnect( edict_t* entity )
 {
 	CBasePlayer* player = dynamic_cast<CBasePlayer*>( CBaseEntity::Instance( entity ) );
+	if ( player )
+		player->StopDrivingVehicle();
 	if ( !g_fGameOver )
 	{
 		if ( entity->v.netname )

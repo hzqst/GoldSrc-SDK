@@ -180,7 +180,9 @@ public:
 	Vector		m_vBackRight;
 	Vector		m_vSurfaceNormal;
 	Vector		m_vVehicleDirection;
-	CBasePlayer*	m_pDriver;
+	// The player driving the vehicle, who gets the frags of the players and hostages it runs over.
+	// A handle and not a CBasePlayer* as in the SDK: the driver can disconnect while it is set.
+	EHANDLE		m_hDriver;
 
 	// GOOSEMAN
 	void Restart() override;

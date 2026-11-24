@@ -2974,9 +2974,10 @@ void CHalfLifeMultiplay::PlayerKilled( CBasePlayer* pVictim, entvars_t* pKiller,
 			pScoringPlayer = (CBasePlayer*)pKillerEntity;
 		else if ( pKillerEntity->Classify() == CLASS_VEHICLE )
 		{
-			pScoringPlayer = ( (CFuncVehicle*)pKillerEntity )->m_pDriver;
-			if ( pScoringPlayer )
+			CBaseEntity* pDriver = ( (CFuncVehicle*)pKillerEntity )->m_hDriver;
+			if ( pDriver && pDriver->IsPlayer() )
 			{
+				pScoringPlayer = (CBasePlayer*)pDriver;
 				pKiller = pScoringPlayer->pev;
 				pKillerEntity = pScoringPlayer;
 			}

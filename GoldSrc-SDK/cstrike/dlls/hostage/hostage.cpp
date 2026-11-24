@@ -797,8 +797,12 @@ int CHostage::TakeDamage( entvars_t *, entvars_t *attacker, float damage, int )
 	if ( attacker )
 	{
 		CBaseEntity *entity = GetClassPtr( (CBaseEntity *)attacker );
-		if ( entity->Classify() == CLASS_VEHICLE && ((CFuncVehicle *)entity)->m_pDriver )
-			attacker = ((CFuncVehicle *)entity)->m_pDriver->pev;
+		if ( entity->Classify() == CLASS_VEHICLE )
+		{
+			CBaseEntity *driver = ((CFuncVehicle *)entity)->m_hDriver;
+			if ( driver && driver->IsPlayer() )
+				attacker = driver->pev;
+		}
 		if ( entity->IsPlayer() )
 			player = GetClassPtr( (CBasePlayer *)attacker );
 	}
