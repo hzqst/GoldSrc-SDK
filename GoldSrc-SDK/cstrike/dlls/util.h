@@ -44,6 +44,16 @@ extern globalvars_t				*gpGlobals;
 #define STRING(offset)		((const char *)(gpGlobals->pStringBase + (unsigned int)(offset)))
 #define MAKE_STRING(str)	((uint64)(str) - (uint64)(STRING(0)))
 
+inline void MAKE_STRING_CLASS( const char *str, entvars_t *pev )
+{
+	if ( pev->classname )
+	{
+		RemoveEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
+	}
+	pev->classname = MAKE_STRING( str );
+	AddEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
+}
+
 inline edict_t *FIND_ENTITY_BY_CLASSNAME(edict_t *entStart, const char *pszName)
 {
 	return FIND_ENTITY_BY_STRING(entStart, "classname", pszName);

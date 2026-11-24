@@ -1261,7 +1261,7 @@ LINK_ENTITY_TO_CLASS( fireanddie, CFireAndDie );
 
 void CFireAndDie::Spawn( void )
 {
-	pev->classname = MAKE_STRING("fireanddie");
+	MAKE_STRING_CLASS( "fireanddie", pev );
 	// Don't call Precache() - it should be called on restore
 }
 

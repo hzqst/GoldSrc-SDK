@@ -787,10 +787,7 @@ void CGib :: Spawn( const char *szGibModel )
 	pev->rendermode = kRenderNormal;
 	pev->renderfx = kRenderFxNone;
 	pev->solid = SOLID_SLIDEBOX;/// hopefully this will fix the VELOCITY TOO LOW crap
-	if (pev->classname)
-		RemoveEntityHashValue(pev, STRING(pev->classname), CLASSNAME);
-	pev->classname = MAKE_STRING("gib");
-	AddEntityHashValue(pev, STRING(pev->classname), CLASSNAME);
+	MAKE_STRING_CLASS( "gib", pev );
 
 	SET_MODEL(ENT(pev), szGibModel);
 	UTIL_SetSize(pev, Vector( 0, 0, 0), Vector(0, 0, 0));
