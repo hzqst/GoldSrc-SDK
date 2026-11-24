@@ -105,10 +105,7 @@ void CCycler :: GenericCyclerSpawn(char *szModel, Vector vecMin, Vector vecMax)
 		return;
 	}
 
-	if ( pev->classname )
-		RemoveEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
-	pev->classname = MAKE_STRING("cycler");
-	AddEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
+	MAKE_STRING_CLASS( "cycler", pev );
 	PRECACHE_MODEL( szModel );
 	SET_MODEL(ENT(pev),	szModel);
 

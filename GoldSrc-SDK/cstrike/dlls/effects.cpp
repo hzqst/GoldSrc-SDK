@@ -225,10 +225,7 @@ CBeam *CBeam::BeamCreate( const char *pSpriteName, int width )
 {
 	// Create a new entity with CBeam private data
 	CBeam *pBeam = GetClassPtr( (CBeam *)NULL );
-	if ( pBeam->pev->classname )
-		RemoveEntityHashValue( pBeam->pev, STRING( pBeam->pev->classname ), CLASSNAME );
-	pBeam->pev->classname = MAKE_STRING("beam");
-	AddEntityHashValue( pBeam->pev, STRING( pBeam->pev->classname ), CLASSNAME );
+	MAKE_STRING_CLASS( "beam", pBeam->pev );
 
 	pBeam->BeamInit( pSpriteName, width );
 
@@ -1291,10 +1288,7 @@ CSprite *CSprite::SpriteCreate( const char *pSpriteName, const Vector &origin, B
 {
 	CSprite *pSprite = GetClassPtr( (CSprite *)NULL );
 	pSprite->SpriteInit( pSpriteName, origin );
-	if ( pSprite->pev->classname )
-		RemoveEntityHashValue( pSprite->pev, STRING( pSprite->pev->classname ), CLASSNAME );
-	pSprite->pev->classname = MAKE_STRING("env_sprite");
-	AddEntityHashValue( pSprite->pev, STRING( pSprite->pev->classname ), CLASSNAME );
+	MAKE_STRING_CLASS( "env_sprite", pSprite->pev );
 	pSprite->pev->solid = SOLID_NOT;
 	pSprite->pev->movetype = MOVETYPE_NOCLIP;
 	if ( animate )

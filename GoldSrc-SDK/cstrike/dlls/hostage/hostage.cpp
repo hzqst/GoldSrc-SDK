@@ -289,10 +289,7 @@ void CHostage::Spawn()
 	if ( !g_pHostages )
 		g_pHostages = new CHostageManager;
 	Precache();
-	if ( pev->classname )
-		RemoveEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
-	pev->classname = MAKE_STRING( "hostage_entity" );
-	AddEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
+	MAKE_STRING_CLASS( "hostage_entity", pev );
 	pev->movetype = MOVETYPE_STEP;
 	pev->solid = SOLID_SLIDEBOX;
 	pev->takedamage = DAMAGE_YES;

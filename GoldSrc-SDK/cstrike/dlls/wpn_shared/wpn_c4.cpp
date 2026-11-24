@@ -92,7 +92,7 @@ void CC4::KeyValue( KeyValueData* data )
 		data->fHandled = TRUE;
 	}
 	else
-		data->fHandled = FALSE;
+		CBaseEntity::KeyValue( data );
 }
 
 BOOL CC4::Deploy()

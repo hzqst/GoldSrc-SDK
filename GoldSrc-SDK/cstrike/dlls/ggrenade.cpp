@@ -83,10 +83,7 @@ void CGrenade::Spawn()
 {
 	m_iBounceCount = 0;
 	pev->movetype = MOVETYPE_BOUNCE;
-	if ( pev->classname )
-		RemoveEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
-	pev->classname = MAKE_STRING( "grenade" );
-	AddEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
+	MAKE_STRING_CLASS( "grenade", pev );
 	m_bIsC4 = false;
 	pev->solid = SOLID_BBOX;
 	SET_MODEL( ENT( pev ), "models/grenade.mdl" );
@@ -213,10 +210,7 @@ CGrenade* CGrenade::ShootSatchelCharge( entvars_t* pevOwner, Vector vecStart, Ve
 {
 	CGrenade* pGrenade = GetClassPtr( (CGrenade*)NULL );
 	pGrenade->pev->movetype = MOVETYPE_TOSS;
-	if ( pGrenade->pev->classname )
-		RemoveEntityHashValue( pGrenade->pev, STRING( pGrenade->pev->classname ), CLASSNAME );
-	pGrenade->pev->classname = MAKE_STRING( "grenade" );
-	AddEntityHashValue( pGrenade->pev, STRING( pGrenade->pev->classname ), CLASSNAME );
+	MAKE_STRING_CLASS( "grenade", pGrenade->pev );
 	pGrenade->pev->solid = SOLID_BBOX;
 	SET_MODEL( ENT( pGrenade->pev ), "models/w_c4.mdl" );
 	UTIL_SetSize( pGrenade->pev, Vector( -3, -6, 0 ), Vector( 3, 6, 8 ) );

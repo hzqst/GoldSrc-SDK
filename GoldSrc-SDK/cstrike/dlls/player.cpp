@@ -5705,10 +5705,7 @@ void CBasePlayer::Spawn()
 	m_flGaitMovement = 0;
 	m_progressStart = 0;
 	m_progressEnd = 0;
-	if ( pev->classname )
-		RemoveEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
-	pev->classname = MAKE_STRING( "player" );
-	AddEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
+	MAKE_STRING_CLASS( "player", pev );
 	pev->health = 100;
 	if ( !m_bNotKilled )
 	{
@@ -6248,10 +6245,7 @@ void CBasePlayer::JoiningThink()
 			else
 			{
 				pev->deadflag = DEAD_RESPAWNABLE;
-				if ( pev->classname )
-					RemoveEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
-				pev->classname = MAKE_STRING( "player" );
-				AddEntityHashValue( pev, STRING( pev->classname ), CLASSNAME );
+				MAKE_STRING_CLASS( "player", pev );
 				pev->flags &= FL_PROXY | FL_FAKECLIENT;
 				pev->flags |= FL_SPECTATOR | FL_CLIENT;
 				edict_t* spawn = rules->GetPlayerSpawnSpot( this );

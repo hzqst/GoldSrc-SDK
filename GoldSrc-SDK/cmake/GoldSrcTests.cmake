@@ -29,6 +29,7 @@ foreach(name IN ITEMS
 		cstrike_avatar_image
 		cstrike_bot_chatter_leak
 		cstrike_buypreset_editmenu
+		cstrike_entity_classname_hash
 		cstrike_knife_null_hit
 		cstrike_scoreboard_columns
 		cstrike_select_next_item

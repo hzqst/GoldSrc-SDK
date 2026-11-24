@@ -318,7 +318,7 @@ vgui2::HScheme TeamFortressViewport::GetViewPortScheme()
 
 vgui2::VPANEL TeamFortressViewport::GetViewPortPanel()
 {
-	return m_pBackGround->GetVPanel();
+	return m_pBackGround ? m_pBackGround->GetVParent() : 0;
 }
 
 void TeamFortressViewport::HideBackGround()

@@ -235,10 +235,7 @@ void CBaseDelay :: SUB_UseTargets( CBaseEntity *pActivator, USE_TYPE useType, fl
 	{
 		// create a temp object to fire at a later time
 		CBaseDelay *pTemp = GetClassPtr( (CBaseDelay *)NULL);
-		if (pTemp->pev->classname)
-			RemoveEntityHashValue(pTemp->pev, STRING(pTemp->pev->classname), CLASSNAME);
-		pTemp->pev->classname = MAKE_STRING("DelayedUse");
-		AddEntityHashValue(pTemp->pev, STRING(pTemp->pev->classname), CLASSNAME);
+		MAKE_STRING_CLASS( "DelayedUse", pTemp->pev );
 
 		pTemp->pev->nextthink = gpGlobals->time + m_flDelay;
 

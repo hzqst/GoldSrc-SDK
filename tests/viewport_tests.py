@@ -31,6 +31,7 @@ STUBS = r'''
 #endif
 enum { MENU_MAPBRIEFING = 4, MENU_INTRO = 5 };
 namespace vgui2 {
+using VPANEL = unsigned int;
 struct Localize {
  const wchar_t* Find(const char* token) { return !std::strcmp(token, "localized") ? L"Hello %s1, %s2" : L"No placeholders"; }
  void ConvertANSIToUnicode(const char* source, wchar_t* dest, int bytes) {
@@ -42,9 +43,14 @@ Localize* localize() { return &localizer; }
 }
 struct Widget {
  static int live; bool visible = false;
+ vgui2::VPANEL vpanel = 0, vparent = 0;
  Widget() { ++live; } virtual ~Widget() { --live; }
  void SetVisible(bool value) { visible = value; } bool IsVisible() { return visible; }
  void SetZPos(int) {}
+ void SetParent(vgui2::VPANEL parent) { vparent = parent; }
+ vgui2::VPANEL GetVPanel() const { return vpanel; }
+ vgui2::VPANEL GetVParent() const { return vparent; }
+ void SetMouseInputEnabled(bool) {}
 };
 int Widget::live = 0;
 struct CClientScoreBoardDialog : Widget {
@@ -73,7 +79,7 @@ struct TeamFortressViewport {
   delete m_pMapBriefing; delete m_pTutorWindowManager; delete m_pCommandMenu;
   for (char* name : m_sTeamNames) std::free(name);
  }
- void Start(); virtual void HideAllVGUIMenu();
+ void Start(); void SetParent(vgui2::VPANEL parent); vgui2::VPANEL GetViewPortPanel(); virtual void HideAllVGUIMenu();
  virtual CBackGroundPanel* CreateBackgroundPanel() { return new CBackGroundPanel(nullptr); }
  virtual CClientScoreBoardDialog* CreateScoreBoard() { return new CClientScoreBoardDialog(nullptr); }
  virtual CClientMOTD* CreateMOTD() { return new CClientMOTD(nullptr); }
@@ -134,7 +140,11 @@ int main() {
   view.callbacks.IsSpectateOnly=[](){return spectateOnly;};
   view.callbacks.SetPlayerScoreInfo=[](int player,int frags,int deaths,int playerClass,int team){ ++scoreWrites; UpdateViewportPlayerScore(players,player,frags,deaths,playerClass,team); };
   view.callbacks.SetPlayerTeamInfo=[](int player,const char* team){ ++teamWrites; UpdateViewportPlayerTeam(players,player,team); };
+  assert(0==view.GetViewPortPanel());
   view.Start(); for (int calls : view.calls) assert(calls==1);
+  view.m_pBackGround->vpanel=101;
+  view.SetParent(42);
+  assert(42==view.GetViewPortPanel());
   int live=Widget::live; view.Start(); assert(live==Widget::live); for (int calls : view.calls) assert(calls==1);
   assert(!view.m_pClassMenu && view.m_pClientScoreBoard->resets==1);
   unsigned char score[]={2,42,0,0xfe,0xff,5,0,0xff,0xff};
@@ -181,8 +191,9 @@ def main():
     messages = (ROOT / 'vgui2/game_controls/vgui_TeamFortressViewport_msgs.cpp').read_text(encoding='utf-8')
     declarations = '\n'.join(' int ' + name + '(const char*,int,void*);' for name in re.findall(r'int TeamFortressViewport::(MsgFunc_\w+)\(', messages))
     code = STUBS.replace('// MESSAGE_DECLARATIONS', declarations)
-    for name in ('Start', 'HideAllVGUIMenu'):
+    for name in ('Start', 'SetParent', 'HideAllVGUIMenu'):
         code += function(viewport, 'void TeamFortressViewport::' + name + '(')
+    code += function(viewport, 'vgui2::VPANEL TeamFortressViewport::GetViewPortPanel(')
     code += re.sub(r'^#include[^\n]*\n', '', messages, flags=re.M) + TESTS
     with tempfile.TemporaryDirectory(prefix='goldsrc-viewport-') as folder:
         path = Path(folder)
