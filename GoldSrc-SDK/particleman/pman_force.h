@@ -65,30 +65,19 @@ public:
 
 	void ClearForceMembers()
 	{
-		if ( pFirst )
+		ForceMember* pTemp = pFirst;
+
+		while ( pTemp )
 		{
-			ForceMember* pTemp = pFirst->m_pNext;
-
-			while ( pTemp )
-			{
-				ForceMember* pNext = pTemp->m_pNext;
-
-				if ( pCurrent == pTemp )
-					pCurrent = NULL;
-
-				delete pTemp;
-				pTemp = pNext;
-
-				m_iElements--;
-			}
-
-			if ( pFirst )
-			{
-				delete pFirst;
-				pFirst = NULL;
-				m_iElements--;
-			}
+			ForceMember* pNext = pTemp->m_pNext;
+			delete pTemp;
+			pTemp = pNext;
 		}
+
+		pFirst = NULL;
+		pCurrent = NULL;
+		pLast = NULL;
+		m_iElements = 0;
 	}
 
 	void UpdateForce( float time )
@@ -97,70 +86,28 @@ public:
 
 		while ( pTemp )
 		{
+			ForceMember* pNext = pTemp->m_pNext;
+
 			if ( pTemp->m_flDieTime != 0 && time > pTemp->m_flDieTime )
 			{
-				if ( pTemp == pFirst )
-				{
-					if ( pTemp == pLast )
-					{
-						pLast = NULL;
-						delete pLast;
-						pCurrent = NULL;
-						delete pCurrent;
-						pTemp = NULL;
-						delete pTemp;
-						pFirst = NULL;
-						delete pFirst;
-					}
-					else
-					{
-						pTemp = pTemp->m_pNext;
-#ifdef _MSC_VER
-#pragma warning( suppress : 6011 )
-#endif
-						pTemp->m_pPrevious = NULL;
-						pFirst = pTemp;
-
-						delete pTemp->m_pPrevious;
-
-						if ( pTemp == pLast )
-						{
-							pLast = pTemp;
-							pTemp->m_pNext = NULL;
-							pCurrent = pLast;
-						}
-					}
-
-					m_iElements--;
-				}
-				else if ( pTemp != pLast )
-				{
-					ForceMember* pNext = pTemp->m_pNext;
-					pTemp->m_pNext->m_pPrevious = pTemp->m_pPrevious;
-					pTemp->m_pPrevious->m_pNext = pTemp->m_pNext;
-
-					pTemp = NULL;
-					delete pTemp;
-					pTemp = pNext;
-
-					m_iElements--;
-				}
+				if ( pTemp->m_pPrevious )
+					pTemp->m_pPrevious->m_pNext = pNext;
 				else
-				{
-					pTemp = pTemp->m_pPrevious;
-					pTemp->m_pNext = NULL;
-					pLast = pTemp;
-					pCurrent = pTemp;
+					pFirst = pNext;
 
-					delete pTemp->m_pNext;
+				if ( pNext )
+					pNext->m_pPrevious = pTemp->m_pPrevious;
+				else
+					pLast = pTemp->m_pPrevious;
 
-					m_iElements--;
-				}
+				if ( pCurrent == pTemp )
+					pCurrent = pLast;
+
+				delete pTemp;
+				m_iElements--;
 			}
-			else
-			{
-				pTemp = pTemp->m_pNext;
-			}
+
+			pTemp = pNext;
 		}
 
 		pTemp = pFirst;
