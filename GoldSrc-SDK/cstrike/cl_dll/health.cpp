@@ -523,6 +523,8 @@ int CHudHealth::MsgFunc_Radar(const char *, int size, void *buffer)
 	float x = READ_COORD();
 	float y = READ_COORD();
 	float z = READ_COORD();
+	if (player < 1 || player > MAX_PLAYERS)
+		return 1;
 	g_PlayerExtraInfo[player].origin.x = x;
 	g_PlayerExtraInfo[player].origin.y = y;
 	g_PlayerExtraInfo[player].origin.z = z;
@@ -596,7 +598,7 @@ int CHudHealth::MsgFunc_ClCorpse(const char *, int size, void *buffer)
 	}
 	else if (team == 2)
 	{
-		if (g_PlayerExtraInfo[player].vip)
+		if (player <= MAX_PLAYERS && g_PlayerExtraInfo[player].vip)
 			strcpy(model, "models/player/vip/vip.mdl");
 		else if (cl_min_ct && BIsValidCTModelIndex((int)cl_min_ct->value))
 			_snprintf(model, sizeof(model), "%s", sPlayerModelFiles[(int)cl_min_ct->value]);

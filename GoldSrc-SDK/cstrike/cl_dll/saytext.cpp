@@ -86,6 +86,8 @@ float* GetTextColor( TextColor color, int client )
 SayTextLine::SayTextLine()
 {
 	m_line[0] = 0;
+	m_clientIndex = 0;
+	m_teamColor = NULL;
 }
 
 void SayTextLine::Clear()
@@ -96,10 +98,15 @@ void SayTextLine::Clear()
 
 SayTextLine& SayTextLine::operator=( const SayTextLine& other )
 {
+	if ( this == &other )
+		return *this;
 	memcpy( m_line, other.m_line, sizeof( m_line ) );
 	m_textRanges.RemoveAll();
 	for ( int i = 0; i < other.m_textRanges.Count(); i++ )
 		m_textRanges.AddToTail( other.m_textRanges[i] );
+	// a scrolled line colorizes again with the sender it was printed for
+	m_clientIndex = other.m_clientIndex;
+	m_teamColor = other.m_teamColor;
 	return *this;
 }
 
@@ -112,7 +119,7 @@ void SayTextLine::SetText( wchar_t* text, int client )
 	m_line[MAX_CHARS_PER_LINE - 1] = 0;
 	m_clientIndex = client;
 	m_teamColor = NULL;
-	if ( client <= 0 )
+	if ( client <= 0 || client > MAX_PLAYERS )
 	{
 		TextRange range = { 0, (int)wcslen( m_line ), NULL };
 		m_textRanges.AddToTail( range );
@@ -146,13 +153,13 @@ void SayTextLine::Colorize()
 			}
 		}
 	}
-	else if ( m_line[0] == COLOR_USEOLDCOLORS )
+	else if ( m_line[0] == COLOR_USEOLDCOLORS && m_clientIndex > 0 && m_clientIndex <= MAX_PLAYERS )
 	{
 		const char* name = g_PlayerInfoList[m_clientIndex].name;
-		wchar_t unicodeName[128];
-		vgui2::localize()->ConvertANSIToUnicode( name, unicodeName, sizeof( unicodeName ) );
 		if ( name )
 		{
+			wchar_t unicodeName[128];
+			vgui2::localize()->ConvertANSIToUnicode( name, unicodeName, sizeof( unicodeName ) );
 			wchar_t* found = wcsstr( m_line, unicodeName );
 			if ( found )
 			{
@@ -237,7 +244,9 @@ int ScrollTextUp()
 	if ( *g_sayTextLine[0].GetText() )
 	{
 		char buffer[512];
-		vgui2::localize()->ConvertUnicodeToANSI( g_sayTextLine[0].GetText(), buffer, sizeof( buffer ) );
+		// leave room for the newline
+		vgui2::localize()->ConvertUnicodeToANSI( g_sayTextLine[0].GetText(), buffer, sizeof( buffer ) - 1 );
+		buffer[sizeof( buffer ) - 2] = 0;
 		strcat( buffer, "\n" );
 		char* destination = buffer;
 		for ( char* source = buffer; *source; source++ )
@@ -341,16 +350,16 @@ int CHudSayText::MsgFunc_SendAudio( const char*, int size, void* buffer )
 
 void CHudSayText::EnsureTextFitsInOneLineAndWrapIfHaveTo( int line )
 {
-	SayTextLine& string = g_sayTextLine[line];
+	SayTextLine* string = &g_sayTextLine[line];
 	int width = 0;
-	gHUD.m_VGUI2Print.GetStringSize( string.GetText(), &width, &line_height );
+	gHUD.m_VGUI2Print.GetStringSize( string->GetText(), &width, &line_height );
 	if ( width + 9 < MAX_LINE_WIDTH )
 		return;
 	wchar_t* lastBreak = NULL;
 	int length = LINE_START;
-	for ( wchar_t* scan = string.GetText(); *scan; scan++ )
+	for ( wchar_t* scan = string->GetText(); *scan; scan++ )
 	{
-		if ( *scan == ' ' && scan != string.GetText() )
+		if ( *scan == ' ' && scan != string->GetText() )
 			lastBreak = scan;
 		wchar_t character[2] = { *scan, 0 };
 		int charWidth;
@@ -359,31 +368,46 @@ void CHudSayText::EnsureTextFitsInOneLineAndWrapIfHaveTo( int line )
 		if ( length < MAX_LINE_WIDTH + 1 )
 			continue;
 		if ( !lastBreak )
+		{
+			// a first character wider than the line cannot be broken
+			if ( scan == string->GetText() )
+				return;
 			lastBreak = scan - 1;
-		string.Colorize();
+		}
+		string->Colorize();
 		int next;
 		do
 		{
 			for ( next = 0; next < MAX_LINES && *g_sayTextLine[next].GetText(); next++ )
 				;
 			if ( next == MAX_LINES )
-				lastBreak -= 4 * ScrollTextUp();
+			{
+				// the text moves up with its line, so keep the break at the same offset
+				int breakOffset = (int)( lastBreak - string->GetText() );
+				line -= ScrollTextUp();
+				if ( line < 0 )
+					return;
+				string = &g_sayTextLine[line];
+				lastBreak = string->GetText() + breakOffset;
+			}
 		}
 		while ( next == MAX_LINES );
 		wchar_t* output = g_sayTextLine[next].GetText();
+		int outputLength = (int)wcslen( output );
+		int breakLength = (int)wcslen( lastBreak );
 		if ( *lastBreak == ' ' )
 		{
-			if ( (int)( wcslen( output ) - wcslen( lastBreak ) ) <= MAX_CHARS_PER_LINE )
+			if ( outputLength + breakLength < MAX_CHARS_PER_LINE )
 			{
-				wcsncat( output, lastBreak, MAX_CHARS_PER_LINE );
+				wcsncat( output, lastBreak, MAX_CHARS_PER_LINE - outputLength - 1 );
 				output[MAX_CHARS_PER_LINE - 1] = 0;
 				g_sayTextLine[next].Colorize();
 			}
 		}
-		else if ( wcslen( output ) - 2 - wcslen( lastBreak ) <= MAX_CHARS_PER_LINE - 1 )
+		else if ( outputLength + breakLength + 1 < MAX_CHARS_PER_LINE )
 		{
-			wcsncat( output, L" ", MAX_CHARS_PER_LINE );
-			wcsncat( output, lastBreak, MAX_CHARS_PER_LINE );
+			wcsncat( output, L" ", MAX_CHARS_PER_LINE - outputLength - 1 );
+			wcsncat( output, lastBreak, MAX_CHARS_PER_LINE - outputLength - 2 );
 			output[MAX_CHARS_PER_LINE - 1] = 0;
 			g_sayTextLine[next].Colorize();
 		}
@@ -415,18 +439,18 @@ void CHudSayText::SayTextPrint( const char* text, int, int client, char* arg1, c
 		;
 	if ( line == MAX_LINES )
 	{
-		ScrollTextUp();
-		line = MAX_LINES - 1;
+		// a scroll that also moves a wrapped continuation frees more than one line; take the first free one,
+		// or the wrapped part of this text would land in the free line above it
+		line = MAX_LINES - ScrollTextUp();
 	}
 	wchar_t finalBuffer[256] = { 0 };
 	char buffer[512] = { 0 };
+	strncpy( buffer, text, sizeof( buffer ) - 1 );
+	buffer[sizeof( buffer ) - 1] = 0;
 	int length;
-	while ( ( length = strlen( text ) ) > 0 && ( text[length - 1] == '\r' || text[length - 1] == '\n' ) )
-	{
-		strncpy( buffer, text, sizeof( buffer ) );
+	while ( ( length = (int)strlen( buffer ) ) > 0 && ( buffer[length - 1] == '\r' || buffer[length - 1] == '\n' ) )
 		buffer[length - 1] = 0;
-		text = buffer;
-	}
+	text = buffer;
 	wchar_t* localized = vgui2::localize()->Find( text );
 	wchar_t temp[256] = { 0 };
 	wchar_t output[256] = { 0 };
@@ -445,9 +469,12 @@ void CHudSayText::SayTextPrint( const char* text, int, int client, char* arg1, c
 			{
 				if ( remaining == 1 || iswspace( *scan ) )
 				{
-					int wordLength = scan - wordStart;
-					wcsncpy( word, wordStart, wordLength + 1 );
-					word[wordLength + ( remaining == 1 )] = 0;
+					// the last character belongs to the word unless it is the separator
+					int wordLength = (int)( scan - wordStart ) + ( remaining == 1 );
+					if ( wordLength > ARRAYSIZE( word ) - 1 )
+						wordLength = ARRAYSIZE( word ) - 1;
+					wcsncpy( word, wordStart, wordLength );
+					word[wordLength] = 0;
 					vgui2::localize()->ConvertUnicodeToANSI( word, token, sizeof( token ) );
 					wchar_t* translated = vgui2::localize()->Find( token );
 					if ( !translated )
@@ -517,6 +544,8 @@ void CHudSayText::SayTextPrint( const char* text, int, int client, char* arg1, c
 		_snwprintf( finalBuffer, ARRAYSIZE( finalBuffer ), localized,
 			unicodeArgs[0], unicodeArgs[1], unicodeArgs[2], unicodeArgs[3] );
 #endif
+		// neither terminates a truncated result
+		finalBuffer[ARRAYSIZE( finalBuffer ) - 1] = 0;
 	}
 	g_sayTextLine[line].SetText( finalBuffer, client );
 	EnsureTextFitsInOneLineAndWrapIfHaveTo( line );
@@ -530,6 +559,10 @@ int CHudSayText::MsgFunc_SayText( const char*, int size, void* buffer )
 {
 	BEGIN_READ( buffer, size );
 	int client = READ_BYTE();
+	bool validClient = client > 0 && client <= MAX_PLAYERS;
+	// the name may have changed since the engine last reported it
+	if ( validClient )
+		gEngfuncs.pfnGetPlayerInfo( client, &g_PlayerInfoList[client] );
 	static char szMsg[1024];
 	strncpy( szMsg, READ_STRING(), sizeof( szMsg ) );
 	szMsg[sizeof( szMsg ) - 1] = 0;
@@ -553,7 +586,7 @@ int CHudSayText::MsgFunc_SayText( const char*, int size, void* buffer )
 	{
 		const char* argument = READ_STRING();
 		if ( !i && !*argument )
-			argument = client > 0 ? g_PlayerInfoList[client].name : "";
+			argument = validClient ? g_PlayerInfoList[client].name : "";
 		if ( !argument )
 			argument = "";
 		args[i] = new char[strlen( argument ) + 1];

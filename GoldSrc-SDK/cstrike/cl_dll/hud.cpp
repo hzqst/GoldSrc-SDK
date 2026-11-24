@@ -137,6 +137,8 @@ int CHud::MsgFunc_SpecHealth( const char*, int size, void* buffer )
 {
 	BEGIN_READ( buffer, size );
 	int health = READ_BYTE();
+	if ( g_iUser2 < 1 || g_iUser2 > MAX_PLAYERS )
+		return 1;
 	gHUD.m_Health.m_iPlayerLastPointedAt = g_iUser2;
 	g_PlayerExtraInfo[g_iUser2].health = health;
 	gViewPortInterface->UpdateSpectatorPanel();
@@ -148,6 +150,8 @@ int CHud::MsgFunc_SpecHealth2( const char*, int size, void* buffer )
 	BEGIN_READ( buffer, size );
 	int health = READ_BYTE();
 	int player = READ_BYTE();
+	if ( player < 1 || player > MAX_PLAYERS )
+		return 1;
 	gHUD.m_Health.m_iPlayerLastPointedAt = g_iUser2;
 	g_PlayerExtraInfo[player].health = health;
 	gViewPortInterface->UpdateSpectatorPanel();

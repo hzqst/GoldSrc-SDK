@@ -570,7 +570,8 @@ bool CHudSpectator::GetDirectorCamera(vec3_t &position, vec3_t &angle)
 		{
 			// we have a predecessor
 
-			if ( m_WayPoint < (m_NumWayPoints-1) )
+			// the successor of the next waypoint is m_WayPoint+2
+			if ( m_WayPoint < (m_NumWayPoints-2) )
 			{
 				// we have also a successor
 				SetWayInterpolation( &m_CamPath[m_WayPoint-1], wp1, wp2, &m_CamPath[m_WayPoint+2] );
@@ -580,7 +581,7 @@ bool CHudSpectator::GetDirectorCamera(vec3_t &position, vec3_t &angle)
 				SetWayInterpolation( &m_CamPath[m_WayPoint-1], wp1, wp2, NULL );
 			}
 		}
-		else if ( m_WayPoint < (m_NumWayPoints-1) )
+		else if ( m_WayPoint < (m_NumWayPoints-2) )
 		{
 			// we only have a successor
 			SetWayInterpolation( NULL, wp1, wp2, &m_CamPath[m_WayPoint+2] );
@@ -1145,7 +1146,7 @@ void CHudSpectator::HandleButtonsDown( int ButtonPressed )
 		{
 			FindNextPlayer( (ButtonPressed & IN_ATTACK2) ? true:false );
 
-			if ( g_iUser1 == OBS_ROAMING )
+			if ( g_iUser1 == OBS_ROAMING && g_iUser2 >= 0 && g_iUser2 <= MAX_PLAYERS )
 			{
 				gEngfuncs.SetViewAngles( vJumpAngles );
 				iJumpSpectator = 1;
@@ -1331,10 +1332,16 @@ bool CHudSpectator::ParseOverviewFile( )
 	if ( strlen( m_OverviewData.map ) == 0 )
 		return false; // not active yet
 
-	strncpy(levelname, m_OverviewData.map + 5, sizeof( levelname ));
-	levelname[strlen(levelname)-4] = 0;
+	// "maps/<name>.bsp"; a shorter name would index before the buffer
+	if ( strlen( m_OverviewData.map ) <= 5 )
+		return false;
 
-	sprintf(filename, "overviews/%s.txt", levelname );
+	strncpy(levelname, m_OverviewData.map + 5, sizeof( levelname ) - 1);
+	levelname[sizeof( levelname ) - 1] = 0;
+	if ( strlen( levelname ) > 4 )
+		levelname[strlen(levelname)-4] = 0;
+
+	snprintf(filename, sizeof( filename ), "overviews/%s.txt", levelname );
 
 	char* const fileBuffer = (char *)gEngfuncs.COM_LoadFile( filename, 5, NULL);
 

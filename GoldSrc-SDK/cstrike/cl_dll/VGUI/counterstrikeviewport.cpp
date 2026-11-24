@@ -421,7 +421,8 @@ int CounterStrikeViewport::MsgFunc_TeamInfo( const char*, int size, void* buffer
 	short player = (short)READ_BYTE();
 	if ( player > 0 && player <= MAX_PLAYERS )
 	{
-		strncpy( g_PlayerExtraInfo[player].teamname, READ_STRING(), 16 );
+		strncpy( g_PlayerExtraInfo[player].teamname, READ_STRING(), sizeof( g_PlayerExtraInfo[player].teamname ) - 1 );
+		g_PlayerExtraInfo[player].teamname[sizeof( g_PlayerExtraInfo[player].teamname ) - 1] = 0;
 		if ( !stricmp( g_PlayerExtraInfo[player].teamname, "CT" ) )
 		{
 			g_PlayerExtraInfo[player].teamnumber = 2;

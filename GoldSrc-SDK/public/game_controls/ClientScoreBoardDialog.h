@@ -46,6 +46,7 @@ class CClientScoreBoardDialog : public vgui2::Frame, public IScoreBoardInterface
 {
 public:
 	CClientScoreBoardDialog( vgui2::Panel* parent );
+	~CClientScoreBoardDialog() override;
 	void Reset() override;
 	void Update( const char* servername, bool teamplay, bool spectator ) override;
 	void RebuildTeams( const char* teamname, bool teamplay, bool spectator ) override;
