@@ -147,7 +147,8 @@ The project files are in [`GoldSrc-SDK/`](GoldSrc-SDK/). Paths below are relativ
 | [`launcher/`](GoldSrc-SDK/launcher/) | Game launcher |
 | [`dedicated/`](GoldSrc-SDK/dedicated/) | Dedicated server launcher |
 | [`HLTV/`](GoldSrc-SDK/HLTV/) | HLTV, proxy, core, and demo playback code |
-| [`cl_dll/`](GoldSrc-SDK/cl_dll/), [`dlls/`](GoldSrc-SDK/dlls/) | Half-Life client and server code |
+| [`valve/`](GoldSrc-SDK/valve/) | Half-Life client and server code (`valve/cl_dll/`, `valve/dlls/`) |
+| [`cl_dll/`](GoldSrc-SDK/cl_dll/), [`dlls/`](GoldSrc-SDK/dlls/) | Shared client and server baseline headers used across engine, tools, UI, and games |
 | [`common/`](GoldSrc-SDK/common/), [`public/`](GoldSrc-SDK/public/), [`game_shared/`](GoldSrc-SDK/game_shared/), [`pm_shared/`](GoldSrc-SDK/pm_shared/) | Shared interfaces, game code, and movement code |
 | [`filesystem/`](GoldSrc-SDK/filesystem/), [`tier0/`](GoldSrc-SDK/tier0/), [`vgui2/`](GoldSrc-SDK/vgui2/), [`GameUI/`](GoldSrc-SDK/GameUI/) | Filesystem, runtime support, and UI components |
 | [`serverbrowser/`](GoldSrc-SDK/serverbrowser/) | Server browser (`ServerBrowser003`) |

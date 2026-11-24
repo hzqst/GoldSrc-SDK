@@ -110,7 +110,7 @@ static void Run() {
 '''
 
 VIEWPORTS = {'tfc': ('tfc/cl_dll/vgui_TeamFortressViewport.cpp', 'Team Fortress Classic'),
-             'valve': ('cl_dll/vgui_TeamFortressViewport.cpp', 'Half-Life viewport built with _TFC')}
+             'valve': ('valve/cl_dll/vgui_TeamFortressViewport.cpp', 'Half-Life viewport built with _TFC')}
 
 
 def main():

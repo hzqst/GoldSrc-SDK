@@ -150,7 +150,7 @@ public:
 '''
 
 VIEWPORTS = {
-    'valve': ('cl_dll/vgui_TeamFortressViewport.cpp', 'TeamFortressViewport',
+    'valve': ('valve/cl_dll/vgui_TeamFortressViewport.cpp', 'TeamFortressViewport',
               'int CreateCommandMenu(char* menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset);',
               'int TeamFortressViewport::CreateCommandMenu(', 'viewport.CreateCommandMenu(menuFile, 0, 0, false, 160, 30, 0)'),
     'tfc': ('tfc/cl_dll/vgui_TeamFortressViewport.cpp', 'TeamFortressViewport',
