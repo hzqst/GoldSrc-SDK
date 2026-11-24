@@ -85,6 +85,7 @@ foreach(name IN ITEMS
 		network_entity_bounds
 		pack_dead_player_items
 		parse_event_args
+		particleman_classname
 		perf_counter_init
 		playback_demo_commands
 		scoreboard_selection

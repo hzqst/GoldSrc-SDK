@@ -76,7 +76,11 @@ CDoDSnowFlake *CDoDSnowFlake::Create( Vector org, Vector normal, model_s *sprite
 	particle->m_flOldTime = particle->m_flTimeCreated;
 	particle->m_iPFlags = 0;
 	particle->m_iNumFrames = sprite->numframes;
-	strcpy( particle->m_szClassname, classname );
+	if ( classname )
+	{
+		strncpy( particle->m_szClassname, classname, sizeof( particle->m_szClassname ) - 1 );
+		particle->m_szClassname[sizeof( particle->m_szClassname ) - 1] = '\0';
+	}
 	return particle;
 }
 
