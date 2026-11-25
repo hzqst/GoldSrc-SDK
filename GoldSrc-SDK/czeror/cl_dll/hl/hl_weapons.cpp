@@ -543,6 +543,35 @@ int UTIL_GetMaxClip( WEAPON* weapon )
 	return info.iMaxClip;
 }
 
+static void UnpackPredictedWeaponAmmo( CBasePlayer& targetPlayer, CBasePlayerWeapon* predicted, const clientdata_s& client )
+{
+	int primaryAmmo = (int)client.vuser4.x;
+	if ( (unsigned int)primaryAmmo < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		predicted->m_iPrimaryAmmoType = primaryAmmo;
+		targetPlayer.m_rgAmmo[primaryAmmo] = (int)client.vuser4.y;
+	}
+	else
+	{
+		predicted->m_iPrimaryAmmoType = -1;
+	}
+}
+
+static void PackPredictedWeaponAmmo( clientdata_s& client, const CBasePlayer& targetPlayer, const CBasePlayerWeapon* predicted )
+{
+	if ( (unsigned int)predicted->m_iPrimaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		client.vuser4.x = (float)predicted->m_iPrimaryAmmoType;
+		client.vuser4.y = (float)targetPlayer.m_rgAmmo[predicted->m_iPrimaryAmmoType];
+	}
+	else
+	{
+		client.vuser4.x = -1.0f;
+		client.vuser4.y = 0.0f;
+	}
+	client.vuser4.z = (float)targetPlayer.ammo_762natobox;
+}
+
 void HUD_WeaponsPostThink( local_state_s* from, local_state_s* to, usercmd_t* cmd,
 	double time, unsigned int randomSeed )
 {
@@ -570,8 +599,7 @@ void HUD_WeaponsPostThink( local_state_s* from, local_state_s* to, usercmd_t* cm
 		predicted->m_iShotsFired = data.m_fInZoom;
 		predicted->m_iWeaponState = data.m_iWeaponState;
 		predicted->m_flLastFire = data.m_fAimedDamage;
-		predicted->m_iPrimaryAmmoType = (int)from->client.vuser4.x;
-		player.m_rgAmmo[predicted->m_iPrimaryAmmoType] = (int)from->client.vuser4.y;
+		UnpackPredictedWeaponAmmo( player, predicted, from->client );
 	}
 	g_bHoldingKnife = false;
 	player.random_seed = randomSeed;
@@ -687,9 +715,7 @@ void HUD_WeaponsPostThink( local_state_s* from, local_state_s* to, usercmd_t* cm
 		data.m_iWeaponState = predicted->m_iWeaponState;
 		data.m_fInZoom = predicted->m_iShotsFired;
 		data.m_fAimedDamage = predicted->m_flLastFire;
-		to->client.vuser4.x = (float)predicted->m_iPrimaryAmmoType;
-		to->client.vuser4.y = (float)player.m_rgAmmo[predicted->m_iPrimaryAmmoType];
-		to->client.vuser4.z = (float)player.ammo_762natobox;
+		PackPredictedWeaponAmmo( to->client, player, predicted );
 		data.m_flNextReload = (float)( data.m_flNextReload - elapsed );
 		data.m_flPumpTime = (float)( data.m_flPumpTime - elapsed );
 		data.m_flNextPrimaryAttack = (float)( data.m_flNextPrimaryAttack - elapsed );
