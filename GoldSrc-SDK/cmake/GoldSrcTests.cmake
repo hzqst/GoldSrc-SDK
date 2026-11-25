@@ -45,6 +45,7 @@ foreach(name IN ITEMS
 		engine_stufftext
 		file_read_length
 		filesystem_pack_close
+		func_tank_controller
 		game_controls
 		gameui_career_command
 		gameui_career_difficulty
