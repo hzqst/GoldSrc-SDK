@@ -135,7 +135,7 @@ void CSG552::SG552Fire( float spread, float cycleTime, BOOL useAutoAim )
 		(float*)&g_vecZero, (float*)&g_vecZero, direction.x, direction.y, (int)( m_pPlayer->pev->punchangle.x * 100 ),
 		(int)( m_pPlayer->pev->punchangle.y * 100 ), 5, 0 );
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = GetNextAttackDelay( cycleTime );
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", 0, 0 );
 	m_flTimeWeaponIdle = 2;
 	if ( !( m_pPlayer->pev->velocity.Length2D() <= 0 ) )

@@ -54,7 +54,7 @@ int CSmokeGrenade::GetItemInfo( ItemInfo* info )
 
 BOOL CSmokeGrenade::CanDeploy()
 {
-	return m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0;
+	return m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0;
 }
 
 BOOL CSmokeGrenade::Deploy()
@@ -71,7 +71,7 @@ BOOL CSmokeGrenade::Deploy()
 void CSmokeGrenade::Holster( int skiplocal )
 {
 	m_pPlayer->m_flNextAttack = 0.5f;
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 	{
 		m_pPlayer->pev->weapons &= ~( 1 << WEAPON_SMOKEGRENADE );
 		DestroyItem();
@@ -82,7 +82,7 @@ void CSmokeGrenade::Holster( int skiplocal )
 
 void CSmokeGrenade::PrimaryAttack()
 {
-	if ( !( m_iWeaponState & WPNSTATE_SHIELD_DRAWN ) && m_flStartThrow == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 )
+	if ( !( m_iWeaponState & WPNSTATE_SHIELD_DRAWN ) && m_flStartThrow == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		m_flReleaseThrow = 0;
 		m_flStartThrow = gpGlobals->time;
@@ -194,14 +194,14 @@ void CSmokeGrenade::WeaponIdle()
 		m_flStartThrow = 0;
 		m_flNextPrimaryAttack = GetNextAttackDelay( 0.5f );
 		m_flTimeWeaponIdle = 0.75f;
-		--m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType];
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 )
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 			m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = GetNextAttackDelay( 0.5f );
 		ResetPlayerShieldAnim();
 	}
 	else if ( m_flReleaseThrow <= 0 )
 	{
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 		{
 			float choice = RANDOM_FLOAT( 0, 1 );
 			if ( m_pPlayer->HasShield() )
@@ -223,7 +223,7 @@ void CSmokeGrenade::WeaponIdle()
 	else
 	{
 		m_flStartThrow = 0;
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 			RetireWeapon();
 		else
 		{

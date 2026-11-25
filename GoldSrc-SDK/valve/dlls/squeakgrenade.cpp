@@ -484,7 +484,7 @@ void CSqueak::Holster( int skiplocal /* = 0 */ )
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 	
-	if ( !m_pPlayer->m_rgAmmo[ m_iPrimaryAmmoType ] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 	{
 		m_pPlayer->pev->weapons &= ~(1<<WEAPON_SNARK);
 		SetThink( &CSqueak::DestroyItem );
@@ -531,7 +531,7 @@ void AngleVectors(const vec3_t angles, vec3_t& forward, vec3_t& right, vec3_t& u
 
 void CSqueak::PrimaryAttack()
 {
-	if ( m_pPlayer->m_rgAmmo[ m_iPrimaryAmmoType ] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		vec3_t forward, right, up;
 		vec3_t vEntityForward = m_pPlayer->pev->v_angle;
@@ -586,7 +586,7 @@ void CSqueak::PrimaryAttack()
 
 			m_pPlayer->m_iWeaponVolume = QUIET_GUN_VOLUME;
 
-			m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+			m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 
 			m_fJustThrown = 1;
 
@@ -612,7 +612,7 @@ void CSqueak::WeaponIdle( void )
 	{
 		m_fJustThrown = 0;
 
-		if ( !m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] )
+		if ( m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 )
 		{
 			RetireWeapon();
 			return;

@@ -116,7 +116,7 @@ void CAK47::AK47Fire( float spread, float cycleTime, BOOL useAutoAim )
 	m_pPlayer->m_iWeaponVolume = NORMAL_GUN_VOLUME;
 	m_pPlayer->m_iWeaponFlash = BRIGHT_GUN_FLASH;
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = GetNextAttackDelay( cycleTime );
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", 0, 0 );
 	m_flTimeWeaponIdle = 1.9f;
 	if ( !( m_pPlayer->pev->velocity.Length2D() <= 0 ) )

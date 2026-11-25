@@ -530,7 +530,7 @@ BOOL CBasePlayer::RemovePlayerItem( CBasePlayerItem* item )
 	return FALSE;
 }
 
-int CBasePlayer::AmmoInventory( int ammo )
+int CBasePlayer::AmmoInventory( int ammo ) const
 {
 	if ( (unsigned int)ammo >= (unsigned int)MAX_AMMO_SLOTS )
 		return -1;

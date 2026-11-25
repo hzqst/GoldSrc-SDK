@@ -556,7 +556,8 @@ bool BuyGunAmmo( CBasePlayer& player, CBasePlayerItem& weapon, bool blinkMoney )
 	if ( !player.CanPlayerBuy( true ) )
 		return false;
 	int ammoIndex = weapon.PrimaryAmmoIndex();
-	if ( ammoIndex == -1 || player.m_rgAmmo[ammoIndex] >= CBasePlayerItem::ItemInfoArray[weapon.m_iId].iMaxAmmo1 )
+	int currentAmmo = player.AmmoInventory( ammoIndex );
+	if ( currentAmmo < 0 || currentAmmo >= CBasePlayerItem::ItemInfoArray[weapon.m_iId].iMaxAmmo1 )
 		return false;
 	int price;
 	const char* item;

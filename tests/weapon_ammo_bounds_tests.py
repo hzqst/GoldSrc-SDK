@@ -51,7 +51,7 @@ class CBasePlayer
 public:
     int m_rgAmmo[MAX_AMMO_SLOTS] = {};
 
-    int AmmoInventory(int iAmmoIndex);
+    int AmmoInventory(int iAmmoIndex){AMMO_CONST};
 '''
 
 STUB_BODY = r'''
@@ -150,11 +150,12 @@ def main():
         for label, impl_path in [('server', player_cpp), ('client', client_base)]:
             impl_src = (ROOT / impl_path).read_text(encoding='utf-8')
             ammo_inv_fn = extract(impl_src, 'int CBasePlayer::AmmoInventory(')
+            ammo_const = ' const' if ') const' in ammo_inv_fn.splitlines()[0] else ''
             with tempfile.TemporaryDirectory(prefix=f'goldsrc-ammo-bounds-{mod}-{label}-') as folder:
                 work = Path(folder)
                 test_source = work / 'test.cpp'
                 test_source.write_text(
-                    '\n'.join([STUB_HEADER, set_fn, add_fn, ptr_fn, STUB_BODY, ammo_inv_fn, is_useable_fn, TESTS]),
+                    '\n'.join([STUB_HEADER.replace('{AMMO_CONST}', ammo_const), set_fn, add_fn, ptr_fn, STUB_BODY, ammo_inv_fn, is_useable_fn, TESTS]),
                     encoding='utf-8',
                 )
                 executable = compile_program([test_source], work / 'test', sanitizers=['address', 'undefined'])

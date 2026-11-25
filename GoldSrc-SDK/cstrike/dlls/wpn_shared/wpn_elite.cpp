@@ -129,7 +129,7 @@ void CELITE::ELITEFire( float flSpread, float flCycleTime, BOOL )
 		36, 0.75f, m_pPlayer->pev, true, m_pPlayer->random_seed );
 	PLAYBACK_EVENT_FULL( FEV_NOTHOST, m_pPlayer->edict(), usEvent, 0, (float*)&g_vecZero, (float*)&g_vecZero,
 		flTimeDiff, vecDir.x, (int)( vecDir.y * 100 ), m_iClip, 0, 0 );
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	m_flTimeWeaponIdle = 2;
 	m_pPlayer->pev->punchangle.x -= 2;

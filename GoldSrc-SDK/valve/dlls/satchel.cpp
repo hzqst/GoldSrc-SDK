@@ -189,7 +189,7 @@ int CSatchel::AddDuplicate( CBasePlayerItem *pOriginal )
 		if ( pOriginal->m_pPlayer == NULL )
 			return TRUE;
 
-		int nSatchelsInPocket = pSatchel->m_pPlayer->m_rgAmmo[ pSatchel->PrimaryAmmoIndex() ];
+		int nSatchelsInPocket = max( 0, pSatchel->m_pPlayer->AmmoInventory( pSatchel->PrimaryAmmoIndex() ) );
 		int nNumSatchels = 0;
 		CBaseEntity* pLiveSatchel = NULL;
 
@@ -276,7 +276,7 @@ int CSatchel::GetItemInfo(ItemInfo *p)
 //=========================================================
 BOOL CSatchel::IsUseable( void )
 {
-	if ( m_pPlayer->m_rgAmmo[ PrimaryAmmoIndex() ] > 0 ) 
+	if ( m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) > 0 ) 
 	{
 		// player is carrying some satchels
 		return TRUE;
@@ -293,7 +293,7 @@ BOOL CSatchel::IsUseable( void )
 
 BOOL CSatchel::CanDeploy( void )
 {
-	if ( m_pPlayer->m_rgAmmo[ PrimaryAmmoIndex() ] > 0 ) 
+	if ( m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) > 0 ) 
 	{
 		// player is carrying some satchels
 		return TRUE;
@@ -338,7 +338,7 @@ void CSatchel::Holster( int skiplocal /* = 0 */ )
 	}
 	EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_WEAPON, "common/null.wav", 1.0, ATTN_NORM);
 
-	if ( !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] && !m_chargeReady )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 && !m_chargeReady )
 	{
 		m_pPlayer->pev->weapons &= ~(1<<WEAPON_SATCHEL);
 		SetThink( &CSatchel::DestroyItem );
@@ -390,7 +390,7 @@ void CSatchel::SecondaryAttack( void )
 
 void CSatchel::Throw( void )
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		Vector vecSrc = m_pPlayer->pev->origin;
 
@@ -414,7 +414,7 @@ void CSatchel::Throw( void )
 
 		m_chargeReady = 1;
 		
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 
 		m_flNextPrimaryAttack = GetNextAttackDelay(1.0);
 		m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.5;
@@ -440,7 +440,7 @@ void CSatchel::WeaponIdle( void )
 		strcpy( m_pPlayer->m_szAnimExtention, "hive" );
 		break;
 	case 2:
-		if ( !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		{
 			m_chargeReady = 0;
 			RetireWeapon();

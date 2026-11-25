@@ -149,7 +149,7 @@ void CAWP::AWPFire( float flSpread, float flCycleTime, BOOL )
 	float flDelay = GetNextAttackDelay( flCycleTime );
 	m_flNextSecondaryAttack = flDelay;
 	m_flNextPrimaryAttack = flDelay;
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	m_flTimeWeaponIdle = 2;
 	m_pPlayer->pev->punchangle.x -= 2;

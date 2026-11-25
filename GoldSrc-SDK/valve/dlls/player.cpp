@@ -4753,21 +4753,22 @@ void CBasePlayer::DropPlayerItem ( char *pszItemName )
 
 			iAmmoIndex = GetAmmoIndex ( pWeapon->pszAmmo1() ); // ???
 			
-			if ( iAmmoIndex != -1 )
+			if ( (unsigned int)iAmmoIndex < (unsigned int)MAX_AMMO_SLOTS )
 			{
 				// this weapon weapon uses ammo, so pack an appropriate amount.
+				int ammo = AmmoInventory( iAmmoIndex );
 				if ( pWeapon->iFlags() & ITEM_FLAG_EXHAUSTIBLE )
 				{
 					// pack up all the ammo, this weapon is its own ammo type
-					pWeaponBox->PackAmmo( MAKE_STRING(pWeapon->pszAmmo1()), m_rgAmmo[ iAmmoIndex ] );
-					m_rgAmmo[ iAmmoIndex ] = 0; 
+					pWeaponBox->PackAmmo( MAKE_STRING(pWeapon->pszAmmo1()), ammo );
+					SetAmmoInventory( iAmmoIndex, 0 );
 
 				}
 				else
 				{
 					// pack half of the ammo
-					pWeaponBox->PackAmmo( MAKE_STRING(pWeapon->pszAmmo1()), m_rgAmmo[ iAmmoIndex ] / 2 );
-					m_rgAmmo[ iAmmoIndex ] /= 2; 
+					pWeaponBox->PackAmmo( MAKE_STRING(pWeapon->pszAmmo1()), ammo / 2 );
+					SetAmmoInventory( iAmmoIndex, ammo / 2 );
 				}
 
 			}

@@ -64,7 +64,7 @@ void CCSTutor::CheckForNeedToReload( bool isPassiveCheck )
 		return;
 
 	CBasePlayerWeapon* weapon = (CBasePlayerWeapon*)item;
-	if ( player->m_rgAmmo[weapon->m_iPrimaryAmmoType] == 0 )
+	if ( player->AmmoInventory( weapon->m_iPrimaryAmmoType ) <= 0 )
 	{
 		if ( weapon->m_iClip == 0 )
 		{
@@ -1922,7 +1922,7 @@ void CCSTutor::HandleWeaponFiredOnEmpty( CBaseEntity* entity, CBaseEntity* )
 		player->m_pActiveItem->IsWeapon() == TRUE )
 	{
 		CBasePlayerWeapon* weapon = (CBasePlayerWeapon*)player->m_pActiveItem;
-		if ( player->m_rgAmmo[weapon->m_iPrimaryAmmoType] <= 0 )
+		if ( player->AmmoInventory( weapon->m_iPrimaryAmmoType ) <= 0 )
 		{
 			TutorMessage* definition = GetTutorMessageDefinition( YOU_ARE_OUT_OF_AMMO );
 			if ( definition != NULL )

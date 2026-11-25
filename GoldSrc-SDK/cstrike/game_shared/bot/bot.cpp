@@ -317,7 +317,7 @@ bool CBot::IsActiveWeaponOutOfAmmo( void ) const
 	if (gun->m_iClip < 0)
 		return false;
 
-	if (gun->m_iClip == 0 && m_rgAmmo[ gun->m_iPrimaryAmmoType ] <= 0)
+	if (gun->m_iClip == 0 && AmmoInventory( gun->m_iPrimaryAmmoType ) <= 0)
 		return true;
 
 	return false;

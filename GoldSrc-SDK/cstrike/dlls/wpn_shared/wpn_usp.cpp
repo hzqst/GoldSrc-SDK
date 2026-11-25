@@ -161,7 +161,7 @@ void CUSP::USPFire( float flSpread, float flCycleTime, BOOL )
 	PLAYBACK_EVENT_FULL( FEV_NOTHOST, m_pPlayer->edict(), m_usFireUSP, 0, (float*)&g_vecZero, (float*)&g_vecZero,
 		vecDir.x, vecDir.y, (int)( m_pPlayer->pev->punchangle.x * 100 ), 0,
 		m_iClip == 0, m_iWeaponState & WPNSTATE_USP_SILENCED );
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	m_flTimeWeaponIdle = 2;
 #ifndef CLIENT_DLL

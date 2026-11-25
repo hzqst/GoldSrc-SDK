@@ -515,7 +515,7 @@ public:
 	void BarnacleVictimBitten( entvars_t* barnacle );
 	void BarnacleVictimReleased();
 	static int GetAmmoIndex( const char* name );
-	int AmmoInventory( int ammo );
+	int AmmoInventory( int ammo ) const;
 	bool SetAmmoInventory( int ammo, int amount )
 	{
 		if ( (unsigned int)ammo >= (unsigned int)MAX_AMMO_SLOTS )

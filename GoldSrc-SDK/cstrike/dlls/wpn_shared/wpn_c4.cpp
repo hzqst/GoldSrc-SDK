@@ -112,7 +112,7 @@ void CC4::Holster( int skiplocal )
 {
 	m_pPlayer->m_flNextAttack = 0.5f;
 	m_bStartedArming = false;
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 	{
 		m_pPlayer->pev->weapons &= ~( 1 << WEAPON_C4 );
 		DestroyItem();
@@ -158,7 +158,7 @@ void CC4::PrimaryAttack()
 	if ( !g_pGameRules )
 		return;
 #endif
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		return;
 #ifdef CLIENT_DLL
 	bool inBombZone = g_bInBombZone;
@@ -246,7 +246,8 @@ void CC4::PrimaryAttack()
 			m_pPlayer->ResetMaxSpeed();
 			m_pPlayer->SetBombIcon( false );
 #endif
-			if ( --m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 )
+			m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
+			if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 			{
 				RetireWeapon();
 				return;
@@ -271,7 +272,7 @@ void CC4::WeaponIdle()
 	}
 	if ( m_flTimeWeaponIdle <= 0 )
 	{
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 			RetireWeapon();
 		else
 		{

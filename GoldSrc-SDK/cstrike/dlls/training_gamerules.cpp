@@ -116,7 +116,7 @@ void CHalfLifeTraining::PlayerThink(CBasePlayer *pPlayer)
 
 	if (pPlayer->HasNamedPlayerItem("weapon_c4"))
 	{
-		if (pPlayer->m_rgAmmo[pPlayer->GetAmmoIndex("C4")] <= 0)
+		if (pPlayer->AmmoInventory(pPlayer->GetAmmoIndex("C4")) <= 0)
 		{
 			pPlayer->m_bHasC4 = false;
 			CBasePlayerItem *pItem = pPlayer->m_pActiveItem;
