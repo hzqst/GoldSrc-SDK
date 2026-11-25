@@ -1096,7 +1096,7 @@ int CBasePlayerWeapon::UpdateClientData( CBasePlayer *pPlayer )
 		if ( clip == -1 )
 		{
 			int ammoIndex = CBasePlayer::GetAmmoIndex( pszAmmo1() );
-			clip = m_pPlayer->m_rgAmmo[ammoIndex];
+			clip = m_pPlayer->AmmoInventory( ammoIndex );
 		}
 
 		MESSAGE_BEGIN( MSG_ONE, gmsgCurWeapon, NULL, pPlayer->pev );
@@ -1438,8 +1438,9 @@ void CDodAmmoBox::Touch( CBaseEntity *pOther )
 
 		while ( iClips > 0 )
 		{
-			if ( pPlayer->m_rgAmmo[iAmmoIndex] + ii.iMaxClip <= ii.iMaxAmmo1 )
-				pPlayer->m_rgAmmo[iAmmoIndex] += ii.iMaxClip;
+			int iCurAmmo = pPlayer->AmmoInventory( iAmmoIndex );
+			if ( iCurAmmo >= 0 && iCurAmmo + ii.iMaxClip <= ii.iMaxAmmo1 )
+				pPlayer->SetAmmoInventory( iAmmoIndex, iCurAmmo + ii.iMaxClip );
 
 			iClips--;
 		}

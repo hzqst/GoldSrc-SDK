@@ -193,7 +193,7 @@ BOOL CRadioControlledBomb::Deploy()
 void CRadioControlledBomb::Holster( int skiplocal )
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 && BombArrayIsEmpty() )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 && BombArrayIsEmpty() )
 	{
 		m_pPlayer->m_iAccessoryBits &= ~( 1 << ACCESSORY_RADIOCONTROLLEDBOMB );
 		DestroyItem();
@@ -286,7 +286,7 @@ void CRadioControlledBomb::SecondaryAttack()
 	unsigned short state = GetWeaponState();
 	if ( state == RCBOMB_IDLE )
 		SetWeaponState( RCBOMB_BOMB_TO_DETONATOR );
-	else if ( state == RCBOMB_DETONATOR_IDLE && m_pPlayer->m_rgAmmo[CBasePlayer::GetAmmoIndex( "bomb" )] > 0 )
+	else if ( state == RCBOMB_DETONATOR_IDLE && m_pPlayer->AmmoInventory( CBasePlayer::GetAmmoIndex( "bomb" ) ) > 0 )
 		SetWeaponState( RCBOMB_DETONATOR_TO_BOMB );
 }
 
@@ -303,7 +303,7 @@ BOOL CRadioControlledBomb::PlantBomb()
 		return FALSE;
 	AddToBombArray( bomb );
 	UTIL_MakeVectors( m_pPlayer->pev->v_angle );
-	--m_pPlayer->m_rgAmmo[CBasePlayer::GetAmmoIndex( "bomb" )];
+	m_pPlayer->AddAmmoInventory( CBasePlayer::GetAmmoIndex( "bomb" ), -1 );
 #endif
 	if ( m_pPlayer->m_toolTrigger )
 		m_pPlayer->m_toolTrigger->FireUseTarget( m_pPlayer, NULL, USE_SET, 0 );
@@ -328,7 +328,7 @@ void CRadioControlledBomb::WeaponIdle()
 		SetWeaponState( RCBOMB_DETONATOR_DRAW );
 		break;
 	case RCBOMB_DETONATOR_TO_BOMB:
-		if ( m_pPlayer->m_rgAmmo[CBasePlayer::GetAmmoIndex( "bomb" )] <= 0 )
+		if ( m_pPlayer->AmmoInventory( CBasePlayer::GetAmmoIndex( "bomb" ) ) <= 0 )
 			RetireWeapon();
 		else
 			SetWeaponState( RCBOMB_DRAW );

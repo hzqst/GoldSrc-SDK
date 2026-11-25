@@ -510,7 +510,7 @@ BOOL CDiscWeapon::CanHolster( void )
 void CDiscWeapon::Holster( int skiplocal /* = 0 */ )
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
+	if (m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0)
 	{
 		SendWeaponAnim( DISC_HOLSTER, 1 );
 	}
@@ -581,7 +581,7 @@ void CDiscWeapon::PrimaryAttack()
 	}
 #endif
 
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		PLAYBACK_EVENT_FULL( FEV_NOTHOST, m_pPlayer->edict(), m_usFireDisc, 0.0, (float *)&g_vecZero, (float *)&g_vecZero, 0.0, 0.0, 0, 0, 0, 0 );
 		CDisc *pDisc = FireDisc( false );
@@ -600,7 +600,7 @@ void CDiscWeapon::PrimaryAttack()
 			m_iFastShotDiscs = NUM_FASTSHOT_DISCS;
 		}
 
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 
 		// If we have powered discs, remove one
 		if ( m_pPlayer->m_iPowerupDiscs )
@@ -623,8 +623,8 @@ void CDiscWeapon::SecondaryAttack()
 #endif
 
 	// Fast powerup has a number of discs per 1 normal disc (so it can throw a decap when it has at least 1 real disc)
-	if ( (m_pPlayer->HasPowerup( POW_FAST ) && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 ) ||
-		 ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == MAX_DISCS ) )
+	if ( (m_pPlayer->HasPowerup( POW_FAST ) && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 ) ||
+		 ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) == MAX_DISCS ) )
 	{
 		PLAYBACK_EVENT_FULL( FEV_NOTHOST, m_pPlayer->edict(), m_usFireDisc, 0.0, (float *)&g_vecZero, (float *)&g_vecZero, 0.0, 0.0, 0, 0, 1, 0 );
 
@@ -639,7 +639,7 @@ void CDiscWeapon::SecondaryAttack()
 				if ( m_iFastShotDiscs == 0 )
 				{
 					m_iFastShotDiscs = NUM_FASTSHOT_DISCS;
-					m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+					m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 
 					// Remove a powered disc
 					m_pPlayer->m_iPowerupDiscs--;
@@ -650,7 +650,7 @@ void CDiscWeapon::SecondaryAttack()
 		}
 		else
 		{
-			m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] = 0;
+			m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, 0 );
 
 			// If we have powered discs, remove one
 			if ( m_pPlayer->m_iPowerupDiscs )
@@ -723,7 +723,7 @@ void CDiscWeapon::WeaponIdle( void )
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
 		return;
 
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
+	if (m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0)
 	{
 		int iAnim;
 		float flRand = UTIL_SharedRandomFloat( m_pPlayer->random_seed, 0, 1 );

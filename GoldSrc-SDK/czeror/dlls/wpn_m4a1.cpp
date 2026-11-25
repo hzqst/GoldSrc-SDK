@@ -160,7 +160,7 @@ void CM4A1::M4A1Fire( float flSpread, float flCycleTime, BOOL fUseAutoAim )
 	PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireM4A1, 0, (float*)&g_vecZero, (float*)&g_vecZero,
 		vecDir.x, vecDir.y, (int)punchPitch, (int)punchYaw, ( m_iWeaponState & M4A1_SILENCED ) != 0, 0 );
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + flCycleTime;
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.5;
 	if ( !( m_pPlayer->pev->velocity.Length2D() <= 0 ) )

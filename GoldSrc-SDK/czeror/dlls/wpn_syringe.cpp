@@ -95,7 +95,7 @@ void CSyringe::Inject( CBaseEntity* entity )
 		(float*)&g_vecZero.x, 0, 0, x, y, z, 0 );
 #ifndef CLIENT_DLL
 	entity->Use( m_pPlayer, m_pPlayer, USE_SET, 1 );
-	m_pPlayer->m_rgAmmo[CBasePlayer::GetAmmoIndex( "syringe" )]--;
+	m_pPlayer->AddAmmoInventory( CBasePlayer::GetAmmoIndex( "syringe" ), -1 );
 #endif
 }
 
@@ -123,7 +123,7 @@ void CSyringe::WeaponIdle()
 			SetWeaponState( SYRINGE_IDLE );
 			break;
 		case SYRINGE_USE:
-			if ( m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] <= 0 )
+			if ( m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 )
 				RetireWeapon();
 			else
 				SetWeaponState( SYRINGE_IDLE );

@@ -4159,10 +4159,10 @@ void CBasePlayer :: UpdateClientData( void )
 
 	// QUAKECLASSIC
 	// HACKHACK: Make the HL ammo types equal the Quake ammo
-	m_rgAmmo[ iShellIndex ] = m_iAmmoShells;
-	m_rgAmmo[ iNailIndex ] = m_iAmmoNails;
-	m_rgAmmo[ iRocketIndex ] = m_iAmmoRockets;
-	m_rgAmmo[ iCellIndex ] = m_iAmmoCells;
+	SetAmmoInventory( iShellIndex, m_iAmmoShells );
+	SetAmmoInventory( iNailIndex, m_iAmmoNails );
+	SetAmmoInventory( iRocketIndex, m_iAmmoRockets );
+	SetAmmoInventory( iCellIndex, m_iAmmoCells );
 	SendAmmoUpdate();
 
 	// Update all the items
@@ -4573,21 +4573,22 @@ void CBasePlayer::DropPlayerItem ( char *pszItemName )
 
 			iAmmoIndex = GetAmmoIndex ( pWeapon->pszAmmo1() ); // ???
 			
-			if ( iAmmoIndex != -1 )
+			if ( (unsigned int)iAmmoIndex < (unsigned int)MAX_AMMO_SLOTS )
 			{
 				// this weapon weapon uses ammo, so pack an appropriate amount.
 				if ( pWeapon->iFlags() & ITEM_FLAG_EXHAUSTIBLE )
 				{
 					// pack up all the ammo, this weapon is its own ammo type
-					pWeaponBox->PackAmmo( MAKE_STRING(pWeapon->pszAmmo1()), m_rgAmmo[ iAmmoIndex ] );
-					m_rgAmmo[ iAmmoIndex ] = 0; 
+					pWeaponBox->PackAmmo( MAKE_STRING(pWeapon->pszAmmo1()), max( 0, AmmoInventory( iAmmoIndex ) ) );
+					SetAmmoInventory( iAmmoIndex, 0 ); 
 
 				}
 				else
 				{
 					// pack half of the ammo
-					pWeaponBox->PackAmmo( MAKE_STRING(pWeapon->pszAmmo1()), m_rgAmmo[ iAmmoIndex ] / 2 );
-					m_rgAmmo[ iAmmoIndex ] /= 2; 
+					int iAmmoCount = max( 0, AmmoInventory( iAmmoIndex ) );
+					pWeaponBox->PackAmmo( MAKE_STRING(pWeapon->pszAmmo1()), iAmmoCount / 2 );
+					SetAmmoInventory( iAmmoIndex, iAmmoCount / 2 ); 
 				}
 
 			}

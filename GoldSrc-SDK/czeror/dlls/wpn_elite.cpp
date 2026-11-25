@@ -144,7 +144,7 @@ void CELITE::ELITEFire( float spread, float cycleTime, BOOL )
 	float yaw = direction.y * 100;
 	PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), right ? m_usFireELITE_RIGHT : m_usFireELITE_LEFT, 0,
 		(float*)&g_vecZero.x, (float*)&g_vecZero.x, timeDiff, direction.x, (int)yaw, m_iClip, 0, 0 );
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 2;
 	m_pPlayer->pev->punchangle.x -= 2;

@@ -126,7 +126,7 @@ void CG3SG1::G3SG1Fire( float flSpread, float flCycleTime, BOOL )
 	float flDelay = UTIL_WeaponTimeBase() + flCycleTime;
 	m_flNextSecondaryAttack = flDelay;
 	m_flNextPrimaryAttack = flDelay;
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.8;
 	m_pPlayer->pev->punchangle.x -= UTIL_SharedRandomFloat( m_pPlayer->random_seed + 4, 2.75f, 3.25f ) +

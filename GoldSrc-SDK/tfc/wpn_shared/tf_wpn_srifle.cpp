@@ -206,7 +206,7 @@ void CTFSniperRifle::ItemPostFrame()
 	GetItemInfo( &info );
 	if ( ( m_pPlayer->pev->button & IN_ATTACK2 ) && m_flNextSecondaryAttack <= 0 )
 	{
-		if ( info.pszAmmo2 && m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()] == 0 )
+		if ( info.pszAmmo2 && m_pPlayer->AmmoInventory( SecondaryAmmoIndex() ) <= 0 )
 			m_fFireOnEmpty = TRUE;
 		SecondaryAttack();
 		m_pPlayer->pev->button &= ~IN_ATTACK2;

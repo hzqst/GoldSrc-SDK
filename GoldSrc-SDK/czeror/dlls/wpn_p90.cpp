@@ -118,7 +118,7 @@ void CP90::P90Fire( float spread, float cycleTime, BOOL useAutoAim )
 	PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireP90, 0,
 		(float*)&g_vecZero, (float*)&g_vecZero, direction.x, direction.y, (int)punchPitch, (int)punchYaw, 5, 0 );
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + cycleTime;
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", 0, 0 );
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 2;
 	if ( !( m_pPlayer->pev->flags & FL_ONGROUND ) )

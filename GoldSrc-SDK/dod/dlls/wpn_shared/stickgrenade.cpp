@@ -49,7 +49,7 @@ BOOL CStickGrenade::CanHolster()
 
 BOOL CStickGrenade::CanDeploy()
 {
-	return m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0;
+	return m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0;
 }
 
 BOOL CStickGrenade::Deploy()
@@ -65,7 +65,7 @@ BOOL CStickGrenade::Deploy()
 void CStickGrenade::Holster( int skiplocal )
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 		SendWeaponAnim( 3, UseDecrement() != FALSE );
 	else
 	{
@@ -81,7 +81,7 @@ void CStickGrenade::StartThrow( BOOL bUnderhand )
 	bool bCanThrow = true;
 
 #ifndef CLIENT_DLL
-	bCanThrow = m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0;
+	bCanThrow = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0;
 #endif
 
 	if ( m_flStartThrow == 0 && bCanThrow )
@@ -109,10 +109,10 @@ void CStickGrenade::WeaponIdle()
 	if ( m_flReleaseThrow == 0 )
 		m_flReleaseThrow = gpGlobals->time;
 
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 && m_flTimeWeaponIdle > gpGlobals->time )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 && m_flTimeWeaponIdle > gpGlobals->time )
 		return;
 
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 && m_flTimeWeaponIdle < gpGlobals->time && m_flStartThrow == 1 && m_flReleaseThrow != 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 && m_flTimeWeaponIdle < gpGlobals->time && m_flStartThrow == 1 && m_flReleaseThrow != 0 )
 	{
 		m_flStartThrow = gpGlobals->time + 0.5;
 
@@ -137,12 +137,12 @@ void CStickGrenade::WeaponIdle()
 
 		vecThrow = gpGlobals->v_forward * flVel + DotProduct( gpGlobals->v_forward, m_pPlayer->pev->velocity ) * gpGlobals->v_forward;
 	}
-	else if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 && m_flStartThrow == 0 && m_flReleaseThrow < 0 )
+	else if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 && m_flStartThrow == 0 && m_flReleaseThrow < 0 )
 	{
 		m_flTimeWeaponIdle = gpGlobals->time + RANDOM_FLOAT( 10, 15 );
 		SendWeaponAnim( 0, UseDecrement() != FALSE );
 	}
-	else if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 && m_flStartThrow < gpGlobals->time && m_flStartThrow != 0 && m_flStartThrow != 1 )
+	else if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 && m_flStartThrow < gpGlobals->time && m_flStartThrow != 0 && m_flStartThrow != 1 )
 	{
 		angThrow = m_pPlayer->pev->v_angle + m_pPlayer->pev->punchangle;
 
@@ -187,16 +187,16 @@ void CStickGrenade::WeaponIdle()
 		m_flNextPrimaryAttack = gpGlobals->time + 1.0;
 		m_flTimeWeaponIdle = gpGlobals->time + 1.0;
 
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 
-		if ( !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 			return;
 	}
 	else if ( m_flReleaseThrow > 0 && m_flStartThrow == 0 && m_flTimeWeaponIdle < gpGlobals->time )
 	{
 		m_flStartThrow = 0;
 
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 		{
 			SendWeaponAnim( 1, UseDecrement() != FALSE );
 		}
@@ -213,7 +213,7 @@ void CStickGrenade::WeaponIdle()
 
 void CStickGrenade::DropGren()
 {
-	if ( m_flStartThrow == 0 || !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_flStartThrow == 0 || m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		return;
 
 	SendWeaponAnim( 4, UseDecrement() != FALSE );
@@ -244,7 +244,7 @@ void CStickGrenade::DropGren()
 	CGrenade::ShootPickup( m_pPlayer->pev, vecSrc, vecThrow, 5, G_STICKGRENADE, 0.8f );
 #endif
 
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 	m_flStartThrow = 0;
 	m_flTimeWeaponIdle = m_flNextSecondaryAttack = m_flNextPrimaryAttack = gpGlobals->time + 0.5;
 }

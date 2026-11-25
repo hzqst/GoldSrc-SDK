@@ -342,7 +342,7 @@ void HUD_PrepEntity( CBaseEntity* entity, CBasePlayer* owner, int ammoType )
 	{
 		CBasePlayerWeapon* item = (CBasePlayerWeapon*)entity;
 		item->m_pPlayer = owner;
-		item->current_ammo = &owner->m_rgAmmo[ammoType];
+		item->current_ammo = owner->AmmoInventoryPtr( ammoType );
 		ItemInfo info;
 		item->GetItemInfo( &info );
 		g_pWpns[info.iId] = item;

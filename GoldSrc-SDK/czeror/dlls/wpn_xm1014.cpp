@@ -101,7 +101,7 @@ void CXM1014::PrimaryAttack()
 	float pitch = m_vVecAiming.x * 100;
 	PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireXM1014, 0, (float*)&g_vecZero.x,
 		(float*)&g_vecZero.x, m_vVecAiming.x, m_vVecAiming.y, 7, (int)pitch, m_iClip == 0, 0 );
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	if ( m_iClip )
 		m_flPumpTime = UTIL_WeaponTimeBase() + 0.125;
@@ -122,7 +122,7 @@ void CXM1014::PrimaryAttack()
 
 void CXM1014::Reload()
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 || m_iClip == 7 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 || m_iClip == 7 )
 		return;
 	if ( !( m_flNextPrimaryAttack <= UTIL_WeaponTimeBase() ) )
 		return;
@@ -154,7 +154,7 @@ void CXM1014::Reload()
 	{
 		m_fInSpecialReload = 1;
 		m_iClip++;
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 		m_pPlayer->ammo_buckshot--;
 	}
 }
@@ -170,7 +170,7 @@ void CXM1014::WeaponIdle()
 
 	if ( m_fInSpecialReload )
 	{
-		if ( m_iClip == 7 || !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+		if ( m_iClip == 7 || m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		{
 			SendWeaponAnim( XM1014_PUMP, UseDecrement() );
 			m_fInSpecialReload = 0;
@@ -181,7 +181,7 @@ void CXM1014::WeaponIdle()
 			Reload();
 		}
 	}
-	else if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	else if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		Reload();
 	}

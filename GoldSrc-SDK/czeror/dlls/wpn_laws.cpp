@@ -235,7 +235,7 @@ void CLaws::PrimaryAttack()
 #endif
 	PLAYBACK_EVENT_FULL( 0, m_pPlayer->edict(), m_usFireLaws, 0,
 		(float*)&g_vecZero, (float*)&g_vecZero, 0, 0, 0, 0, 0, 0 );
-	m_pPlayer->m_rgAmmo[CBasePlayer::GetAmmoIndex( "66mm" )] = 0;
+	m_pPlayer->SetAmmoInventory( CBasePlayer::GetAmmoIndex( "66mm" ), 0 );
 	m_pPlayer->m_iAccessoryBits &= ~( 1 << ACCESSORY_LAWS );
 }
 

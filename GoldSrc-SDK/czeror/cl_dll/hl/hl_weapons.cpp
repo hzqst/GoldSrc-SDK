@@ -740,7 +740,7 @@ void HUD_WeaponsPostThink( local_state_s* from, local_state_s* to, usercmd_t* cm
 		weapon->m_flNextPrimaryAttack = (float)( weapon->m_flNextPrimaryAttack - elapsed );
 		weapon->m_flNextSecondaryAttack = (float)( weapon->m_flNextSecondaryAttack - elapsed );
 		weapon->m_flTimeWeaponIdle = (float)( weapon->m_flTimeWeaponIdle - elapsed );
-		player.m_rgAmmo[accessory->iAmmoType] = CountAmmo( accessory->iAmmoType );
+		player.SetAmmoInventory( accessory->iAmmoType, CountAmmo( accessory->iAmmoType ) );
 		weapon->m_iPrimaryAmmoType = accessory->iAmmoType;
 		if ( weapon->m_flNextPrimaryAttack < -1 ) weapon->m_flNextPrimaryAttack = -1;
 		if ( weapon->m_flNextSecondaryAttack < -0.001 ) weapon->m_flNextSecondaryAttack = -0.001f;
