@@ -200,13 +200,13 @@ CBasePlayerWeapon :: DefaultReload
 */
 BOOL CBasePlayerWeapon :: DefaultReload( int iClipSize, int iAnim, float fDelay, int skiplocal )
 {
-
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0)
+	int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+	if ( ammo <= 0 )
 		return FALSE;
 
-	int j = min(iClipSize - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]);	
+	int j = min( iClipSize - m_iClip, ammo );
 
-	if (j <= 0)
+	if ( j <= 0 )
 		return FALSE;
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + fDelay;
@@ -237,11 +237,11 @@ BOOL CBasePlayerWeapon :: CanDeploy( void )
 
 	if ( pszAmmo1() )
 	{
-		bHasAmmo |= (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0);
+		bHasAmmo |= (m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0);
 	}
 	if ( pszAmmo2() )
 	{
-		bHasAmmo |= (m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] != 0);
+		bHasAmmo |= (m_pPlayer->AmmoInventory( m_iSecondaryAmmoType ) > 0);
 	}
 	if (m_iClip > 0)
 	{
@@ -382,15 +382,19 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 		gpGlobals->time = gEngfuncs.GetClientTime();
 	if ((m_fInReload) && (m_pPlayer->m_flNextAttack <= 0.0))
 	{
-		int count = min( iMaxClip() - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] );
-		m_iClip += count;
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= count;
+		int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+		if ( ammo > 0 )
+		{
+			int count = min( iMaxClip() - m_iClip, ammo );
+			m_iClip += count;
+			m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, ammo - count );
+		}
 		m_fInReload = FALSE;
 	}
 
 	if ((m_pPlayer->pev->button & IN_ATTACK2) && (m_flNextSecondaryAttack <= 0.0))
 	{
-		if ( pszAmmo2() && !m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()] )
+		if ( pszAmmo2() && m_pPlayer->AmmoInventory( SecondaryAmmoIndex() ) <= 0 )
 		{
 			m_fFireOnEmpty = TRUE;
 		}
@@ -399,7 +403,7 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 	}
 	else if ((m_pPlayer->pev->button & IN_ATTACK) && (m_flNextPrimaryAttack <= 0.0))
 	{
-		if ( (m_iClip == 0 && pszAmmo1()) || (iMaxClip() == -1 && !m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] ) )
+		if ( (m_iClip == 0 && pszAmmo1()) || (iMaxClip() == -1 && pszAmmo1() && m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 ) )
 		{
 			m_fFireOnEmpty = TRUE;
 		}

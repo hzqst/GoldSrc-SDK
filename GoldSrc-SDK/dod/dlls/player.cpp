@@ -888,7 +888,7 @@ int CBasePlayer::GetAmmoIndex(const char *psz)
 
 int CBasePlayer::AmmoInventory( int iAmmoIndex )
 {
-	if ( iAmmoIndex == -1 )
+	if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
 	{
 		return -1;
 	}

@@ -383,7 +383,9 @@ int CBasePlayer::GetAmmoIndex( const char* name )
 
 int CBasePlayer::AmmoInventory( int index )
 {
-	return index == -1 ? -1 : m_rgAmmo[index];
+	if ( (unsigned int)index >= (unsigned int)MAX_AMMO_SLOTS )
+		return -1;
+	return m_rgAmmo[index];
 }
 
 int CBasePlayer::Illumination()

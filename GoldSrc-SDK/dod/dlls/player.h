@@ -20,6 +20,10 @@
 #include "unisignals.h"
 #include "hintmessage.h"
 
+#ifndef MAX_AMMO_SLOTS
+#define MAX_AMMO_SLOTS 32
+#endif
+
 #define PLAYER_FATAL_FALL_SPEED 1024 // approx 60 feet
 #define PLAYER_MAX_SAFE_FALL_SPEED 580 // approx 20 feet
 #define DAMAGE_FOR_FALL_SPEED ((float)100 / (PLAYER_FATAL_FALL_SPEED - PLAYER_MAX_SAFE_FALL_SPEED)) // damage per unit per second.
@@ -129,8 +133,8 @@ public:
 	CBasePlayerItem *m_pActiveItem;
 	CBasePlayerItem *m_pClientActiveItem;  // client version of the active item
 	CBasePlayerItem *m_pLastItem;
-	int m_rgAmmo[32];
-	int m_rgAmmoLast[32];
+	int m_rgAmmo[MAX_AMMO_SLOTS];
+	int m_rgAmmoLast[MAX_AMMO_SLOTS];
 	int m_rgItems[5];
 	char m_szTeamName[TEAM_NAME_LENGTH];
 	int m_irdytospawn;
@@ -244,6 +248,26 @@ public:
 	edict_t *GiveNamedItem(const char *pszName);
 	static int GetAmmoIndex(const char *psz);
 	int AmmoInventory(int iAmmoIndex);
+	bool SetAmmoInventory(int iAmmoIndex, int amount)
+	{
+		if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
+			return false;
+		m_rgAmmo[iAmmoIndex] = amount;
+		return true;
+	}
+	bool AddAmmoInventory(int iAmmoIndex, int delta)
+	{
+		if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
+			return false;
+		m_rgAmmo[iAmmoIndex] += delta;
+		return true;
+	}
+	int *AmmoInventoryPtr(int iAmmoIndex)
+	{
+		if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
+			return NULL;
+		return &m_rgAmmo[iAmmoIndex];
+	}
 	void TabulateAmmo(void);
 	int GiveAmmo(int iAmount, const char *szName, int iMax);
 	void SendAmmoUpdate(void);

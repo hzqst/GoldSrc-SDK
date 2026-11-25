@@ -19,6 +19,10 @@
 #include "pm_materials.h"
 #include "hintmessage.h"
 
+#ifndef MAX_AMMO_SLOTS
+#define MAX_AMMO_SLOTS 32
+#endif
+
 #define PLAYER_FATAL_FALL_SPEED		1024 // approx 60 feet
 #define PLAYER_MAX_SAFE_FALL_SPEED	580 // approx 20 feet
 #define DAMAGE_FOR_FALL_SPEED		((float)100 / ( PLAYER_FATAL_FALL_SPEED - PLAYER_MAX_SAFE_FALL_SPEED )) // damage per unit per second.
@@ -244,6 +248,26 @@ public:
 	void BarnacleVictimReleased() override;
 	static int GetAmmoIndex( const char* name );
 	int AmmoInventory( int index );
+	bool SetAmmoInventory( int index, int amount )
+	{
+		if ( (unsigned int)index >= (unsigned int)MAX_AMMO_SLOTS )
+			return false;
+		m_rgAmmo[index] = amount;
+		return true;
+	}
+	bool AddAmmoInventory( int index, int delta )
+	{
+		if ( (unsigned int)index >= (unsigned int)MAX_AMMO_SLOTS )
+			return false;
+		m_rgAmmo[index] += delta;
+		return true;
+	}
+	int *AmmoInventoryPtr( int index )
+	{
+		if ( (unsigned int)index >= (unsigned int)MAX_AMMO_SLOTS )
+			return NULL;
+		return &m_rgAmmo[index];
+	}
 	int Illumination() override;
 	void ResetAutoaim();
 	Vector GetAutoaimVector( float delta );
@@ -298,8 +322,8 @@ public:
 	CBasePlayerItem*	m_pActiveItem;
 	CBasePlayerItem*	m_pClientActiveItem;  // client version of the active item
 	CBasePlayerItem*	m_pLastItem;
-	int				m_rgAmmo[32];
-	int				m_rgAmmoLast[32];
+	int				m_rgAmmo[MAX_AMMO_SLOTS];
+	int				m_rgAmmoLast[MAX_AMMO_SLOTS];
 	int				m_idrowndmg;			// track drowning damage taken
 	int				m_idrownrestored;		// track drowning damage restored
 	float			m_tSneaking;

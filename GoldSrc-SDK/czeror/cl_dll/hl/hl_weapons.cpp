@@ -257,8 +257,8 @@ BOOL CBasePlayerWeapon::DefaultReload( int clipSize, int animation, float delay 
 	if ( !player.m_pActiveItem )
 		return FALSE;
 	CBasePlayerWeapon* active = g_pWpns[player.m_pActiveItem->m_iId];
-	int reserve = player.m_rgAmmo[active->m_iPrimaryAmmoType];
-	if ( reserve <= 0 || min( clipSize - active->m_iClip, reserve ) == 0 )
+	int reserve = player.AmmoInventory( active->m_iPrimaryAmmoType );
+	if ( reserve <= 0 || min( clipSize - active->m_iClip, reserve ) <= 0 )
 		return FALSE;
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + delay;
 	SendWeaponAnim( animation, UseDecrement() != FALSE );
@@ -449,7 +449,7 @@ void CBasePlayerWeapon::ItemPostFrame()
 	}
 	if ( ( m_pPlayer->pev->button & IN_ATTACK2 ) && m_flNextSecondaryAttack <= 0 )
 	{
-		if ( pszAmmo2() && m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()] == 0 )
+		if ( pszAmmo2() && m_pPlayer->AmmoInventory( SecondaryAmmoIndex() ) <= 0 )
 			m_fFireOnEmpty = TRUE;
 		SecondaryAttack();
 		m_pPlayer->pev->button &= ~IN_ATTACK2;
@@ -457,7 +457,7 @@ void CBasePlayerWeapon::ItemPostFrame()
 	else if ( ( m_pPlayer->pev->button & IN_ATTACK ) && m_flNextPrimaryAttack <= 0 )
 	{
 		if ( ( m_iClip == 0 && pszAmmo1() ) ||
-			( iMaxClip() == -1 && m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] == 0 ) )
+			( iMaxClip() == -1 && pszAmmo1() && m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 ) )
 			m_fFireOnEmpty = TRUE;
 		if ( m_pPlayer->m_bCanShoot )
 		{

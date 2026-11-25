@@ -649,7 +649,7 @@ BOOL CBasePlayerWeapon :: IsUseable( void )
 {
 	if ( m_iClip <= 0 )
 	{
-		if ( m_pPlayer->m_rgAmmo[ PrimaryAmmoIndex() ] <= 0 && iMaxAmmo1() != -1 )
+		if ( iMaxAmmo1() != -1 && m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 )
 		{
 			// clip is empty (or nonexistant) and the player has no more ammo of this type.
 			return FALSE;
@@ -893,20 +893,21 @@ void CBasePlayerWeapon::SendWeaponAnim( int iAnim, int skiplocal )
 
 BOOL CBasePlayerWeapon::DefaultReload( int iClipSize, int iAnim, float fDelay )
 {
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0)
+	int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+	if ( ammo <= 0 )
 		return FALSE;
 
 	int j;
 
 	if ( m_iId == WEAPON_ENFIELD )
-		j = min( iClipSize * 2 - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] );
+		j = min( iClipSize * 2 - m_iClip, ammo );
 	else
-		j = min( iClipSize - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] );
+		j = min( iClipSize - m_iClip, ammo );
 
-	if (j == 0)
+	if ( j <= 0 )
 		return FALSE;
 
-	if ( m_iClip >= m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_iClip >= ammo )
 		return FALSE;
 
 	EMIT_SOUND( ENT(pev), CHAN_WEAPON, "weapons/reloadgarand.wav", RANDOM_FLOAT( 0.8f, 0.9f ), ATTN_NORM );
@@ -940,17 +941,22 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 		( m_iId != WEAPON_HANDGRENADE || m_iId != WEAPON_HANDGRENADE_EX || m_iId != WEAPON_STICKGRENADE || m_iId != WEAPON_STICKGRENADE_EX ) )
 	{
 		// complete the reload.
-		int j;
+		int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+		int j = 0;
 
-		if ( m_iId == WEAPON_ENFIELD )
+		if ( ammo > 0 )
 		{
-			int i;
-			i = min( 5, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] );
-			j = min( 10 - m_iClip, 5 );
-		}
-		else
-		{
-			j = min( iMaxClip() - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] );
+			if ( m_iId == WEAPON_ENFIELD )
+			{
+				int i;
+				i = min( 5, ammo );
+				(void)i;
+				j = min( 10 - m_iClip, 5 );
+			}
+			else
+			{
+				j = min( iMaxClip() - m_iClip, ammo );
+			}
 		}
 
 		if ( Classify() == WEAPON_CLASS_ROCKET && ( m_iWeaponState & WEAPON_STATE_RELOAD_DEPLOY ) )
@@ -970,7 +976,8 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 		MESSAGE_BEGIN( MSG_ONE, gmsgReloadDone, NULL, m_pPlayer->pev );
 		MESSAGE_END();
 
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= j;
+		if ( ammo > 0 )
+			m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, ammo - j );
 
 		m_pPlayer->TabulateAmmo();
 
@@ -986,7 +993,7 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 
 	if ( ( m_pPlayer->pev->button & IN_ATTACK2 ) && UTIL_WeaponTimeBase() >= m_flNextSecondaryAttack )
 	{
-		if ( pszAmmo2() && !m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()] )
+		if ( pszAmmo2() && m_pPlayer->AmmoInventory( SecondaryAmmoIndex() ) <= 0 )
 		{
 			m_fFireOnEmpty = TRUE;
 		}
@@ -1009,7 +1016,7 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 	}
 	else if ( ( m_pPlayer->pev->button & IN_ATTACK ) && UTIL_WeaponTimeBase() >= m_flNextPrimaryAttack )
 	{
-		if ( ( m_iClip == 0 && pszAmmo1() ) || ( iMaxClip() == -1 && !m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] ) )
+		if ( ( m_iClip == 0 && pszAmmo1() ) || ( iMaxClip() == -1 && pszAmmo1() && m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 ) )
 		{
 			m_fFireOnEmpty = TRUE;
 		}

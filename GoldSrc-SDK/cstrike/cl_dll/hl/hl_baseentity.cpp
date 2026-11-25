@@ -532,7 +532,9 @@ BOOL CBasePlayer::RemovePlayerItem( CBasePlayerItem* item )
 
 int CBasePlayer::AmmoInventory( int ammo )
 {
-	return -1;
+	if ( (unsigned int)ammo >= (unsigned int)MAX_AMMO_SLOTS )
+		return -1;
+	return m_rgAmmo[ammo];
 }
 
 void CBasePlayer::SetSuitUpdate( char* name, int group, int noRepeat )

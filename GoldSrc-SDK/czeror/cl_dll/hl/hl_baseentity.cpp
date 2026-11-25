@@ -315,7 +315,12 @@ int CBasePlayer::AddPlayerItem( CBasePlayerItem *pItem ) { return FALSE; }
 int CBasePlayer::RemovePlayerItem( CBasePlayerItem *pItem ) { return FALSE; }
 void CBasePlayer::ItemPreFrame() { }
 void CBasePlayer::ItemPostFrame() { }
-int CBasePlayer::AmmoInventory( int iAmmoIndex ) { return -1; }
+int CBasePlayer::AmmoInventory( int iAmmoIndex )
+{
+	if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
+		return -1;
+	return m_rgAmmo[ iAmmoIndex ];
+}
 int CBasePlayer::GetAmmoIndex(const char *psz) { return -1; }
 void CBasePlayer::SendAmmoUpdate(void) { }
 void CBasePlayer :: UpdateClientData( void ) { }

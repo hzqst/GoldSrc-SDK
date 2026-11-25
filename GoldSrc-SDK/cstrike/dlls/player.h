@@ -20,6 +20,10 @@
 #include "hintmessage.h"
 #include "weapontype.h"
 
+#ifndef MAX_AMMO_SLOTS
+#define MAX_AMMO_SLOTS 32
+#endif
+
 #define PLAYER_FATAL_FALL_SPEED		1100
 #define PLAYER_MAX_SAFE_FALL_SPEED	500
 #define DAMAGE_FOR_FALL_SPEED		((float)100 / (PLAYER_FATAL_FALL_SPEED - PLAYER_MAX_SAFE_FALL_SPEED))
@@ -321,8 +325,8 @@ public:
 	CBasePlayerItem* m_pActiveItem;
 	CBasePlayerItem* m_pClientActiveItem;  // client version of the active item
 	CBasePlayerItem* m_pLastItem;
-	int m_rgAmmo[32];
-	int m_rgAmmoLast[32];
+	int m_rgAmmo[MAX_AMMO_SLOTS];
+	int m_rgAmmoLast[MAX_AMMO_SLOTS];
 	Vector m_vecAutoAim;
 	BOOL m_fOnTarget;
 	int m_iDeaths;
@@ -512,6 +516,26 @@ public:
 	void BarnacleVictimReleased();
 	static int GetAmmoIndex( const char* name );
 	int AmmoInventory( int ammo );
+	bool SetAmmoInventory( int ammo, int amount )
+	{
+		if ( (unsigned int)ammo >= (unsigned int)MAX_AMMO_SLOTS )
+			return false;
+		m_rgAmmo[ammo] = amount;
+		return true;
+	}
+	bool AddAmmoInventory( int ammo, int delta )
+	{
+		if ( (unsigned int)ammo >= (unsigned int)MAX_AMMO_SLOTS )
+			return false;
+		m_rgAmmo[ammo] += delta;
+		return true;
+	}
+	int *AmmoInventoryPtr( int ammo )
+	{
+		if ( (unsigned int)ammo >= (unsigned int)MAX_AMMO_SLOTS )
+			return NULL;
+		return &m_rgAmmo[ammo];
+	}
 	int Illumination() override;
 	void ResetAutoaim();
 	virtual Vector GetAutoaimVector( float delta );
