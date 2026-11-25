@@ -1054,6 +1054,14 @@ void CBasePlayer::PostThink()
 	m_vecOldVelocity.Normalize();
 }
 
+static void UnpackPredictedWeaponAmmo( CBasePlayer &targetPlayer, const CBasePlayerWeapon *pCurrent, int clip )
+{
+	if ( (unsigned int)pCurrent->m_iPrimaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		targetPlayer.m_rgAmmo[pCurrent->m_iPrimaryAmmoType] = clip;
+	}
+}
+
 /*
 =====================
 HUD_WeaponsPostThink
@@ -1109,7 +1117,7 @@ void HUD_WeaponsPostThink( local_state_s *from, local_state_s *to, usercmd_t *cm
 		// Ricochet uses m_iClip to transmit current/primary ammo to client
 		if ( pWeapon == pCurrent )
 		{
-			player.m_rgAmmo[pCurrent->m_iPrimaryAmmoType] = pfrom->m_iClip;
+			UnpackPredictedWeaponAmmo( player, pCurrent, pfrom->m_iClip );
 		}
 	}
 

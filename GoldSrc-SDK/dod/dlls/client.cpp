@@ -965,6 +965,13 @@ int GetWeaponData( struct edict_s* player, struct weapon_data_s* info )
 	return 1;
 }
 
+static int GetClientDataPrimaryAmmo( const CBasePlayer* pl, const CBasePlayerWeapon* gun )
+{
+	if ( gun && (unsigned int)gun->m_iPrimaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+		return pl->m_rgAmmo[gun->m_iPrimaryAmmoType];
+	return 0;
+}
+
 /*
 =================
 UpdateClientData
@@ -1055,8 +1062,7 @@ void UpdateClientData( const struct edict_s* ent, int sendweapons, struct client
 				cd->m_iId = II.iId;
 			}
 
-#pragma warning( suppress : 6011 )
-			cd->ammo_shells = pl->m_rgAmmo[gun->m_iPrimaryAmmoType];
+			cd->ammo_shells = GetClientDataPrimaryAmmo( pl, gun );
 		}
 		else
 		{

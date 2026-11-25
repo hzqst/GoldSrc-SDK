@@ -191,6 +191,7 @@ foreach(name IN ITEMS
 		vox
 		wad_miptex
 		waveout_failure
+		weapon_prediction_ammo_bounds
 	)
 	add_test(NAME ${name}
 		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/${name}_tests.py")

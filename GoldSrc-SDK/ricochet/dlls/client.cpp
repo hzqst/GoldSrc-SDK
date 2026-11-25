@@ -1510,6 +1510,13 @@ void RegisterEncoders( void )
 	DELTA_ADDENCODER( "Player_Encode", Player_Encode );
 }
 
+static int GetPredictedWeaponAmmoClip( const CBasePlayer *pl, const CBasePlayerWeapon *gun )
+{
+	if ( (unsigned int)gun->m_iPrimaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+		return pl->m_rgAmmo[gun->m_iPrimaryAmmoType];
+	return 0;
+}
+
 int GetWeaponData( struct edict_s *player, struct weapon_data_s *info )
 {
 	int i;
@@ -1547,7 +1554,7 @@ int GetWeaponData( struct edict_s *player, struct weapon_data_s *info )
 						item = &info[ II.iId ];
 						
 						item->m_iId						= II.iId;
-						item->m_iClip					= pl->m_rgAmmo[gun->m_iPrimaryAmmoType];//gun->m_iClip;
+						item->m_iClip					= GetPredictedWeaponAmmoClip( pl, gun );//gun->m_iClip;
 
 						item->m_flTimeWeaponIdle		= max( gun->m_flTimeWeaponIdle, -0.001f );
 						item->m_flNextPrimaryAttack		= max( gun->m_flNextPrimaryAttack, -0.001f );

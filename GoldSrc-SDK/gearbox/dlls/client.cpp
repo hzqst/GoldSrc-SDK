@@ -1470,6 +1470,31 @@ int GetWeaponData( struct edict_s *player, struct weapon_data_s *info )
 	return 1;
 }
 
+static void PackClientDataWeaponAmmo( struct clientdata_s *cd, const CBasePlayer *pl, const CBasePlayerWeapon *gun )
+{
+	if ( (unsigned int)gun->m_iPrimaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		cd->vuser4.x = gun->m_iPrimaryAmmoType;
+		cd->vuser4.y = pl->m_rgAmmo[gun->m_iPrimaryAmmoType];
+	}
+	else
+	{
+		cd->vuser4.x = -1;
+		cd->vuser4.y = 0;
+	}
+
+	if ( (unsigned int)gun->m_iSecondaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		cd->vuser3.z = gun->m_iSecondaryAmmoType;
+		cd->vuser4.z = pl->m_rgAmmo[gun->m_iSecondaryAmmoType];
+	}
+	else
+	{
+		cd->vuser3.z = -1;
+		cd->vuser4.z = 0;
+	}
+}
+
 /*
 =================
 UpdateClientData
@@ -1548,10 +1573,7 @@ void UpdateClientData ( const edict_t *ent, int sendweapons, struct clientdata_s
 
 					cd->m_iId = II.iId;
 
-					cd->vuser3.z	= gun->m_iSecondaryAmmoType;
-					cd->vuser4.x	= gun->m_iPrimaryAmmoType;
-					cd->vuser4.y	= pl->m_rgAmmo[gun->m_iPrimaryAmmoType];
-					cd->vuser4.z	= pl->m_rgAmmo[gun->m_iSecondaryAmmoType];
+					PackClientDataWeaponAmmo( cd, pl, gun );
 					
 					if ( pl->m_pActiveItem->m_iId == WEAPON_RPG )
 					{

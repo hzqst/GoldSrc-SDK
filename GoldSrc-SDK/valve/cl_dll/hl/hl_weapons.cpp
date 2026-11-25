@@ -657,6 +657,57 @@ void HUD_SetLastOrg( void )
 	}
 }
 
+static void UnpackPredictedWeaponAmmo( CBasePlayer &targetPlayer, CBasePlayerWeapon *pCurrent, const clientdata_s &client )
+{
+	int secondaryAmmo = (int)client.vuser3[ 2 ];
+	int primaryAmmo = (int)client.vuser4[ 0 ];
+
+	if ( (unsigned int)primaryAmmo < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		pCurrent->m_iPrimaryAmmoType = primaryAmmo;
+		targetPlayer.m_rgAmmo[ primaryAmmo ] = (int)client.vuser4[ 1 ];
+	}
+	else
+	{
+		pCurrent->m_iPrimaryAmmoType = -1;
+	}
+
+	if ( (unsigned int)secondaryAmmo < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		pCurrent->m_iSecondaryAmmoType = secondaryAmmo;
+		targetPlayer.m_rgAmmo[ secondaryAmmo ] = (int)client.vuser4[ 2 ];
+	}
+	else
+	{
+		pCurrent->m_iSecondaryAmmoType = -1;
+	}
+}
+
+static void PackPredictedWeaponAmmo( clientdata_s &client, const CBasePlayer &targetPlayer, const CBasePlayerWeapon *pCurrent )
+{
+	if ( (unsigned int)pCurrent->m_iPrimaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		client.vuser4[0] = pCurrent->m_iPrimaryAmmoType;
+		client.vuser4[1] = targetPlayer.m_rgAmmo[ pCurrent->m_iPrimaryAmmoType ];
+	}
+	else
+	{
+		client.vuser4[0] = -1;
+		client.vuser4[1] = 0;
+	}
+
+	if ( (unsigned int)pCurrent->m_iSecondaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		client.vuser3[2] = pCurrent->m_iSecondaryAmmoType;
+		client.vuser4[2] = targetPlayer.m_rgAmmo[ pCurrent->m_iSecondaryAmmoType ];
+	}
+	else
+	{
+		client.vuser3[2] = -1;
+		client.vuser4[2] = 0;
+	}
+}
+
 /*
 =====================
 HUD_WeaponsPostThink
@@ -791,10 +842,7 @@ void HUD_WeaponsPostThink( local_state_s *from, local_state_s *to, usercmd_t *cm
 		pCurrent->m_fInAttack			= pfrom->iuser2;
 		pCurrent->m_fireState			= pfrom->iuser3;
 
-		pCurrent->m_iSecondaryAmmoType		= (int)from->client.vuser3[ 2 ];
-		pCurrent->m_iPrimaryAmmoType		= (int)from->client.vuser4[ 0 ];
-		player.m_rgAmmo[ pCurrent->m_iPrimaryAmmoType ]	= (int)from->client.vuser4[ 1 ];
-		player.m_rgAmmo[ pCurrent->m_iSecondaryAmmoType ]	= (int)from->client.vuser4[ 2 ];
+		UnpackPredictedWeaponAmmo( player, pCurrent, from->client );
 	}
 
 	// For random weapon events, use this seed to seed random # generator
@@ -973,10 +1021,7 @@ void HUD_WeaponsPostThink( local_state_s *from, local_state_s *to, usercmd_t *cm
 		pto->m_flTimeWeaponIdle			-= cmd->msec / 1000.0;
 		pto->fuser1						-= cmd->msec / 1000.0;
 
-		to->client.vuser3[2]				= pCurrent->m_iSecondaryAmmoType;
-		to->client.vuser4[0]				= pCurrent->m_iPrimaryAmmoType;
-		to->client.vuser4[1]				= player.m_rgAmmo[ pCurrent->m_iPrimaryAmmoType ];
-		to->client.vuser4[2]				= player.m_rgAmmo[ pCurrent->m_iSecondaryAmmoType ];
+		PackPredictedWeaponAmmo( to->client, player, pCurrent );
 
 /*		if ( pto->m_flPumpTime != -9999 )
 		{

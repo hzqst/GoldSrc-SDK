@@ -1026,6 +1026,21 @@ int GetWeaponData( edict_t* entity, weapon_data_s* data )
 	return 1;
 }
 
+static void PackClientDataWeaponAmmo( clientdata_s* data, const CBasePlayer* player, const CBasePlayerWeapon* weapon )
+{
+	if ( (unsigned int)weapon->m_iPrimaryAmmoType < (unsigned int)MAX_AMMO_SLOTS )
+	{
+		data->vuser4.x = (float)weapon->m_iPrimaryAmmoType;
+		data->vuser4.y = (float)player->m_rgAmmo[weapon->m_iPrimaryAmmoType];
+	}
+	else
+	{
+		data->vuser4.x = -1.0f;
+		data->vuser4.y = 0.0f;
+	}
+	data->vuser4.z = (float)player->ammo_762natobox;
+}
+
 void UpdateClientData( const edict_t* entity, int sendWeapons, clientdata_s* data )
 {
 	CBasePlayer* player = (CBasePlayer*)CBaseEntity::Instance( const_cast<entvars_t*>( &entity->v ) );
@@ -1078,9 +1093,7 @@ void UpdateClientData( const edict_t* entity, int sendWeapons, clientdata_s* dat
 				weapon->GetItemInfo( &info );
 				data->m_iId = info.iId;
 				data->tfstate = info.bIsAccessory;
-				data->vuser4.x = (float)weapon->m_iPrimaryAmmoType;
-				data->vuser4.y = (float)player->m_rgAmmo[weapon->m_iPrimaryAmmoType];
-				data->vuser4.z = (float)player->ammo_762natobox;
+				PackClientDataWeaponAmmo( data, player, weapon );
 			}
 		}
 	}
