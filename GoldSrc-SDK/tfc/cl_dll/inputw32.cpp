@@ -685,6 +685,36 @@ void CL_DLLEXPORT IN_ClearStates (void)
 
 /* 
 =============== 
+IN_ShutdownJoystick 
+=============== 
+*/  
+static void IN_ShutdownJoystick (void) 
+{ 
+	int		i;
+
+	// release any keys still held by the controller, IN_Commands stops sending events once joy_avail is cleared
+	for (i=0 ; i < (int)joy_numbuttons ; i++)
+	{
+		if ( joy_oldbuttonstate & (1<<i) )
+			gEngfuncs.Key_Event (((i < 4) ? K_JOY1 : K_AUX1) + i, 0);
+	}
+
+	for (i=0 ; i < 4 ; i++)
+	{
+		if ( joy_oldpovstate & (1<<i) )
+			gEngfuncs.Key_Event (K_AUX29 + i, 0);
+	}
+
+	joy_oldbuttonstate = joy_oldpovstate = 0;
+
+	if ( s_pJoystick )
+		SDL_GameControllerClose( s_pJoystick );
+	s_pJoystick = NULL;
+	joy_avail = 0;
+}
+
+/* 
+=============== 
 IN_StartupJoystick 
 =============== 
 */  
@@ -701,6 +731,13 @@ void IN_StartupJoystick (void)
 	//gEngfuncs.Con_Printf("IN_StartupJoystick, %f\n", flLastCheck);
 
 	flLastCheck = gEngfuncs.GetAbsoluteTime();
+
+	// close the current controller once it is unplugged, so the scan below can open another connected one
+	if ( s_pJoystick && !SDL_GameControllerGetAttached( s_pJoystick ) )
+	{
+		IN_ShutdownJoystick();
+		gEngfuncs.Con_DPrintf ("joystick removed\n\n");
+	}
 
 	int nJoysticks = SDL_NumJoysticks();
 	if ( nJoysticks > 0 )
@@ -735,12 +772,9 @@ void IN_StartupJoystick (void)
 	}
 	else
 	{
-		if ( s_pJoystick )
-			SDL_GameControllerClose( s_pJoystick );
-		s_pJoystick = NULL;
 		if ( joy_avail )
 		{
-			joy_avail = 0; 
+			IN_ShutdownJoystick();
 			gEngfuncs.Con_DPrintf ("joystick not found -- driver not present\n\n");
 		}
 	}

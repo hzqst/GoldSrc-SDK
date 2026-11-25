@@ -19,6 +19,7 @@ foreach(name IN ITEMS
 		bot_isintersecting2d
 		bsp_pas
 		cl_prediction_error
+		client_joystick_hotplug
 		client_statusbar_localise
 		commandmenu
 		common_bitstream_szprint
