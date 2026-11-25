@@ -9,7 +9,11 @@
 
 #include "../../vgui2/vgui_surfacelib/FontTextureCache.h"
 #include "../../vgui2/vgui_surfacelib/FontManager.h"
+#if defined( _WIN32 )
+#include "../../vgui2/vgui_surfacelib/Win32Font.h"
+#else
 #include "../../vgui2/vgui_surfacelib/LinuxFont.h"
+#endif
 #include "BaseUISurface.h"
 
 #include <cstring>
@@ -127,7 +131,7 @@ bool CFontTextureCache::GetTextureForChar( vgui2::HFont font, wchar_t ch, int* t
 	const HCacheEntry entry = m_CharCache.Find( cacheItem );
 	if ( !m_CharCache.IsValidIndex( entry ) )
 	{
-		CLinuxFont* fontForChar = FontManager().GetFontForChar( font, ch );
+		CPlatformFont* fontForChar = FontManager().GetFontForChar( font, ch );
 		if ( fontForChar == nullptr )
 			return false;
 

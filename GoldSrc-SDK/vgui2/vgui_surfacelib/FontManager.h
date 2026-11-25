@@ -39,16 +39,16 @@ public:
 	int GetFontBlur( vgui2::HFont font );
 	bool IsAdditive( vgui2::HFont font );
 
-	CLinuxFont* GetFontForChar( vgui2::HFont font, wchar_t ch );
+	CPlatformFont* GetFontForChar( vgui2::HFont font, wchar_t ch );
 	bool IsFontForeignLanguageCapable( const char* name );
-	CLinuxFont* CreateOrFindWin32Font( const char* name, int tall, int weight, int blur, int scanlines, int flags );
+	CPlatformFont* CreateOrFindWin32Font( const char* name, int tall, int weight, int blur, int scanlines, int flags );
 
 	const char* GetFallbackFontName( const char* name );
 	const char* GetForeignFallbackFontName();
 
 private:
 	CUtlVector<CFontAmalgam>	m_FontAmalgams;
-	CUtlVector<CLinuxFont*>		m_Win32Fonts;
+	CUtlVector<CPlatformFont*>	m_Win32Fonts;
 	char						m_szLanguage[64];
 
 #if !defined( _WIN32 )

@@ -102,7 +102,7 @@ public:
  IClientPanel client;
 };
 
-struct CLinuxFont;
+struct CWin32Font;
 
 // only the members the extracted functions use
 class CWin32Surface {
@@ -115,7 +115,7 @@ public:
  SurfacePlat* ContextPlat();
  VPANEL _embeddedPanel = 0;
  VPANEL _currentContextPanel = 0;
- CLinuxFont* _currentFontObject = nullptr;
+ CWin32Font* _currentFontObject = nullptr;
 };
 '''
 

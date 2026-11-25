@@ -42,8 +42,9 @@ goldsrc_add_module(vgui2
 		vgui2/src/Surface.cpp
 		vgui2/src/System.cpp
 		vgui2/vgui_surfacelib/FontAmalgam.cpp
+		vgui2/vgui_surfacelib/FontEffects.cpp
 		vgui2/vgui_surfacelib/FontManager.cpp
-		vgui2/vgui_surfacelib/linuxfont.cpp
+		vgui2/vgui_surfacelib/Win32Font.cpp
 	LINUX_SOURCES
 		vgui2/src/inputosx.cpp
 		vgui2/src/system_posix.cpp

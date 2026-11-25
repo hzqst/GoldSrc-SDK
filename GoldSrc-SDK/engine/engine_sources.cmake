@@ -146,8 +146,8 @@ set(ENGINE_COMMON_SOURCES
 	vgui2/controls/Tooltip.cpp
 	vgui2/controls/URLLabel.cpp
 	vgui2/vgui_surfacelib/FontAmalgam.cpp
+	vgui2/vgui_surfacelib/FontEffects.cpp
 	vgui2/vgui_surfacelib/FontManager.cpp
-	vgui2/vgui_surfacelib/linuxfont.cpp
 	vgui2/vgui_surfacelib/vgui_key_translation.cpp
 	common/ObjectList.cpp
 	common/TokenLine.cpp
@@ -163,6 +163,7 @@ set(ENGINE_WINDOWS_SOURCES
 	engine/voice_mixer_controls.cpp
 	engine/voice_record_dsound.cpp
 	engine/voice_record_wavein.cpp
+	vgui2/vgui_surfacelib/Win32Font.cpp
 )
 
 # SDL sound (snd_sdl.cpp, shared above), OpenAL voice support, and a stand-in
@@ -171,6 +172,7 @@ set(ENGINE_LINUX_SOURCES
 	engine/miles_null.cpp
 	engine/voice_mixer_controls_openal.cpp
 	engine/voice_record_openal.cpp
+	vgui2/vgui_surfacelib/LinuxFont.cpp
 )
 
 # OpenGL renderer.

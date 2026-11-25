@@ -27,7 +27,7 @@
 #include "utlsymbol.h"
 #include "utlvector.h"
 #include "../vgui_surfacelib/FontManager.h"
-#include "../vgui_surfacelib/LinuxFont.h"
+#include "../vgui_surfacelib/Win32Font.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -451,7 +451,7 @@ private:
 	bool							_unicodeSupported;
 	CUtlVector<CUtlSymbol>			m_CustomFontFileNames;
 	HFont							_currentFont;
-	CLinuxFont*						_currentFontObject;
+	CWin32Font*						_currentFontObject;
 	HPEN							_currentPen;
 	bool							_needKB;
 	bool							_needMouse;
@@ -1426,7 +1426,7 @@ void CWin32Surface::DrawPrintText( const wchar_t* text, int textLen )
 
 void CWin32Surface::DrawUnicodeChar( wchar_t wch )
 {
-	CLinuxFont* font = FontManager().GetFontForChar( _currentFont, wch );
+	CWin32Font* font = FontManager().GetFontForChar( _currentFont, wch );
 	if ( !font )
 	{
 		return;
@@ -1452,7 +1452,7 @@ void CWin32Surface::DrawUnicodeChar( wchar_t wch )
 
 void CWin32Surface::DrawUnicodeCharAdd( wchar_t wch )
 {
-	CLinuxFont* font = FontManager().GetFontForChar( _currentFont, wch );
+	CWin32Font* font = FontManager().GetFontForChar( _currentFont, wch );
 	if ( !font )
 	{
 		return;

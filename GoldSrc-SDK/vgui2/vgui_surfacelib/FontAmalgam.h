@@ -10,7 +10,13 @@
 #include "utlvector.h"
 #include "vgui/IScheme.h"
 
+#if defined( _WIN32 )
+class CWin32Font;
+using CPlatformFont = CWin32Font;
+#else
 class CLinuxFont;
+using CPlatformFont = CLinuxFont;
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: object that holds a set of fonts in specified ranges
@@ -25,8 +31,8 @@ public:
 	void SetName( const char* name );
 
 	// adds a font to the amalgam
-	void AddFont( CLinuxFont* font, int lowRange, int highRange );
-	CLinuxFont* GetFontForChar( int ch );
+	void AddFont( CPlatformFont* font, int lowRange, int highRange );
+	CPlatformFont* GetFontForChar( int ch );
 
 	// returns the max height of the font set
 	int GetFontHeight();
@@ -47,7 +53,7 @@ private:
 	{
 		int			lowRange;
 		int			highRange;
-		CLinuxFont*	font;
+		CPlatformFont*	font;
 	};
 
 	CUtlVector<TFontRange>	m_Fonts;
