@@ -660,13 +660,17 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 	if ((m_fInReload) && ( m_pPlayer->m_flNextAttack <= UTIL_WeaponTimeBase() ) )
 	{
 		// complete the reload. 
-		int j = min( iMaxClip() - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]);	
+		int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+		if ( ammo > 0 )
+		{
+			int j = min( iMaxClip() - m_iClip, ammo );
 
-		// Add them to the clip
-		m_iClip += j;
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= j;
+			// Add them to the clip
+			m_iClip += j;
+			m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, ammo - j );
 
-		m_pPlayer->TabulateAmmo();
+			m_pPlayer->TabulateAmmo();
+		}
 
 		m_fInReload = FALSE;
 	}
@@ -678,7 +682,7 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 
 	if ((m_pPlayer->pev->button & IN_ATTACK2) && CanAttack( m_flNextSecondaryAttack, gpGlobals->time, UseDecrement() ) )
 	{
-		if ( pszAmmo2() && !m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()] )
+		if ( pszAmmo2() && m_pPlayer->AmmoInventory( SecondaryAmmoIndex() ) <= 0 )
 		{
 			m_fFireOnEmpty = TRUE;
 		}
@@ -689,7 +693,7 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 	}
 	else if ((m_pPlayer->pev->button & IN_ATTACK) && CanAttack( m_flNextPrimaryAttack, gpGlobals->time, UseDecrement() ) )
 	{
-		if ( (m_iClip == 0 && pszAmmo1()) || (iMaxClip() == -1 && !m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] ) )
+		if ( (m_iClip == 0 && pszAmmo1()) || (iMaxClip() == -1 && pszAmmo1() && m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 ) )
 		{
 			m_fFireOnEmpty = TRUE;
 		}
@@ -962,7 +966,7 @@ BOOL CBasePlayerWeapon :: IsUseable( void )
 {
 	if ( m_iClip <= 0 )
 	{
-		if ( m_pPlayer->m_rgAmmo[ PrimaryAmmoIndex() ] <= 0 && iMaxAmmo1() != -1 )			
+		if ( iMaxAmmo1() != -1 && m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 )
 		{
 			// clip is empty (or nonexistant) and the player has no more ammo of this type. 
 			return CanDeploy();
@@ -984,11 +988,11 @@ BOOL CBasePlayerWeapon :: CanDeploy( void )
 
 	if ( pszAmmo1() )
 	{
-		bHasAmmo |= (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0);
+		bHasAmmo |= (m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0);
 	}
 	if ( pszAmmo2() )
 	{
-		bHasAmmo |= (m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] != 0);
+		bHasAmmo |= (m_pPlayer->AmmoInventory( m_iSecondaryAmmoType ) > 0);
 	}
 	if (m_iClip > 0)
 	{
@@ -1023,12 +1027,13 @@ BOOL CBasePlayerWeapon :: DefaultDeploy( char *szViewModel, char *szWeaponModel,
 
 BOOL CBasePlayerWeapon :: DefaultReload( int iClipSize, int iAnim, float fDelay, int body )
 {
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0)
+	int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+	if ( ammo <= 0 )
 		return FALSE;
 
-	int j = min(iClipSize - m_iClip, m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]);	
+	int j = min( iClipSize - m_iClip, ammo );
 
-	if (j == 0)
+	if ( j <= 0 )
 		return FALSE;
 
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + fDelay;

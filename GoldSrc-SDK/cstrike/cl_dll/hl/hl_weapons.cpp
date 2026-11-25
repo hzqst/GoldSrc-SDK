@@ -246,8 +246,8 @@ BOOL CBasePlayerWeapon::DefaultReload( int clipSize, int animation, float delay 
 	if ( !player.m_pActiveItem )
 		return FALSE;
 	CBasePlayerWeapon* active = g_pWpns[player.m_pActiveItem->m_iId];
-	int ammo = player.m_rgAmmo[active->m_iPrimaryAmmoType];
-	if ( ammo <= 0 || min( clipSize - active->m_iClip, ammo ) == 0 )
+	int ammo = player.AmmoInventory( active->m_iPrimaryAmmoType );
+	if ( ammo <= 0 || min( clipSize - active->m_iClip, ammo ) <= 0 )
 		return FALSE;
 	m_pPlayer->m_flNextAttack = delay;
 	SendWeaponAnim( animation, UseDecrement() );
@@ -604,9 +604,14 @@ void CBasePlayerWeapon::ItemPostFrame()
 	}
 	if ( m_fInReload && m_pPlayer->m_flNextAttack <= 0 )
 	{
-		int amount = min( ItemInfoArray[m_iId].iMaxClip - m_iClip, player.m_rgAmmo[m_iPrimaryAmmoType] );
-		m_iClip += amount;
-		player.m_rgAmmo[g_pWpns[player.m_pActiveItem->m_iId]->m_iPrimaryAmmoType] -= amount;
+		int reserve = player.AmmoInventory( m_iPrimaryAmmoType );
+		if ( reserve > 0 )
+		{
+			int amount = min( ItemInfoArray[m_iId].iMaxClip - m_iClip, reserve );
+			m_iClip += amount;
+			if ( player.m_pActiveItem && g_pWpns[player.m_pActiveItem->m_iId] )
+				player.AddAmmoInventory( g_pWpns[player.m_pActiveItem->m_iId]->m_iPrimaryAmmoType, -amount );
+		}
 		m_fInReload = FALSE;
 	}
 	if ( m_flGlock18Shoot != 0 )
@@ -626,7 +631,7 @@ void CBasePlayerWeapon::ItemPostFrame()
 	}
 	if ( ( buttons & IN_ATTACK2 ) && m_flNextSecondaryAttack <= 0 )
 	{
-		if ( ItemInfoArray[m_iId].pszAmmo2 && player.m_rgAmmo[m_iSecondaryAmmoType] == 0 )
+		if ( ItemInfoArray[m_iId].pszAmmo2 && player.AmmoInventory( m_iSecondaryAmmoType ) <= 0 )
 			m_fFireOnEmpty = TRUE;
 		SecondaryAttack();
 		m_pPlayer->pev->button &= ~IN_ATTACK2;
@@ -634,7 +639,7 @@ void CBasePlayerWeapon::ItemPostFrame()
 	else if ( ( m_pPlayer->pev->button & IN_ATTACK ) && m_flNextPrimaryAttack <= 0 )
 	{
 		if ( ( m_iClip == 0 && ItemInfoArray[m_iId].pszAmmo1 ) ||
-			( ItemInfoArray[m_iId].iMaxClip == WEAPON_NOCLIP && player.m_rgAmmo[m_iPrimaryAmmoType] == 0 ) )
+			( ItemInfoArray[m_iId].iMaxClip == WEAPON_NOCLIP && ItemInfoArray[m_iId].pszAmmo1 && player.AmmoInventory( m_iPrimaryAmmoType ) <= 0 ) )
 			m_fFireOnEmpty = TRUE;
 		if ( m_iWeaponState & WPNSTATE_SHIELD_DRAWN )
 			return;

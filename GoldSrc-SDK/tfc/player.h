@@ -347,6 +347,26 @@ public:
 	void BarnacleVictimReleased ( void );
 	static int GetAmmoIndex(const char *psz);
 	int AmmoInventory( int iAmmoIndex );
+	bool SetAmmoInventory( int iAmmoIndex, int amount )
+	{
+		if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
+			return false;
+		m_rgAmmo[ iAmmoIndex ] = amount;
+		return true;
+	}
+	bool AddAmmoInventory( int iAmmoIndex, int delta )
+	{
+		if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
+			return false;
+		m_rgAmmo[ iAmmoIndex ] += delta;
+		return true;
+	}
+	int *AmmoInventoryPtr( int iAmmoIndex )
+	{
+		if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
+			return NULL;
+		return &m_rgAmmo[ iAmmoIndex ];
+	}
 	int Illumination( void );
 
 	void ResetAutoaim( void );

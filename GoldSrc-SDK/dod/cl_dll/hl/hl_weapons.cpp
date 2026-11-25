@@ -107,9 +107,9 @@ BOOL CBasePlayerWeapon::CanDeploy()
 	GetItemInfo( &info );
 	if ( !info.pszAmmo1 || info.iMaxAmmo1 == -1 )
 		return TRUE;
-	int ammo = current_ammo ? *current_ammo : m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0;
+	int ammo = current_ammo ? *current_ammo : ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 );
 	if ( info.pszAmmo2 )
-		ammo |= m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] != 0;
+		ammo |= ( m_pPlayer->AmmoInventory( m_iSecondaryAmmoType ) > 0 );
 	return m_iClip > 0 || ammo != 0;
 }
 
@@ -188,7 +188,7 @@ void CBasePlayerWeapon::ItemPostFrame()
 	}
 	if ( ( m_pPlayer->pev->button & IN_ATTACK2 ) && m_flNextSecondaryAttack <= 0.0 )
 	{
-		if ( ItemInfoArray[m_iId].pszAmmo2 && !m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()] )
+		if ( ItemInfoArray[m_iId].pszAmmo2 && m_pPlayer->AmmoInventory( SecondaryAmmoIndex() ) <= 0 )
 			m_fFireOnEmpty = TRUE;
 		if ( gHUD.m_iRoundState == RND_RUNNING )
 			SecondaryAttack();
@@ -394,8 +394,8 @@ BOOL CBasePlayerWeapon::DefaultReload( int clipSize, int animation, float delay 
 {
 	ItemInfo info;
 	GetItemInfo( &info );
-	int* ammo = current_ammo ? current_ammo : &m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType];
-	if ( *ammo <= 0 )
+	int* ammo = current_ammo ? current_ammo : m_pPlayer->AmmoInventoryPtr( m_iPrimaryAmmoType );
+	if ( !ammo || *ammo <= 0 )
 		return FALSE;
 	int capacity = m_iId == WEAPON_ENFIELD ? 2 * info.iMaxClip : info.iMaxClip;
 	int load = min( *ammo, capacity - m_iClip );

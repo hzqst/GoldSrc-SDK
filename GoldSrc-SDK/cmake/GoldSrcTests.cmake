@@ -191,6 +191,7 @@ foreach(name IN ITEMS
 		vox
 		wad_miptex
 		waveout_failure
+		weapon_ammo_bounds
 		weapon_prediction_ammo_bounds
 	)
 	add_test(NAME ${name}

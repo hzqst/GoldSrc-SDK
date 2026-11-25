@@ -1025,7 +1025,9 @@ void CBasePlayer::ItemPostFrame()
 
 int CBasePlayer::AmmoInventory( int iAmmoIndex )
 {
-	return -1;
+	if ( (unsigned int)iAmmoIndex >= (unsigned int)MAX_AMMO_SLOTS )
+		return -1;
+	return m_rgAmmo[iAmmoIndex];
 }
 
 int CBasePlayer::GetAmmoIndex(const char *psz)

@@ -563,14 +563,17 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 {
 	ItemInfo info;
 	GetItemInfo( &info );
-	int* ammo = current_ammo ? current_ammo : &m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType];
+	int* ammo = current_ammo ? current_ammo : m_pPlayer->AmmoInventoryPtr( m_iPrimaryAmmoType );
 	if ( m_fInReload && m_pPlayer->m_flNextAttack <= 0 )
 	{
-		ItemInfo reloadInfo;
-		GetItemInfo( &reloadInfo );
-		int j = min( reloadInfo.iMaxClip - m_iClip, *ammo );
-		m_iClip += j;
-		*ammo -= j;
+		if ( ammo && *ammo > 0 )
+		{
+			ItemInfo reloadInfo;
+			GetItemInfo( &reloadInfo );
+			int j = min( reloadInfo.iMaxClip - m_iClip, *ammo );
+			m_iClip += j;
+			*ammo -= j;
+		}
 		m_fInReload = FALSE;
 		m_pPlayer->tfstate &= ~TFSTATE_RELOADING;
 	}
@@ -580,7 +583,7 @@ void CBasePlayerWeapon::ItemPostFrame( void )
 
 	if ( ( m_pPlayer->pev->button & IN_ATTACK ) && m_flNextPrimaryAttack <= 0 )
 	{
-		if ( ( m_iClip == 0 && info.pszAmmo1 ) || ( info.iMaxClip == WEAPON_NOCLIP && !*ammo ) )
+		if ( ( m_iClip == 0 && info.pszAmmo1 ) || ( info.iMaxClip == WEAPON_NOCLIP && ammo && !*ammo ) )
 			m_fFireOnEmpty = TRUE;
 		if ( m_pPlayer->is_undercover || m_pPlayer->undercover_team || m_pPlayer->undercover_skin )
 			m_pPlayer->Spy_RemoveDisguise();
@@ -839,9 +842,7 @@ BOOL CBasePlayerWeapon :: IsUseable( void )
 	{
 		ItemInfo info;
 		GetItemInfo( &info );
-		int ammo = m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()];
-		if ( current_ammo )
-			ammo = *current_ammo;
+		int ammo = current_ammo ? *current_ammo : m_pPlayer->AmmoInventory( PrimaryAmmoIndex() );
 		if ( ammo <= 0 )
 			return info.iAmmo1 == -1;
 	}
@@ -855,9 +856,9 @@ BOOL CBasePlayerWeapon :: CanDeploy( void )
 	GetItemInfo( &info );
 	if ( !info.pszAmmo1 || info.iAmmo1 == -1 )
 		return TRUE;
-	int ammo = current_ammo ? *current_ammo : m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0;
+	int ammo = current_ammo ? *current_ammo : ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 );
 	if ( info.pszAmmo2 )
-		ammo |= m_pPlayer->m_rgAmmo[m_iSecondaryAmmoType] != 0;
+		ammo |= ( m_pPlayer->AmmoInventory( m_iSecondaryAmmoType ) > 0 );
 	return m_iClip > 0 || ammo != 0;
 }
 
@@ -887,8 +888,8 @@ BOOL CBasePlayerWeapon::DefaultDeploy( char* szViewModel, char* szWeaponModel, i
 
 int CBasePlayerWeapon::DefaultReload( int iClipSize, int iAnim, float fDelay )
 {
-	int* ammo = current_ammo ? current_ammo : &m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType];
-	if ( *ammo <= 0 )
+	int* ammo = current_ammo ? current_ammo : m_pPlayer->AmmoInventoryPtr( m_iPrimaryAmmoType );
+	if ( !ammo || *ammo <= 0 )
 		return FALSE;
 
 	int j = min( iClipSize - m_iClip, *ammo );
