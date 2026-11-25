@@ -471,7 +471,6 @@ private:
 
 	int m_HUD_title_life;
 	int m_HUD_title_half;
-	bool m_bEndAfterMessage;
 #ifdef _MSC_VER
 #pragma warning( suppress : 26495 )
 #endif

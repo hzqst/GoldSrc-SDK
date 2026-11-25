@@ -69,6 +69,7 @@ foreach(name IN ITEMS
 		gl_sprite_format
 		hashpak_remove
 		host_profile
+		hud_message_end3
 		hunk_temp_alloc
 		interface_load_module
 		ip_rate_order

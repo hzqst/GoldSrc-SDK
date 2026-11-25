@@ -59,7 +59,6 @@ void CHudMessage::Reset( void )
  	memset( m_pMessages, 0, sizeof( m_pMessages[0] ) * maxHUDMessages );
 	memset( m_startTime, 0, sizeof( m_startTime[0] ) * maxHUDMessages );
 	
-	m_bEndAfterMessage = false;
 	m_gameTitleTime = 0;
 	m_pGameTitle = NULL;
 }
@@ -411,9 +410,12 @@ int CHudMessage::Draw( float fTime )
 				// The message is over
 				m_pMessages[i] = NULL;
 
-				if (m_bEndAfterMessage)
+				// END3 is the last of the Half-Life end credits: leave the game once it has faded out. Checked by
+				// the name of the message that ends, so another message ending first does not disconnect (#688)
+				constexpr const char *HL1_ENDING_MESSAGE = "END3";
+
+				if ( pMessage->pName && !strcmp( pMessage->pName, HL1_ENDING_MESSAGE ) )
 				{
-					// leave game
 					gEngfuncs.pfnClientCmd("wait\nwait\nwait\nwait\nwait\nwait\nwait\ndisconnect\n");
 				}
 			}
@@ -500,14 +502,6 @@ int CHudMessage::MsgFunc_HudText( const char *pszName,  int iSize, void *pbuf )
 	BEGIN_READ( pbuf, iSize );
 
 	char *pString = READ_STRING();
-
-	bool bIsEnding = false;
-	const char *HL1_ENDING_STR = "END3";
-
-	if (strlen(pString) == strlen(HL1_ENDING_STR) && strcmp(HL1_ENDING_STR, pString) == 0)
-	{
-		m_bEndAfterMessage = true;
-	}
 
 	MessageAdd( pString, gHUD.m_flTime );
 	// Remember the time -- to fix up level transitions
