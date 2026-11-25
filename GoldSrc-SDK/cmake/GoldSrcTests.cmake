@@ -42,6 +42,7 @@ foreach(name IN ITEMS
 		dod_vgui2print
 		engine_client_api
 		engine_font_fallback
+		engine_post_restart_args
 		engine_stufftext
 		file_read_length
 		filesystem_pack_close

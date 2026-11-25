@@ -66,6 +66,9 @@
 #define STATE_ENDDEMO 3
 
 #define FILE_COPY_SIZE 1024
+// Bytes of the launcher buffer that g_pPostRestartCmdLineArgs points to, with the terminator.
+// Keep in sync with NEW_COMMAND_LENGTH in launcher/launcher.cpp.
+#define POST_RESTART_COMMAND_LENGTH 2048
 
 typedef void( __cdecl* SV_SAVEGAMECOMMENT_FUNC )( char* comment, int length );
 typedef int( __cdecl* SERVER_GETBLENDINGINTERFACE_FUNC )(
@@ -442,6 +445,26 @@ void Host_Quit_f()
 	}
 }
 
+// Appends the arguments of the next start to the launcher buffer; arguments that do not fit are dropped whole.
+static bool Host_AppendPostRestartArgs( const char* args, const char* value )
+{
+	if ( !g_pPostRestartCmdLineArgs )
+	{
+		return false;
+	}
+
+	const size_t length = strlen( g_pPostRestartCmdLineArgs );
+	if ( length + strlen( args ) + strlen( value ) >= POST_RESTART_COMMAND_LENGTH )
+	{
+		Con_Printf( "Couldn't add \"%s%s\" to the restart command line (too long)\n", args, value );
+		return false;
+	}
+
+	strcpy( g_pPostRestartCmdLineArgs + length, args );
+	strcat( g_pPostRestartCmdLineArgs + length, value );
+	return true;
+}
+
 void Host_Quit_Restart_f()
 {
 	giActive = 5;
@@ -449,15 +472,14 @@ void Host_Quit_Restart_f()
 
 	if ( !sv.active && cls.state == ca_active && cls.trueaddress[0] && g_pPostRestartCmdLineArgs )
 	{
-		strcat( g_pPostRestartCmdLineArgs, " +connect " );
-		strcat( g_pPostRestartCmdLineArgs, cls.servername );
+		Host_AppendPostRestartArgs( " +connect ", cls.servername );
 	}
 
 	if ( sv.active && svs.maxclients == 1 && cls.state == ca_active && g_pPostRestartCmdLineArgs )
 	{
 		Cbuf_AddText( "save quick\n" );
 		Cbuf_Execute();
-		strcat( g_pPostRestartCmdLineArgs, " +load quick" );
+		Host_AppendPostRestartArgs( " +load quick", "" );
 	}
 
 	if ( Host_IsServerActive() )
@@ -3521,7 +3543,7 @@ void Host_SetGameDir_f()
 {
 	const char* pszGameDir;
 
-	if ( Cmd_Argc() < 1 || !g_pPostRestartCmdLineArgs )
+	if ( Cmd_Argc() < 2 || !g_pPostRestartCmdLineArgs )
 		return;
 
 	pszGameDir = Cmd_Argv( 1 );
@@ -3532,8 +3554,7 @@ void Host_SetGameDir_f()
 		return;
 	}
 
-	strcat( g_pPostRestartCmdLineArgs, " -game " );
-	strcat( g_pPostRestartCmdLineArgs, pszGameDir );
+	Host_AppendPostRestartArgs( " -game ", pszGameDir );
 }
 
 void Host_SetRenderer_f()
