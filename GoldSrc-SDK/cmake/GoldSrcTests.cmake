@@ -81,6 +81,7 @@ foreach(name IN ITEMS
 		localize_utf8
 		map_sprite_bmp_bounds
 		mixer_failure
+		monster_relationship_vehicle
 		netapi_serverinfo
 		netchan_file_decompress
 		netchan_fragment_reassembly

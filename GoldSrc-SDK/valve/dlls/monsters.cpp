@@ -2228,6 +2228,10 @@ int CBaseMonster::IRelationship ( CBaseEntity *pTarget )
 	/*ABIOWEAPON*/	{ R_NO	,R_NO	,R_DL	,R_DL	,R_DL	,R_AL	,R_NO	,R_DL	,R_DL	,R_NO	,R_NO	,R_DL,	R_DL,	R_NO	}
 	};
 
+	// func_vehicle is not in the table, and nothing has a relationship with it
+	if ( pTarget->Classify() == CLASS_VEHICLE )
+		return R_NO;
+
 	return iEnemy[ Classify() ][ pTarget->Classify() ];
 }
 
