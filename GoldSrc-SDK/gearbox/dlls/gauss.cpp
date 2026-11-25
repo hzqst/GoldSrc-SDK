@@ -147,7 +147,7 @@ void CGauss::PrimaryAttack()
 		return;
 	}
 
-	if ( m_pPlayer->m_rgAmmo[ m_iPrimaryAmmoType ] < 2 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) < 2 )
 	{
 		PlayEmptySound( );
 		m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
@@ -157,7 +157,7 @@ void CGauss::PrimaryAttack()
 	m_pPlayer->m_iWeaponVolume = GAUSS_PRIMARY_FIRE_VOLUME;
 	m_fPrimaryFire = TRUE;
 
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= 2;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -(2) );
 
 	StartFire();
 	m_fInAttack = 0;
@@ -194,7 +194,7 @@ void CGauss::SecondaryAttack()
 
 	if ( m_fInAttack == 0 )
 	{
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		{
 			EMIT_SOUND(ENT(m_pPlayer->pev), CHAN_WEAPON, "weapons/357_cock1.wav", 0.8, ATTN_NORM);
 			m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
@@ -203,7 +203,7 @@ void CGauss::SecondaryAttack()
 
 		m_fPrimaryFire = FALSE;
 
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;// take one ammo just to start the spin
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );// take one ammo just to start the spin
 		m_pPlayer->m_flNextAmmoBurn = UTIL_WeaponTimeBase();
 
 		// spin up
@@ -238,17 +238,17 @@ void CGauss::SecondaryAttack()
 	if ( g_pGameRules->IsMultiplayer() )
 #endif
 			{
-				m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+				m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 				m_pPlayer->m_flNextAmmoBurn = UTIL_WeaponTimeBase() + 0.1;
 			}
 			else
 			{
-				m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+				m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 				m_pPlayer->m_flNextAmmoBurn = UTIL_WeaponTimeBase() + 0.3;
 			}
 		}
 
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		{
 			// out of ammo! force the gun to fire
 			StartFire();

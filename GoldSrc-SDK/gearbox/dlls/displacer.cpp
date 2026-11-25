@@ -107,19 +107,19 @@ void CDisplacer::Holster( int skiplocal )
 	SendWeaponAnim( DISPLACER_HOLSTER, 1, 0 );
 	if ( m_pfnThink == (void ( CBaseEntity::* )())&CDisplacer::SpinupThink )
 	{
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= DISPLACER_PRIMARY_AMMO;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -(DISPLACER_PRIMARY_AMMO) );
 		SetThink( NULL );
 	}
 	else if ( m_pfnThink == (void ( CBaseEntity::* )())&CDisplacer::AltSpinupThink )
 	{
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= DISPLACER_SECONDARY_AMMO;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -(DISPLACER_SECONDARY_AMMO) );
 		SetThink( NULL );
 	}
 }
 
 void CDisplacer::PrimaryAttack()
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] < DISPLACER_PRIMARY_AMMO )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) < DISPLACER_PRIMARY_AMMO )
 	{
 		EMIT_SOUND( ENT( m_pPlayer->pev ), CHAN_WEAPON, "buttons/button11.wav", RANDOM_FLOAT( 0.8, 0.9 ), ATTN_NORM );
 		m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.5;
@@ -137,7 +137,7 @@ void CDisplacer::PrimaryAttack()
 
 void CDisplacer::SecondaryAttack()
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] < DISPLACER_SECONDARY_AMMO )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) < DISPLACER_SECONDARY_AMMO )
 	{
 		EMIT_SOUND( ENT( m_pPlayer->pev ), CHAN_WEAPON, "buttons/button11.wav", RANDOM_FLOAT( 0.8, 0.9 ), ATTN_NORM );
 		m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.5;
@@ -215,7 +215,7 @@ void CDisplacer::AltSpinupThink()
 
 void CDisplacer::FireThink()
 {
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= DISPLACER_PRIMARY_AMMO;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -(DISPLACER_PRIMARY_AMMO) );
 	DestroyChargeEffect();
 	m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
 	m_pPlayer->m_iWeaponFlash = BRIGHT_GUN_FLASH;
@@ -228,7 +228,7 @@ void CDisplacer::FireThink()
 	Vector source = m_pPlayer->GetGunPosition() - gpGlobals->v_right * 2;
 	Vector aiming = m_pPlayer->GetAutoaimVectorFromPoint( source, AUTOAIM_10DEGREES );
 	CDisplacerBall::CreateDisplacerBall( source, aiming, m_pPlayer );
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	m_pPlayer->pev->punchangle.x -= 2.0;
 #endif
@@ -297,10 +297,10 @@ void CDisplacer::AltFireThink()
 	m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
 	m_pPlayer->m_iWeaponFlash = BRIGHT_GUN_FLASH;
 	EMIT_SOUND( ENT( m_pPlayer->pev ), CHAN_WEAPON, "weapons/displacer_self.wav", RANDOM_FLOAT( 0.8, 0.9 ), ATTN_NORM );
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= DISPLACER_SECONDARY_AMMO;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -(DISPLACER_SECONDARY_AMMO) );
 #ifndef CLIENT_DLL
 	CDisplacerBall::CreateDisplacerBall( previousOrigin, Vector( 90, 0, 0 ), m_pPlayer );
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 #endif
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase();

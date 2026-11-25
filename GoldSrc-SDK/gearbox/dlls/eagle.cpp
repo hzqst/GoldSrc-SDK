@@ -241,7 +241,7 @@ void CEagle::PrimaryAttack()
 		m_flNextSecondaryAttack = m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.22;
 	PLAYBACK_EVENT_FULL( UseDecrement(), m_pPlayer->edict(), m_usFireEagle, 0.0,
 		(float*)&g_vecZero, (float*)&g_vecZero, spread.x, spread.y, 0, 0, 0, 0 );
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	float time = UTIL_WeaponTimeBase();
 	m_flTimeWeaponIdle = UTIL_SharedRandomFloat( m_pPlayer->random_seed, 10, 15 ) + time;

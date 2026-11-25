@@ -158,10 +158,11 @@ BOOL CEgon::HasAmmo( void )
 void CEgon::UseAmmo( int count )
 {
 
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] >= count )
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] -= count;
-	else
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] = 0;
+	int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+	if ( ammo >= count )
+		m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, ammo - count );
+	else if ( ammo >= 0 )
+		m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, 0 );
 }
 
 void CEgon::Attack( void )

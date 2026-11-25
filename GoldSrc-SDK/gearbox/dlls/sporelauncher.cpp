@@ -166,7 +166,7 @@ void CSporeLauncher::SecondaryAttack()
 void CSporeLauncher::Reload()
 {
 	int maximum = SPORELAUNCHER_MAX_CLIP * ( m_pPlayer->m_iItems & CTF_ITEM_BACKPACK ? 2 : 1 );
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 || m_iClip == maximum || m_flNextPrimaryAttack > UTIL_WeaponTimeBase() )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 || m_iClip == maximum || m_flNextPrimaryAttack > UTIL_WeaponTimeBase() )
 		return;
 	if ( m_fInSpecialReload == 0 )
 	{
@@ -190,7 +190,7 @@ void CSporeLauncher::Reload()
 	else
 	{
 		m_iClip++;
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 		m_fInSpecialReload = 1;
 	}
 }
@@ -204,7 +204,7 @@ void CSporeLauncher::WeaponIdle()
 		return;
 	if ( m_fInSpecialReload )
 	{
-		if ( m_iClip < maximum && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+		if ( m_iClip < maximum && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 			Reload();
 		else
 		{
@@ -214,7 +214,7 @@ void CSporeLauncher::WeaponIdle()
 		}
 		return;
 	}
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		Reload();
 		return;

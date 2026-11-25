@@ -208,7 +208,7 @@ void CM249::PrimaryAttack()
 	PLAYBACK_EVENT_FULL( UseDecrement(), m_pPlayer->edict(), m_usFireM249, 0.0,
 		(float*)&g_vecZero, (float*)&g_vecZero, vecShot.x, vecShot.y, m_iAlternatingEject, pev->body, 0, 0 );
 
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + M249_FIRE_INTERVAL;
