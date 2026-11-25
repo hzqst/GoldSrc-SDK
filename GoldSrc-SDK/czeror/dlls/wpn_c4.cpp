@@ -109,7 +109,7 @@ void CC4::Holster( int )
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
 	m_bStartedArming = FALSE;
-	if ( !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 	{
 		m_pPlayer->m_iAccessoryBits &= ~( 1 << ACCESSORY_C4 );
 		DestroyItem();
@@ -135,7 +135,7 @@ void CC4::WeaponIdle()
 	}
 	if ( m_flTimeWeaponIdle <= UTIL_WeaponTimeBase() )
 	{
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		{
 			RetireWeapon();
 		}

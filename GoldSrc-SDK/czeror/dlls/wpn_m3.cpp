@@ -111,7 +111,7 @@ void CM3::PrimaryAttack()
 	m_pPlayer->m_iWeaponVolume = 2250;
 	m_pPlayer->m_iWeaponFlash = BRIGHT_GUN_FLASH;
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.875;
-	if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", FALSE, 0 );
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 1.9;
 }
@@ -127,7 +127,7 @@ void CM3::SecondaryAttack()
 
 void CM3::Reload()
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 || m_iClip == 8 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 || m_iClip == 8 )
 		return;
 	if ( !( m_flNextPrimaryAttack <= UTIL_WeaponTimeBase() ) )
 		return;
@@ -156,7 +156,7 @@ void CM3::Reload()
 	{
 		m_fInSpecialReload = 1;
 		m_iClip++;
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 		m_pPlayer->ammo_buckshot--;
 	}
 }
@@ -172,7 +172,7 @@ void CM3::WeaponIdle()
 
 	if ( m_fInSpecialReload )
 	{
-		if ( m_iClip == 8 || !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+		if ( m_iClip == 8 || m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		{
 			SendWeaponAnim( M3_PUMP, UseDecrement() );
 			m_fInSpecialReload = 0;
@@ -183,7 +183,7 @@ void CM3::WeaponIdle()
 			Reload();
 		}
 	}
-	else if ( !m_iClip && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	else if ( !m_iClip && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		Reload();
 	}

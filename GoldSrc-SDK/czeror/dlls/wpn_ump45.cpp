@@ -113,7 +113,7 @@ void CUMP45::UMP45Fire( float spread, float cycleTime, BOOL useAutoAim )
 	m_pPlayer->m_iWeaponVolume = 800;
 	m_pPlayer->m_iWeaponFlash = DIM_GUN_FLASH;
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + cycleTime;
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", 0, 0 );
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 2;
 	if ( !( m_pPlayer->pev->flags & FL_ONGROUND ) )

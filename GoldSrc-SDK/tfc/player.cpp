@@ -603,10 +603,10 @@ void CBasePlayer::SendAmmoUpdate()
 				nail_slot = i;
 		}
 	}
-	m_rgAmmo[rocket_slot] = ammo_rockets;
-	m_rgAmmo[cell_slot] = ammo_cells;
-	m_rgAmmo[shell_slot] = ammo_shells;
-	m_rgAmmo[nail_slot] = ammo_nails;
+	SetAmmoInventory( rocket_slot, ammo_rockets );
+	SetAmmoInventory( cell_slot, ammo_cells );
+	SetAmmoInventory( shell_slot, ammo_shells );
+	SetAmmoInventory( nail_slot, ammo_nails );
 	for ( int i = 0; i < MAX_AMMO_SLOTS; i++ )
 	{
 		if ( m_rgAmmo[i] != m_rgAmmoLast[i] )
@@ -1098,17 +1098,18 @@ void CBasePlayer::DropPlayerItem( char* name )
 			if ( info.pszAmmo1 )
 			{
 				int slot = GetAmmoIndex( info.pszAmmo1 );
-				if ( slot == -1 )
+				if ( (unsigned int)slot >= (unsigned int)MAX_AMMO_SLOTS )
 					return;
 				if ( info.iFlags & ITEM_FLAG_EXHAUSTIBLE )
 				{
-					box->PackAmmo( MAKE_STRING( info.pszAmmo1 ), m_rgAmmo[slot] );
-					m_rgAmmo[slot] = 0;
+					box->PackAmmo( MAKE_STRING( info.pszAmmo1 ), max( 0, AmmoInventory( slot ) ) );
+					SetAmmoInventory( slot, 0 );
 				}
 				else
 				{
-					box->PackAmmo( MAKE_STRING( info.pszAmmo1 ), m_rgAmmo[slot] / 2 );
-					m_rgAmmo[slot] /= 2;
+					int ammoCount = max( 0, AmmoInventory( slot ) );
+					box->PackAmmo( MAKE_STRING( info.pszAmmo1 ), ammoCount / 2 );
+					SetAmmoInventory( slot, ammoCount / 2 );
 				}
 			}
 			return; // we're done, so stop searching with the FOR loop.

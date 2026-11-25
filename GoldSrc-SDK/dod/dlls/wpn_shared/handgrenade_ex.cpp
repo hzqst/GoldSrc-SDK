@@ -43,12 +43,12 @@ int CHandGrenadeEx::GetItemInfo( ItemInfo* p )
 
 BOOL CHandGrenadeEx::CanHolster()
 {
-	return m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0;
+	return m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0;
 }
 
 BOOL CHandGrenadeEx::CanDeploy()
 {
-	return m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0;
+	return m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0;
 }
 
 void CHandGrenadeEx::SetDmgTime( float time )
@@ -92,7 +92,7 @@ void CHandGrenadeEx::StartThrow( BOOL bUnderhand )
 	if ( m_flTimeToExplode < gpGlobals->time )
 		DropGren();
 
-	if ( m_flStartThrow == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 )
+	if ( m_flStartThrow == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		m_flStartThrow = 1;
 		m_flReleaseThrow = 0;
@@ -116,7 +116,7 @@ void CHandGrenadeEx::SecondaryAttack()
 
 void CHandGrenadeEx::WeaponIdle()
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 	{
 		RetireWeapon();
 		m_pPlayer->ClearHasWeapon( WEAPON_HANDGRENADE_EX );
@@ -129,7 +129,7 @@ void CHandGrenadeEx::WeaponIdle()
 	if ( m_flTimeToExplode < gpGlobals->time )
 		DropGren();
 
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] && m_flTimeWeaponIdle < gpGlobals->time && m_flReleaseThrow == -1 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 && m_flTimeWeaponIdle < gpGlobals->time && m_flReleaseThrow == -1 )
 	{
 		m_flTimeWeaponIdle = gpGlobals->time + 1.0;
 		SendWeaponAnim( 5, UseDecrement() != FALSE );
@@ -156,7 +156,7 @@ void CHandGrenadeEx::WeaponIdle()
 
 void CHandGrenadeEx::DropGren()
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		return;
 
 	SendWeaponAnim( 8, UseDecrement() != FALSE );
@@ -205,6 +205,6 @@ void CHandGrenadeEx::DropGren()
 		CGrenade::ShootPickup( m_pPlayer->pev, vecSrc, vecThrow, time, G_HANDGRENADE, friction );
 #endif
 
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 	m_flStartThrow = 0;
 }

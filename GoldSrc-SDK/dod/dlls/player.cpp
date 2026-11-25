@@ -1340,7 +1340,7 @@ bool CBasePlayer::PlayerHasExplodingGrenades( void )
 			{
 				pWeapon = (CBasePlayerWeapon *)pItem;
 
-				if ( pWeapon->Classify() == 4 && m_rgAmmo[pWeapon->m_iPrimaryAmmoType] > 0 )
+				if ( pWeapon->Classify() == 4 && AmmoInventory( pWeapon->m_iPrimaryAmmoType ) > 0 )
 					return true;
 
 				pItem = pItem->m_pNext;
@@ -3247,20 +3247,20 @@ void CBasePlayer::DropPlayerItem( char *pszItemName, bool bForceDrop )
 			{
 				int iAmmoIndex = GetAmmoIndex( pWeapon->pszAmmo1() );
 
-				if ( iAmmoIndex != -1 )
+				if ( (unsigned int)iAmmoIndex < (unsigned int)MAX_AMMO_SLOTS )
 				{
-					pWeaponBox->PackAmmo( MAKE_STRING( pWeapon->pszAmmo1() ), m_rgAmmo[ iAmmoIndex ] > 0 );
-					m_rgAmmo[ iAmmoIndex ] = 0;
+					pWeaponBox->PackAmmo( MAKE_STRING( pWeapon->pszAmmo1() ), AmmoInventory( iAmmoIndex ) > 0 );
+					SetAmmoInventory( iAmmoIndex, 0 );
 				}
 			}
 			else
 			{
 				int iAmmoIndex = GetAmmoIndex( pWeapon->pszAmmo1() );
 
-				if ( iAmmoIndex != -1 )
+				if ( (unsigned int)iAmmoIndex < (unsigned int)MAX_AMMO_SLOTS )
 				{
-					pWeaponBox->PackAmmo( MAKE_STRING( pWeapon->pszAmmo1() ), m_rgAmmo[ iAmmoIndex ] );
-					m_rgAmmo[ iAmmoIndex ] = 0;
+					pWeaponBox->PackAmmo( MAKE_STRING( pWeapon->pszAmmo1() ), max( 0, AmmoInventory( iAmmoIndex ) ) );
+					SetAmmoInventory( iAmmoIndex, 0 );
 				}
 			}
 
@@ -3933,7 +3933,7 @@ void CBasePlayer::ForceClientDllUpdate( void )
 			if ( clip == -1 )
 			{
 				int ammoIndex = GetAmmoIndex( pw->pszAmmo1() );
-				clip = m_rgAmmo[ammoIndex];
+				clip = AmmoInventory( ammoIndex );
 			}
 
 			MESSAGE_BEGIN( MSG_ONE, gmsgCurWeapon, NULL, pev );

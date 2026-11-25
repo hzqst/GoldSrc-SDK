@@ -66,7 +66,7 @@ BOOL CMedkit::CanHolster()
 void CMedkit::Holster( int )
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	if ( !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 	{
 		m_pPlayer->m_iAccessoryBits &= ~( 1 << ACCESSORY_MEDKIT );
 		DestroyItem();
@@ -75,9 +75,9 @@ void CMedkit::Holster( int )
 
 void CMedkit::PrimaryAttack()
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 		m_pPlayer->TakeHealth( pev->dmg, DMG_GENERIC );
 		SendWeaponAnim( MEDKIT_PINPULL, UseDecrement() );
 		m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.5;
@@ -86,7 +86,7 @@ void CMedkit::PrimaryAttack()
 
 void CMedkit::WeaponIdle()
 {
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		SendWeaponAnim( MEDKIT_IDLE, UseDecrement() );
 		float time = UTIL_WeaponTimeBase();
@@ -101,7 +101,7 @@ BOOL CMedkit::CanDrop()
 
 BOOL CMedkit::CanDeploy()
 {
-	return m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0;
+	return m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0;
 }
 
 int CMedkit::iItemSlot()
