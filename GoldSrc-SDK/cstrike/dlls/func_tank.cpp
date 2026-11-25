@@ -371,19 +371,24 @@ void CFuncTank :: StopControl()
 	if ( !m_pController )
 		return;
 
-	if ( m_pController->m_pActiveItem )
+	CBasePlayer *pController = m_pController;
+	m_pController = NULL;
+
+	if ( (CBaseEntity *)pController->m_pTank == this )
+		pController->m_pTank = NULL;
+
+	if ( pController->m_pActiveItem )
 	{
-		m_pController->m_pActiveItem->Deploy();
-		if ( m_pController->IsPlayer() )
-			m_pController->ResetMaxSpeed();
+		pController->m_pActiveItem->Deploy();
+		if ( pController->IsPlayer() )
+			pController->ResetMaxSpeed();
 	}
 
 	ALERT( at_console, "stopped using TANK\n");
 
-	m_pController->m_iHideHUD &= ~HIDEHUD_WEAPONS;
+	pController->m_iHideHUD &= ~HIDEHUD_WEAPONS;
 
 	pev->nextthink = 0;
-	m_pController = NULL;
 
 	if ( IsActive() )
 		pev->nextthink = pev->ltime + 1.0;
@@ -392,7 +397,8 @@ void CFuncTank :: StopControl()
 // Called each frame by the player's ItemPostFrame
 void CFuncTank :: ControllerPostFrame( void )
 {
-	ASSERT(m_pController != NULL);
+	if ( !m_pController )
+		return;
 
 	if ( gpGlobals->time < m_flNextAttack )
 		return;
@@ -420,19 +426,20 @@ void CFuncTank :: Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE u
 	if ( pev->spawnflags & SF_TANK_CANCONTROL )
 	{  // player controlled turret
 
-		if ( pActivator->Classify() != CLASS_PLAYER )
+		if ( !pActivator || pActivator->Classify() != CLASS_PLAYER )
 			return;
 
 		if ( value == 2 && useType == USE_SET )
 		{
-			ControllerPostFrame();
+			if ( pActivator == m_pController )
+				ControllerPostFrame();
 		}
 		else if ( !m_pController && useType != USE_OFF )
 		{
-			((CBasePlayer*)pActivator)->m_pTank = this;
-			StartControl( (CBasePlayer*)pActivator );
+			if ( StartControl( (CBasePlayer*)pActivator ) )
+				((CBasePlayer*)pActivator)->m_pTank = this;
 		}
-		else
+		else if ( pActivator == m_pController )
 		{
 			StopControl();
 		}
