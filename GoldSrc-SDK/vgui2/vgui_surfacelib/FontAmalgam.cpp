@@ -6,7 +6,11 @@
 //=============================================================================
 
 #include "FontAmalgam.h"
+#if defined( _WIN32 )
+#include "Win32Font.h"
+#else
 #include "LinuxFont.h"
+#endif
 
 #include <cassert>
 #include <cstring>
@@ -78,7 +82,7 @@ void CFontAmalgam::SetName( const char* name )
 //-----------------------------------------------------------------------------
 // Purpose: adds a font to the amalgam
 //-----------------------------------------------------------------------------
-void CFontAmalgam::AddFont( CLinuxFont* font, int lowRange, int highRange )
+void CFontAmalgam::AddFont( CPlatformFont* font, int lowRange, int highRange )
 {
 	int index = m_Fonts.AddToTail();
 	m_Fonts[index].font = font;
@@ -96,7 +100,7 @@ void CFontAmalgam::AddFont( CLinuxFont* font, int lowRange, int highRange )
 	m_iMaxWidth = maxCharWidth;
 }
 
-CLinuxFont* CFontAmalgam::GetFontForChar( int ch )
+CPlatformFont* CFontAmalgam::GetFontForChar( int ch )
 {
 	int count = m_Fonts.Count();
 	if ( count <= 0 )

@@ -6,7 +6,11 @@
 //=============================================================================
 
 #include "FontManager.h"
+#if defined( _WIN32 )
+#include "Win32Font.h"
+#else
 #include "LinuxFont.h"
+#endif
 
 #if !defined( _WIN32 )
 #include <ft2build.h>
@@ -94,7 +98,7 @@ int CFontManager::GetFontBlur( vgui2::HFont font )
 	return m_FontAmalgams[font].GetFontBlur();
 }
 
-CLinuxFont* CFontManager::GetFontForChar( vgui2::HFont font, wchar_t ch )
+CPlatformFont* CFontManager::GetFontForChar( vgui2::HFont font, wchar_t ch )
 {
 	return m_FontAmalgams[font].GetFontForChar( ch );
 }
@@ -177,7 +181,7 @@ CFontManager::~CFontManager()
 	{
 		do
 		{
-			CLinuxFont* font = m_Win32Fonts[index];
+			CPlatformFont* font = m_Win32Fonts[index];
 			if ( font != nullptr )
 			{
 				delete font;
@@ -212,7 +216,7 @@ void CFontManager::ClearAllFonts()
 	{
 		do
 		{
-			CLinuxFont* font = m_Win32Fonts[index];
+			CPlatformFont* font = m_Win32Fonts[index];
 			if ( font != nullptr )
 			{
 				delete font;
@@ -233,7 +237,7 @@ vgui2::HFont CFontManager::CreateFont()
 	return static_cast<vgui2::HFont>( m_FontAmalgams.AddToTail() );
 }
 
-CLinuxFont* CFontManager::CreateOrFindWin32Font(
+CPlatformFont* CFontManager::CreateOrFindWin32Font(
 	const char* name, int tall, int weight, int blur, int scanlines, int flags )
 {
 	if ( m_Win32Fonts.Count() > 0 )
@@ -248,7 +252,7 @@ CLinuxFont* CFontManager::CreateOrFindWin32Font(
 
 		if ( index < m_Win32Fonts.Count() )
 		{
-			CLinuxFont* found = m_Win32Fonts[index];
+			CPlatformFont* found = m_Win32Fonts[index];
 			if ( found != nullptr )
 				return found;
 		}
@@ -256,15 +260,15 @@ CLinuxFont* CFontManager::CreateOrFindWin32Font(
 
 #if defined( _WIN32 )
 	const int createdIndex = m_Win32Fonts.AddToTail();
-	m_Win32Fonts[createdIndex] = new CLinuxFont;
-	CLinuxFont* created = m_Win32Fonts[createdIndex];
+	m_Win32Fonts[createdIndex] = new CPlatformFont;
+	CPlatformFont* created = m_Win32Fonts[createdIndex];
 #else
-	CLinuxFont* created = new CLinuxFont;
+	CPlatformFont* created = new CPlatformFont;
 	const int createdIndex = m_Win32Fonts.AddToTail( created );
 #endif
 	if ( !created->Create( name, tall, weight, blur, scanlines, flags ) )
 	{
-		CLinuxFont* failed = m_Win32Fonts[createdIndex];
+		CPlatformFont* failed = m_Win32Fonts[createdIndex];
 		if ( failed != nullptr )
 			delete failed;
 		m_Win32Fonts.Remove( createdIndex );
@@ -292,7 +296,7 @@ bool CFontManager::AddGlyphSetToFont(
 	}
 #endif
 
-	CLinuxFont* primary = CreateOrFindWin32Font( fontName, tall, weight, blur, scanlines, flags );
+	CPlatformFont* primary = CreateOrFindWin32Font( fontName, tall, weight, blur, scanlines, flags );
 	const char* foreignFallback = GetForeignFallbackFontName();
 	do
 	{
@@ -306,7 +310,7 @@ bool CFontManager::AddGlyphSetToFont(
 		}
 		else if ( primary == nullptr )
 		{
-			CLinuxFont* fallback = CreateOrFindWin32Font( foreignFallback, tall, weight, blur, scanlines, flags );
+			CPlatformFont* fallback = CreateOrFindWin32Font( foreignFallback, tall, weight, blur, scanlines, flags );
 			if ( fallback != nullptr )
 			{
 				m_FontAmalgams[font].AddFont( fallback, 0, 0xFFFF );
@@ -320,7 +324,7 @@ bool CFontManager::AddGlyphSetToFont(
 		}
 		else
 		{
-			CLinuxFont* fallback = CreateOrFindWin32Font( foreignFallback, tall, weight, blur, scanlines, flags );
+			CPlatformFont* fallback = CreateOrFindWin32Font( foreignFallback, tall, weight, blur, scanlines, flags );
 			if ( fallback != nullptr )
 			{
 				m_FontAmalgams[font].AddFont( primary, 0, 255 );
@@ -356,7 +360,7 @@ vgui2::HFont CFontManager::GetFontByName( const char* name )
 //-----------------------------------------------------------------------------
 void CFontManager::GetCharABCwide( vgui2::HFont font, int ch, int& a, int& b, int& c )
 {
-	CLinuxFont* fontForChar = m_FontAmalgams[font].GetFontForChar( ch );
+	CPlatformFont* fontForChar = m_FontAmalgams[font].GetFontForChar( ch );
 	if ( fontForChar != nullptr )
 	{
 		fontForChar->GetCharABCWidths( ch, a, b, c );
@@ -376,7 +380,7 @@ bool CFontManager::IsAdditive( vgui2::HFont font )
 
 int CFontManager::GetFontAscent( vgui2::HFont font, wchar_t ch )
 {
-	CLinuxFont* fontForChar = m_FontAmalgams[font].GetFontForChar( ch );
+	CPlatformFont* fontForChar = m_FontAmalgams[font].GetFontForChar( ch );
 	if ( fontForChar != nullptr )
 		return fontForChar->GetAscent();
 
