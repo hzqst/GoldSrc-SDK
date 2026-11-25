@@ -1922,7 +1922,7 @@ void CMultiplayBusters::PlayerGotWeapon( CBasePlayer* pPlayer, CBasePlayerItem* 
 		CBasePlayerWeapon *pEgon = (CBasePlayerWeapon*)pWeapon;
 
 		pEgon->m_iDefaultAmmo = 100;
-		pPlayer->m_rgAmmo[pEgon->m_iPrimaryAmmoType] = pEgon->m_iDefaultAmmo;
+		pPlayer->SetAmmoInventory( pEgon->m_iPrimaryAmmoType, pEgon->m_iDefaultAmmo );
 
 		g_engfuncs.pfnSetClientKeyValue( pPlayer->entindex(), g_engfuncs.pfnGetInfoKeyBuffer( pPlayer->edict() ), "model", "ivan" );
 	}

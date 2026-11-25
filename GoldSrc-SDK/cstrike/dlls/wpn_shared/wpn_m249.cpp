@@ -112,7 +112,7 @@ void CM249::M249Fire( float spread, float cycleTime, BOOL useAutoAim )
 		(float*)&g_vecZero, (float*)&g_vecZero, direction.x, direction.y, (int)( m_pPlayer->pev->punchangle.x * 100 ),
 		(int)( m_pPlayer->pev->punchangle.y * 100 ), 0, 0 );
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = GetNextAttackDelay( cycleTime );
-	if ( m_iClip == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_iClip == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		m_pPlayer->SetSuitUpdate( "!HEV_AMO0", 0, 0 );
 	m_flTimeWeaponIdle = 1.6f;
 	if ( !( m_pPlayer->pev->flags & FL_ONGROUND ) )

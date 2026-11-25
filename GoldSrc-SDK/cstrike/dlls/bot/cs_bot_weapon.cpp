@@ -88,13 +88,13 @@ bool CCSBot::IsUsingMachinegun( void ) const
 bool CCSBot::IsPrimaryWeaponEmpty( void ) const
 {
 	CBasePlayerWeapon *weapon = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[1]);
-	return weapon == NULL || (weapon->m_iClip == 0 && m_rgAmmo[weapon->m_iPrimaryAmmoType] <= 0);
+	return weapon == NULL || (weapon->m_iClip == 0 && AmmoInventory( weapon->m_iPrimaryAmmoType ) <= 0);
 }
 
 bool CCSBot::IsPistolEmpty( void ) const
 {
 	CBasePlayerWeapon *weapon = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[2]);
-	return weapon == NULL || (weapon->m_iClip == 0 && m_rgAmmo[weapon->m_iPrimaryAmmoType] <= 0);
+	return weapon == NULL || (weapon->m_iClip == 0 && AmmoInventory( weapon->m_iPrimaryAmmoType ) <= 0);
 }
 
 bool CCSBot::IsUsingKnife( void ) const
@@ -137,7 +137,7 @@ bool CCSBot::HasGrenade( void ) const
 
 bool CCSBot::DoEquip( CBasePlayerWeapon *weapon )
 {
-	if ( weapon == NULL || (weapon->m_iClip == 0 && m_rgAmmo[weapon->m_iPrimaryAmmoType] <= 0) )
+	if ( weapon == NULL || (weapon->m_iClip == 0 && AmmoInventory( weapon->m_iPrimaryAmmoType ) <= 0) )
 		return false;
 	SelectItem( STRING( weapon->pev->classname ) );
 	m_lastEquipTime.Start();
@@ -242,7 +242,7 @@ void CCSBot::ReloadCheck( void )
 		if ( GetProfile()->GetSkill() > 0.5f && IsAttacking() && !IsUsingPistol() )
 		{
 			CBasePlayerWeapon *pistol = static_cast<CBasePlayerWeapon *>(m_rgpPlayerItems[2]);
-			if ( pistol && (pistol->m_iClip != 0 || m_rgAmmo[pistol->m_iPrimaryAmmoType] > 0) )
+			if ( pistol && (pistol->m_iClip != 0 || AmmoInventory( pistol->m_iPrimaryAmmoType ) > 0) )
 			{
 				EquipPistol();
 				return;

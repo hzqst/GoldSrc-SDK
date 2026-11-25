@@ -56,7 +56,7 @@ int CHEGrenade::GetItemInfo( ItemInfo* info )
 
 BOOL CHEGrenade::CanDeploy()
 {
-	return m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0;
+	return m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0;
 }
 
 BOOL CHEGrenade::Deploy()
@@ -73,7 +73,7 @@ BOOL CHEGrenade::Deploy()
 void CHEGrenade::Holster( int skiplocal )
 {
 	m_pPlayer->m_flNextAttack = 0.5f;
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 	{
 		m_pPlayer->pev->weapons &= ~( 1 << WEAPON_HEGRENADE );
 		DestroyItem();
@@ -84,7 +84,7 @@ void CHEGrenade::Holster( int skiplocal )
 
 void CHEGrenade::PrimaryAttack()
 {
-	if ( !( m_iWeaponState & WPNSTATE_SHIELD_DRAWN ) && m_flStartThrow == 0 && m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] > 0 )
+	if ( !( m_iWeaponState & WPNSTATE_SHIELD_DRAWN ) && m_flStartThrow == 0 && m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		m_flReleaseThrow = 0;
 		m_flStartThrow = gpGlobals->time;
@@ -200,14 +200,14 @@ void CHEGrenade::WeaponIdle()
 		m_flStartThrow = 0;
 		m_flNextPrimaryAttack = GetNextAttackDelay( 0.5f );
 		m_flTimeWeaponIdle = 0.75f;
-		--m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType];
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 )
+		m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 			m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flTimeWeaponIdle = GetNextAttackDelay( 0.5f );
 		ResetPlayerShieldAnim();
 	}
 	else if ( m_flReleaseThrow <= 0 )
 	{
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] != 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 		{
 			if ( m_pPlayer->HasShield() )
 			{
@@ -225,7 +225,7 @@ void CHEGrenade::WeaponIdle()
 	else
 	{
 		m_flStartThrow = 0;
-		if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0 )
+		if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 			RetireWeapon();
 		else
 		{

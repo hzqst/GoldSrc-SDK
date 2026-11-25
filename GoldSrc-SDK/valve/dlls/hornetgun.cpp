@@ -89,7 +89,7 @@ int CHgun::AddToPlayer( CBasePlayer *pPlayer )
 		if ( g_pGameRules->IsMultiplayer() )
 		{
 			// in multiplayer, all hivehands come full. 
-			pPlayer->m_rgAmmo[ PrimaryAmmoIndex() ] = HORNET_MAX_CARRY;
+			pPlayer->SetAmmoInventory( PrimaryAmmoIndex(), HORNET_MAX_CARRY );
 		}
 #endif
 
@@ -130,9 +130,9 @@ void CHgun::Holster( int skiplocal /* = 0 */ )
 	SendWeaponAnim( HGUN_DOWN );
 
 	//!!!HACKHACK - can't select hornetgun if it's empty! no way to get ammo for it, either.
-	if ( !m_pPlayer->m_rgAmmo[ PrimaryAmmoIndex() ] )
+	if ( m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) == 0 )
 	{
-		m_pPlayer->m_rgAmmo[ PrimaryAmmoIndex() ] = 1;
+		m_pPlayer->SetAmmoInventory( PrimaryAmmoIndex(), 1 );
 	}
 }
 
@@ -141,7 +141,7 @@ void CHgun::PrimaryAttack()
 {
 	Reload( );
 
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0)
+	if (m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0)
 	{
 		return;
 	}
@@ -155,7 +155,7 @@ void CHgun::PrimaryAttack()
 	m_flRechargeTime = gpGlobals->time + GetRechargeTime();
 #endif
 	
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 	
 
 	m_pPlayer->m_iWeaponVolume = QUIET_GUN_VOLUME;
@@ -181,7 +181,7 @@ void CHgun::PrimaryAttack()
 	{
 		m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 0.25;
 	}
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+	if (m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0)
 	{
 		m_flNextPrimaryAttack += GetRechargeTime();
 	}
@@ -195,7 +195,7 @@ void CHgun::SecondaryAttack( void )
 {
 	Reload();
 
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0)
+	if (m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0)
 	{
 		return;
 	}
@@ -262,7 +262,7 @@ void CHgun::SecondaryAttack( void )
 	PLAYBACK_EVENT_FULL( flags, m_pPlayer->edict(), m_usHornetFire, 0.0, (float *)&g_vecZero, (float *)&g_vecZero, 0.0, 0.0, FIREMODE_FAST, 0, 0, 0 );
 
 
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 	m_pPlayer->m_iWeaponVolume = NORMAL_GUN_VOLUME;
 	m_pPlayer->m_iWeaponFlash = DIM_GUN_FLASH;
 
@@ -271,7 +271,7 @@ void CHgun::SecondaryAttack( void )
 
 
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack = UTIL_WeaponTimeBase() + 0.1;
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] == 0)
+	if (m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0)
 	{
 		m_flRechargeTime = gpGlobals->time + 0.5;
 		m_flNextSecondaryAttack += 0.5;
@@ -283,14 +283,16 @@ void CHgun::SecondaryAttack( void )
 
 void CHgun::Reload( void )
 {
-	if (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] >= HORNET_MAX_CARRY)
+	int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+	if ( ammo < 0 || ammo >= HORNET_MAX_CARRY )
 		return;
 
-	while (m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] < HORNET_MAX_CARRY && m_flRechargeTime < gpGlobals->time)
+	while ( ammo < HORNET_MAX_CARRY && m_flRechargeTime < gpGlobals->time )
 	{
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]++;
+		ammo++;
 		m_flRechargeTime += GetRechargeTime();
 	}
+	m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, ammo );
 }
 
 

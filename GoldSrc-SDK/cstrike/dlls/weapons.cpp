@@ -749,9 +749,9 @@ void CBasePlayerWeapon::HandleInfiniteAmmo()
 	else if ( (int)infiniteAmmo.value == 2 )
 	{
 		if ( pszAmmo1() )
-			m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] = iMaxAmmo1();
+			m_pPlayer->SetAmmoInventory( PrimaryAmmoIndex(), iMaxAmmo1() );
 		if ( pszAmmo2() )
-			m_pPlayer->m_rgAmmo[SecondaryAmmoIndex()] = iMaxAmmo2();
+			m_pPlayer->SetAmmoInventory( SecondaryAmmoIndex(), iMaxAmmo2() );
 	}
 }
 
@@ -1384,7 +1384,8 @@ void CWeaponBox::Touch( CBaseEntity* pOther )
 					case WEAPON_SMOKEGRENADE: name = "weapon_smokegrenade"; break;
 					case WEAPON_FLASHBANG: name = "weapon_flashbang"; limit = 2; break;
 					}
-					if ( name && pPlayer->m_rgAmmo[pGrenade->m_iPrimaryAmmoType] < limit )
+					int currentGrenades = pPlayer->AmmoInventory( pGrenade->m_iPrimaryAmmoType );
+					if ( name && currentGrenades >= 0 && currentGrenades < limit )
 					{
 						pPlayer->GiveNamedItem( name );
 						bEmitSound = true;

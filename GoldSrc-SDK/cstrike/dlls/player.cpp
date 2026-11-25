@@ -432,7 +432,7 @@ int CBasePlayer::GetAmmoIndex( const char* name )
 	return -1;
 }
 
-int CBasePlayer::AmmoInventory( int index )
+int CBasePlayer::AmmoInventory( int index ) const
 {
 	if ( (unsigned int)index >= (unsigned int)MAX_AMMO_SLOTS )
 		return -1;
@@ -1024,15 +1024,19 @@ bool CBasePlayer::CanAffordGrenade()
 bool CBasePlayer::NeedsPrimaryAmmo()
 {
 	CBasePlayerWeapon *primary = (CBasePlayerWeapon *)m_rgpPlayerItems[1];
-	return primary != NULL && primary->m_iId != WEAPON_SHIELDGUN &&
-		m_rgAmmo[primary->m_iPrimaryAmmoType] < CBasePlayerItem::ItemInfoArray[primary->m_iId].iMaxAmmo1;
+	if ( primary == NULL || primary->m_iId == WEAPON_SHIELDGUN )
+		return false;
+	int ammo = AmmoInventory( primary->m_iPrimaryAmmoType );
+	return ammo >= 0 && ammo < CBasePlayerItem::ItemInfoArray[primary->m_iId].iMaxAmmo1;
 }
 
 bool CBasePlayer::NeedsSecondaryAmmo()
 {
 	CBasePlayerWeapon *secondary = (CBasePlayerWeapon *)m_rgpPlayerItems[2];
-	return secondary != NULL &&
-		m_rgAmmo[secondary->m_iPrimaryAmmoType] < CBasePlayerItem::ItemInfoArray[secondary->m_iId].iMaxAmmo1;
+	if ( secondary == NULL )
+		return false;
+	int ammo = AmmoInventory( secondary->m_iPrimaryAmmoType );
+	return ammo >= 0 && ammo < CBasePlayerItem::ItemInfoArray[secondary->m_iId].iMaxAmmo1;
 }
 
 bool CBasePlayer::NeedsArmor()
@@ -1049,14 +1053,11 @@ bool CBasePlayer::NeedsDefuseKit()
 
 bool CBasePlayer::NeedsGrenade()
 {
-	int ammoIndex = GetAmmoIndex("HEGrenade");
-	if (ammoIndex != -1 && m_rgAmmo[ammoIndex] != 0)
+	if ( AmmoInventory( GetAmmoIndex("HEGrenade") ) > 0 )
 		return false;
-	ammoIndex = GetAmmoIndex("Flashbang");
-	if (ammoIndex != -1 && m_rgAmmo[ammoIndex] != 0)
+	if ( AmmoInventory( GetAmmoIndex("Flashbang") ) > 0 )
 		return false;
-	ammoIndex = GetAmmoIndex("SmokeGrenade");
-	return ammoIndex == -1 || m_rgAmmo[ammoIndex] == 0;
+	return AmmoInventory( GetAmmoIndex("SmokeGrenade") ) <= 0;
 }
 
 void CBasePlayer::ClientCommand(const char *command, const char *arg1, const char *arg2, const char *arg3)
@@ -1302,7 +1303,7 @@ void CBasePlayer::BuildRebuyStruct()
 	if (primary != NULL)
 	{
 		m_rebuyStruct.m_primaryWeapon = primary->m_iId;
-		m_rebuyStruct.m_primaryAmmo = m_rgAmmo[primary->m_iPrimaryAmmoType];
+		m_rebuyStruct.m_primaryAmmo = max( 0, AmmoInventory( primary->m_iPrimaryAmmoType ) );
 	}
 	else
 	{
@@ -1312,19 +1313,16 @@ void CBasePlayer::BuildRebuyStruct()
 	if (secondary != NULL)
 	{
 		m_rebuyStruct.m_secondaryWeapon = secondary->m_iId;
-		m_rebuyStruct.m_secondaryAmmo = m_rgAmmo[secondary->m_iPrimaryAmmoType];
+		m_rebuyStruct.m_secondaryAmmo = max( 0, AmmoInventory( secondary->m_iPrimaryAmmoType ) );
 	}
 	else
 	{
 		m_rebuyStruct.m_secondaryWeapon = WEAPON_NONE;
 		m_rebuyStruct.m_secondaryAmmo = 0;
 	}
-	int ammoIndex = GetAmmoIndex("HEGrenade");
-	m_rebuyStruct.m_heGrenade = ammoIndex == -1 ? 0 : m_rgAmmo[ammoIndex];
-	ammoIndex = GetAmmoIndex("Flashbang");
-	m_rebuyStruct.m_flashbang = ammoIndex == -1 ? 0 : m_rgAmmo[ammoIndex];
-	ammoIndex = GetAmmoIndex("SmokeGrenade");
-	m_rebuyStruct.m_smokeGrenade = ammoIndex == -1 ? 0 : m_rgAmmo[ammoIndex];
+	m_rebuyStruct.m_heGrenade = max( 0, AmmoInventory( GetAmmoIndex("HEGrenade") ) );
+	m_rebuyStruct.m_flashbang = max( 0, AmmoInventory( GetAmmoIndex("Flashbang") ) );
+	m_rebuyStruct.m_smokeGrenade = max( 0, AmmoInventory( GetAmmoIndex("SmokeGrenade") ) );
 	m_rebuyStruct.m_defuser = m_bHasDefuser;
 	m_rebuyStruct.m_nightVision = m_bHasNightVision;
 	m_rebuyStruct.m_armor = m_iKevlar;
@@ -1343,8 +1341,12 @@ void CBasePlayer::RebuyPrimaryWeapon()
 void CBasePlayer::RebuyPrimaryAmmo()
 {
 	CBasePlayerWeapon *primary = (CBasePlayerWeapon *)m_rgpPlayerItems[1];
-	if (primary != NULL && m_rebuyStruct.m_primaryAmmo > m_rgAmmo[primary->m_iPrimaryAmmoType])
-		ClientCommand("primammo", NULL, NULL, NULL);
+	if ( primary != NULL )
+	{
+		int ammo = AmmoInventory( primary->m_iPrimaryAmmoType );
+		if ( ammo >= 0 && m_rebuyStruct.m_primaryAmmo > ammo )
+			ClientCommand("primammo", NULL, NULL, NULL);
+	}
 }
 
 void CBasePlayer::RebuySecondaryWeapon()
@@ -1360,36 +1362,40 @@ void CBasePlayer::RebuySecondaryWeapon()
 void CBasePlayer::RebuySecondaryAmmo()
 {
 	CBasePlayerWeapon *secondary = (CBasePlayerWeapon *)m_rgpPlayerItems[2];
-	if (secondary != NULL && m_rebuyStruct.m_secondaryAmmo > m_rgAmmo[secondary->m_iPrimaryAmmoType])
-		ClientCommand("secammo", NULL, NULL, NULL);
+	if ( secondary != NULL )
+	{
+		int ammo = AmmoInventory( secondary->m_iPrimaryAmmoType );
+		if ( ammo >= 0 && m_rebuyStruct.m_secondaryAmmo > ammo )
+			ClientCommand("secammo", NULL, NULL, NULL);
+	}
 }
 
 void CBasePlayer::RebuyHEGrenade()
 {
-	int ammoIndex = GetAmmoIndex("HEGrenade");
-	if (ammoIndex == -1)
+	int current = AmmoInventory( GetAmmoIndex("HEGrenade") );
+	if ( current < 0 )
 		return;
-	int count = m_rebuyStruct.m_heGrenade - m_rgAmmo[ammoIndex];
+	int count = m_rebuyStruct.m_heGrenade - current;
 	for (int i = 0; i < count; i++)
 		ClientCommand("hegren", NULL, NULL, NULL);
 }
 
 void CBasePlayer::RebuyFlashbang()
 {
-	int ammoIndex = GetAmmoIndex("Flashbang");
-	if (ammoIndex == -1)
+	int current = AmmoInventory( GetAmmoIndex("Flashbang") );
+	if ( current < 0 )
 		return;
-	int count = m_rebuyStruct.m_flashbang - m_rgAmmo[ammoIndex];
+	int count = m_rebuyStruct.m_flashbang - current;
 	for (int i = 0; i < count; i++)
 		ClientCommand("flash", NULL, NULL, NULL);
 }
 
 void CBasePlayer::RebuySmokeGrenade()
 {
-	int ammoIndex = GetAmmoIndex("SmokeGrenade");
-	if (ammoIndex == -1)
+	int current = AmmoInventory( GetAmmoIndex("SmokeGrenade") );
+	if ( current < 0 )
 		return;
-	int count = m_rebuyStruct.m_smokeGrenade - m_rgAmmo[ammoIndex];
+	int count = m_rebuyStruct.m_smokeGrenade - current;
 	for (int i = 0; i < count; i++)
 		ClientCommand("sgren", NULL, NULL, NULL);
 }
@@ -2465,7 +2471,7 @@ void CBasePlayer::GiveShield( bool deploy )
 	if ( m_pActiveItem != NULL && deploy )
 	{
 		CBasePlayerWeapon* weapon = (CBasePlayerWeapon*)m_pActiveItem;
-		if ( m_rgAmmo[weapon->m_iPrimaryAmmoType] > 0 )
+		if ( AmmoInventory( weapon->m_iPrimaryAmmoType ) > 0 )
 			m_pActiveItem->Holster();
 		if ( !m_pActiveItem->Deploy() )
 			( (CBasePlayerWeapon*)m_pActiveItem )->RetireWeapon();
@@ -2481,7 +2487,7 @@ void CBasePlayer::DropShield( bool deploy )
 	{
 		CBasePlayerWeapon* weapon = (CBasePlayerWeapon*)m_pActiveItem;
 		if ( ( weapon->m_iId == WEAPON_SMOKEGRENADE || weapon->m_iId == WEAPON_FLASHBANG ||
-			weapon->m_iId == WEAPON_HEGRENADE ) && m_rgAmmo[weapon->m_iPrimaryAmmoType] <= 0 )
+			weapon->m_iId == WEAPON_HEGRENADE ) && AmmoInventory( weapon->m_iPrimaryAmmoType ) <= 0 )
 			g_pGameRules->GetNextBestWeapon( this, m_pActiveItem );
 		if ( m_pActiveItem != NULL )
 		{
@@ -2634,8 +2640,11 @@ static void packPlayerItem( CBasePlayer* player, CBasePlayerItem* item, bool pac
 	box->pev->nextthink = gpGlobals->time + 300;
 	box->PackWeapon( item );
 	if ( packAmmo )
-		box->PackAmmo( MAKE_STRING( CBasePlayerItem::ItemInfoArray[item->m_iId].pszAmmo1 ),
-			player->m_rgAmmo[item->PrimaryAmmoIndex()] );
+	{
+		int ammo = player->AmmoInventory( item->PrimaryAmmoIndex() );
+		if ( ammo >= 0 )
+			box->PackAmmo( MAKE_STRING( CBasePlayerItem::ItemInfoArray[item->m_iId].pszAmmo1 ), ammo );
+	}
 	SET_MODEL( box->edict(), model );
 }
 
@@ -3011,10 +3020,10 @@ void CBasePlayer::DropPlayerItem( const char* name )
 	if ( ( info.iFlags & ITEM_FLAG_EXHAUSTIBLE ) && info.pszAmmo1 != NULL )
 	{
 		int index = GetAmmoIndex( info.pszAmmo1 );
-		if ( index != -1 )
+		if ( (unsigned int)index < (unsigned int)MAX_AMMO_SLOTS )
 		{
-			box->PackAmmo( MAKE_STRING( info.pszAmmo1 ), m_rgAmmo[index] > 0 );
-			m_rgAmmo[index] = 0;
+			box->PackAmmo( MAKE_STRING( info.pszAmmo1 ), AmmoInventory( index ) > 0 );
+			SetAmmoInventory( index, 0 );
 		}
 	}
 	const char* model = WeaponWorldModel( item->m_iId );
@@ -4914,15 +4923,15 @@ void CBasePlayer::Killed(entvars_t *pevAttacker, int iGib)
 		switch (m_pActiveItem->m_iId)
 		{
 		case WEAPON_HEGRENADE:
-			if ((pev->button & IN_ATTACK) && m_rgAmmo[pWeapon->m_iPrimaryAmmoType] != 0)
+			if ((pev->button & IN_ATTACK) && AmmoInventory( pWeapon->m_iPrimaryAmmoType ) > 0)
 				CGrenade::ShootTimed2(pev, pev->origin + pev->view_ofs, pev->angles, 1.5f, m_iTeam, ((CHEGrenade *)m_pActiveItem)->m_usCreateExplosion);
 			break;
 		case WEAPON_SMOKEGRENADE:
-			if ((pev->button & IN_ATTACK) && m_rgAmmo[pWeapon->m_iPrimaryAmmoType] != 0)
+			if ((pev->button & IN_ATTACK) && AmmoInventory( pWeapon->m_iPrimaryAmmoType ) > 0)
 				CGrenade::ShootSmokeGrenade(pev, pev->origin + pev->view_ofs, pev->angles, 1.5f, ((CSmokeGrenade *)m_pActiveItem)->m_usCreateSmoke);
 			break;
 		case WEAPON_FLASHBANG:
-			if ((pev->button & IN_ATTACK) && m_rgAmmo[pWeapon->m_iPrimaryAmmoType] != 0)
+			if ((pev->button & IN_ATTACK) && AmmoInventory( pWeapon->m_iPrimaryAmmoType ) > 0)
 				CGrenade::ShootTimed(pev, pev->origin + pev->view_ofs, pev->angles, 1.5f);
 			break;
 		}
@@ -5288,7 +5297,7 @@ void CBasePlayer::UpdateClientData()
 		if ( !(CBasePlayerItem::ItemInfoArray[m_pActiveItem->m_iId].iFlags & ITEM_FLAG_EXHAUSTIBLE) )
 		{
 			CBasePlayerWeapon* weapon = (CBasePlayerWeapon*)m_pActiveItem;
-			if ( weapon->m_iPrimaryAmmoType != -1 && m_rgAmmo[weapon->m_iPrimaryAmmoType] == 0 && weapon->m_iClip == 0 )
+			if ( AmmoInventory( weapon->m_iPrimaryAmmoType ) == 0 && weapon->m_iClip == 0 )
 			{
 				m_flDisplayHistory |= 0x8000;
 				if ( IsAlive() && m_bShowHints )
