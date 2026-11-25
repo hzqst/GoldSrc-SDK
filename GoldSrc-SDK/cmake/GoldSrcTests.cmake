@@ -112,6 +112,7 @@ foreach(name IN ITEMS
 		sound_msg
 		sound_resample
 		spectate_connection
+		spectator_camera_waypoints
 		spectator_chat_position
 		spectator_command_menu
 		spr_load_name

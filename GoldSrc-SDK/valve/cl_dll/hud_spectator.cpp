@@ -524,7 +524,7 @@ bool CHudSpectator::GetDirectorCamera(vec3_t &position, vec3_t &angle)
 		{
 			// we have a predecessor
 
-			if ( m_WayPoint < (m_NumWayPoints-1) )
+			if ( m_WayPoint < (m_NumWayPoints-2) )
 			{
 				// we have also a successor
 				SetWayInterpolation( &m_CamPath[m_WayPoint-1], wp1, wp2, &m_CamPath[m_WayPoint+2] );
@@ -534,7 +534,7 @@ bool CHudSpectator::GetDirectorCamera(vec3_t &position, vec3_t &angle)
 				SetWayInterpolation( &m_CamPath[m_WayPoint-1], wp1, wp2, NULL );
 			}	
 		}
-		else if ( m_WayPoint < (m_NumWayPoints-1) )
+		else if ( m_WayPoint < (m_NumWayPoints-2) )
 		{
 			// we only have a successor
 			SetWayInterpolation( NULL, wp1, wp2, &m_CamPath[m_WayPoint+2] );
