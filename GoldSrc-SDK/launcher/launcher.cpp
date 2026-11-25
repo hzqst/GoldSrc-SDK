@@ -33,6 +33,7 @@ namespace
 #define GAME_DIRECTORY_LENGTH		260
 #define MODULE_RETRY_LENGTH			512
 #define EXECUTABLE_LEAF_LENGTH		256
+// The engine appends the arguments of the next start up to this size (POST_RESTART_COMMAND_LENGTH in engine/host_cmd.cpp).
 #define NEW_COMMAND_LENGTH			2048
 #define LAUNCHER_MESSAGE_LENGTH		216
 
