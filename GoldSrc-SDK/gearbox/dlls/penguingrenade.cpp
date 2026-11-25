@@ -76,7 +76,7 @@ BOOL CPenguin::Deploy()
 void CPenguin::Holster( int )
 {
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 0.5;
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0 )
 	{
 		SendWeaponAnim( PENGUIN_HOLSTER );
 		EMIT_SOUND( m_pPlayer->edict(), CHAN_WEAPON, "common/null.wav", 1, ATTN_NORM );
@@ -104,7 +104,7 @@ void CPenguin::SecondaryAttack()
 
 void CPenguin::PrimaryAttack()
 {
-	if ( !m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		return;
 	UTIL_MakeVectors( m_pPlayer->pev->v_angle );
 	Vector source = m_pPlayer->pev->origin;
@@ -125,7 +125,7 @@ void CPenguin::PrimaryAttack()
 	EMIT_SOUND_DYN( edict(), CHAN_VOICE, RANDOM_FLOAT( 0, 1 ) <= 0.5 ?
 		"squeek/sqk_hunt2.wav" : "squeek/sqk_hunt3.wav", 1, ATTN_NORM, 0, 105 );
 	m_pPlayer->m_iWeaponVolume = QUIET_GUN_VOLUME;
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 	m_fJustThrown = 1;
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 1.9;
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 0.8;
@@ -138,7 +138,7 @@ void CPenguin::WeaponIdle()
 	if ( m_fJustThrown )
 	{
 		m_fJustThrown = 0;
-		if ( !m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] )
+		if ( m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) <= 0 )
 			RetireWeapon();
 		else
 		{

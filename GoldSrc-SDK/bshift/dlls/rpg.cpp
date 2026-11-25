@@ -521,7 +521,7 @@ void CRpg::WeaponIdle( void )
 	if ( m_flTimeWeaponIdle > UTIL_WeaponTimeBase() )
 		return;
 
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType])
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) > 0)
 	{
 		int iAnim;
 		float flRand = UTIL_SharedRandomFloat( m_pPlayer->random_seed, 0, 1 );

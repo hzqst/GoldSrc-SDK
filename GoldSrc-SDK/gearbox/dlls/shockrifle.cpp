@@ -111,8 +111,8 @@ void CShockRifle::Holster( int skiplocal )
 	SetThink( NULL );
 	m_pPlayer->m_flNextAttack = UTIL_WeaponTimeBase() + 1.0;
 	SendWeaponAnim( SHOCK_HOLSTER, 1, 0 );
-	if ( !m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] )
-		m_pPlayer->m_rgAmmo[PrimaryAmmoIndex()] = 1;
+	if ( m_pPlayer->AmmoInventory( PrimaryAmmoIndex() ) == 0 )
+		m_pPlayer->SetAmmoInventory( PrimaryAmmoIndex(), 1 );
 }
 
 void CShockRifle::CreateChargeEffect()
@@ -165,18 +165,18 @@ void CShockRifle::PrimaryAttack()
 	if ( m_pPlayer->pev->waterlevel == 3 )
 	{
 		EMIT_SOUND( ENT( m_pPlayer->pev ), CHAN_WEAPON, "weapons/shock_discharge.wav", RANDOM_FLOAT( 0.8, 0.9 ), ATTN_NONE );
-		int ammo = m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType];
+		int ammo = max( 0, m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) );
 		RadiusDamage( pev->origin, m_pPlayer->pev, m_pPlayer->pev,
 			(float)( 100 * ammo ), (float)( 150 * ammo ), CLASS_NONE, DMG_BLAST | DMG_ALWAYSGIB );
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] = 0;
+		m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, 0 );
 		return;
 	}
 	Reload();
-	if ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] <= 0 )
+	if ( m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) <= 0 )
 		return;
 	m_pPlayer->m_iWeaponVolume = LOUD_GUN_VOLUME;
 	m_pPlayer->m_iWeaponFlash = BRIGHT_GUN_FLASH;
-	m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]--;
+	m_pPlayer->AddAmmoInventory( m_iPrimaryAmmoType, -1 );
 	m_flRechargeTime = gpGlobals->time + 1.0;
 	PLAYBACK_EVENT_FULL( UseDecrement(), m_pPlayer->edict(), m_usShockRifle, 0.0,
 		(float*)&g_vecZero, (float*)&g_vecZero, 0, 0, 0, 0, 0, 0 );
@@ -207,9 +207,13 @@ void CShockRifle::SecondaryAttack()
 
 void CShockRifle::Reload()
 {
-	while ( m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType] < SHOCK_MAX_CARRY && gpGlobals->time > m_flRechargeTime )
+	int ammo = m_pPlayer->AmmoInventory( m_iPrimaryAmmoType );
+	if ( ammo < 0 )
+		return;
+	while ( ammo < SHOCK_MAX_CARRY && gpGlobals->time > m_flRechargeTime )
 	{
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType]++;
+		ammo++;
+		m_pPlayer->SetAmmoInventory( m_iPrimaryAmmoType, ammo );
 		EMIT_SOUND( ENT( m_pPlayer->pev ), CHAN_WEAPON, "weapons/shock_recharge.wav", 1.0, ATTN_NORM );
 #ifdef CLIENT_DLL
 		BOOL multiplayer = bIsMultiplayer();

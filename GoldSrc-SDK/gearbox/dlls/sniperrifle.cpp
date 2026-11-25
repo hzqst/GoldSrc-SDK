@@ -134,7 +134,7 @@ void CSniperRifle::PrimaryAttack()
 		BULLET_PLAYER_762, 0, 0, m_pPlayer->pev, m_pPlayer->random_seed );
 	PLAYBACK_EVENT_FULL( UseDecrement(), m_pPlayer->edict(), m_usSniper, 0.0,
 		(float*)&g_vecZero, (float*)&g_vecZero, spread.x, spread.y, m_iClip,
-		m_pPlayer->m_rgAmmo[m_iPrimaryAmmoType], 0, 0 );
+		max( 0, m_pPlayer->AmmoInventory( m_iPrimaryAmmoType ) ), 0, 0 );
 	m_flNextPrimaryAttack = UTIL_WeaponTimeBase() + 2.0;
 	m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 2.0;
 }
