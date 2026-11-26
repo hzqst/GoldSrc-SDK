@@ -133,9 +133,9 @@ ScorePanel::ScorePanel(int x,int y,int wide,int tall) : Panel(x,y,wide,tall)
 	for(int i=0; i < NUM_COLUMNS; i++)
 	{
 		if (g_ColumnInfo[i].m_pTitle && g_ColumnInfo[i].m_pTitle[0] == '#')
-			m_HeaderLabels[i].setText("%s", CHudTextMessage::BufferedLocaliseTextString(g_ColumnInfo[i].m_pTitle));
+			m_HeaderLabels[i].setText(CHudTextMessage::BufferedLocaliseTextString(g_ColumnInfo[i].m_pTitle));
 		else if(g_ColumnInfo[i].m_pTitle)
-			m_HeaderLabels[i].setText("%s", g_ColumnInfo[i].m_pTitle);
+			m_HeaderLabels[i].setText(g_ColumnInfo[i].m_pTitle);
 
 		int xwide = g_ColumnInfo[i].m_Width;
 		if (ScreenWidth >= 640)
@@ -854,7 +854,7 @@ void ScorePanel::FillGrid()
 				}
 			}
 
-			pLabel->setText("%s", sz);
+			pLabel->setText(sz);
 		}
 	}
 
