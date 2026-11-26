@@ -975,12 +975,9 @@ bool ReadMenuEntry(char *&cursor, const char *end, MenuToken &token, MenuEntry &
 	}
 #endif
 
-	if (token.brace || !token.text[0])
-		return false;
-
 	entry.key = token.text[0];
 	if (!ReadMenuToken(cursor, end, entry.title) ||
-		!ReadMenuToken(cursor, end, entry.command) || entry.command.brace == '}')
+		!ReadMenuToken(cursor, end, entry.command))
 		return false;
 
 	const bool hasNext = ReadMenuToken(cursor, end, token);
@@ -1066,10 +1063,21 @@ try
 			continue;
 		}
 
-		const bool customCreatesMenu = entry.custom && (!strcmp(entry.command.text, "!CHANGETEAM") ||
-			!strcmp(entry.command.text, "!CHANGECLASS"));
+		int customMenus = 0;
+		if (entry.custom)
+		{
+			if (!strcmp(entry.command.text, "!CHANGETEAM") || !strcmp(entry.command.text, "!CHANGECLASS"))
+				customMenus = 1;
+#ifdef _TFC
+			else if (!strcmp(entry.command.text, "!DETPACKSTART"))
+				customMenus = 1;
+			else if (!strcmp(entry.command.text, "!DISGUISEENEMY") || !strcmp(entry.command.text, "!DISGUISEFRIENDLY"))
+				customMenus = 5;
+#endif
+		}
+		const int neededMenus = customMenus > 0 ? customMenus : (entry.submenu ? 1 : 0);
 		if (m_pCurrentCommandMenu->GetNumButtons() >= MAX_BUTTONS ||
-			((entry.submenu || customCreatesMenu) && m_iNumMenus >= submenuLimit))
+			(neededMenus > 0 && m_iNumMenus + neededMenus > submenuLimit))
 		{
 			gEngfuncs.Con_Printf("Command menu capacity exceeded in %s at '%s'\n", menuFile, entry.title.text);
 			if (entry.submenu)
@@ -1113,7 +1121,7 @@ try
 		if (entry.submenu)
 		{
 			// Some custom buttons already build their own submenu.
-			if (customCreatesMenu)
+			if (customMenus > 0)
 			{
 				rejectedDepth = 1;
 				continue;
