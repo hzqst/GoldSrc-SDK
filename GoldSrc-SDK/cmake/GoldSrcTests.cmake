@@ -43,6 +43,7 @@ foreach(name IN ITEMS
 		engine_client_api
 		engine_font_fallback
 		engine_post_restart_args
+		engine_save_grow
 		engine_save_restore
 		engine_stufftext
 		file_read_length
