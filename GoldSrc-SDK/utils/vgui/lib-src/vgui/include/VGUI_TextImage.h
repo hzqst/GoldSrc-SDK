@@ -25,17 +25,10 @@ public:
 	virtual void getTextSizeWrapped( int& wide, int& tall );
 	virtual Font* getFont();
 
-#if defined( _WIN32 )
 	virtual void setText( int textBufferLen, const char* text );
 	virtual void setText( const char* text );
 	virtual void setFont( Scheme::SchemeFont schemeFont );
 	virtual void setFont( Font* font );
-#else
-	virtual void setText( const char* text );
-	virtual void setText( int textBufferLen, const char* text );
-	virtual void setFont( Font* font );
-	virtual void setFont( Scheme::SchemeFont schemeFont );
-#endif
 
 	virtual void setSize( int wide, int tall ) override;
 
