@@ -32,6 +32,7 @@ STUBS = r'''
 #include <string>
 #include <vector>
 #define MAX_MENUS 3
+#define MAX_BUTTONS 4
 #define MAX_MAPNAME 64
 #define MAX_BUTTON_SIZE 32
 #define BUTTON_SIZE_Y 30
@@ -43,6 +44,8 @@ static const char* sTFClasses[] = {"", "SCOUT", "SNIPER", "SOLDIER", "DEMOMAN", 
 class CException {};
 #endif
 namespace Scheme { enum { sf_primary3 }; }
+template <class T> T* VGuiCompat_OwnActionSignal(T* signal) { return signal; }
+template <class T> T* VGuiCompat_OwnInputSignal(T* signal) { return signal; }
 static int liveMenus = 0, liveButtons = 0, liveSignals = 0;
 struct Signal {
  Signal() { ++liveSignals; }
@@ -56,21 +59,48 @@ class CCommandMenu;
 // owns the signals added to it like the VGUI1 panel tree does
 class CommandButton {
 public:
+ CommandButton() { ++liveButtons; }
+ CommandButton(int, const char* text, int, int, float, float, bool = false) : m_text(text ? text : "") { ++liveButtons; }
+ CommandButton(int, char* text, int, int, float, float, bool = false) : m_text(text ? text : "") { ++liveButtons; }
+ CommandButton(const char* text) : m_text(text ? text : "") { ++liveButtons; }
  template <class... A> CommandButton(A&&...) { ++liveButtons; }
  virtual ~CommandButton() { --liveButtons; }
- void setBoundKey(char) {}
- void setParentMenu(CCommandMenu*) {}
+ void setBoundKey(char key) { m_key = key; }
+ void setParentMenu(CCommandMenu* menu) { m_parentMenu = menu; }
  void setFont(int) {}
  void addActionSignal(Signal* signal) { m_signals.emplace_back(signal); }
  void addInputSignal(Signal* signal) { m_signals.emplace_back(signal); }
+ std::string m_text;
+ char m_key = 0;
+ CCommandMenu* m_parentMenu = nullptr;
 private:
  std::vector<std::unique_ptr<Signal>> m_signals;
 };
-struct MapButton : CommandButton { template <class... A> MapButton(A&&... args) : CommandButton(args...) {} };
-struct TeamOnlyCommandButton : CommandButton { template <class... A> TeamOnlyCommandButton(A&&... args) : CommandButton(args...) {} };
-struct ToggleCommandButton : CommandButton { template <class... A> ToggleCommandButton(A&&... args) : CommandButton(args...) {} };
-struct SpectToggleButton : CommandButton { template <class... A> SpectToggleButton(A&&... args) : CommandButton(args...) {} };
-struct SpectButton : CommandButton { template <class... A> SpectButton(A&&... args) : CommandButton(args...) {} };
+struct MapButton : CommandButton {
+ MapButton(const char*, const char* text, int, int, float, float) : CommandButton(text) {}
+ MapButton(char*, char* text, int, int, float, float) : CommandButton(text) {}
+ template <class... A> MapButton(A&&... args) : CommandButton(args...) {}
+};
+struct TeamOnlyCommandButton : CommandButton {
+ TeamOnlyCommandButton(int, const char* text, int, int, float, float, bool = false) : CommandButton(text) {}
+ TeamOnlyCommandButton(int, char* text, int, int, float, float, bool = false) : CommandButton(text) {}
+ template <class... A> TeamOnlyCommandButton(A&&... args) : CommandButton(args...) {}
+};
+struct ToggleCommandButton : CommandButton {
+ ToggleCommandButton(const char*, const char* text, int, int, float, float, bool = false) : CommandButton(text) {}
+ ToggleCommandButton(char*, char* text, int, int, float, float, bool = false) : CommandButton(text) {}
+ template <class... A> ToggleCommandButton(A&&... args) : CommandButton(args...) {}
+};
+struct SpectToggleButton : CommandButton {
+ SpectToggleButton(const char*, const char* text, int, int, float, float, bool = false) : CommandButton(text) {}
+ SpectToggleButton(char*, char* text, int, int, float, float, bool = false) : CommandButton(text) {}
+ template <class... A> SpectToggleButton(A&&... args) : CommandButton(args...) {}
+};
+struct SpectButton : CommandButton {
+ SpectButton(int, const char* text, int, int, float, float) : CommandButton(text) {}
+ SpectButton(int, char* text, int, int, float, float) : CommandButton(text) {}
+ template <class... A> SpectButton(A&&... args) : CommandButton(args...) {}
+};
 // owns its buttons but not its submenus, which the viewport keeps in m_pCommandMenus
 class CCommandMenu : public Panel {
 public:
@@ -78,7 +108,11 @@ public:
  ~CCommandMenu() { --liveMenus; }
  void setParent(Panel*) {}
  void setVisible(bool) {}
- void AddButton(CommandButton* button) { m_buttons.emplace_back(button); }
+ bool AddButton(CommandButton* button) {
+  if ((int)m_buttons.size() >= MAX_BUTTONS) return false;
+  m_buttons.emplace_back(button);
+  return true;
+ }
  int GetNumButtons() { return (int)m_buttons.size(); }
  CCommandMenu* GetParentMenu() { return m_parent; }
  float m_flButtonSizeY = 0;
@@ -99,8 +133,9 @@ static bool menuExists = true;
 static char* loadedFile = nullptr;
 static int wrongFrees = 0;
 static struct {
- void* COM_LoadFile(const char*, int, int*) {
+ void* COM_LoadFile(const char*, int, int* length) {
   if (!menuExists) return nullptr;
+	  if (length) *length = (int)menuText.size();
   loadedFile = new char[menuText.size() + 1];
   memcpy(loadedFile, menuText.c_str(), menuText.size() + 1);
   return loadedFile;
@@ -114,18 +149,27 @@ static struct {
  }
  void Con_Printf(const char*, ...) {}
  void Con_DPrintf(const char*, ...) {}
- // whitespace separated tokens or quoted strings, and NULL with an empty token at the end
+ // mimics engine COM_ParseFile: comments, standalone braces, quoted strings, and end+1 on unclosed quote
  char* COM_ParseFile(char* data, char* token) {
   token[0] = 0;
   if (!data) return nullptr;
-  while (*data && isspace((unsigned char)*data)) ++data;
-  if (!*data) return nullptr;
+  for (;;) {
+   while (*data && isspace((unsigned char)*data)) ++data;
+   if (!*data) return nullptr;
+   if (data[0] == '/' && data[1] == '/') {
+    while (*data && *data != '\n') ++data;
+    continue;
+   }
+   break;
+  }
   int length = 0;
   if (*data == '"') {
    for (++data; *data && *data != '"'; ++data) token[length++] = *data;
-   if (*data) ++data;
+   ++data; // intentionally steps past NUL on unclosed quote like engine COM_Parse
+  } else if (*data == '{' || *data == '}') {
+   token[length++] = *data++;
   } else {
-   for (; *data && !isspace((unsigned char)*data); ++data) token[length++] = *data;
+   for (; *data && !isspace((unsigned char)*data) && *data != '{' && *data != '}'; ++data) token[length++] = *data;
   }
   token[length] = 0;
   return data;
@@ -135,7 +179,7 @@ static struct {
 class ViewportStub : public Panel {
 public:
  ~ViewportStub() { for (int i = 0; i < m_iNumMenus; ++i) delete m_pCommandMenus[i]; }
- template <class... A> CommandButton* CreateCustomButton(A&&...) { return new CommandButton(); }
+ template <class T, class... A> CommandButton* CreateCustomButton(const T* text, A&&...) { return new CommandButton(text); }
  template <class... A> CCommandMenu* CreateSubMenu(CommandButton*, CCommandMenu* parent, A&&...) { return new CCommandMenu(parent); }
  void SetCurrentMenu(void*) {}
  void SetCurrentCommandMenu(CCommandMenu*) {}
@@ -151,8 +195,8 @@ public:
 
 VIEWPORTS = {
     'valve': ('valve/cl_dll/vgui_TeamFortressViewport.cpp', 'TeamFortressViewport',
-              'int CreateCommandMenu(char* menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset);',
-              'int TeamFortressViewport::CreateCommandMenu(', 'viewport.CreateCommandMenu(menuFile, 0, 0, false, 160, 30, 0)'),
+              'int CreateCommandMenu(char* menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset, int reservedMenus);',
+              'int TeamFortressViewport::CreateCommandMenu(', 'viewport.CreateCommandMenu(menuFile, 0, 0, false, 160, 30, 0, 0)'),
     'tfc': ('tfc/cl_dll/vgui_TeamFortressViewport.cpp', 'TeamFortressViewport',
             'int CreateCommandMenu(char* menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset);',
             'int TeamFortressViewport::CreateCommandMenu(', 'viewport.CreateCommandMenu(menuFile, 0, 0, false, 160, 30, 0)'),
@@ -194,16 +238,69 @@ static void Run() {
 LABELS = {'valve': 'Half-Life', 'tfc': 'Team Fortress Classic', 'ricochet': 'Ricochet', 'dmc': 'Deathmatch Classic',
           'gearbox': 'Opposing Force'}
 
+VALVE_TESTS = r'''
+namespace valve {
+static void RunRejectedSubmenu() {
+ char filename[] = "commandmenu.txt";
+ menuText = R"MENU(
+  // kept submenu with tight braces
+  "1" "Kept submenu"{
+    "1" "Kept child" "say inside"
+  }
+  "2" "Rejected submenu" {
+    MAP "crossfire" "1" "{" "say brace"
+    TEAM1 "2" "}" "say brace"
+    "" "Unbound inside rejected" "}"
+    CUSTOM "4" "Custom leaf inside" "!CUSTOMLEAF"
+    CUSTOM "5" "Custom sub inside" "!CUSTOMSUB" {
+      "1" "Depth 2" {
+        "1" "Depth 3" "say deep"
+      }
+      "2" "Empty nested" {}
+    }
+    "3" "Nested submenu" {
+      TOGGLE "1" "" "hud_draw"
+    }
+  }
+  "" "Unbound sibling" "}"
+  CUSTOM "4" "Custom sibling" "!MYCUSTOM"
+ )MENU";
+ {
+  TeamFortressViewport viewport;
+  int root = viewport.CreateCommandMenu(filename, 0, 0, false, 160, 30, 0, 1);
+  assert(viewport.m_iNumMenus == 2);
+  auto& rootBtns = viewport.m_pCommandMenus[root]->m_buttons;
+  assert(rootBtns.size() == 3);
+  assert(rootBtns[0]->m_text == "Kept submenu" && rootBtns[0]->m_key == '1');
+  assert(rootBtns[1]->m_text == "Unbound sibling" && rootBtns[1]->m_key == '\0');
+  assert(rootBtns[2]->m_text == "Custom sibling" && rootBtns[2]->m_key == '4');
+  assert(rootBtns[1]->m_parentMenu == viewport.m_pCommandMenus[root]);
+  auto& subBtns = viewport.m_pCommandMenus[1]->m_buttons;
+  assert(subBtns.size() == 1 && subBtns[0]->m_text == "Kept child");
+  assert(!loadedFile);
+ }
+ Build("\"1\" \"Truncated");
+ assert(0 == liveMenus && 0 == liveButtons && 0 == liveSignals);
+ puts("PASS: Half-Life command menu parses empty keys, brace commands, CUSTOM items and deeply nested rejected submenus");
+}
+}
+'''
+
 
 def main():
     code = STUBS
     for name, (path, viewport, declaration, signature, build) in VIEWPORTS.items():
         source = (ROOT / path).read_text(encoding='latin-1')
         code += f'namespace {name} {{\nclass {viewport} : public ViewportStub {{\npublic:\n {declaration}\n}};\n'
+        if name == 'valve':
+            helpers = source.index('namespace\n{\nstruct MenuToken')
+            code += source[helpers:source.index('//-----------------------------------------------------------------------------', helpers)]
         code += command_menu(source, signature) + '\n}\n'
         code += (TESTS.replace('NAME', name).replace('VIEWPORT', viewport).replace('BUILD', build)
                  .replace('LABEL', LABELS[name]))
-    code += '\nint main() {\n' + ''.join(f' {name}::Run();\n' for name in VIEWPORTS) + '}\n'
+    code += VALVE_TESTS
+    code += '\nint main() {\n' + ''.join(f' {name}::Run();\n' for name in VIEWPORTS)
+    code += ' valve::RunRejectedSubmenu();\n}\n'
     with tempfile.TemporaryDirectory(prefix='goldsrc-viewport-command-menu-') as folder:
         folder = Path(folder)
         (folder / 'test.cpp').write_text(code, encoding='utf-8')
