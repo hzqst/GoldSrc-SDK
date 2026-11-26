@@ -432,6 +432,9 @@ buildDefaultFont:
 				false, 
 				false, 
 				false);
+
+			if ( pFontData )
+				gEngfuncs.COM_FreeFile( pFontData );
 			
 			m_pSchemeList[i].ownFontPointer = true;
 		}
