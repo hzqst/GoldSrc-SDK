@@ -6,6 +6,10 @@
 #include "VGUI_KeyCode.h"
 #include "VGUI_Scheme.h"
 
+#if VGUI_ABI_COMPAT_MODE == 1
+#include <type_traits>
+#endif
+
 namespace
 {
 
@@ -34,6 +38,11 @@ public:
 protected:
 	HeaderPanel*	_headerPanel;
 };
+
+#if VGUI_ABI_COMPAT_MODE == 1
+static_assert( std::is_trivially_destructible<HeaderPanelSignal>::value,
+	"VGUI_ABI_COMPAT_MODE == 1 teardown releases HeaderPanelSignal storage directly" );
+#endif
 
 void HeaderPanelSignal::cursorMoved( int x, int y, Panel* panel )
 {

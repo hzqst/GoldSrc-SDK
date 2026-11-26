@@ -36,6 +36,9 @@ public:
 	virtual void paint(Panel* panel);
 protected:
 	uchar* _rgba;
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 };
 
 }

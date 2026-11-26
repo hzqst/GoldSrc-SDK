@@ -113,7 +113,7 @@ ScorePanel::ScorePanel(int x,int y,int wide,int tall) : Panel(x,y,wide,tall)
 	m_TitleLabel.setContentAlignment( vgui::Label::a_west );
 
 	LineBorder *border = new LineBorder(Color(60, 60, 60, 128));
-	setBorder(border);
+	setBorder(VGuiCompat_OwnBorder(border));
 	setPaintBorderEnabled(true);
 
 	int xpos = g_ColumnInfo[0].m_Width + 3;
@@ -204,7 +204,7 @@ ScorePanel::ScorePanel(int x,int y,int wide,int tall) : Panel(x,y,wide,tall)
 			m_PlayerEntries[col][row] = new CLabelHeader;
 			m_PlayerEntries[col][row]->setContentFitted(false);
 			m_PlayerEntries[col][row]->setRow(row);
-			m_PlayerEntries[col][row]->addInputSignal(new CInputSignalForwarder(this));
+			m_PlayerEntries[col][row]->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));
 			pGridRow->SetEntry(col, 0, m_PlayerEntries[col][row]);
 		}
 
@@ -223,11 +223,11 @@ ScorePanel::ScorePanel(int x,int y,int wide,int tall) : Panel(x,y,wide,tall)
 	m_HitTestPanel.setBgColor(0,0,0,255);
 	m_HitTestPanel.setParent(this);
 	m_HitTestPanel.setBounds(0, 0, wide, tall);
-	m_HitTestPanel.addInputSignal(new CInputSignalForwarder(this));
+	m_HitTestPanel.addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));
 
 	m_pCloseButton = new CommandButton( "x", wide-XRES(12 + 4), YRES(2), XRES( 12 ) , YRES( 12 ) );
 	m_pCloseButton->setParent( this );
-	m_pCloseButton->addActionSignal( new CMenuHandler_StringCommandWatch( "-showscores", true ) );
+	m_pCloseButton->addActionSignal( VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommandWatch( "-showscores", true )) );
 	m_pCloseButton->setBgColor(0,0,0,255);
 	m_pCloseButton->setFgColor( 255, 255, 255, 0 );
 	m_pCloseButton->setFont(tfont);
@@ -236,6 +236,34 @@ ScorePanel::ScorePanel(int x,int y,int wide,int tall) : Panel(x,y,wide,tall)
 
 
 	Initialize();
+}
+
+ScorePanel::~ScorePanel()
+{
+#if VGUI_ABI_COMPAT_MODE == 1
+	// Detach value-member sub-panels before cleaning the child tree so they are not operator-deleted.
+	m_TitleLabel.setParent(NULL);
+	for (int i = 0; i < NUM_COLUMNS; i++)
+	{
+		m_HeaderLabels[i].setParent(NULL);
+	}
+	m_HeaderGrid.setParent(NULL);
+	m_PlayerList.setParent(NULL);
+	m_HitTestPanel.setParent(NULL);
+
+	m_PlayerList.Term();
+	for (int row = 0; row < NUM_ROWS; row++)
+	{
+		VGuiCompat_DeletePanelTree(m_PlayerGrids[row]);
+		m_PlayerGrids[row] = NULL;
+	}
+
+	VGuiCompat_CleanupPanelMembers(&m_TitleLabel);
+	VGuiCompat_CleanupPanelMembers(&m_HeaderGrid);
+	VGuiCompat_CleanupPanelMembers(&m_HitTestPanel);
+	VGuiCompat_CleanupPanelMembers(this);
+	m_pCloseButton = NULL;
+#endif
 }
 
 

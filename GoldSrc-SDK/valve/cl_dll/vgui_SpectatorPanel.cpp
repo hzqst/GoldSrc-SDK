@@ -11,6 +11,7 @@
 #include "vgui_TeamFortressViewport.h"
 #include "vgui_SpectatorPanel.h"
 #include "vgui_ScorePanel.h"
+#include "vgui_compat_teardown.h"
 
 #include "Exports.h"
 
@@ -52,7 +53,9 @@ SpectatorPanel::SpectatorPanel(int x,int y,int wide,int tall) : Panel(x,y,wide,t
 
 SpectatorPanel::~SpectatorPanel()
 {
-
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompat_CleanupPanelMembers(this);
+#endif
 }
 
 void SpectatorPanel::ActionSignal(int cmd)
@@ -154,7 +157,7 @@ void SpectatorPanel::Initialize()
 	m_OptionButton->setParent( m_BottomBorder );
 	m_OptionButton->setContentAlignment( vgui::Label::a_center );
 	m_OptionButton->setBoundKey( (char)255 );	// special no bound to avoid leading spaces in name 
-	m_OptionButton->addActionSignal( new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_OPTIONS) );
+	m_OptionButton->addActionSignal( VGuiCompat_OwnActionSignal(new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_OPTIONS)) );
 	m_OptionButton->setUnArmedBorderColor ( 59, 58, 34, 48 );
 	m_OptionButton->setArmedBorderColor ( 194, 202, 54, 0 );
 	m_OptionButton->setUnArmedColor ( 143, 143, 54, 0 );
@@ -164,7 +167,7 @@ void SpectatorPanel::Initialize()
 	m_CamButton->setParent( m_BottomBorder );
 	m_CamButton->setContentAlignment( vgui::Label::a_center );
 	m_CamButton->setBoundKey( (char)255 );	// special no bound to avoid leading spaces in name 
-	m_CamButton->addActionSignal( new CSpectatorHandler_Command( this, SPECTATOR_PANEL_CMD_CAMERA ) );
+	m_CamButton->addActionSignal( VGuiCompat_OwnActionSignal(new CSpectatorHandler_Command( this, SPECTATOR_PANEL_CMD_CAMERA )) );
 	m_CamButton->setUnArmedBorderColor ( 59, 58, 34, 48 );
 	m_CamButton->setArmedBorderColor ( 194, 202, 54, 0 );
 	m_CamButton->setUnArmedColor ( 143, 143, 54, 0 );
@@ -175,7 +178,7 @@ void SpectatorPanel::Initialize()
 	m_PrevPlayerButton->setParent( m_BottomBorder );
 	m_PrevPlayerButton->setContentAlignment( vgui::Label::a_center );
 	m_PrevPlayerButton->setBoundKey( (char)255 );	// special no bound to avoid leading spaces in name 
-	m_PrevPlayerButton->addActionSignal( new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_PREVPLAYER) );
+	m_PrevPlayerButton->addActionSignal( VGuiCompat_OwnActionSignal(new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_PREVPLAYER)) );
 	m_PrevPlayerButton->setUnArmedBorderColor ( 59, 58, 34, 48 );
 	m_PrevPlayerButton->setArmedBorderColor ( 194, 202, 54, 0 );
 	m_PrevPlayerButton->setUnArmedColor ( 143, 143, 54, 0 );
@@ -186,7 +189,7 @@ void SpectatorPanel::Initialize()
 	m_NextPlayerButton->setParent( m_BottomBorder );
 	m_NextPlayerButton->setContentAlignment( vgui::Label::a_center );
 	m_NextPlayerButton->setBoundKey( (char)255 );	// special no bound to avoid leading spaces in name 
-	m_NextPlayerButton->addActionSignal( new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_NEXTPLAYER) );
+	m_NextPlayerButton->addActionSignal( VGuiCompat_OwnActionSignal(new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_NEXTPLAYER)) );
 	m_NextPlayerButton->setUnArmedBorderColor ( 59, 58, 34, 48 );
 	m_NextPlayerButton->setArmedBorderColor ( 194, 202, 54, 0 );
 	m_NextPlayerButton->setUnArmedColor ( 143, 143, 54, 0 );
@@ -204,9 +207,9 @@ void SpectatorPanel::Initialize()
 	m_BottomMainButton->setPaintBackgroundEnabled(false);
 	m_BottomMainButton->setFgColor( Scheme::sc_primary1 );
 	m_BottomMainButton->setContentAlignment( vgui::Label::a_center );
-	m_BottomMainButton->setBorder( new LineBorder( Color( 59, 58, 34, 48 ) ) );
+	m_BottomMainButton->setBorder( VGuiCompat_OwnBorder(new LineBorder( Color( 59, 58, 34, 48 ) )) );
 	m_BottomMainButton->setBoundKey( (char)255 );	// special no bound to avoid leading spaces in name 
-	m_BottomMainButton->addActionSignal( new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_PLAYERS) );
+	m_BottomMainButton->addActionSignal( VGuiCompat_OwnActionSignal(new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_PLAYERS)) );
 	m_BottomMainButton->setUnArmedBorderColor ( 59, 58, 34, 48 );
 	m_BottomMainButton->setArmedBorderColor ( 194, 202, 54, 0 );
 	m_BottomMainButton->setUnArmedColor ( 143, 143, 54, 0 );
@@ -226,7 +229,7 @@ void SpectatorPanel::Initialize()
 	m_InsetViewButton = new ColorButton("", XRES_HD(2), YRES_HD(2), XRES_HD(240), YRES_HD(180), false, false );
 	m_InsetViewButton->setParent( this );
 	m_InsetViewButton->setBoundKey( (char)255 );
-	m_InsetViewButton->addActionSignal( new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_TOGGLE_INSET) );
+	m_InsetViewButton->addActionSignal( VGuiCompat_OwnActionSignal(new CSpectatorHandler_Command(this,SPECTATOR_PANEL_CMD_TOGGLE_INSET)) );
 	m_InsetViewButton->setUnArmedBorderColor ( 59, 58, 34, 48 );
 	m_InsetViewButton->setArmedBorderColor ( 194, 202, 54, 0 );
 	m_InsetViewButton->setUnArmedColor ( 143, 143, 54, 0 );

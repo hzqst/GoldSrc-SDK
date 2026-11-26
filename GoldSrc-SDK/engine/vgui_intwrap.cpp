@@ -10,6 +10,9 @@
 #include <VGUI_App.h>
 #include <VGUI_Panel.h>
 #include <VGUI_Scheme.h>
+#if VGUI_ABI_COMPAT_MODE == 1
+#include <VGUI_CompatAccess.h>
+#endif
 
 #undef null
 
@@ -70,9 +73,15 @@ void VGuiWrap_Shutdown()
 	// DLL is still loaded here.
 	delete staticPanel;
 #else
+	// The client DLL owns its compat panels and tears them down after the root.
 	if ( staticPanel )
+	{
+		vgui::VGuiCompatAccess::forgetPanel( vgui::App::getInstance(), staticPanel );
+		staticPanel->setLayout( NULL );
 		staticPanel->removeAllChildren();
-	::operator delete( staticPanel );
+		vgui::VGuiCompatAccess::releasePanelDars( staticPanel );
+		::operator delete( staticPanel );
+	}
 #endif
 	staticPanel = NULL;
 

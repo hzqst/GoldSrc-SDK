@@ -2,6 +2,10 @@
 #include "VGUI_ScrollBar.h"
 #include "VGUI_IntChangeSignal.h"
 
+#if VGUI_ABI_COMPAT_MODE == 1
+#include <type_traits>
+#endif
+
 #define SCROLLBAR_THICKNESS	16
 
 namespace
@@ -24,6 +28,11 @@ public:
 protected:
 	ScrollPanel*	_scrollPanel;
 };
+
+#if VGUI_ABI_COMPAT_MODE == 1
+static_assert( std::is_trivially_destructible<ChangeHandler>::value,
+	"VGUI_ABI_COMPAT_MODE == 1 teardown releases ChangeHandler storage directly" );
+#endif
 
 }
 

@@ -79,6 +79,9 @@ protected:
 	Alignment  _contentAlignment;
 	TextImage* _textImage;
 	Image*     _image;
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 };
 
 }

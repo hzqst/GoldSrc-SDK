@@ -7,6 +7,10 @@
 #include "VGUI_Scheme.h"
 #include "VGUI_TreeFolder.h"
 
+#if VGUI_ABI_COMPAT_MODE == 1
+#include <type_traits>
+#endif
+
 namespace
 {
 
@@ -39,6 +43,11 @@ public:
 protected:
 	Button*	_button;
 };
+
+#if VGUI_ABI_COMPAT_MODE == 1
+static_assert( std::is_trivially_destructible<FooDefaultButtonController>::value,
+	"VGUI_ABI_COMPAT_MODE == 1 teardown releases FooDefaultButtonController storage directly" );
+#endif
 
 void FooDefaultButtonController::addSignals( Button* button )
 {

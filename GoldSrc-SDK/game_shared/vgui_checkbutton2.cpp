@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include "vgui_checkbutton2.h"
+#include "vgui_compat_cleanup.h"
 #include "vgui_loadtga.h"
 
 
@@ -33,10 +34,10 @@ CCheckButton2::CCheckButton2() :
 	m_Label.setParent(this);
 	m_Label.setFgColor(255,255,255,0);
 	m_Label.setBgColor(0,0,0,255);	// background is not drawn and foreground is white
-	m_Label.addInputSignal(new CInputSignalForwarder(this));
+	m_Label.addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));
 
 	m_CheckboxPanel.setParent(this);
-	m_CheckboxPanel.addInputSignal(new CInputSignalForwarder(this));
+	m_CheckboxPanel.addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));
 
 	setPaintBackgroundEnabled(false);
 }
@@ -45,6 +46,13 @@ CCheckButton2::CCheckButton2() :
 CCheckButton2::~CCheckButton2()
 {
 	DeleteImages();
+#if VGUI_ABI_COMPAT_MODE == 1
+	m_Label.setParent(NULL);
+	m_CheckboxPanel.setParent(NULL);
+	VGuiGameShared_CleanupLabelMembers(&m_Label);
+	VGuiGameShared_CleanupPanelStorage(&m_CheckboxPanel);
+	VGuiGameShared_CleanupPanelStorage(this);
+#endif
 }
 
 
@@ -76,8 +84,30 @@ void CCheckButton2::DeleteImages()
 {
 	if(m_bOwnImages)
 	{
+#if VGUI_ABI_COMPAT_MODE == 1
+		if (BitmapTGA* checkedTGA = dynamic_cast<BitmapTGA*>(m_pChecked))
+		{
+			VGuiGameShared_ReleaseBitmapPixels(checkedTGA);
+			delete checkedTGA;
+		}
+		else if (m_pChecked != NULL)
+		{
+			::operator delete(dynamic_cast<void*>(m_pChecked));
+		}
+
+		if (BitmapTGA* uncheckedTGA = dynamic_cast<BitmapTGA*>(m_pUnchecked))
+		{
+			VGuiGameShared_ReleaseBitmapPixels(uncheckedTGA);
+			delete uncheckedTGA;
+		}
+		else if (m_pUnchecked != NULL)
+		{
+			::operator delete(dynamic_cast<void*>(m_pUnchecked));
+		}
+#else
 		delete m_pChecked;
 		delete m_pUnchecked;
+#endif
 	}
 
 	m_pChecked = NULL;

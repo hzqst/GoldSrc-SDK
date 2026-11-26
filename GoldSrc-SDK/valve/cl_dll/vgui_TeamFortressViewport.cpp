@@ -33,6 +33,8 @@
 #include<VGUI_Font.h>
 #include<VGUI_App.h>
 #include<VGUI_BuildGroup.h>
+#include<VGUI_HeaderPanel.h>
+#include<VGUI_TablePanel.h>
 
 #include "hud.h"
 #include "cl_util.h"
@@ -54,6 +56,13 @@
 #include "vgui_ServerBrowser.h"
 #include "vgui_ScorePanel.h"
 #include "vgui_SpectatorPanel.h"
+#include "vgui_compat_teardown.h"
+#include "vgui_checkbutton2.h"
+#include "vgui_grid.h"
+#include "vgui_listbox.h"
+#include "vgui_scrollbar2.h"
+#include "vgui_slider2.h"
+#include "voice_status.h"
 
 #include "shake.h"
 #include "screenfade.h"
@@ -469,13 +478,13 @@ CCommandMenu *TeamFortressViewport::CreateSubMenu( CommandButton *pButton, CComm
 	pMenu->m_flButtonSizeY = m_pCurrentCommandMenu->m_flButtonSizeY;
 
 	// Create the Submenu-open signal
-	InputSignal *pISignal = new CMenuHandler_PopupSubMenuInput(pButton, pMenu);
+	CMenuHandler_PopupSubMenuInput *pISignal = VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, pMenu));
 	pButton->addInputSignal(pISignal);
 
 	// Put a > to show it's a submenu
 	CImageLabel *pLabel = new CImageLabel( "arrowright", XRES(CMENU_SIZE_X - SUBMENU_SIZE_X), YRES(SUBMENU_SIZE_Y) );
 	pLabel->setParent(pButton);
-	pLabel->addInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, pMenu));	// each panel owns its input signals
+	pLabel->addInputSignal(VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, pMenu)));	// each panel owns its input signals
 
 	// Reposition
 	pLabel->getPos( iXPos, iYPos );
@@ -483,7 +492,7 @@ CCommandMenu *TeamFortressViewport::CreateSubMenu( CommandButton *pButton, CComm
 
 	// Create the mouse off signal for the Label too
 	if (!pButton->m_bNoHighlight)
-		pLabel->addInputSignal( new CHandler_CommandButtonHighlight(pButton) );
+		pLabel->addInputSignal( VGuiCompat_OwnInputSignal(new CHandler_CommandButtonHighlight(pButton)) );
 
 	return pMenu;
 }
@@ -556,7 +565,7 @@ TeamFortressViewport::TeamFortressViewport(int x,int y,int wide,int tall) : Pane
 	m_pLayoutRoot = NULL;
 
 	Initialize();
-	addInputSignal( new CViewPortInputHandler );
+	addInputSignal( VGuiCompat_OwnInputSignal(new CViewPortInputHandler) );
 
 	int r, g, b, a;
 	
@@ -639,8 +648,148 @@ TeamFortressViewport::TeamFortressViewport(int x,int y,int wide,int tall) : Pane
 
 }
 
+#if VGUI_ABI_COMPAT_MODE == 1
+void VGuiCompat_CleanupPanelMembers(Panel *panel)
+{
+	if (panel == NULL)
+		return;
+
+	// Clear App focus/capture pointers before destroying any signals or children,
+	// so App::externalTick() and input dispatch cannot dereference freed panels
+	// after a client reload or dynamic menu rebuild.
+	VGuiCompatAccess::forgetPanel(App::getInstance(), panel);
+
+	if (Button *button = dynamic_cast<Button *>(panel))
+	{
+		VGuiCompatAccess::cleanupButton(button);
+	}
+
+	if (Label *label = dynamic_cast<Label *>(panel))
+	{
+		VGuiCompatAccess::cleanupLabel(label);
+	}
+	else if (TextPanel *textPanel = dynamic_cast<TextPanel *>(panel))
+	{
+		TextImage *textImage = textPanel->getTextImage();
+		VGuiCompatAccess::releaseTextImage(textImage);
+		delete textImage;
+	}
+
+	if (ScrollBar *scrollBar = dynamic_cast<ScrollBar *>(panel))
+	{
+		VGuiCompatAccess::cleanupScrollBar(scrollBar);
+	}
+	else if (Slider *slider = dynamic_cast<Slider *>(panel))
+	{
+		VGuiCompatAccess::cleanupSlider(slider);
+	}
+	else if (HeaderPanel *headerPanel = dynamic_cast<HeaderPanel *>(panel))
+	{
+		VGuiCompatAccess::cleanupHeaderPanel(headerPanel);
+	}
+	else if (TablePanel *tablePanel = dynamic_cast<TablePanel *>(panel))
+	{
+		VGuiCompatAccess::cleanupTablePanel(tablePanel);
+	}
+
+	int childCount = 0;
+	Panel **children = VGuiCompatAccess::takeChildren(panel, childCount);
+	VGuiCompatAccess::cleanupPanelStorage(panel);
+
+	for (int i = 0; i < childCount; i++)
+	{
+		VGuiCompat_DeletePanelTree(children[i]);
+	}
+
+	delete[] children;
+}
+
+void VGuiCompat_DeletePanelTree(Panel *panel)
+{
+	if (panel == NULL)
+		return;
+
+	if (ScorePanel *scorePanel = dynamic_cast<ScorePanel *>(panel))
+	{
+		delete scorePanel;
+		return;
+	}
+	if (SpectatorPanel *spectatorPanel = dynamic_cast<SpectatorPanel *>(panel))
+	{
+		delete spectatorPanel;
+		return;
+	}
+	if (ServerBrowser *serverBrowser = dynamic_cast<ServerBrowser *>(panel))
+	{
+		delete serverBrowser;
+		return;
+	}
+	if (DropDownButton *dropDownButton = dynamic_cast<DropDownButton *>(panel))
+	{
+		delete dropDownButton;
+		return;
+	}
+	if (CImageButton *imageButton = dynamic_cast<CImageButton *>(panel))
+	{
+		delete imageButton;
+		return;
+	}
+	if (ColorButton *colorButton = dynamic_cast<ColorButton *>(panel))
+	{
+		delete colorButton;
+		return;
+	}
+	if (CTFScrollButton *tfScrollButton = dynamic_cast<CTFScrollButton *>(panel))
+	{
+		delete tfScrollButton;
+		return;
+	}
+	if (CImageLabel *imageLabel = dynamic_cast<CImageLabel *>(panel))
+	{
+		delete imageLabel;
+		return;
+	}
+	if (CLabelHeader *labelHeader = dynamic_cast<CLabelHeader *>(panel))
+	{
+		delete labelHeader;
+		return;
+	}
+	if (CGrid *grid = dynamic_cast<CGrid *>(panel))
+	{
+		VGuiCompat_CleanupPanelMembers(grid);
+		delete grid;
+		return;
+	}
+	if (CListBox *listBox = dynamic_cast<CListBox *>(panel))
+	{
+		delete listBox;
+		return;
+	}
+	if (ScrollBar2 *scrollBar2 = dynamic_cast<ScrollBar2 *>(panel))
+	{
+		delete scrollBar2;
+		return;
+	}
+	if (Slider2 *slider2 = dynamic_cast<Slider2 *>(panel))
+	{
+		delete slider2;
+		return;
+	}
+	if (CCheckButton2 *checkButton = dynamic_cast<CCheckButton2 *>(panel))
+	{
+		delete checkButton;
+		return;
+	}
+
+	VGuiCompat_CleanupPanelMembers(panel);
+	::operator delete(dynamic_cast<void *>(panel));
+}
+#endif
+
 TeamFortressViewport::~TeamFortressViewport()
 {
+	GetClientVoiceMgr()->OnViewportDestroyed(this);
+
 	Panel *currentRoot = gEngfuncs.VGui_GetPanel ? (Panel *)gEngfuncs.VGui_GetPanel() : NULL;
 	if (m_pLayoutRoot != NULL && (m_pLayoutRoot == currentRoot || m_pLayoutRoot == getParent()))
 		m_pLayoutRoot->setLayout(NULL);
@@ -651,6 +800,11 @@ TeamFortressViewport::~TeamFortressViewport()
 
 	if (gViewPort == this)
 		gViewPort = NULL;
+
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompatAccess::detachFromParent(this);
+	VGuiCompat_CleanupPanelMembers(this);
+#endif
 }
 
 void TeamFortressViewport::AttachRootLayout( Panel *root )
@@ -1011,7 +1165,7 @@ CCommandMenu *TeamFortressViewport::CreateDisguiseSubmenu( CommandButton *pButto
 		
 		char sz[256]; 
 		sprintf(sz, "%s %d", commandText, i );
-		pDisguiseButton->addActionSignal(new CMenuHandler_StringCommand(sz));
+		pDisguiseButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand(sz)));
 		
 		pMenu->AddButton( pDisguiseButton );
 	}
@@ -1048,18 +1202,18 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 			char sz[256]; 
 			sprintf(sz, "jointeam %d", i+1);
 			m_pTeamButtons[i] = new TeamButton(i+1, "teamname", 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-			m_pTeamButtons[i]->addActionSignal(new CMenuHandler_StringCommandWatch( sz ));
+			m_pTeamButtons[i]->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommandWatch( sz )));
 			pMenu->AddButton( m_pTeamButtons[i] ); 
 		}
 
 		// Auto Assign button
 		m_pTeamButtons[4] = new TeamButton(5, gHUD.m_TextMessage.BufferedLocaliseTextString( "#Team_AutoAssign" ), 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		m_pTeamButtons[4]->addActionSignal(new CMenuHandler_StringCommand( "jointeam 5" ));
+		m_pTeamButtons[4]->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand( "jointeam 5" )));
 		pMenu->AddButton( m_pTeamButtons[4] ); 
 
 		// Spectate button
 		m_pTeamButtons[5] = new SpectateButton( CHudTextMessage::BufferedLocaliseTextString( "#Menu_Spectate" ), 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y, false);
-		m_pTeamButtons[5]->addActionSignal(new CMenuHandler_StringCommand( "spectate" ));
+		m_pTeamButtons[5]->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand( "spectate" )));
 		pMenu->AddButton( m_pTeamButtons[5] ); 
 	}
 	// ChangeClass
@@ -1083,7 +1237,7 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 			ClassButton *pClassButton = new ClassButton( i, sz, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y, false);
 
 			sprintf(sz, "%s", sTFClassSelection[i]);
-			pClassButton->addActionSignal(new CMenuHandler_StringCommandClassSelect(sz));
+			pClassButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommandClassSelect(sz)));
 			pMenu->AddButton( pClassButton );
 		}
 #endif
@@ -1093,24 +1247,24 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 	else if ( !strcmp( pButtonName, "!MAPBRIEFING" ) )
 	{
 		pButton = new CommandButton(pButtonText, 0, BUTTON_SIZE_Y * m_pCurrentCommandMenu->GetNumButtons(), CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_TextWindow(MENU_MAPBRIEFING));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_TextWindow(MENU_MAPBRIEFING)));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	// Class Descriptions
 	else if ( !strcmp( pButtonName, "!CLASSDESC" ) )
 	{
 		pButton = new ClassButton(0, pButtonText, 0, BUTTON_SIZE_Y * m_pCurrentCommandMenu->GetNumButtons(), CMENU_SIZE_X, BUTTON_SIZE_Y, false);
-		pButton->addActionSignal(new CMenuHandler_TextWindow(MENU_CLASSHELP));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_TextWindow(MENU_CLASSHELP)));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!SERVERINFO" ) )
 	{
 		pButton = new ClassButton(0, pButtonText, 0, BUTTON_SIZE_Y * m_pCurrentCommandMenu->GetNumButtons(), CMENU_SIZE_X, BUTTON_SIZE_Y, false);
-		pButton->addActionSignal(new CMenuHandler_TextWindow(MENU_INTRO));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_TextWindow(MENU_INTRO)));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	// Spy abilities
 	else if ( !strcmp( pButtonName, "!SPY" ) )
@@ -1121,25 +1275,25 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 	else if ( !strcmp( pButtonName, "!FEIGN" ) )
 	{
 		pButton = new FeignButton(FALSE, pButtonText, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand( "feign" ));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand( "feign" )));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	// Feign Silently
 	else if ( !strcmp( pButtonName, "!FEIGNSILENT" ) )
 	{
 		pButton = new FeignButton(FALSE, pButtonText, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand( "sfeign" ));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand( "sfeign" )));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	// Stop Feigning
 	else if ( !strcmp( pButtonName, "!FEIGNSTOP" ) )
 	{
 		pButton = new FeignButton(TRUE, pButtonText, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand( "feign" ));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand( "feign" )));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	// Disguise
 	else if ( !strcmp( pButtonName, "!DISGUISEENEMY" ) )
@@ -1190,22 +1344,22 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 		// Set detpack buttons
 		CommandButton *pDetButton;
 		pDetButton = new CommandButton(m_sDetpackStrings[0], 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pDetButton->addActionSignal(new CMenuHandler_StringCommand("detstart 5"));
+		pDetButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("detstart 5")));
 		pMenu->AddButton( pDetButton );
 		pDetButton = new CommandButton(m_sDetpackStrings[1], 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pDetButton->addActionSignal(new CMenuHandler_StringCommand("detstart 20"));
+		pDetButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("detstart 20")));
 		pMenu->AddButton( pDetButton );
 		pDetButton = new CommandButton(m_sDetpackStrings[2], 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pDetButton->addActionSignal(new CMenuHandler_StringCommand("detstart 50"));
+		pDetButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("detstart 50")));
 		pMenu->AddButton( pDetButton );
 	}
 	// Stop setting a Detpack
 	else if ( !strcmp( pButtonName, "!DETPACKSTOP" ) )
 	{
 		pButton = new DetpackButton(1, pButtonText, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand( "detstop" ));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand( "detstop" )));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	// Engineer building
 	else if ( !strcmp( pButtonName, "!BUILD" ) )
@@ -1216,108 +1370,108 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 	else if ( !strcmp( pButtonName, "!BUILDSENTRY" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_CANBUILD, BuildButton::SENTRYGUN, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("build 2"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("build 2")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!BUILDDISPENSER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_CANBUILD, BuildButton::DISPENSER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("build 1"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("build 1")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!ROTATESENTRY180" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::SENTRYGUN, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("rotatesentry180"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("rotatesentry180")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!ROTATESENTRY" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::SENTRYGUN, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("rotatesentry"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("rotatesentry")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!DISMANTLEDISPENSER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::DISPENSER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("dismantle 1"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("dismantle 1")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!DISMANTLESENTRY" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::SENTRYGUN, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("dismantle 2"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("dismantle 2")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!DETONATEDISPENSER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::DISPENSER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("detdispenser"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("detdispenser")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!DETONATESENTRY" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::SENTRYGUN, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("detsentry"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("detsentry")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!BUILDENTRYTELEPORTER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_CANBUILD, BuildButton::ENTRY_TELEPORTER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("build 4"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("build 4")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!DISMANTLEENTRYTELEPORTER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::ENTRY_TELEPORTER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("dismantle 4"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("dismantle 4")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!DETONATEENTRYTELEPORTER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::ENTRY_TELEPORTER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("detentryteleporter"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("detentryteleporter")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!BUILDEXITTELEPORTER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_CANBUILD, BuildButton::EXIT_TELEPORTER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("build 5"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("build 5")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	else if ( !strcmp( pButtonName, "!DISMANTLEEXITTELEPORTER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::EXIT_TELEPORTER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("dismantle 5"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("dismantle 5")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}	
 	else if ( !strcmp( pButtonName, "!DETONATEEXITTELEPORTER" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_HASBUILDING, BuildButton::EXIT_TELEPORTER, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("detexitteleporter"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("detexitteleporter")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 	// Stop building
 	else if ( !strcmp( pButtonName, "!BUILDSTOP" ) )
 	{
 		pButton = new BuildButton( BUILDSTATE_BUILDING, 0, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
-		pButton->addActionSignal(new CMenuHandler_StringCommand("build"));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand("build")));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu)) );
 	}
 #endif
 

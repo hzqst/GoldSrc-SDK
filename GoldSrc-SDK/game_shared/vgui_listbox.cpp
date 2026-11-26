@@ -6,6 +6,7 @@
 //=============================================================================
 
 #include "vgui_listbox.h"
+#include "vgui_compat_cleanup.h"
 
 
 
@@ -29,7 +30,7 @@ CListBox::CListBox() : Panel(0, 0, 0, 0)
 	m_Slider->setRangeWindowEnabled(true);
 
 	m_ScrollBar->setParent(this);
-	m_ScrollBar->addIntChangeSignal(m_Signal);
+	m_ScrollBar->addIntChangeSignal(VGuiCompat_OwnIntChangeSignal(m_Signal));
 	m_ScrollBar->setSlider(m_Slider);
 	m_ScrollBar->setButtonPressedScrollValue(1);
 
@@ -43,9 +44,23 @@ CListBox::~CListBox()
 	Term();
 
 #if VGUI_ABI_COMPAT_MODE == 1
-	// The original ScrollBar2 does not own its IntChangeSignals; the scrollbar
-	// is not used again.
-	delete m_Signal;
+	// In ABI-compat mode Panel has no virtual destructor; delete the internal
+	// child panels here. Deleting m_ScrollBar also deletes m_Slider and m_Signal.
+	if (m_ItemsPanel != NULL)
+	{
+		removeChild(m_ItemsPanel);
+		VGuiGameShared_CleanupPanelStorage(m_ItemsPanel);
+		::operator delete(m_ItemsPanel);
+		m_ItemsPanel = NULL;
+	}
+	if (m_ScrollBar != NULL)
+	{
+		removeChild(m_ScrollBar);
+		delete m_ScrollBar;
+		m_ScrollBar = NULL;
+		m_Slider = NULL;
+	}
+	VGuiGameShared_CleanupPanelStorage(this);
 #endif
 	// Otherwise the scrollbar owns it and deletes it with the panel tree.
 	m_Signal = NULL;

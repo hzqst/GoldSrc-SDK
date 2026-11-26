@@ -21,6 +21,9 @@ class ChangeSignal;
 
 class VGUIAPI HeaderPanel : public Panel
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 
 private:
 

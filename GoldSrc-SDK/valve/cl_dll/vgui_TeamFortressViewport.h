@@ -26,6 +26,7 @@
 // custom scheme handling
 #include "vgui_SchemeManager.h"
 #include "vgui_defaultinputsignal.h"
+#include "vgui_compat_teardown.h"
 
 #define TF_DEFS_ONLY
 #ifdef _TFC
@@ -447,7 +448,7 @@ public:
 //==============================================================================
 // Command menu root button (drop down box style)
 
-class DropDownButton : public ColorButton
+class DropDownButton final : public ColorButton
 {
 private:
 	CImageLabel *m_pOpenButton;
@@ -482,7 +483,7 @@ public:
 //==============================================================================
 // Button with image instead of text
 
-class CImageButton : public ColorButton
+class CImageButton final : public ColorButton
 {
 private:
 	CImageLabel *m_pOpenButton;
@@ -1315,12 +1316,12 @@ public:
 			// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOn->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 				
 		pLabelOff = new CImageLabel( "unchecked", 0, 0 );
 		pLabelOff->setParent(this);
 		pLabelOff->setEnabled(true);
-		pLabelOff->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOff->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 
 		int textwide, texttall;
 		getTextSize( textwide, texttall);
@@ -1396,7 +1397,7 @@ public:
 		// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOn->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 		
 
 		int textwide, texttall;
@@ -1486,12 +1487,12 @@ public:
 			// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOn->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 				
 		pLabelOff = new CImageLabel( "unchecked", 0, 0 );
 		pLabelOff->setParent(this);
 		pLabelOff->setEnabled(true);
-		pLabelOff->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOff->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 
 		int textwide, texttall;
 		getTextSize( textwide, texttall);
@@ -1559,7 +1560,7 @@ public:
 		m_bBeingDragged = false;
 
 		// Create the Drag Handler
-		addInputSignal( new CDragNDropHandler(this) );
+		addInputSignal( VGuiCompat_OwnInputSignal(new CDragNDropHandler(this)) );
 
 		// Create the border (for dragging)
 		m_pBorder = new LineBorder();
