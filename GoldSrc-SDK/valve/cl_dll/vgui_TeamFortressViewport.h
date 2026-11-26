@@ -583,7 +583,7 @@ public:
 	void AttachRootLayout( Panel *root );
 	void Initialize( void );
 
-	int		CreateCommandMenu( char * menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset );
+	int		CreateCommandMenu( char * menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset, int reservedMenus );
 	void	CreateScoreBoard( void );
 	void	CreateServerBrowser( void );
 	CommandButton * CreateCustomButton( char *pButtonText, char * pButtonName, int  iYOffset );

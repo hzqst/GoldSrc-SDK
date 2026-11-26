@@ -622,9 +622,10 @@ TeamFortressViewport::TeamFortressViewport(int x,int y,int wide,int tall) : Pane
 	m_iNumMenus = 0;
 	m_iCurrentTeamNumber = m_iUser1 = m_iUser2 = m_iUser3 = 0;
 
-	m_StandardMenu = CreateCommandMenu("commandmenu.txt", 0, CMENU_TOP, false, CMENU_SIZE_X, BUTTON_SIZE_Y, 0 );
-	m_SpectatorOptionsMenu = CreateCommandMenu("spectatormenu.txt", 1, PANEL_HEIGHT, true, CMENU_SIZE_X, BUTTON_SIZE_Y / 2, 0 );	// above bottom bar, flat design
-	m_SpectatorCameraMenu = CreateCommandMenu("spectcammenu.txt", 1, PANEL_HEIGHT, true, XRES( 200 ), BUTTON_SIZE_Y / 2, ScreenWidth - ( XRES ( 200 ) + 15 ) );	// above bottom bar, flat design
+	// Reserve one slot for each root menu that still has to be created.
+	m_StandardMenu = CreateCommandMenu("commandmenu.txt", 0, CMENU_TOP, false, CMENU_SIZE_X, BUTTON_SIZE_Y, 0, 3 );
+	m_SpectatorOptionsMenu = CreateCommandMenu("spectatormenu.txt", 1, PANEL_HEIGHT, true, CMENU_SIZE_X, BUTTON_SIZE_Y / 2, 0, 2 );
+	m_SpectatorCameraMenu = CreateCommandMenu("spectcammenu.txt", 1, PANEL_HEIGHT, true, XRES( 200 ), BUTTON_SIZE_Y / 2, ScreenWidth - ( XRES ( 200 ) + 15 ), 1 );
 
 	m_PlayerMenu =  m_iNumMenus;
 	m_iNumMenus++;
@@ -884,16 +885,114 @@ void TeamFortressViewport::Initialize( void )
 }
 
 class CException;
+namespace
+{
+struct MenuToken
+{
+	char text[1024];
+	char brace;
+};
+
+bool ReadMenuToken(const char *&cursor, const char *end, MenuToken &token)
+{
+	token.brace = '\0';
+	if (!cursor || cursor >= end)
+	{
+		cursor = NULL;
+		return false;
+	}
+
+	cursor = gEngfuncs.COM_ParseFile(cursor, token.text);
+	if (!cursor || cursor > end)
+	{
+		cursor = NULL;
+		return false;
+	}
+
+	// COM_ParseFile strips quotes. The consumed input still distinguishes
+	// a literal brace token from a submenu delimiter.
+	if ((token.text[0] == '{' || token.text[0] == '}') &&
+		token.text[1] == '\0' && cursor[-1] == token.text[0])
+		token.brace = token.text[0];
+	return true;
+}
+
+struct MenuEntry
+{
+	MenuToken title;
+	MenuToken command;
+	MenuToken map;
+	char key;
+	int team;
+	int playerClass;
+	bool custom;
+	bool toggle;
+	bool submenu;
+};
+
+bool ReadMenuEntry(const char *&cursor, const char *end, MenuToken &token, MenuEntry &entry)
+{
+	entry.team = -1;
+	entry.custom = !strcmp(token.text, "CUSTOM");
+	entry.toggle = !strncmp(token.text, "TOGGLE", 6);
+	if (!strcmp(token.text, "MAP"))
+	{
+		if (!ReadMenuToken(cursor, end, entry.map) || !ReadMenuToken(cursor, end, token))
+			return false;
+	}
+	else if (!strncmp(token.text, "TEAM", 4))
+	{
+		entry.team = atoi(token.text + 4);
+		if (!ReadMenuToken(cursor, end, token))
+			return false;
+	}
+	else if (entry.custom || entry.toggle)
+	{
+		if (!ReadMenuToken(cursor, end, token))
+			return false;
+	}
+#ifdef _TFC
+	else
+	{
+		for (int i = 1; i <= PC_ENGINEER; i++)
+		{
+			if (!strcmp(token.text, sTFClasses[i]))
+			{
+				entry.playerClass = i;
+				if (!ReadMenuToken(cursor, end, token))
+					return false;
+				break;
+			}
+		}
+	}
+#endif
+
+	if (token.brace || !token.text[0])
+		return false;
+
+	entry.key = token.text[0];
+	if (!ReadMenuToken(cursor, end, entry.title) || entry.title.brace ||
+		!ReadMenuToken(cursor, end, entry.command) || entry.command.brace == '}')
+		return false;
+
+	const bool hasNext = ReadMenuToken(cursor, end, token);
+	entry.submenu = entry.custom ? hasNext && token.brace == '{' : entry.command.brace == '{';
+	if (entry.custom && entry.submenu)
+		ReadMenuToken(cursor, end, token);
+	return true;
+}
+}
 //-----------------------------------------------------------------------------
 // Purpose: Read the Command Menu structure from the txt file and create the menu.
 //			Returns Index of menu in m_pCommandMenus
 //-----------------------------------------------------------------------------
-int TeamFortressViewport::CreateCommandMenu( char * menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset )
+int TeamFortressViewport::CreateCommandMenu( char * menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset, int reservedMenus )
 {
 	// COMMAND MENU
 	// Create the root of this new Command Menu
 
 	int newIndex = m_iNumMenus;
+	const int submenuLimit = MAX_MENUS - reservedMenus;
 	
 	m_pCommandMenus[newIndex] = new CCommandMenu(NULL, direction, xOffset, yOffset, flButtonSizeX, 300);	// This will be resized once we know how many items are in it
 	m_pCommandMenus[newIndex]->setParent(this);
@@ -904,8 +1003,8 @@ int TeamFortressViewport::CreateCommandMenu( char * menuFile, int direction, int
 	m_iNumMenus++;
 
 	// Read Command Menu from the txt file
-	char token[1024];
-	char *pfile = (char*)gEngfuncs.COM_LoadFile( menuFile, 5, NULL);
+	int fileLength = 0;
+	char *pfile = (char*)gEngfuncs.COM_LoadFile( menuFile, 5, &fileLength);
 	if (!pfile)
 	{
 		gEngfuncs.Con_DPrintf( "Unable to open %s\n", menuFile);
@@ -927,204 +1026,101 @@ try
 	gHUD.m_TextMessage.LocaliseTextString( "#DetpackSet_For20Seconds",   m_sDetpackStrings[1], MAX_BUTTON_SIZE );
 	gHUD.m_TextMessage.LocaliseTextString( "#DetpackSet_For50Seconds",   m_sDetpackStrings[2], MAX_BUTTON_SIZE );
 
-	// Now start parsing the menu structure
+	// The cursor points after token, which is the key, prefix or closing brace.
 	m_pCurrentCommandMenu = m_pCommandMenus[newIndex];
-	char szLastButtonText[32] = "file start";
-	pfile = gEngfuncs.COM_ParseFile(pfile, token);
-	while ( ( strlen ( token ) > 0 ) && ( m_iNumMenus < MAX_MENUS ) )
+	MenuToken token;
+	const char *cursor = pfile;
+	const char *end = pfile + fileLength;
+	int rejectedDepth = 0;
+	if (!ReadMenuToken(cursor, end, token))
+		cursor = NULL;
+	while (cursor)
 	{
-		// Keep looping until we hit the end of this menu
-		while ( token[0] != '}' && ( strlen( token ) > 0 ) )
+		if (token.brace == '}')
 		{
-			char cText[32] = "";
-			char cBoundKey[32] = "";
-			char cCustom[32] = "";
-			static const int cCommandLength = 128;
-			char cCommand[cCommandLength] = "";
-			char szMap[MAX_MAPNAME] = "";
-			int	 iPlayerClass = 0;
-			int  iCustom = false;
-			int  iTeamOnly = -1;
-			int  iToggle = 0;
-			int  iButtonY;
-			bool bGetExtraToken = true;
-			CommandButton *pButton = NULL;
-			
-			// We should never be here without a Command Menu
-			if (!m_pCurrentCommandMenu)
-			{
-				gEngfuncs.Con_Printf("Error in %s file after '%s'.\n",menuFile, szLastButtonText );
-				m_iInitialized = false;
-				gEngfuncs.COM_FreeFile( pFileStart );
-				return newIndex;
-			}
-
-			// token should already be the bound key, or the custom name
-			strncpy( cCustom, token, 32 );
-			cCustom[31] = '\0';
-
-			// See if it's a custom button
-			if (!strcmp(cCustom, "CUSTOM") )
-			{
-				iCustom = true;
-
-				// Get the next token
-				pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			}
-			// See if it's a map
-			else if (!strcmp(cCustom, "MAP") )
-			{
-				// Get the mapname
-				pfile = gEngfuncs.COM_ParseFile(pfile, token);
-				strncpy( szMap, token, MAX_MAPNAME );
-				szMap[MAX_MAPNAME-1] = '\0';
-
-				// Get the next token
-				pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			}
-			else if ( !strncmp(cCustom, "TEAM", 4) ) // TEAM1, TEAM2, TEAM3, TEAM4
-			{
-				// make it a team only button
-				iTeamOnly = atoi( cCustom + 4 );
-				
-				// Get the next token
-				pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			}
-			else if ( !strncmp(cCustom, "TOGGLE", 6) ) 
-			{
-				iToggle = true;
-				// Get the next token
-				pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			}
+			if (rejectedDepth)
+				rejectedDepth--;
 			else
-			{
-				// See if it's a Class
-#ifdef _TFC
-				for (int i = 1; i <= PC_ENGINEER; i++)
-				{
-					if ( !strcmp(token, sTFClasses[i]) )
-					{
-						// Save it off
-						iPlayerClass = i;
-
-						// Get the button text
-						pfile = gEngfuncs.COM_ParseFile(pfile, token);
-						break;
-					}
-				}
-#endif
-			}
-
-			// Get the button bound key
-			strncpy( cBoundKey, token, 32 );
-			cText[31] = '\0';
-
-			// Get the button text
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			CHudTextMessage::LocaliseTextString( token, cText, sizeof( cText ) );
-
-			// save off the last button text we've come across (for error reporting)
-			strcpy( szLastButtonText, cText );
-
-			// Get the button command
-			pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			strncpy( cCommand, token, cCommandLength );
-			cCommand[cCommandLength - 1] = '\0';
-
-			iButtonY = (BUTTON_SIZE_Y-1) * m_pCurrentCommandMenu->GetNumButtons();
-			
-			// Custom button handling
-			if ( iCustom )
-			{
-				pButton = CreateCustomButton( cText, cCommand, iButtonY );
-
-				// Get the next token to see if we're a menu
-				pfile = gEngfuncs.COM_ParseFile(pfile, token);
-
-				if ( token[0] == '{' )
-				{
-					strcpy( cCommand, token );
-				}
-				else
-				{
-					bGetExtraToken = false;
-				}
-			}
-			else if ( szMap[0] != '\0' )
-			{
-				// create a map button
-				pButton = new MapButton(szMap, cText, xOffset, iButtonY, flButtonSizeX, flButtonSizeY );
-			}
-			else if ( iTeamOnly != -1)
-			{
-				// button that only shows up if the player is on team iTeamOnly
-				pButton = new TeamOnlyCommandButton( iTeamOnly, cText, xOffset, iButtonY, flButtonSizeX, flButtonSizeY, flatDesign );
-			}
-			else if ( iToggle && direction == 0 )
-			{
-				pButton = new ToggleCommandButton( cCommand, cText, xOffset, iButtonY, flButtonSizeX, flButtonSizeY, flatDesign );
-			}
-			else if ( direction == 1 )
-			{
-				if ( iToggle )
-					pButton = new SpectToggleButton( cCommand, cText, xOffset, iButtonY, flButtonSizeX, flButtonSizeY, flatDesign );
-				else
-					pButton = new SpectButton( iPlayerClass, cText, xOffset, iButtonY, flButtonSizeX, flButtonSizeY );
-			}
-			else
-			{
-				// normal button
-				pButton = new CommandButton( iPlayerClass, cText, xOffset, iButtonY, flButtonSizeX, flButtonSizeY, flatDesign );
-			}
-
-			// add the button into the command menu
-			if ( pButton )
-			{
-				m_pCurrentCommandMenu->AddButton( pButton );
-				pButton->setBoundKey( cBoundKey[0] );
-				pButton->setParentMenu( m_pCurrentCommandMenu );
-
-				// Override font in CommandMenu
-				pButton->setFont( Scheme::sf_primary3 );
-			}
-
-			// Find out if it's a submenu or a button we're dealing with
-			if ( cCommand[0] == '{' )
-			{
-				if ( m_iNumMenus >= MAX_MENUS )
-				{
-					gEngfuncs.Con_Printf( "Too many menus in %s past '%s'\n",menuFile, szLastButtonText );
-				}
-				else
-				{
-					// Create the menu
-					m_pCommandMenus[m_iNumMenus] = CreateSubMenu(pButton, m_pCurrentCommandMenu, iButtonY );
-					m_pCurrentCommandMenu = m_pCommandMenus[m_iNumMenus];
-					m_iNumMenus++;
-				}
-			}
-			else if ( !iCustom )
-			{
-				// Create the button and attach it to the current menu
-				if ( iToggle )
-					pButton->addActionSignal(new CMenuHandler_ToggleCvar(cCommand));
-				else
-					pButton->addActionSignal(new CMenuHandler_StringCommand(cCommand));
-				// Create an input signal that'll popup the current menu
-				pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCurrentCommandMenu) );
-			}
-
-			// Get the next token
-			if ( bGetExtraToken )
-			{
-				pfile = gEngfuncs.COM_ParseFile(pfile, token);
-			}
+				m_pCurrentCommandMenu = m_pCurrentCommandMenu->GetParentMenu();
+			if (!m_pCurrentCommandMenu || !ReadMenuToken(cursor, end, token))
+				break;
+			continue;
 		}
 
-		// Move back up a menu
-		m_pCurrentCommandMenu = m_pCurrentCommandMenu->GetParentMenu();
+		MenuEntry entry = {};
+		if (!ReadMenuEntry(cursor, end, token, entry))
+			break;
 
-		pfile = gEngfuncs.COM_ParseFile(pfile, token);
+		if (rejectedDepth)
+		{
+			if (entry.submenu)
+				rejectedDepth++;
+			continue;
+		}
+
+		const bool customCreatesMenu = entry.custom && (!strcmp(entry.command.text, "!CHANGETEAM") ||
+			!strcmp(entry.command.text, "!CHANGECLASS"));
+		if (m_pCurrentCommandMenu->GetNumButtons() >= MAX_BUTTONS ||
+			((entry.submenu || customCreatesMenu) && m_iNumMenus >= submenuLimit))
+		{
+			gEngfuncs.Con_Printf("Command menu capacity exceeded in %s at '%s'\n", menuFile, entry.title.text);
+			if (entry.submenu)
+				rejectedDepth = 1;
+			continue;
+		}
+
+		char text[32];
+		CHudTextMessage::LocaliseTextString(entry.title.text, text, sizeof(text));
+		constexpr size_t commandLength = 128;
+		entry.command.text[commandLength - 1] = '\0';
+		entry.map.text[MAX_MAPNAME - 1] = '\0';
+		const int buttonY = (BUTTON_SIZE_Y - 1) * m_pCurrentCommandMenu->GetNumButtons();
+		CommandButton *button;
+		if (entry.custom)
+			button = CreateCustomButton(text, entry.command.text, buttonY);
+		else if (entry.map.text[0])
+			button = new MapButton(entry.map.text, text, xOffset, buttonY, flButtonSizeX, flButtonSizeY);
+		else if (entry.team != -1)
+			button = new TeamOnlyCommandButton(entry.team, text, xOffset, buttonY, flButtonSizeX, flButtonSizeY, flatDesign);
+		else if (entry.toggle && direction == 0)
+			button = new ToggleCommandButton(entry.command.text, text, xOffset, buttonY, flButtonSizeX, flButtonSizeY, flatDesign);
+		else if (direction == 1 && entry.toggle)
+			button = new SpectToggleButton(entry.command.text, text, xOffset, buttonY, flButtonSizeX, flButtonSizeY, flatDesign);
+		else if (direction == 1)
+			button = new SpectButton(entry.playerClass, text, xOffset, buttonY, flButtonSizeX, flButtonSizeY);
+		else
+			button = new CommandButton(entry.playerClass, text, xOffset, buttonY, flButtonSizeX, flButtonSizeY, flatDesign);
+
+		if (!button)
+		{
+			if (entry.submenu)
+				rejectedDepth = 1;
+			continue;
+		}
+
+		m_pCurrentCommandMenu->AddButton(button);
+		button->setBoundKey(entry.key);
+		button->setParentMenu(m_pCurrentCommandMenu);
+
+		if (entry.submenu)
+		{
+			// Some custom buttons already build their own submenu.
+			if (customCreatesMenu)
+			{
+				rejectedDepth = 1;
+				continue;
+			}
+			m_pCurrentCommandMenu = CreateSubMenu(button, m_pCurrentCommandMenu, buttonY);
+			m_pCommandMenus[m_iNumMenus++] = m_pCurrentCommandMenu;
+		}
+		else if (!entry.custom)
+		{
+			if (entry.toggle)
+				button->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_ToggleCvar(entry.command.text)));
+			else
+				button->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand(entry.command.text)));
+			button->addInputSignal(VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(button, m_pCurrentCommandMenu)));
+		}
 	}
 #ifdef _WIN32
 }
