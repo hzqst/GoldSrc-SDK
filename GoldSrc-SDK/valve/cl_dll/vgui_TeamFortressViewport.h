@@ -1670,6 +1670,7 @@ private:
 
 public:
 	CTFScrollButton(int iArrow, const char* text,int x,int y,int wide,int tall);
+	~CTFScrollButton();
 
 	virtual void paint( void );
 	virtual void paintBackground( void );

@@ -445,6 +445,13 @@ CTFScrollButton::CTFScrollButton(int iArrow, const char* text,int x,int y,int wi
 	addInputSignal(pISignal);
 }
 
+CTFScrollButton::~CTFScrollButton()
+{
+	setImage( NULL );
+	delete m_pTGA;
+	m_pTGA = NULL;
+}
+
 void CTFScrollButton::paint( void )
 {
 	if (!m_pTGA)
