@@ -153,7 +153,7 @@ char* Host_SaveGameDirectory();
 void Host_ClearSaveDirectory();
 void Host_ClearGameState();
 void Host_InitializeGameDLL();
-void Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean loadGame );
+static bool Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean loadGame );
 int __cdecl Host_Load( const char* name );
 int Host_ValidSave();
 void FileCopy( FileHandle_t output, FileHandle_t input, int fileSize );
@@ -1619,9 +1619,7 @@ int __cdecl Host_Load( const char* pName )
 
 	_snprintf( name, sizeof( name ), "map %s\n", gameHeader.mapName );
 	CL_Disconnect();
-	Host_Map( FALSE, name, gameHeader.mapName, TRUE );
-
-	return 1;
+	return Host_Map( FALSE, name, gameHeader.mapName, TRUE );
 }
 
 void FileCopy( FileHandle_t pOutput, FileHandle_t pInput, int fileSize )
@@ -1669,15 +1667,13 @@ int SaveReadHeader( FileHandle_t pFile, GAME_HEADER* pHeader, int readGlobalStat
 {
 	int tag;
 
-	FS_Read( &tag, sizeof( tag ), 1, pFile );
-	if ( tag != SAVEGAME_HEADER )
+	if ( FS_Read( &tag, sizeof( tag ), 1, pFile ) != sizeof( tag ) || tag != SAVEGAME_HEADER )
 	{
 		FS_Close( pFile );
 		return 0;
 	}
 
-	FS_Read( &tag, sizeof( tag ), 1, pFile );
-	if ( tag != SAVEGAME_VERSION )
+	if ( FS_Read( &tag, sizeof( tag ), 1, pFile ) != sizeof( tag ) || tag != SAVEGAME_VERSION )
 	{
 		FS_Close( pFile );
 		return 0;
@@ -1748,32 +1744,42 @@ SAVERESTOREDATA* LoadSaveData( const char* level )
 
 	//---------------------------------
 	// Read the header
-	FS_Read( &tag, sizeof( tag ), 1, pFile );
-	if ( tag != SAVEFILE_HEADER )
+	if ( FS_Read( &tag, sizeof( tag ), 1, pFile ) != sizeof( tag ) || tag != SAVEFILE_HEADER )
 	{
 		FS_Close( pFile );
 		return NULL;
 	}
 
-	FS_Read( &tag, sizeof( tag ), 1, pFile );
-	if ( tag > SAVEGAME_VERSION )
+	if ( FS_Read( &tag, sizeof( tag ), 1, pFile ) != sizeof( tag ) || tag > SAVEGAME_VERSION )
 	{
 		FS_Close( pFile );
 		return NULL;
 	}
 
-	FS_Read( &size, sizeof( size ), 1, pFile );
-	FS_Read( &tableCount, sizeof( tableCount ), 1, pFile );
-	FS_Read( &tokenCount, sizeof( tokenCount ), 1, pFile );
-	FS_Read( &tokenSize, sizeof( tokenSize ), 1, pFile );
+	if ( FS_Read( &size, sizeof( size ), 1, pFile ) != sizeof( size )
+		 || FS_Read( &tableCount, sizeof( tableCount ), 1, pFile ) != sizeof( tableCount )
+		 || FS_Read( &tokenCount, sizeof( tokenCount ), 1, pFile ) != sizeof( tokenCount )
+		 || FS_Read( &tokenSize, sizeof( tokenSize ), 1, pFile ) != sizeof( tokenSize ) )
+	{
+		FS_Close( pFile );
+		return NULL;
+	}
+
+	constexpr unsigned int headerSize = 6 * sizeof( int );
+	if ( size <= 0 || tableCount < 0 || (uint32_t)tableCount > INT_MAX / sizeof( ENTITYTABLE )
+		 || tokenCount <= 0 || tokenCount > USHRT_MAX + 1 || tokenSize < tokenCount
+		 || (uint64_t)headerSize + size + tokenSize > FS_Size( pFile ) )
+	{
+		FS_Close( pFile );
+		return NULL;
+	}
 
 	tableSize = (uint32_t)tableCount * sizeof( ENTITYTABLE );
-	if ( size < 0 || tokenCount < 0 || tokenSize < 0 || (uint32_t)tokenSize > INT_MAX - (uint32_t)size )
+	if ( (uint32_t)tokenSize > INT_MAX - (uint32_t)size )
 	{
 		FS_Close( pFile );
 		return NULL;
 	}
-
 	totalSize = (uint32_t)size + tokenSize;
 	if ( tableSize > INT_MAX - totalSize )
 	{
@@ -1802,59 +1808,164 @@ SAVERESTOREDATA* LoadSaveData( const char* level )
 	Q_strncpy( pSaveData->szCurrentMapName, level, sizeof( pSaveData->szCurrentMapName ) - 1 );
 	pSaveData->szCurrentMapName[sizeof( pSaveData->szCurrentMapName ) - 1] = '\0';
 
-	pszTokenList = (char*)( pSaveData + 1 );
-
-	if ( tokenSize > 0 )
+	pSaveData->pTable = (ENTITYTABLE*)( pSaveData + 1 );
+	pszTokenList = (char*)pSaveData->pTable + tableSize;
+	char* tokenEnd = pszTokenList + tokenSize;
+	if ( FS_Read( pszTokenList, tokenSize, 1, pFile ) != tokenSize )
 	{
-		FS_Read( pszTokenList, pSaveData->tokenSize, 1, pFile );
-
-		if ( !pSaveData->pTokens )
-			pSaveData->pTokens = (char**)Mem_Calloc( tokenCount, sizeof( char* ) );
-
-		// Make sure the token strings pointed to by the pToken hashtable.
-		for ( i = 0; i < tokenCount; i++ )
-		{
-			pSaveData->pTokens[i] = *pszTokenList ? pszTokenList : NULL;
-			pszTokenList += strlen( pszTokenList ) + 1;
-		}
+		SaveExit( pSaveData );
+		FS_Close( pFile );
+		return NULL;
+	}
+	pSaveData->pTokens = (char**)Mem_Calloc( tokenCount, sizeof( char* ) );
+	if ( !pSaveData->pTokens )
+	{
+		SaveExit( pSaveData );
+		FS_Close( pFile );
+		return NULL;
 	}
 
-	pSaveData->pTable = (ENTITYTABLE*)pszTokenList;
+	for ( i = 0; i < tokenCount; i++ )
+	{
+		char* terminator = (char*)memchr( pszTokenList, 0, tokenEnd - pszTokenList );
+		if ( !terminator )
+		{
+			SaveExit( pSaveData );
+			FS_Close( pFile );
+			return NULL;
+		}
+		pSaveData->pTokens[i] = *pszTokenList ? pszTokenList : NULL;
+		pszTokenList = terminator + 1;
+	}
+
 	pSaveData->connectionCount = 0;
 	pSaveData->size = 0;
-	pSaveData->pBaseData = pszTokenList + tableSize;
+	pSaveData->pBaseData = tokenEnd;
 	pSaveData->pCurrentData = pSaveData->pBaseData;
 	pSaveData->bufferSize = size;
 	pSaveData->fUseLandmark = 1;
 	pSaveData->time = 0.0f;
 	VectorClear( pSaveData->vecLandmarkOffset );
 
-	gGlobalVariables.pSaveData = pSaveData;
-
-	FS_Read( pSaveData->pBaseData, size, 1, pFile );
+	int bytesRead = FS_Read( pSaveData->pBaseData, size, 1, pFile );
 	FS_Close( pFile );
+	if ( bytesRead != size )
+	{
+		SaveExit( pSaveData );
+		return NULL;
+	}
 
+	gGlobalVariables.pSaveData = pSaveData;
 	return pSaveData;
 }
 
-void ParseSaveTables( SAVERESTOREDATA* pSaveData, SAVE_HEADER* pHeader, int updateGlobals )
+// The DLL's void callback cannot report a mismatched group marker.
+static const char* SaveRecordEnd( const SAVERESTOREDATA* data, const char* name,
+	const TYPEDESCRIPTION* fields, int fieldCount )
+{
+	const char* cursor = data->pCurrentData;
+	const char* end = data->pBaseData + data->bufferSize;
+	const auto readField = [&]( unsigned short& size, unsigned short& token )
+	{
+		if ( end - cursor < (int)( sizeof( size ) + sizeof( token ) ) )
+			return false;
+		Q_memcpy( &size, cursor, sizeof( size ) );
+		cursor += sizeof( size );
+		Q_memcpy( &token, cursor, sizeof( token ) );
+		cursor += sizeof( token );
+		return size <= end - cursor && token < data->tokenCount && data->pTokens[token];
+	};
+
+	unsigned short size, token;
+	if ( !readField( size, token ) || size != sizeof( int ) || Q_strcmp( data->pTokens[token], name ) )
+		return NULL;
+
+	int count;
+	Q_memcpy( &count, cursor, sizeof( count ) );
+	cursor += sizeof( count );
+	if ( count < 0 || count > USHRT_MAX )
+		return NULL;
+
+	for ( int i = 0; i < count; ++i )
+	{
+		if ( !readField( size, token ) )
+			return NULL;
+		for ( int j = 0; j < fieldCount; ++j )
+		{
+			const auto& field = fields[j];
+			if ( Q_strcasecmp( field.fieldName, data->pTokens[token] ) )
+				continue;
+			if ( field.fieldType == FIELD_STRING )
+			{
+				if ( !memchr( cursor, 0, size ) )
+					return NULL;
+			}
+			else
+			{
+				int width;
+				switch ( field.fieldType )
+				{
+					case FIELD_CHARACTER: width = sizeof( char ); break;
+					case FIELD_VECTOR: width = sizeof( vec3_t ); break;
+					case FIELD_INTEGER:
+					case FIELD_FLOAT:
+					case FIELD_TIME:
+					case FIELD_EDICT: width = sizeof( int ); break;
+					default: return NULL;
+				}
+				if ( size != width * field.fieldSize )
+					return NULL;
+			}
+			break;
+		}
+		cursor += size;
+	}
+	return cursor;
+}
+
+static bool ReadSaveRecord( SAVERESTOREDATA* data, const char* name, int index, void* output,
+	TYPEDESCRIPTION* fields, int fieldCount )
+{
+	const char* end = SaveRecordEnd( data, name, fields, fieldCount );
+	if ( end )
+	{
+		gEntityInterface.pfnSaveReadFields( data, name, output, fields, fieldCount );
+		if ( data->pCurrentData == end )
+			return true;
+	}
+	Con_Printf( "Invalid %s.HL1: %s[%d]\n", data->szCurrentMapName, name, index );
+	return false;
+}
+
+static bool ParseSaveTables( SAVERESTOREDATA* pSaveData, SAVE_HEADER* pHeader, int updateGlobals )
 {
 	int i;
-	SAVELIGHTSTYLE light;
+	SAVELIGHTSTYLE lights[MAX_LIGHTSTYLES] = {};
 
 	// Re-base the savedata since we re-ordered the entity/table / restore fields
 	for ( i = 0; i < pSaveData->tableCount; i++ )
 	{
-		gEntityInterface.pfnSaveReadFields( pSaveData, "ETABLE", &pSaveData->pTable[i], gEntityTableDescription,
-			ARRAYSIZE( gEntityTableDescription ) );
+		if ( !ReadSaveRecord( pSaveData, "ETABLE", i, &pSaveData->pTable[i], gEntityTableDescription,
+			 ARRAYSIZE( gEntityTableDescription ) ) )
+			return false;
 		pSaveData->pTable[i].pent = NULL;
 	}
 
+	pSaveData->bufferSize -= pSaveData->size;
 	pSaveData->pBaseData = pSaveData->pCurrentData;
 	pSaveData->size = 0;
 
-	gEntityInterface.pfnSaveReadFields(
-		pSaveData, "Save Header", pHeader, gSaveHeaderDescription, ARRAYSIZE( gSaveHeaderDescription ) );
+	if ( !ReadSaveRecord( pSaveData, "Save Header", 0, pHeader, gSaveHeaderDescription,
+		 ARRAYSIZE( gSaveHeaderDescription ) ) )
+		return false;
+	if ( !pHeader->mapName[0] || !memchr( pHeader->mapName, 0, sizeof( pHeader->mapName ) )
+		 || !memchr( pHeader->skyName, 0, sizeof( pHeader->skyName ) )
+		 || pHeader->connectionCount < 0 || pHeader->connectionCount > ARRAYSIZE( pSaveData->levelList )
+		 || pHeader->lightStyleCount < 0 || pHeader->lightStyleCount > MAX_LIGHTSTYLES )
+	{
+		Con_Printf( "Invalid %s.HL1: Save Header values\n", pSaveData->szCurrentMapName );
+		return false;
+	}
 
 	pSaveData->connectionCount = pHeader->connectionCount;
 	pSaveData->time = pHeader->time;
@@ -1864,20 +1975,43 @@ void ParseSaveTables( SAVERESTOREDATA* pSaveData, SAVE_HEADER* pHeader, int upda
 	// Read adjacency list
 	for ( i = 0; i < pSaveData->connectionCount; i++ )
 	{
-		gEntityInterface.pfnSaveReadFields( pSaveData, "ADJACENCY", &pSaveData->levelList[i], gAdjacencyDescription,
-			ARRAYSIZE( gAdjacencyDescription ) );
+		auto& link = pSaveData->levelList[i];
+		if ( !ReadSaveRecord( pSaveData, "ADJACENCY", i, &link, gAdjacencyDescription,
+			 ARRAYSIZE( gAdjacencyDescription ) ) )
+			return false;
+		if ( !memchr( link.mapName, 0, sizeof( link.mapName ) )
+			 || !memchr( link.landmarkName, 0, sizeof( link.landmarkName ) ) )
+		{
+			Con_Printf( "Invalid %s.HL1: ADJACENCY[%d] name\n", pSaveData->szCurrentMapName, i );
+			return false;
+		}
 	}
-
-	if ( updateGlobals )
-		memset( sv.lightstyles, 0, sizeof( sv.lightstyles ) );
 
 	for ( i = 0; i < pHeader->lightStyleCount; i++ )
 	{
-		gEntityInterface.pfnSaveReadFields(
-			pSaveData, "LIGHTSTYLE", &light, gLightstyleDescription, ARRAYSIZE( gLightstyleDescription ) );
+		if ( !ReadSaveRecord( pSaveData, "LIGHTSTYLE", i, &lights[i], gLightstyleDescription,
+			 ARRAYSIZE( gLightstyleDescription ) ) )
+			return false;
+	}
 
-		if ( updateGlobals )
+	for ( i = 0; i < pSaveData->tableCount; ++i )
+	{
+		const auto& entry = pSaveData->pTable[i];
+		if ( entry.id < 0 || entry.location < 0 || entry.location > pSaveData->bufferSize
+			 || entry.size < 0 || entry.size > pSaveData->bufferSize - entry.location
+			 || ( entry.size && entry.location < pSaveData->size ) )
 		{
+			Con_Printf( "Invalid %s.HL1: ETABLE[%d] entity range\n", pSaveData->szCurrentMapName, i );
+			return false;
+		}
+	}
+
+	if ( updateGlobals )
+	{
+		memset( sv.lightstyles, 0, sizeof( sv.lightstyles ) );
+		for ( i = 0; i < pHeader->lightStyleCount; i++ )
+		{
+			auto& light = lights[i];
 			if ( light.index < 0 || light.index >= MAX_LIGHTSTYLES )
 			{
 				Con_Printf( "Ignoring invalid saved lightstyle index %d\n", light.index );
@@ -1890,6 +2024,7 @@ void ParseSaveTables( SAVERESTOREDATA* pSaveData, SAVE_HEADER* pHeader, int upda
 			Q_memcpy( sv.lightstyles[light.index], light.style, styleLength + 1 );
 		}
 	}
+	return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -1964,7 +2099,11 @@ int LoadGamestate( char* level, int createPlayers )
 	if ( !pSaveData ) // Couldn't load the file
 		return 0;
 
-	ParseSaveTables( pSaveData, &header, 1 );
+	if ( !ParseSaveTables( pSaveData, &header, 1 ) )
+	{
+		SaveExit( pSaveData );
+		return 0;
+	}
 	EntityPatchRead( pSaveData, level );
 
 	Cvar_SetValue( "skill", (float)header.skillLevel );
@@ -2046,7 +2185,7 @@ int LoadGamestate( char* level, int createPlayers )
 	return 1;
 }
 
-void Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean loadGame )
+static bool Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean loadGame )
 {
 	int i;
 	UserMsg* pMsg;
@@ -2065,16 +2204,22 @@ void Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean loadGa
 	Q_strncpy( cls.mapstring, mapstring, sizeof( cls.mapstring ) - 1 );
 	cls.mapstring[sizeof( cls.mapstring ) - 1] = '\0';
 
-	if ( !SV_SpawnServer( bIsDemo, mapName, NULL ) )
-		return;
-
-	ContinueLoadingProgressBar( "Server", 7, 0.0f );
+	bool mapReady = SV_SpawnServer( bIsDemo, mapName, NULL ) != 0;
+	if ( mapReady )
+	{
+		ContinueLoadingProgressBar( "Server", 7, 0.0f );
+		if ( loadGame )
+			mapReady = LoadGamestate( mapName, 1 ) != 0;
+	}
+	if ( !mapReady )
+	{
+		Host_ClearMemory( TRUE );
+		SCR_EndLoadingPlaque();
+		return false;
+	}
 
 	if ( loadGame )
 	{
-		if ( !LoadGamestate( mapName, 1 ) )
-			SV_LoadEntities();
-
 		sv.paused = TRUE;
 		sv.loadgame = TRUE;
 		SV_ActivateServer( 0 );
@@ -2084,7 +2229,7 @@ void Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean loadGa
 		SV_LoadEntities();
 		SV_ActivateServer( 1 );
 		if ( !sv.active )
-			return;
+			return false;
 
 		if ( cls.state != ca_dedicated )
 		{
@@ -2118,6 +2263,7 @@ void Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean loadGa
 		Cmd_ExecuteString( "connect local", src_command );
 
 	Steam_UpdateRichPresence();
+	return sv.active != 0;
 }
 
 void Host_InitializeGameDLL()
@@ -2420,7 +2566,11 @@ void LoadAdjacentEntities( const char* pOldLevel, const char* pLandmarkName )
 		if ( !pSaveData )
 			continue;
 
-		ParseSaveTables( pSaveData, &header, 0 );
+		if ( !ParseSaveTables( pSaveData, &header, 0 ) )
+		{
+			SaveExit( pSaveData );
+			continue;
+		}
 		EntityPatchRead( pSaveData, pLevel );
 		pSaveData->fUseLandmark = 1;
 		pSaveData->time = (float)sv.time;
