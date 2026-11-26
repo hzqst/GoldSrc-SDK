@@ -269,7 +269,7 @@ void CHudMessage::MessageDrawScan( client_textmessage_t *pMessage, float time )
 			width = 0;
 		}
 		else
-			width += gHUD.m_scrinfo.charWidths[*pText];
+			width += gHUD.m_scrinfo.charWidths[static_cast<unsigned char>(*pText)];
 		pText++;
 		length++;
 	}
@@ -303,7 +303,7 @@ void CHudMessage::MessageDrawScan( client_textmessage_t *pMessage, float time )
 
 		for ( j = 0; j < m_parms.lineLength; j++ )
 		{
-			m_parms.text = line[j];
+			m_parms.text = static_cast<unsigned char>(line[j]);
 			int next = m_parms.x + gHUD.m_scrinfo.charWidths[ m_parms.text ];
 			MessageScanNextChar();
 			
