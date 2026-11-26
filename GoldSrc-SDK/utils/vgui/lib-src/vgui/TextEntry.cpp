@@ -6,6 +6,9 @@
 
 #include <cstdlib>
 #include <cstring>
+#if VGUI_ABI_COMPAT_MODE == 1
+#include <type_traits>
+#endif
 
 #define TEXTENTRY_TEXT_INSET	3
 
@@ -26,6 +29,11 @@ public:
 protected:
 	TextEntry*	_textEntry;
 };
+
+#if VGUI_ABI_COMPAT_MODE == 1
+static_assert( std::is_trivially_destructible<FooDefaultTextEntrySignal>::value,
+	"VGuiCompatAccess::destroyOwned frees FooDefaultTextEntrySignal without calling a destructor" );
+#endif
 
 void FooDefaultTextEntrySignal::focusChanged( bool, Panel* )
 {
