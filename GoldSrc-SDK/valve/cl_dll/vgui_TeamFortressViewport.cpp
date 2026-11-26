@@ -227,23 +227,19 @@ void CCommandMenu::AddButton( CommandButton *pButton )
 
 void CCommandMenu::RemoveAllButtons(void)
 {
-	/*
-	for(int i=0;i<m_iButtons;i++)
+	const int buttonCount = m_iButtons;
+	m_iButtons = 0;
+	for (int i = 0; i < buttonCount; i++)
 	{
-		CommandButton *pTemp = m_aButtons[i]; 
+		CommandButton *button = m_aButtons[i];
 		m_aButtons[i] = NULL;
-		
-		pTemp
-		if(pTemp)
-		{
-			delete(pTemp);
-		}
-		
+		button->setParent(NULL);
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_DeletePanelTree(button);
+#else
+		delete button;
+#endif
 	}
-	*/
-	removeAllChildren();
-	m_iButtons=0;
-	
 }
 
 //-----------------------------------------------------------------------------
@@ -1729,9 +1725,9 @@ void TeamFortressViewport::UpdatePlayerMenu(int menuIndex)
 		// Override font in CommandMenu
 		pButton->setFont( Scheme::sf_primary3 );
 
-		pButton->addActionSignal(new CMenuHandler_SpectateFollow( g_PlayerInfoList[pEnt->index].name));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_SpectateFollow( g_PlayerInfoList[pEnt->index].name)));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCommandMenus[menuIndex]) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCommandMenus[menuIndex])) );
 	
 	}
 
