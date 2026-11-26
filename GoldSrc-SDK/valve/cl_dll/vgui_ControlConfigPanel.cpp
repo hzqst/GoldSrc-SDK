@@ -73,21 +73,21 @@ public:
 		{
 			case 0:
 			{
-				_label->setText(desc);
+				_label->setText("%s", desc);
 				_label->setContentAlignment(Label::a_west);
 				break;
 			}
 			case 1:
 			{
 				_controlConfigPanel->GetCVarBind(cvar,bind,128,bindAlt,128);
-				_label->setText(bind);
+				_label->setText("%s", bind);
 				_label->setContentAlignment(Label::a_center);
 				break;
 			}
 			case 2:
 			{
 				_controlConfigPanel->GetCVarBind(cvar,bind,128,bindAlt,128);
-				_label->setText(bindAlt);
+				_label->setText("%s", bindAlt);
 				_label->setContentAlignment(Label::a_center);
 				break;
 			}
