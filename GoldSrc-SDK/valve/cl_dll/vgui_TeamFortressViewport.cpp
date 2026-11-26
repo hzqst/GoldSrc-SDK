@@ -552,6 +552,8 @@ TeamFortressViewport::TeamFortressViewport(int x,int y,int wide,int tall) : Pane
 	m_pSpectatorPanel = NULL;
 	m_pCurrentMenu = NULL;
 	m_pCurrentCommandMenu = NULL;
+	m_pRootLayout = NULL;
+	m_pLayoutRoot = NULL;
 
 	Initialize();
 	addInputSignal( new CViewPortInputHandler );
@@ -635,6 +637,44 @@ TeamFortressViewport::TeamFortressViewport(int x,int y,int wide,int tall) : Pane
 	CreateServerBrowser();
 
 
+}
+
+TeamFortressViewport::~TeamFortressViewport()
+{
+	Panel *currentRoot = gEngfuncs.VGui_GetPanel ? (Panel *)gEngfuncs.VGui_GetPanel() : NULL;
+	if (m_pLayoutRoot != NULL && (m_pLayoutRoot == currentRoot || m_pLayoutRoot == getParent()))
+		m_pLayoutRoot->setLayout(NULL);
+
+	delete m_pRootLayout;
+	m_pRootLayout = NULL;
+	m_pLayoutRoot = NULL;
+
+	if (gViewPort == this)
+		gViewPort = NULL;
+}
+
+void TeamFortressViewport::AttachRootLayout( Panel *root )
+{
+	if (m_pLayoutRoot == root && m_pRootLayout != NULL)
+	{
+		if (m_pLayoutRoot != NULL)
+			m_pLayoutRoot->setLayout(m_pRootLayout);
+		return;
+	}
+
+	Panel *currentRoot = gEngfuncs.VGui_GetPanel ? (Panel *)gEngfuncs.VGui_GetPanel() : NULL;
+	if (m_pLayoutRoot != NULL && (m_pLayoutRoot == currentRoot || m_pLayoutRoot == getParent()))
+		m_pLayoutRoot->setLayout(NULL);
+
+	m_pLayoutRoot = root;
+
+	if (m_pLayoutRoot != NULL)
+	{
+		if (m_pRootLayout == NULL)
+			m_pRootLayout = new BorderLayout(0);
+
+		m_pLayoutRoot->setLayout(m_pRootLayout);
+	}
 }
 
 //-----------------------------------------------------------------------------

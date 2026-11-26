@@ -21,6 +21,7 @@
 #include<VGUI_ScrollPanel.h>
 #include<VGUI_ScrollBar.h>
 #include<VGUI_Slider.h>
+#include<VGUI_BorderLayout.h>
 
 // custom scheme handling
 #include "vgui_SchemeManager.h"
@@ -536,6 +537,8 @@ private:
 
 	// Server Browser
 	ServerBrowser *m_pServerBrowser;
+	BorderLayout  *m_pRootLayout;
+	Panel         *m_pLayoutRoot;
 
 	int					m_iAllowSpectators;
 
@@ -558,6 +561,8 @@ private:
 
 public:
 	TeamFortressViewport(int x,int y,int wide,int tall);
+	~TeamFortressViewport();
+	void AttachRootLayout( Panel *root );
 	void Initialize( void );
 
 	int		CreateCommandMenu( char * menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset );
