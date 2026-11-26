@@ -91,9 +91,9 @@ goldsrc_add_module(serverbrowser
 		_ITERATOR_DEBUG_LEVEL=0
 	LINK
 		goldsrc::steam_api
+		tier0
 	WINDOWS_LINK
 		ws2_32
-		tier0
 	LINUX_LINK
 		Threads::Threads
 		${CMAKE_DL_LIBS}
