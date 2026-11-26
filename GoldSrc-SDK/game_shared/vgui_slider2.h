@@ -38,6 +38,9 @@ private:
 	int                   _buttonOffset;
 public:
 	Slider2(int x,int y,int wide,int tall,bool vertical);
+#if VGUI_ABI_COMPAT_MODE == 1
+	~Slider2();
+#endif
 public:
 	virtual void setValue(int value);
 	virtual int  getValue();

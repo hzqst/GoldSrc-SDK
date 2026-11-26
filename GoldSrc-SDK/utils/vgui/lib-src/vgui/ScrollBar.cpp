@@ -4,6 +4,10 @@
 #include "VGUI_ActionSignal.h"
 #include "VGUI_IntChangeSignal.h"
 
+#if VGUI_ABI_COMPAT_MODE == 1
+#include <type_traits>
+#endif
+
 namespace
 {
 
@@ -40,6 +44,13 @@ public:
 protected:
 	ScrollBar*	_scrollBar;
 };
+
+#if VGUI_ABI_COMPAT_MODE == 1
+static_assert( std::is_trivially_destructible<FooDefaultButtonSignal>::value,
+	"VGUI_ABI_COMPAT_MODE == 1 teardown releases FooDefaultButtonSignal storage directly" );
+static_assert( std::is_trivially_destructible<FooDefaultScrollBarIntChangeSignal>::value,
+	"VGUI_ABI_COMPAT_MODE == 1 teardown releases FooDefaultScrollBarIntChangeSignal storage directly" );
+#endif
 
 void FooDefaultButtonSignal::actionPerformed( Panel* )
 {

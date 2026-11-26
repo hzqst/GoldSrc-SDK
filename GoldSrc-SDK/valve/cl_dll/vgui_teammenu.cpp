@@ -74,7 +74,7 @@ CTeamMenuPanel::CTeamMenuPanel(int iTrans, int iRemoveMe, int x,int y,int wide,i
 	// Create the Info Window
 	m_pTeamWindow  = new CTransparentPanel( 255, TEAMMENU_WINDOW_X, TEAMMENU_WINDOW_Y, TEAMMENU_WINDOW_SIZE_X, TEAMMENU_WINDOW_SIZE_Y );
 	m_pTeamWindow->setParent( this );
-	m_pTeamWindow->setBorder( new LineBorder( Color(255*0.7,170*0.7,0,0 )) );
+	m_pTeamWindow->setBorder( VGuiCompat_OwnBorder(new LineBorder( Color(255*0.7,170*0.7,0,0 ))) );
 
 	// Create the Map Name Label
 	m_pMapTitle = new Label( "", TEAMMENU_WINDOW_TITLE_X, TEAMMENU_WINDOW_TITLE_Y );
@@ -125,8 +125,8 @@ CTeamMenuPanel::CTeamMenuPanel(int iTrans, int iRemoveMe, int x,int y,int wide,i
 
 		// Create the Signals
 		sprintf(sz, "jointeam %d", i);
-		m_pButtons[i]->addActionSignal( new CMenuHandler_StringCommandWatch( sz, true ) );
-		m_pButtons[i]->addInputSignal( new CHandler_MenuButtonOver(this, i) );
+		m_pButtons[i]->addActionSignal( VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommandWatch( sz, true )) );
+		m_pButtons[i]->addInputSignal( VGuiCompat_OwnInputSignal(new CHandler_MenuButtonOver(this, i)) );
 
 		// Create the Team Info panel
 		m_pTeamInfoPanel[i] = new TextPanel("", TEAMMENU_WINDOW_INFO_X, TEAMMENU_WINDOW_INFO_Y, TEAMMENU_WINDOW_SIZE_X - TEAMMENU_WINDOW_INFO_X, TEAMMENU_WINDOW_SIZE_X - TEAMMENU_WINDOW_INFO_Y );
@@ -142,14 +142,14 @@ CTeamMenuPanel::CTeamMenuPanel(int iTrans, int iRemoveMe, int x,int y,int wide,i
 	// Create the Cancel button
 	m_pCancelButton = new CommandButton( CHudTextMessage::BufferedLocaliseTextString( "#Menu_Cancel" ), TEAMMENU_TOPLEFT_BUTTON_X, 0, TEAMMENU_BUTTON_SIZE_X, TEAMMENU_BUTTON_SIZE_Y);
 	m_pCancelButton->setParent( this );
-	m_pCancelButton->addActionSignal( new CMenuHandler_TextWindow(HIDE_TEXTWINDOW) );
+	m_pCancelButton->addActionSignal( VGuiCompat_OwnActionSignal(new CMenuHandler_TextWindow(HIDE_TEXTWINDOW)) );
 
 	// Create the Spectate button
 	m_pSpectateButton = new SpectateButton( CHudTextMessage::BufferedLocaliseTextString( "#Menu_Spectate" ), TEAMMENU_TOPLEFT_BUTTON_X, 0, TEAMMENU_BUTTON_SIZE_X, TEAMMENU_BUTTON_SIZE_Y, true);
 	m_pSpectateButton->setParent( this );
-	m_pSpectateButton->addActionSignal( new CMenuHandler_StringCommand( "spectate", true ) );
+	m_pSpectateButton->addActionSignal( VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommand( "spectate", true )) );
 	m_pSpectateButton->setBoundKey( '6' );
-	m_pSpectateButton->addInputSignal( new CHandler_MenuButtonOver(this, 6) );
+	m_pSpectateButton->addInputSignal( VGuiCompat_OwnInputSignal(new CHandler_MenuButtonOver(this, 6)) );
 
 	Initialize();
 }

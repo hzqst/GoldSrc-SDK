@@ -6,6 +6,7 @@
 //=============================================================================
 
 #include "vgui_slider2.h"
+#include "vgui_compat_cleanup.h"
 
 #include<VGUI_InputSignal.h>
 #include<VGUI_App.h>
@@ -60,8 +61,20 @@ Slider2::Slider2(int x,int y,int wide,int tall,bool vertical) : Panel(x,y,wide,t
 	_rangeWindowEnabled=false;
 	_buttonOffset=0;
 	recomputeNobPosFromValue();
-	addInputSignal(new FooDefaultSliderSignal(this));
+	addInputSignal(VGuiCompat_OwnInputSignal(new FooDefaultSliderSignal(this)));
 }
+
+#if VGUI_ABI_COMPAT_MODE == 1
+Slider2::~Slider2()
+{
+	for (int i = 0; i < _intChangeSignalDar.getCount(); i++)
+	{
+		VGuiCompatAccess::destroyOwned(_intChangeSignalDar[i]);
+	}
+	VGuiGameShared_ReleaseDarStorage(_intChangeSignalDar);
+	VGuiGameShared_CleanupPanelStorage(this);
+}
+#endif
 
 void Slider2::setSize(int wide,int tall)
 {

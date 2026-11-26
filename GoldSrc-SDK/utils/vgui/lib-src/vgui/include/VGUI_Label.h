@@ -14,6 +14,9 @@ class Font;
 
 class VGUIAPI Label : public Panel
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 public:
 	enum Alignment
 	{

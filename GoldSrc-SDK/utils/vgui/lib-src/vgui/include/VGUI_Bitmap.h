@@ -8,6 +8,9 @@ namespace vgui
 
 class VGUIAPI Bitmap : public Image
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 public:
 	Bitmap();
 #if VGUI_ABI_COMPAT_MODE != 1

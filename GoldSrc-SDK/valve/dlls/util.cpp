@@ -1984,10 +1984,12 @@ void CSave :: WriteFunction( const char *pname, void **data, int count )
 	const char *functionName;
 
 	functionName = NAME_FOR_FUNCTION( (uint32)*data );
-	if ( functionName )
-		BufferField( pname, strlen(functionName) + 1, functionName );
-	else
-		ALERT( at_error, "Invalid function pointer in entity!" );
+	if ( !functionName )
+	{
+		ALERT( at_error, "Invalid function pointer in entity field %s!\n", pname );
+		functionName = "";
+	}
+	BufferField( pname, strlen(functionName) + 1, functionName );
 }
 
 
@@ -2424,9 +2426,12 @@ int CRestore::ReadFields( const char *pname, void *pBaseData, TYPEDESCRIPTION *p
 			memset( ((char *)pBaseData + pFields[i].fieldOffset), 0, pFields[i].fieldSize * gSizes[pFields[i].fieldType] );
 	}
 
-	for ( i = 0; i < fileCount; i++ )
+	for ( int field = 0; field < fileCount; field++ )
 	{
 		BufferReadHeader( &header );
+		if ( !m_pdata->pTokens || header.token >= m_pdata->tokenCount || !m_pdata->pTokens[header.token] )
+			continue;
+
 		lastField = ReadField( pBaseData, pFields, fieldCount, lastField, header.size, m_pdata->pTokens[header.token], header.pData );
 		lastField++;
 	}

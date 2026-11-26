@@ -41,6 +41,7 @@ private:
 
 public:
 	ServerBrowser(int x,int y,int wide,int tall);
+	~ServerBrowser();
 public:
 	virtual void setSize(int wide,int tall);
 };

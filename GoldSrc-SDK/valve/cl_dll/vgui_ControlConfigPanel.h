@@ -33,6 +33,7 @@ private:
 	vgui::Label*       _alternateLabel;
 public:
 	ControlConfigPanel(int x,int y,int wide,int tall);
+	~ControlConfigPanel();
 public:
 	void AddCVar(const char* cvar,const char* desc);
 	void AddCVarFromInputStream(vgui::InputStream* is);

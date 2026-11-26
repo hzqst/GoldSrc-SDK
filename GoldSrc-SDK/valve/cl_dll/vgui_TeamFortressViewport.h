@@ -21,10 +21,12 @@
 #include<VGUI_ScrollPanel.h>
 #include<VGUI_ScrollBar.h>
 #include<VGUI_Slider.h>
+#include<VGUI_BorderLayout.h>
 
 // custom scheme handling
 #include "vgui_SchemeManager.h"
 #include "vgui_defaultinputsignal.h"
+#include "vgui_compat_teardown.h"
 
 #define TF_DEFS_ONLY
 #ifdef _TFC
@@ -127,6 +129,7 @@ public:
 	void LoadImage(const char * pImageName);
 	CImageLabel( const char* pImageName,int x,int y );
 	CImageLabel( const char* pImageName,int x,int y,int wide,int tall );
+	~CImageLabel();
 
 	virtual int getImageTall();
 	virtual int getImageWide();
@@ -244,6 +247,21 @@ public:
 		  ArmedBorderColor = NULL;
 		  UnArmedBorderColor = NULL;
 	  }
+
+	~ColorButton()
+	{
+		delete ArmedColor;
+		ArmedColor = NULL;
+		delete UnArmedColor;
+		UnArmedColor = NULL;
+		delete ArmedBorderColor;
+		ArmedBorderColor = NULL;
+		delete UnArmedBorderColor;
+		UnArmedBorderColor = NULL;
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_CleanupPanelMembers(this);
+#endif
+	}
 	
 
 	virtual void paintBackground()
@@ -305,21 +323,25 @@ public:
 	
 	void setArmedColor ( int r, int g, int b, int a )
 	{
+		delete ArmedColor;
 		ArmedColor = new Color( r, g, b, a );
 	}
 
 	void setUnArmedColor ( int r, int g, int b, int a )
 	{
+		delete UnArmedColor;
 		UnArmedColor = new Color( r, g, b, a );
 	}
 
 	void setArmedBorderColor ( int r, int g, int b, int a )
 	{
+		delete ArmedBorderColor;
 		ArmedBorderColor = new Color( r, g, b, a );
 	}
 
 	void setUnArmedBorderColor ( int r, int g, int b, int a )
 	{
+		delete UnArmedBorderColor;
 		UnArmedBorderColor = new Color( r, g, b, a );
 	}
 };
@@ -404,7 +426,7 @@ public:
 
 	float		m_flButtonSizeY;
 	int			m_iSpectCmdMenu;
-	void		AddButton( CommandButton *pButton );
+	bool		AddButton( CommandButton *pButton );
 	bool		RecalculateVisibles( int iNewYPos, bool bHideAll );
 	void		RecalculatePositions( int iYOffset );
 	void		MakeVisible( CCommandMenu *pChildMenu );
@@ -429,7 +451,7 @@ public:
 //==============================================================================
 // Command menu root button (drop down box style)
 
-class DropDownButton : public ColorButton
+class DropDownButton final : public ColorButton
 {
 private:
 	CImageLabel *m_pOpenButton;
@@ -464,7 +486,7 @@ public:
 //==============================================================================
 // Button with image instead of text
 
-class CImageButton : public ColorButton
+class CImageButton final : public ColorButton
 {
 private:
 	CImageLabel *m_pOpenButton;
@@ -536,6 +558,8 @@ private:
 
 	// Server Browser
 	ServerBrowser *m_pServerBrowser;
+	BorderLayout  *m_pRootLayout;
+	Panel         *m_pLayoutRoot;
 
 	int					m_iAllowSpectators;
 
@@ -558,9 +582,11 @@ private:
 
 public:
 	TeamFortressViewport(int x,int y,int wide,int tall);
+	~TeamFortressViewport();
+	void AttachRootLayout( Panel *root );
 	void Initialize( void );
 
-	int		CreateCommandMenu( char * menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset );
+	int		CreateCommandMenu( char * menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset, int reservedMenus = 0 );
 	void	CreateScoreBoard( void );
 	void	CreateServerBrowser( void );
 	CommandButton * CreateCustomButton( char *pButtonText, char * pButtonName, int  iYOffset );
@@ -1293,12 +1319,12 @@ public:
 			// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOn->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 				
 		pLabelOff = new CImageLabel( "unchecked", 0, 0 );
 		pLabelOff->setParent(this);
 		pLabelOff->setEnabled(true);
-		pLabelOff->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOff->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 
 		int textwide, texttall;
 		getTextSize( textwide, texttall);
@@ -1374,7 +1400,7 @@ public:
 		// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOn->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 		
 
 		int textwide, texttall;
@@ -1464,12 +1490,12 @@ public:
 			// Put a > to show it's a submenu
 		pLabelOn = new CImageLabel( "checked", 0, 0 );
 		pLabelOn->setParent(this);
-		pLabelOn->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOn->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 				
 		pLabelOff = new CImageLabel( "unchecked", 0, 0 );
 		pLabelOff->setParent(this);
 		pLabelOff->setEnabled(true);
-		pLabelOff->addInputSignal(new CInputSignalForwarder(this));	// the label owns its input signals
+		pLabelOff->addInputSignal(VGuiCompat_OwnInputSignal(new CInputSignalForwarder(this)));	// the label owns its input signals
 
 		int textwide, texttall;
 		getTextSize( textwide, texttall);
@@ -1537,10 +1563,21 @@ public:
 		m_bBeingDragged = false;
 
 		// Create the Drag Handler
-		addInputSignal( new CDragNDropHandler(this) );
+		addInputSignal( VGuiCompat_OwnInputSignal(new CDragNDropHandler(this)) );
 
 		// Create the border (for dragging)
 		m_pBorder = new LineBorder();
+	}
+
+	~DragNDropPanel()
+	{
+		if (_border == m_pBorder)
+			setBorder(NULL);
+		delete m_pBorder;
+		m_pBorder = NULL;
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_CleanupPanelMembers(this);
+#endif
 	}
 
 	virtual void setDragged( bool bState )
@@ -1664,6 +1701,7 @@ private:
 
 public:
 	CTFScrollButton(int iArrow, const char* text,int x,int y,int wide,int tall);
+	~CTFScrollButton();
 
 	virtual void paint( void );
 	virtual void paintBackground( void );

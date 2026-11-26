@@ -44,6 +44,7 @@ foreach(name IN ITEMS
 		engine_font_fallback
 		engine_post_restart_args
 		engine_save_grow
+		engine_save_restore
 		engine_stufftext
 		file_read_length
 		filesystem_pack_close
@@ -131,6 +132,7 @@ foreach(name IN ITEMS
 		tfc_text_window
 		transparent_entity
 		utl_containers
+		valve_node_graph
 		vgui1_app_focus
 		vgui1_build_group
 		vgui1_button_group

@@ -87,7 +87,7 @@ CClassMenuPanel::CClassMenuPanel(int iTrans, int iRemoveMe, int x,int y,int wide
 	pSchemes->getBgColor( hTitleScheme, r, g, b, a );
 	pLabel->setBgColor( r, g, b, a );
 	pLabel->setContentAlignment( vgui::Label::a_west );
-	pLabel->setText(gHUD.m_TextMessage.BufferedLocaliseTextString("#Title_SelectYourClass"));
+	pLabel->setText("%s", gHUD.m_TextMessage.BufferedLocaliseTextString("#Title_SelectYourClass"));
 
 	// Create the Scroll panel
 	m_pScrollPanel = new CTFScrollPanel( CLASSMENU_WINDOW_X, CLASSMENU_WINDOW_Y, CLASSMENU_WINDOW_SIZE_X, CLASSMENU_WINDOW_SIZE_Y );
@@ -95,7 +95,7 @@ CClassMenuPanel::CClassMenuPanel(int iTrans, int iRemoveMe, int x,int y,int wide
 	//force the scrollbars on, so after the validate clientClip will be smaller
 	m_pScrollPanel->setScrollBarAutoVisible(false, false);
 	m_pScrollPanel->setScrollBarVisible(true, true);
-	m_pScrollPanel->setBorder( new LineBorder( Color(255 * 0.7,170 * 0.7,0,0) ) );
+	m_pScrollPanel->setBorder( VGuiCompat_OwnBorder(new LineBorder( Color(255 * 0.7,170 * 0.7,0,0) )) );
 	m_pScrollPanel->validate();
 
 	int clientWide=m_pScrollPanel->getClient()->getWide();
@@ -112,7 +112,7 @@ CClassMenuPanel::CClassMenuPanel(int iTrans, int iRemoveMe, int x,int y,int wide
 		char sz[256]; 
 		int iYPos = CLASSMENU_TOPLEFT_BUTTON_Y + ( (CLASSMENU_BUTTON_SIZE_Y + CLASSMENU_BUTTON_SPACER_Y) * i );
 
-		ActionSignal *pASignal = new CMenuHandler_StringCommandClassSelect( sTFClassSelection[i], true );
+		CMenuHandler_StringCommandClassSelect *pASignal = VGuiCompat_OwnActionSignal(new CMenuHandler_StringCommandClassSelect( sTFClassSelection[i], true ));
 
 		// Class button
 		sprintf(sz, "%s", CHudTextMessage::BufferedLocaliseTextString( sLocalisedClasses[i] ) );
@@ -129,7 +129,7 @@ CClassMenuPanel::CClassMenuPanel(int iTrans, int iRemoveMe, int x,int y,int wide
 		m_pButtons[i]->setBoundKey( sz[0] );
 		m_pButtons[i]->setContentAlignment( vgui::Label::a_west );
 		m_pButtons[i]->addActionSignal( pASignal );
-		m_pButtons[i]->addInputSignal( new CHandler_MenuButtonOver(this, i) );
+		m_pButtons[i]->addInputSignal( VGuiCompat_OwnInputSignal(new CHandler_MenuButtonOver(this, i)) );
 		m_pButtons[i]->setParent( this );
 
 		// Create the Class Info Window
@@ -248,7 +248,7 @@ CClassMenuPanel::CClassMenuPanel(int iTrans, int iRemoveMe, int x,int y,int wide
 	// Create the Cancel button
 	m_pCancelButton = new CommandButton( gHUD.m_TextMessage.BufferedLocaliseTextString( "#Menu_Cancel" ), CLASSMENU_TOPLEFT_BUTTON_X, 0, CLASSMENU_BUTTON_SIZE_X, CLASSMENU_BUTTON_SIZE_Y);
 	m_pCancelButton->setParent( this );
-	m_pCancelButton->addActionSignal( new CMenuHandler_TextWindow(HIDE_TEXTWINDOW) );
+	m_pCancelButton->addActionSignal( VGuiCompat_OwnActionSignal(new CMenuHandler_TextWindow(HIDE_TEXTWINDOW)) );
 
 	m_iCurrentInfo = 0;
 
