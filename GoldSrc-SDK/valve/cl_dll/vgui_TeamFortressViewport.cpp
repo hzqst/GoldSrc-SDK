@@ -782,6 +782,11 @@ void VGuiCompat_DeletePanelTree(Panel *panel)
 		delete checkButton;
 		return;
 	}
+	if (DragNDropPanel *dragPanel = dynamic_cast<DragNDropPanel *>(panel))
+	{
+		delete dragPanel;
+		return;
+	}
 
 	VGuiCompat_CleanupPanelMembers(panel);
 	::operator delete(dynamic_cast<void *>(panel));

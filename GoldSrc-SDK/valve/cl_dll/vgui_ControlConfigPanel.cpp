@@ -174,16 +174,23 @@ ControlConfigPanel::ControlConfigPanel(int x,int y,int wide,int tall) : Panel(x,
 
 ControlConfigPanel::~ControlConfigPanel()
 {
-	_tablePanel->setParent(NULL);
-	delete static_cast<FooTablePanel*>(_tablePanel);
+	if (_tablePanel != NULL)
+	{
+		_tablePanel->setParent(NULL);
+		delete static_cast<FooTablePanel*>(_tablePanel);
+		_tablePanel = NULL;
+	}
 
 	for(int i=0;i<_cvarDar.getCount();i++)
 		delete[] _cvarDar[i];
+	_cvarDar.removeAll();
 	for(int i=0;i<_descDar.getCount();i++)
 		delete[] _descDar[i];
+	_descDar.removeAll();
 #if VGUI_ABI_COMPAT_MODE == 1
 	VGuiCompatAccess::releaseDarStorage(_cvarDar);
 	VGuiCompatAccess::releaseDarStorage(_descDar);
+	VGuiCompatAccess::detachFromParent(this);
 	VGuiCompat_CleanupPanelMembers(this);
 #endif
 }
