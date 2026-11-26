@@ -204,10 +204,10 @@ char* GetVGUITGAName(const char *pszName)
 //================================================================
 // COMMAND MENU
 //================================================================
-void CCommandMenu::AddButton( CommandButton *pButton )
+bool CCommandMenu::AddButton( CommandButton *pButton )
 {
 	if (m_iButtons >= MAX_BUTTONS)
-		return;
+		return false;
 
 	m_aButtons[m_iButtons] = pButton;
 	m_iButtons++;
@@ -223,27 +223,28 @@ void CCommandMenu::AddButton( CommandButton *pButton )
 	{
 		pButton->setBoundKey( '0' );
 	}
+
+	return true;
 }
 
 void CCommandMenu::RemoveAllButtons(void)
 {
-	/*
-	for(int i=0;i<m_iButtons;i++)
-	{
-		CommandButton *pTemp = m_aButtons[i]; 
-		m_aButtons[i] = NULL;
-		
-		pTemp
-		if(pTemp)
-		{
-			delete(pTemp);
-		}
-		
-	}
-	*/
 	removeAllChildren();
-	m_iButtons=0;
-	
+
+	const int buttonCount = m_iButtons;
+	m_iButtons = 0;
+	for (int i = 0; i < buttonCount; i++)
+	{
+		CommandButton *button = m_aButtons[i];
+		m_aButtons[i] = NULL;
+		if (!button)
+			continue;
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_DeletePanelTree(button);
+#else
+		delete button;
+#endif
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1728,15 +1729,23 @@ void TeamFortressViewport::UpdatePlayerMenu(int menuIndex)
 
 		pButton->setBoundKey( (char)255  );
 		pButton->setContentAlignment( vgui::Label::a_center );
-		m_pCommandMenus[menuIndex]->AddButton( pButton );
+		if ( !m_pCommandMenus[menuIndex]->AddButton( pButton ) )
+		{
+#if VGUI_ABI_COMPAT_MODE == 1
+			VGuiCompat_DeletePanelTree( pButton );
+#else
+			delete pButton;
+#endif
+			continue;
+		}
 		pButton->setParentMenu( m_pCommandMenus[menuIndex] );
 
 		// Override font in CommandMenu
 		pButton->setFont( Scheme::sf_primary3 );
 
-		pButton->addActionSignal(new CMenuHandler_SpectateFollow( g_PlayerInfoList[pEnt->index].name));
+		pButton->addActionSignal(VGuiCompat_OwnActionSignal(new CMenuHandler_SpectateFollow( g_PlayerInfoList[pEnt->index].name)));
 		// Create an input signal that'll popup the current menu
-		pButton->addInputSignal( new CMenuHandler_PopupSubMenuInput(pButton, m_pCommandMenus[menuIndex]) );
+		pButton->addInputSignal( VGuiCompat_OwnInputSignal(new CMenuHandler_PopupSubMenuInput(pButton, m_pCommandMenus[menuIndex])) );
 	
 	}
 
