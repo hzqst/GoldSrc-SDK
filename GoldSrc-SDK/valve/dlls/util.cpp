@@ -2424,9 +2424,12 @@ int CRestore::ReadFields( const char *pname, void *pBaseData, TYPEDESCRIPTION *p
 			memset( ((char *)pBaseData + pFields[i].fieldOffset), 0, pFields[i].fieldSize * gSizes[pFields[i].fieldType] );
 	}
 
-	for ( i = 0; i < fileCount; i++ )
+	for ( int field = 0; field < fileCount; field++ )
 	{
 		BufferReadHeader( &header );
+		if ( !m_pdata->pTokens || header.token >= m_pdata->tokenCount || !m_pdata->pTokens[header.token] )
+			continue;
+
 		lastField = ReadField( pBaseData, pFields, fieldCount, lastField, header.size, m_pdata->pTokens[header.token], header.pData );
 		lastField++;
 	}
