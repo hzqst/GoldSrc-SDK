@@ -246,6 +246,18 @@ public:
 		  ArmedBorderColor = NULL;
 		  UnArmedBorderColor = NULL;
 	  }
+
+	~ColorButton()
+	{
+		delete ArmedColor;
+		ArmedColor = NULL;
+		delete UnArmedColor;
+		UnArmedColor = NULL;
+		delete ArmedBorderColor;
+		ArmedBorderColor = NULL;
+		delete UnArmedBorderColor;
+		UnArmedBorderColor = NULL;
+	}
 	
 
 	virtual void paintBackground()
@@ -307,21 +319,25 @@ public:
 	
 	void setArmedColor ( int r, int g, int b, int a )
 	{
+		delete ArmedColor;
 		ArmedColor = new Color( r, g, b, a );
 	}
 
 	void setUnArmedColor ( int r, int g, int b, int a )
 	{
+		delete UnArmedColor;
 		UnArmedColor = new Color( r, g, b, a );
 	}
 
 	void setArmedBorderColor ( int r, int g, int b, int a )
 	{
+		delete ArmedBorderColor;
 		ArmedBorderColor = new Color( r, g, b, a );
 	}
 
 	void setUnArmedBorderColor ( int r, int g, int b, int a )
 	{
+		delete UnArmedBorderColor;
 		UnArmedBorderColor = new Color( r, g, b, a );
 	}
 };
