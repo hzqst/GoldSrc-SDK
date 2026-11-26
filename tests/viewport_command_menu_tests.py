@@ -134,9 +134,6 @@ static struct {
   token[length] = 0;
   return data;
  }
-	 const char* COM_ParseFile(const char* data, char* token) {
-	  return COM_ParseFile(const_cast<char*>(data), token);
-	 }
 } gEngfuncs;
 // only the members the command menu loaders use
 class ViewportStub : public Panel {

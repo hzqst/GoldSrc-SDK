@@ -893,7 +893,7 @@ struct MenuToken
 	char brace;
 };
 
-bool ReadMenuToken(const char *&cursor, const char *end, MenuToken &token)
+bool ReadMenuToken(char *&cursor, const char *end, MenuToken &token)
 {
 	token.brace = '\0';
 	if (!cursor || cursor >= end)
@@ -928,7 +928,7 @@ struct MenuEntry
 	bool submenu;
 };
 
-bool ReadMenuEntry(const char *&cursor, const char *end, MenuToken &token, MenuEntry &entry)
+bool ReadMenuEntry(char *&cursor, const char *end, MenuToken &token, MenuEntry &entry)
 {
 	entry.team = -1;
 	entry.custom = !strcmp(token.text, "CUSTOM");
@@ -1027,7 +1027,7 @@ try
 	// The cursor points after token, which is the key, prefix or closing brace.
 	m_pCurrentCommandMenu = m_pCommandMenus[newIndex];
 	MenuToken token;
-	const char *cursor = pfile;
+	char *cursor = pfile;
 	const char *end = pfile + fileLength;
 	int rejectedDepth = 0;
 	if (!ReadMenuToken(cursor, end, token))
