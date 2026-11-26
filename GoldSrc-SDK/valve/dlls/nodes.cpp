@@ -24,6 +24,7 @@
 #include	"animation.h"
 #include	"doors.h"
 #include <climits>
+#include <cmath>
 #include <cstdint>
 #include <type_traits>
 
@@ -110,6 +111,7 @@ void CGraph :: InitGraph( void)
 	m_cNodes = 0;
 	m_cLinks = 0;
 	m_nRouteInfo = 0;
+	m_nHashLinks = 0;
 
 	m_iLastActiveIdleSearch = 0;
 	m_iLastCoverSearch = 0;
@@ -523,14 +525,28 @@ float CGraph::PathLength( int iStart, int iDest, int iHull, int afCapMask )
 // Parse the routing table at iCurrentNode for the next node on the shortest path to iDest
 int CGraph::NextNodeInRoute( int iCurrentNode, int iDest, int iHull, int iCap )
 {
+	if ( !m_pNodes || !m_pRouteInfo || m_cNodes <= 0 || m_nRouteInfo <= 0
+		 || iCurrentNode < 0 || iCurrentNode >= m_cNodes
+		 || iDest < 0 || iDest >= m_cNodes
+		 || iHull < 0 || iHull >= MAX_NODE_HULLS
+		 || iCap < 0 || iCap >= 2 )
+		return iCurrentNode;
+
+	int offset = m_pNodes[ iCurrentNode ].m_pNextBestNode[iHull][iCap];
+	if ( offset < 0 || offset >= m_nRouteInfo )
+		return iCurrentNode;
+
 	int iNext = iCurrentNode;
 	int nCount = iDest+1;
-	char *pRoute = m_pRouteInfo + m_pNodes[ iCurrentNode ].m_pNextBestNode[iHull][iCap];
+	const char *pRoute = m_pRouteInfo + offset;
+	const char *pRouteEnd = m_pRouteInfo + m_nRouteInfo;
 
 	// Until we decode the next best node
 	//
 	while (nCount > 0)
 	{
+		if ( pRoute >= pRouteEnd )
+			return iCurrentNode;
 		int ch = static_cast<signed char>( *pRoute++ );
 		//ALERT(at_aiconsole, "C(%d)", ch);
 		if (ch < 0)
@@ -553,6 +569,8 @@ int CGraph::NextNodeInRoute( int iCurrentNode, int iDest, int iHull, int iCap )
 		else
 		{
 			//ALERT(at_aiconsole, "C(%d)", *pRoute);
+			if ( pRoute >= pRouteEnd )
+				return iCurrentNode;
 
 			// Repeat phrase
 			//
@@ -561,6 +579,8 @@ int CGraph::NextNodeInRoute( int iCurrentNode, int iDest, int iHull, int iCap )
 				iNext = iCurrentNode + static_cast<signed char>( *pRoute );
 				if (iNext >= m_cNodes) iNext -= m_cNodes;
 				else if (iNext < 0) iNext += m_cNodes;
+				if (iNext < 0 || iNext >= m_cNodes)
+					return iCurrentNode;
 				nCount = 0;
 				//ALERT(at_aiconsole, "REP: iNext=%d\n", iNext);
 			}
@@ -810,7 +830,10 @@ void inline CalcBounds(int &Lower, int &Upper, int Goal, int Best)
 //
 inline int CALC_RANGE(int x, int lower, int upper)
 {
-	return NUM_RANGES*(x-lower)/((upper-lower+1));
+	const int64_t span = (int64_t)upper - (int64_t)lower + 1;
+	if ( span <= 0 )
+		return 0;
+	return (int)( ( (int64_t)NUM_RANGES * ( (int64_t)x - (int64_t)lower ) ) / span );
 }
 
 
@@ -2334,9 +2357,12 @@ void CQueuePriority::Heap_SiftUp(void)
 //=========================================================
 int CGraph :: FLoadGraph ( char *szMapName )
 {
+	if ( !szMapName || !szMapName[0] )
+		return FALSE;
+
 	char filename[MAX_PATH];
 	const int nameLength = snprintf( filename, sizeof( filename ), "maps/graphs/%s.nod", szMapName );
-	if ( nameLength < 0 || nameLength >= sizeof( filename ) )
+	if ( nameLength < 0 || (size_t)nameLength >= sizeof( filename ) )
 		return FALSE;
 
 	int length;
@@ -2396,9 +2422,12 @@ int CGraph :: FLoadGraph ( char *szMapName )
 			return false;
 
 		const auto validNode = [&]( int index ) { return index >= 0 && index < graph.m_cNodes; };
+		const auto finiteVec = []( const Vector& v ) { return std::isfinite( v.x ) && std::isfinite( v.y ) && std::isfinite( v.z ); };
 		for ( int i = 0; i < graph.m_cNodes; ++i )
 		{
 			const CNode& node = graph.m_pNodes[i];
+			if ( !finiteVec( node.m_vecOrigin ) || !finiteVec( node.m_vecOriginPeek ) || !std::isfinite( node.m_flHintYaw ) )
+				return false;
 			if ( node.m_iFirstLink < 0 || node.m_iFirstLink > graph.m_cLinks
 				 || node.m_cNumLinks < 0 || node.m_cNumLinks > graph.m_cLinks - node.m_iFirstLink )
 				return false;
@@ -2450,12 +2479,22 @@ int CGraph :: FLoadGraph ( char *szMapName )
 		for ( int i = 0; i < graph.m_cLinks; ++i )
 		{
 			CLink& link = graph.m_pLinkPool[i];
-			if ( !validNode( link.m_iSrcNode ) || !validNode( link.m_iDestNode ) )
+			if ( !validNode( link.m_iSrcNode ) || !validNode( link.m_iDestNode )
+				 || !std::isfinite( link.m_flWeight ) || link.m_flWeight < 0.0f )
 				return false;
+			if ( !link.m_pLinkEnt )
+				memset( link.m_szLinkEntModelname, 0, sizeof( link.m_szLinkEntModelname ) );
 			link.m_pLinkEnt = NULL;
 		}
+		constexpr float kMaxRegionCoord = 1000000.0f;
 		for ( int axis = 0; axis < 3; ++axis )
 		{
+			const float minVal = graph.m_RegionMin[axis];
+			const float maxVal = graph.m_RegionMax[axis];
+			if ( !std::isfinite( minVal ) || !std::isfinite( maxVal )
+				 || minVal < -kMaxRegionCoord || maxVal > kMaxRegionCoord
+				 || (int)maxVal < (int)minVal )
+				return false;
 			for ( int region = 0; region < NUM_RANGES; ++region )
 			{
 				const int first = graph.m_RangeStart[axis][region];
@@ -2508,6 +2547,8 @@ int CGraph :: FLoadGraph ( char *szMapName )
 
 	InitGraph();
 	graph.m_CheckedCounter = 0;
+	graph.m_iLastActiveIdleSearch = 0;
+	graph.m_iLastCoverSearch = 0;
 	graph.m_fGraphPresent = TRUE;
 	graph.m_fGraphPointersSet = FALSE;
 	graph.m_fRoutingComplete = TRUE;
@@ -2599,7 +2640,7 @@ int CGraph :: FSetGraphPointers ( void )
 	for ( i = 0 ; i < m_cLinks ; i++ )
 	{// go through all of the links
 		
-		if ( m_pLinkPool[ i ].m_pLinkEnt != NULL )
+		if ( m_pLinkPool[ i ].m_pLinkEnt != NULL || m_pLinkPool[ i ].m_szLinkEntModelname[ 0 ] != '\0' )
 		{
 			char name[5];
 			// when graphs are saved, any valid pointers are will be non-zero, signifying that we should
@@ -2617,6 +2658,7 @@ int CGraph :: FSetGraphPointers ( void )
 			// ( like a func_breakable that's been destroyed or something ). Make sure that LinkEnt is null.
 				ALERT ( at_aiconsole, "**Could not find model %s\n", name );
 				m_pLinkPool[ i ].m_pLinkEnt = NULL;
+				memset( m_pLinkPool[ i ].m_szLinkEntModelname, 0, sizeof( m_pLinkPool[ i ].m_szLinkEntModelname ) );
 			}
 			else
 			{
@@ -3180,8 +3222,8 @@ void CGraph :: ComputeStaticRoutingTables( void )
 					char *p = pRoute;
 					for (int i = 0; i < m_cNodes; i++)
 					{
-						BOOL CanRepeat = ((BestNextNodes[i] == iLastNode) && cRepeats < 127);
-						BOOL CanSequence = (BestNextNodes[i] == i && cSequence < 128);
+						BOOL CanRepeat = ((BestNextNodes[i] == iLastNode) && cRepeats < SCHAR_MAX);
+						BOOL CanSequence = (BestNextNodes[i] == i && cSequence < SCHAR_MAX);
 
 						if (cRepeats)
 						{
