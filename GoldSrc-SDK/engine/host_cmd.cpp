@@ -51,7 +51,6 @@
 #endif
 
 #if !defined( _WIN32 )
-#include <sys/mman.h>
 #include <unistd.h>
 
 #define _snprintf snprintf
@@ -2479,31 +2478,37 @@ void Host_EndSection( const char* pszSection )
 	Cbuf_AddText( "\ndisconnect\n" );
 }
 
-// Game DLLs write directly to this contiguous area and may mutate entities.
-// A demand-zero mapping grows resident memory as touched, with a stable address
-// and enough logical capacity to run every callback once.
-static constexpr int SAVE_MAX_BUFFER_SIZE = 256 * 1024 * 1024;
-static constexpr int SAVE_TOKEN_COUNT = 0xFFF;
+// Save data area sizes. The game DLL writes through pCurrentData and only checks bufferSize,
+// so SaveWriteGrowing keeps headroom before each call and retries into a larger buffer on overflow.
+static constexpr int SAVE_INITIAL_BUFFER_SIZE = 0x80000;    // 512 KiB
+static constexpr int SAVE_MIN_HEADROOM        = 0x40000;    // 256 KiB
+static constexpr int SAVE_MAX_BUFFER_SIZE     = 0x10000000; // 256 MiB
+static constexpr int SAVE_TOKEN_COUNT         = 0xFFF;
 
 static void SaveWriteExit( SAVERESTOREDATA* save )
 {
-	if ( save && save->pBaseData )
+	if ( save )
 	{
-#ifdef _WIN32
-		VirtualFree( save->pBaseData, 0, MEM_RELEASE );
-#else
-		munmap( save->pBaseData, SAVE_MAX_BUFFER_SIZE );
-#endif
+		Mem_Free( save->pBaseData );
+		save->pBaseData = NULL;
+		save->pCurrentData = NULL;
 	}
 	SaveExit( save );
 }
 
-static SAVERESTOREDATA* SaveInit()
+static SAVERESTOREDATA* SaveInit( int size = 0 )
 {
 	int i;
 	SAVERESTOREDATA* pSaveData;
 	ENTITYTABLE* pTable;
 
+	if ( size <= 0 )
+		size = SAVE_INITIAL_BUFFER_SIZE;
+	if ( size > SAVE_MAX_BUFFER_SIZE )
+		return NULL;
+
+	// Allocate the data area separately so SaveGrowData can relocate it while keeping
+	// SAVERESTOREDATA and pTable at stable addresses for gGlobalVariables.pSaveData.
 	pSaveData = (SAVERESTOREDATA*)Mem_Calloc(
 		(int)( sizeof( ENTITYTABLE ) * sv.num_edicts + sizeof( SAVERESTOREDATA ) ), 1 );
 	if ( !pSaveData )
@@ -2514,12 +2519,7 @@ static SAVERESTOREDATA* SaveInit()
 
 	pSaveData->tokenCount = SAVE_TOKEN_COUNT;
 	pSaveData->pTokens = (char**)Mem_Calloc( SAVE_TOKEN_COUNT, sizeof( char* ) );
-#ifdef _WIN32
-	pSaveData->pBaseData = (char*)VirtualAlloc( NULL, SAVE_MAX_BUFFER_SIZE, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE );
-#else
-	void* buffer = mmap( NULL, SAVE_MAX_BUFFER_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
-	pSaveData->pBaseData = buffer == MAP_FAILED ? NULL : (char*)buffer;
-#endif
+	pSaveData->pBaseData = (char*)Mem_Calloc( size, 1 );
 	if ( !pSaveData->pTokens || !pSaveData->pBaseData )
 	{
 		Con_Printf( "Unable to allocate the save buffer.\n" );
@@ -2542,7 +2542,7 @@ static SAVERESTOREDATA* SaveInit()
 	pSaveData->connectionCount = 0;
 	pSaveData->size = 0;
 	pSaveData->pCurrentData = pSaveData->pBaseData;
-	pSaveData->bufferSize = SAVE_MAX_BUFFER_SIZE;
+	pSaveData->bufferSize = size;
 	pSaveData->time = gGlobalVariables.time;
 	VectorCopy( vec3_origin, pSaveData->vecLandmarkOffset );
 	pSaveData->fUseLandmark = 0;
@@ -2555,18 +2555,110 @@ static SAVERESTOREDATA* SaveInit()
 static bool SaveBufferValid( const SAVERESTOREDATA* data )
 {
 	// CSave::BufferData sets size to bufferSize when a write overflows.
-	return data->size >= 0 && data->size < data->bufferSize
+	return data && data->pBaseData && data->size >= 0 && data->size < data->bufferSize
 		&& data->pCurrentData == data->pBaseData + data->size;
+}
+
+static bool SaveGrowData( SAVERESTOREDATA* pSaveData, int64_t requiredSize )
+{
+	if ( !pSaveData || !pSaveData->pBaseData || requiredSize < 0 )
+		return false;
+
+	if ( requiredSize <= pSaveData->bufferSize )
+		return true;
+
+	if ( requiredSize > SAVE_MAX_BUFFER_SIZE )
+	{
+		Con_Printf( "Save/Restore overflow: the save data exceeds %d bytes, the save is discarded.\n",
+			SAVE_MAX_BUFFER_SIZE );
+		return false;
+	}
+
+	int64_t bufferSize = pSaveData->bufferSize > 0 ? pSaveData->bufferSize : SAVE_INITIAL_BUFFER_SIZE;
+	while ( bufferSize < requiredSize )
+		bufferSize *= 2;
+	if ( bufferSize > SAVE_MAX_BUFFER_SIZE )
+		bufferSize = SAVE_MAX_BUFFER_SIZE;
+
+	char* pData = (char*)Mem_Realloc( pSaveData->pBaseData, (size_t)bufferSize );
+	if ( !pData )
+	{
+		Con_Printf( "Save/Restore overflow: unable to allocate %d bytes, the save is discarded.\n", (int)bufferSize );
+		return false;
+	}
+
+	Q_memset( pData + pSaveData->bufferSize, 0, (size_t)( bufferSize - pSaveData->bufferSize ) );
+	pSaveData->pCurrentData = pData + ( pSaveData->pCurrentData - pSaveData->pBaseData );
+	pSaveData->pBaseData = pData;
+	pSaveData->bufferSize = (int)bufferSize;
+	return true;
+}
+
+template <typename Write>
+static bool SaveWriteGrowing( SAVERESTOREDATA* pSaveData, int* pLargestWrite, Write write )
+{
+	if ( !SaveBufferValid( pSaveData ) )
+		return false;
+
+	const int start = pSaveData->size;
+	const int64_t doubled = (int64_t)( *pLargestWrite ) * 2;
+	const int64_t headroom = doubled > SAVE_MIN_HEADROOM ? doubled : SAVE_MIN_HEADROOM;
+	int64_t target = (int64_t)start + headroom;
+	if ( target > SAVE_MAX_BUFFER_SIZE )
+		target = SAVE_MAX_BUFFER_SIZE;
+
+	if ( !SaveGrowData( pSaveData, target ) )
+		return false;
+
+	write();
+
+	while ( pSaveData->size >= pSaveData->bufferSize )
+	{
+		if ( !SaveGrowData( pSaveData, (int64_t)pSaveData->bufferSize * 2 ) )
+			return false;
+
+		pSaveData->size = start;
+		pSaveData->pCurrentData = pSaveData->pBaseData + start;
+		write();
+	}
+
+	if ( !SaveBufferValid( pSaveData ) || pSaveData->size < start )
+		return false;
+
+	if ( pSaveData->size - start > *pLargestWrite )
+		*pLargestWrite = pSaveData->size - start;
+
+	return true;
+}
+
+static bool SaveWriteFieldsGrowing( SAVERESTOREDATA* pSaveData, int* pLargestWrite, const char* pname,
+	void* pBaseData, TYPEDESCRIPTION* pFields, int fieldCount )
+{
+	return SaveWriteGrowing( pSaveData, pLargestWrite,
+		[=]() { gEntityInterface.pfnSaveWriteFields( pSaveData, pname, pBaseData, pFields, fieldCount ); } );
+}
+
+static bool SaveReserveTokens( SAVERESTOREDATA* pSaveData )
+{
+	if ( !SaveBufferValid( pSaveData ) || !pSaveData->pTokens )
+		return false;
+
+	int64_t tokenSize = 0;
+	for ( int i = 0; i < pSaveData->tokenCount; ++i )
+		tokenSize += ( pSaveData->pTokens[i] ? (int64_t)Q_strlen( pSaveData->pTokens[i] ) : 0 ) + 1;
+
+	// One extra byte keeps size below bufferSize after token serialization.
+	return SaveGrowData( pSaveData, (int64_t)pSaveData->size + tokenSize + 1 );
 }
 
 static const char* SaveWriteTokens( SAVERESTOREDATA* data )
 {
-	if ( !SaveBufferValid( data ) )
+	if ( !SaveReserveTokens( data ) )
 		return NULL;
 
 	char* const start = data->pCurrentData;
 	char* next = start;
-	size_t remaining = data->bufferSize - data->size;
+	size_t remaining = (size_t)( data->bufferSize - data->size );
 	for ( int i = 0; i < data->tokenCount; ++i )
 	{
 		const char* token = data->pTokens[i] ? data->pTokens[i] : "";
@@ -2588,10 +2680,21 @@ static SAVERESTOREDATA* DiscardSave( SAVERESTOREDATA* data )
 	return NULL;
 }
 
+static bool SaveFileExistsInGameConfig( const char* name )
+{
+	FileHandle_t file = FS_OpenPathID( name, "rb", "GAMECONFIG" );
+	if ( !file )
+		return false;
+	FS_Close( file );
+	return true;
+}
+
 static bool ReplaceSaveFile( const char* temporary, const char* name )
 {
 	char source[MAX_PATH * 2];
 	char destination[MAX_PATH * 2];
+	if ( !SaveFileExistsInGameConfig( temporary ) )
+		return false;
 	if ( !FS_GetLocalPath( temporary, source, sizeof( source ) ) )
 		return false;
 
@@ -2599,9 +2702,22 @@ static bool ReplaceSaveFile( const char* temporary, const char* name )
 	const size_t temporaryLength = strlen( temporary );
 	if ( sourceLength < temporaryLength )
 		return false;
+
 	const size_t directoryLength = sourceLength - temporaryLength;
+	if ( directoryLength > 0 && source[directoryLength - 1] != '/' && source[directoryLength - 1] != '\\' )
+		return false;
+
+	const char* suffix = source + directoryLength;
+#ifdef _WIN32
+	if ( Q_strcasecmp( suffix, temporary ) != 0 )
+		return false;
+#else
+	if ( strcmp( suffix, temporary ) != 0 )
+		return false;
+#endif
+
 	const int length = snprintf( destination, sizeof( destination ), "%.*s%s", (int)directoryLength, source, name );
-	if ( length < 0 || length >= sizeof( destination ) )
+	if ( length < 0 || (size_t)length >= sizeof( destination ) )
 		return false;
 #ifdef _WIN32
 	COM_FixSlashes( destination );
@@ -2660,13 +2776,13 @@ SAVERESTOREDATA* SaveGamestate()
 	SAVE_HEADER header;
 	SAVELIGHTSTYLE light;
 	edict_t* pent;
-	int i, dataSize, tableSize;
+	int i, dataSize, tableSize, largestWrite = 0;
 
 	if ( !gEntityInterface.pfnParmsChangeLevel )
 		return NULL;
 
 	FS_CreateDirHierarchy( Host_SaveGameDirectory(), "GAMECONFIG" );
-	pSaveData = SaveInit();
+	pSaveData = SaveInit( 0 );
 	if ( !pSaveData )
 		return NULL;
 
@@ -2702,9 +2818,8 @@ SAVERESTOREDATA* SaveGamestate()
 			header.lightStyleCount++;
 	}
 
-	gEntityInterface.pfnSaveWriteFields(
-		pSaveData, "Save Header", &header, gSaveHeaderDescription, ARRAYSIZE( gSaveHeaderDescription ) );
-	if ( !SaveBufferValid( pSaveData ) )
+	if ( !SaveWriteFieldsGrowing( pSaveData, &largestWrite, "Save Header", &header, gSaveHeaderDescription,
+			 ARRAYSIZE( gSaveHeaderDescription ) ) )
 		return DiscardSave( pSaveData );
 
 	pSaveData->time = header.time;
@@ -2712,9 +2827,8 @@ SAVERESTOREDATA* SaveGamestate()
 	// Write adjacency list
 	for ( i = 0; i < pSaveData->connectionCount; i++ )
 	{
-		gEntityInterface.pfnSaveWriteFields( pSaveData, "ADJACENCY", &pSaveData->levelList[i], gAdjacencyDescription,
-			ARRAYSIZE( gAdjacencyDescription ) );
-		if ( !SaveBufferValid( pSaveData ) )
+		if ( !SaveWriteFieldsGrowing( pSaveData, &largestWrite, "ADJACENCY", &pSaveData->levelList[i],
+				 gAdjacencyDescription, ARRAYSIZE( gAdjacencyDescription ) ) )
 			return DiscardSave( pSaveData );
 	}
 
@@ -2727,9 +2841,8 @@ SAVERESTOREDATA* SaveGamestate()
 		light.index = i;
 		Q_strncpy( light.style, sv.lightstyles[i], sizeof( light.style ) - 1 );
 		light.style[sizeof( light.style ) - 1] = '\0';
-		gEntityInterface.pfnSaveWriteFields(
-			pSaveData, "LIGHTSTYLE", &light, gLightstyleDescription, ARRAYSIZE( gLightstyleDescription ) );
-		if ( !SaveBufferValid( pSaveData ) )
+		if ( !SaveWriteFieldsGrowing( pSaveData, &largestWrite, "LIGHTSTYLE", &light, gLightstyleDescription,
+				 ARRAYSIZE( gLightstyleDescription ) ) )
 			return DiscardSave( pSaveData );
 	}
 
@@ -2744,8 +2857,7 @@ SAVERESTOREDATA* SaveGamestate()
 		if ( pent->free )
 			continue;
 
-		gEntityInterface.pfnSave( pent, pSaveData );
-		if ( !SaveBufferValid( pSaveData ) )
+		if ( !SaveWriteGrowing( pSaveData, &largestWrite, [=]() { gEntityInterface.pfnSave( pent, pSaveData ); } ) )
 			return DiscardSave( pSaveData );
 
 		if ( i > 0 && i <= svs.maxclients )
@@ -2753,13 +2865,11 @@ SAVERESTOREDATA* SaveGamestate()
 	}
 
 	dataSize = pSaveData->size;
-	pTableData = pSaveData->pCurrentData;
 
 	for ( i = 0; i < sv.num_edicts; i++ )
 	{
-		gEntityInterface.pfnSaveWriteFields( pSaveData, "ETABLE", &pSaveData->pTable[i], gEntityTableDescription,
-			ARRAYSIZE( gEntityTableDescription ) );
-		if ( !SaveBufferValid( pSaveData ) )
+		if ( !SaveWriteFieldsGrowing( pSaveData, &largestWrite, "ETABLE", &pSaveData->pTable[i],
+				 gEntityTableDescription, ARRAYSIZE( gEntityTableDescription ) ) )
 			return DiscardSave( pSaveData );
 	}
 
@@ -2768,6 +2878,9 @@ SAVERESTOREDATA* SaveGamestate()
 	const char* pTokenData = SaveWriteTokens( pSaveData );
 	if ( !pTokenData )
 		return DiscardSave( pSaveData );
+
+	// The data area no longer moves after SaveWriteTokens.
+	pTableData = pSaveData->pBaseData + dataSize;
 
 	COM_CreatePath( name );
 
@@ -2855,7 +2968,11 @@ void Host_Changelevel2_f()
 
 	pSaveData = SaveGamestate();
 	if ( !pSaveData )
+	{
+		giActive = DLL_ACTIVE;
+		SCR_EndLoadingPlaque();
 		return;
+	}
 	SaveWriteExit( pSaveData );
 	SV_ServerShutdown();
 	FS_LogLevelLoadStarted( level );
@@ -3805,7 +3922,7 @@ int SaveGameSlot( const char* pSaveName, const char* pSaveComment )
 		return 0;
 
 	SaveWriteExit( pSaveData );
-	pSaveData = SaveInit();
+	pSaveData = SaveInit( 0 );
 	if ( !pSaveData )
 		return 0;
 
@@ -3818,14 +3935,14 @@ int SaveGameSlot( const char* pSaveName, const char* pSaveComment )
 	Q_strncpy( gameHeader.comment, pSaveComment, sizeof( gameHeader.comment ) - 1 );
 	gameHeader.comment[sizeof( gameHeader.comment ) - 1] = '\0';
 
-	gEntityInterface.pfnSaveWriteFields(
-		pSaveData, "GameHeader", &gameHeader, gGameHeaderDescription, ARRAYSIZE( gGameHeaderDescription ) );
-	if ( !SaveBufferValid( pSaveData ) )
+	int largestWrite = 0;
+	if ( !SaveWriteFieldsGrowing( pSaveData, &largestWrite, "GameHeader", &gameHeader, gGameHeaderDescription,
+			 ARRAYSIZE( gGameHeaderDescription ) )
+		 || !SaveWriteGrowing( pSaveData, &largestWrite, [=]() { gEntityInterface.pfnSaveGlobalState( pSaveData ); } ) )
 	{
 		DiscardSave( pSaveData );
 		return 0;
 	}
-	gEntityInterface.pfnSaveGlobalState( pSaveData );
 
 	const char* pTokenData = SaveWriteTokens( pSaveData );
 	if ( !pTokenData )
@@ -3867,7 +3984,7 @@ int SaveGameSlot( const char* pSaveName, const char* pSaveComment )
 			return 1;
 
 		// The previous slot may have been moved to its aged name.
-		if ( !FS_FileExists( name ) )
+		if ( !SaveFileExistsInGameConfig( name ) )
 		{
 			char backup[MAX_PATH];
 			snprintf( backup, sizeof( backup ), "%s%s%02d.sav", Host_SaveGameDirectory(), pSaveName, 1 );
@@ -3943,8 +4060,8 @@ void Host_Savegame_f()
 	}
 
 	Host_FormatSaveComment( comment );
-	SaveGameSlot( pszSaveName, comment );
-	CL_HudMessage( "GAMESAVED" );
+	if ( SaveGameSlot( pszSaveName, comment ) )
+		CL_HudMessage( "GAMESAVED" );
 }
 
 void Host_AutoSave_f()
