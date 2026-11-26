@@ -133,9 +133,9 @@ ScorePanel::ScorePanel(int x,int y,int wide,int tall) : Panel(x,y,wide,tall)
 	for(int i=0; i < NUM_COLUMNS; i++)
 	{
 		if (g_ColumnInfo[i].m_pTitle && g_ColumnInfo[i].m_pTitle[0] == '#')
-			m_HeaderLabels[i].setText(CHudTextMessage::BufferedLocaliseTextString(g_ColumnInfo[i].m_pTitle));
+			m_HeaderLabels[i].setText("%s", CHudTextMessage::BufferedLocaliseTextString(g_ColumnInfo[i].m_pTitle));
 		else if(g_ColumnInfo[i].m_pTitle)
-			m_HeaderLabels[i].setText(g_ColumnInfo[i].m_pTitle);
+			m_HeaderLabels[i].setText("%s", g_ColumnInfo[i].m_pTitle);
 
 		int xwide = g_ColumnInfo[i].m_Width;
 		if (ScreenWidth >= 640)
@@ -266,12 +266,7 @@ void ScorePanel::Update()
 	int i;
 
 	// Set the title
-	if (gViewPort->m_szServerName)
-	{
-		char sz[MAX_SERVERNAME_LENGTH + 16];
-		sprintf(sz, "%s", gViewPort->m_szServerName );
-		m_TitleLabel.setText(sz);
-	}
+	m_TitleLabel.setText("%s", gViewPort->m_szServerName);
 
 	m_iRows = 0;
 	gViewPort->GetAllPlayersInfo();
@@ -859,7 +854,7 @@ void ScorePanel::FillGrid()
 				}
 			}
 
-			pLabel->setText(sz);
+			pLabel->setText("%s", sz);
 		}
 	}
 
