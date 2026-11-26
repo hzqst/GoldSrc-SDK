@@ -124,6 +124,7 @@ qboolean Steam_GSBLoggedOn();
 const char* Steam_GetGSUniverse();
 void Steam_ShowOnScreenKeyboard( int fieldX, int fieldY );
 void SCR_BeginLoadingPlaque( qboolean reconnect );
+void SCR_EndLoadingPlaque();
 void SCR_UpdateScreen();
 void Voice_Deinit();
 void NotifyDedicatedServerUI( const char* message );
