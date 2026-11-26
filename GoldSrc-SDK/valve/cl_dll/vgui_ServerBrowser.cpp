@@ -211,7 +211,7 @@ public:
 					strncpy( sz, val, 31 );
 					sz[ 31 ] = '\0';
 					// Server Name;
-					m_pLabel->setText( sz );
+					m_pLabel->setText( "%s", sz );
 				}
 				break;
 			case 1:
@@ -221,7 +221,7 @@ public:
 					strncpy( sz, val, 31 );
 					sz[ 31 ] = '\0';
 					// Server Map;
-					m_pLabel->setText( sz );
+					m_pLabel->setText( "%s", sz );
 				}
 				break;
 			case 2:
@@ -231,7 +231,7 @@ public:
 					strncpy( sz, val, 31 );
 					sz[ 31 ] = '\0';
 					// Server Name;
-					m_pLabel->setText( sz );
+					m_pLabel->setText( "%s", sz );
 				}
 				break;
 			case 3:
@@ -239,10 +239,10 @@ public:
 				val2 = gEngfuncs.pNetAPI->ValueForKey( info, "max" );
 				if ( val && val2 )
 				{
-					sprintf( sz, "%s/%s", val, val2 );
+					snprintf( sz, sizeof( sz ), "%s/%s", val, val2 );
 					sz[ 31 ] = '\0';
 					// Server Map;
-					m_pLabel->setText( sz );
+					m_pLabel->setText( "%s", sz );
 				}
 				break;
 			case 4:
@@ -252,7 +252,7 @@ public:
 					strncpy( sz, val, 31 );
 					sz[ 31 ] = '\0';
 					// Server Name;
-					m_pLabel->setText( sz );
+					m_pLabel->setText( "%s", sz );
 				}
 				break;
 			default:
