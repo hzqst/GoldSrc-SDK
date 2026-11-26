@@ -124,6 +124,7 @@ qboolean Steam_GSBLoggedOn();
 const char* Steam_GetGSUniverse();
 void Steam_ShowOnScreenKeyboard( int fieldX, int fieldY );
 void SCR_BeginLoadingPlaque( qboolean reconnect );
+void SCR_EndLoadingPlaque();
 void SCR_UpdateScreen();
 void Voice_Deinit();
 void NotifyDedicatedServerUI( const char* message );
@@ -2046,10 +2047,17 @@ void EntityPatchRead( SAVERESTOREDATA* pSaveData, const char* level )
 	if ( !pFile )
 		return;
 
-	FS_Read( &size, sizeof( int ), 1, pFile );
+	if ( FS_Read( &size, sizeof( size ), 1, pFile ) != sizeof( size )
+		 || size < 0 || size > pSaveData->tableCount )
+	{
+		FS_Close( pFile );
+		return;
+	}
 	for ( i = 0; i < size; i++ )
 	{
-		FS_Read( &entityId, sizeof( int ), 1, pFile );
+		if ( FS_Read( &entityId, sizeof( entityId ), 1, pFile ) != sizeof( entityId )
+			 || entityId < 0 || entityId >= pSaveData->tableCount )
+			break;
 		pSaveData->pTable[entityId].flags = FENTTABLE_REMOVED;
 	}
 
