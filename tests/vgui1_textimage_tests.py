@@ -26,6 +26,9 @@ setText or operator= lost an earlier one or freed it with the wrong delete.
 - self-assign: assigning a TextImage to itself keeps its text.
 - destroy-frees (VGUI_ABI_COMPAT_MODE=0 only): deleting through Image* frees
   the text and the object.
+- vtable-slots: compares the vtable slot indices of TextImage's overloaded
+  setText and setFont virtual methods between the public header, the lib-src
+  header, and the lib-src header's non-_WIN32 branch (#731).
 """
 from pathlib import Path
 import subprocess
@@ -38,6 +41,7 @@ from cxx_toolchain import compile_program
 
 ROOT = Path(__file__).resolve().parents[1]
 VGUI = ROOT / 'GoldSrc-SDK/utils/vgui/lib-src/vgui'
+PUBLIC_VGUI_INCLUDE = ROOT / 'GoldSrc-SDK/utils/vgui/include'
 FONT_LOOKUP = 'return App::getInstance()->getScheme()->getFont( _schemeFont );'
 
 
@@ -248,10 +252,244 @@ int main(int argc, char** argv)
 }
 '''
 
+VTABLE_PROBE = r'''
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <stdexcept>
+
+#include "VGUI_TextImage.h"
+
+using namespace vgui;
+
+namespace vgui
+{
+#if VGUI_ABI_COMPAT_MODE != 1
+Scheme::~Scheme() {}
+void* Scheme::operator new(size_t size) { return ::operator new(size); }
+void Scheme::operator delete(void* memory) { ::operator delete(memory); }
+#endif
+void Scheme::setColor(SchemeColor, int, int, int, int) {}
+void Scheme::getColor(SchemeColor, int&, int&, int&, int&) {}
+void Scheme::setFont(SchemeFont, Font*) {}
+Font* Scheme::getFont(SchemeFont) { return NULL; }
+void Scheme::setCursor(SchemeCursor, Cursor*) {}
+Cursor* Scheme::getCursor(SchemeCursor) { return NULL; }
+
+Color::Color() {}
+void Color::init() {}
+void Color::setColor(int, int, int, int) {}
+void Color::setColor(Scheme::SchemeColor) {}
+void Color::getColor(int&, int&, int&, int&) {}
+void Color::getColor(Scheme::SchemeColor&) {}
+int Color::operator[](int) { return 0; }
+
+Image::Image() {}
+#if VGUI_ABI_COMPAT_MODE != 1
+Image::~Image() {}
+void* Image::operator new(size_t size) { return ::operator new(size); }
+void Image::operator delete(void* memory) { ::operator delete(memory); }
+#endif
+void Image::setPos(int, int) {}
+void Image::getPos(int&, int&) {}
+void Image::getSize(int&, int&) {}
+void Image::setColor(Color) {}
+void Image::getColor(Color&) {}
+void Image::setSize(int, int) {}
+void Image::drawSetColor(Scheme::SchemeColor) {}
+void Image::drawSetColor(int, int, int, int) {}
+void Image::drawFilledRect(int, int, int, int) {}
+void Image::drawOutlinedRect(int, int, int, int) {}
+void Image::drawSetTextFont(Scheme::SchemeFont) {}
+void Image::drawSetTextFont(Font*) {}
+void Image::drawSetTextColor(Scheme::SchemeColor) {}
+void Image::drawSetTextColor(int, int, int, int) {}
+void Image::drawSetTextPos(int, int) {}
+void Image::drawPrintText(const char*, int) {}
+void Image::drawPrintText(int, int, const char*, int) {}
+void Image::drawPrintChar(char) {}
+void Image::drawPrintChar(int, int, char) {}
+void Image::drawSetTextureRGBA(int, const char*, int, int) {}
+void Image::drawSetTexture(int) {}
+void Image::drawTexturedRect(int, int, int, int) {}
+void Image::paint(Panel*) {}
+void Image::doPaint(Panel*) {}
+
+TextImage::TextImage(const char*) {}
+#if VGUI_ABI_COMPAT_MODE != 1
+TextImage::~TextImage() {}
+#endif
+void TextImage::init(int, const char*) {}
+void TextImage::getTextSize(int&, int&) {}
+void TextImage::getTextSizeWrapped(int&, int&) {}
+Font* TextImage::getFont() { return NULL; }
+void TextImage::setText(int, const char*) {}
+void TextImage::setText(const char*) {}
+void TextImage::setFont(Scheme::SchemeFont) {}
+void TextImage::setFont(Font*) {}
+void TextImage::setSize(int, int) {}
+void TextImage::paint(Panel*) {}
+}
+
+namespace
+{
+const std::size_t MAX_SLOTS = 64;
+volatile int probeSink = 0;
+
+struct Anchor : TextImage
+{
+ Anchor() : TextImage("") {}
+ virtual void anchor() { probeSink = 1; }
+};
+
+struct AnchorSame : Anchor
+{
+};
+
+struct AnchorEnd : Anchor
+{
+ void anchor() override { probeSink = 2; }
+};
+
+struct ProbeSetTextLen : Anchor
+{
+ void setText(int, const char*) override { probeSink = 3; }
+};
+
+struct ProbeSetText : Anchor
+{
+ void setText(const char*) override { probeSink = 4; }
+};
+
+struct ProbeSetFontScheme : Anchor
+{
+ void setFont(Scheme::SchemeFont) override { probeSink = 5; }
+};
+
+struct ProbeSetFontPtr : Anchor
+{
+ void setFont(Font*) override { probeSink = 6; }
+};
+
+const void* const* VtableOf(const Anchor& object)
+{
+ const void* const* vtable = NULL;
+ std::memcpy(&vtable, &object, sizeof(vtable));
+ return vtable;
+}
+
+std::size_t FindUniqueDiff(const void* const* base, const void* const* derived, std::size_t start, std::size_t limit)
+{
+ std::size_t found = limit;
+ for (std::size_t i = start; i < limit; ++i)
+ {
+  if (base[i] != derived[i])
+  {
+   if (found != limit)
+    throw std::runtime_error("more than one vtable slot changed");
+   found = i;
+  }
+ }
+ if (found == limit)
+  throw std::runtime_error("no vtable slot changed");
+ return found;
+}
+}
+
+int main()
+{
+ try
+ {
+  Anchor base;
+  AnchorSame same;
+  AnchorEnd end;
+  ProbeSetTextLen setTextLen;
+  ProbeSetText setText;
+  ProbeSetFontScheme setFontScheme;
+  ProbeSetFontPtr setFontPtr;
+
+  const void* const* baseVtable = VtableOf(base);
+  const void* const* sameVtable = VtableOf(same);
+  const void* const* endVtable = VtableOf(end);
+
+  std::size_t firstMethodSlot = 0;
+  while (firstMethodSlot < MAX_SLOTS && baseVtable[firstMethodSlot] != sameVtable[firstMethodSlot])
+   ++firstMethodSlot;
+
+  std::size_t endSlot = firstMethodSlot;
+  while (endSlot < MAX_SLOTS && baseVtable[endSlot] == endVtable[endSlot])
+   ++endSlot;
+  if (endSlot == MAX_SLOTS)
+   throw std::runtime_error("anchor vtable slot not found");
+
+  const std::size_t slotSetTextLen = FindUniqueDiff(baseVtable, VtableOf(setTextLen), firstMethodSlot, endSlot);
+  const std::size_t slotSetText = FindUniqueDiff(baseVtable, VtableOf(setText), firstMethodSlot, endSlot);
+  const std::size_t slotSetFontScheme = FindUniqueDiff(baseVtable, VtableOf(setFontScheme), firstMethodSlot, endSlot);
+  const std::size_t slotSetFontPtr = FindUniqueDiff(baseVtable, VtableOf(setFontPtr), firstMethodSlot, endSlot);
+
+#if defined(_MSC_VER)
+  const char* abi = "msvc";
+#else
+  const char* abi = "itanium";
+#endif
+  std::printf("%s %zu %zu %zu %zu\n", abi, slotSetTextLen, slotSetText, slotSetFontScheme, slotSetFontPtr);
+  return EXIT_SUCCESS;
+ }
+ catch (const std::exception& error)
+ {
+  std::fprintf(stderr, "%s\n", error.what());
+  return EXIT_FAILURE;
+ }
+}
+'''
+
 SCENARIOS = ['grow-frees-old', 'shrink-reuses', 'self-text-grow', 'self-text-shrink', 'null-text', 'copy-independent',
              'assign-independent', 'self-assign']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + ['destroy-frees']}
+
+
+def probe_vtable_slots(folder, probe_file, name, includes, mode):
+    executable = compile_program([probe_file], Path(folder) / f'vtable-{name}-compat{mode}.exe',
+                                 includes=includes,
+                                 defines=['VGUI_STATIC', f'VGUI_ABI_COMPAT_MODE={mode}'],
+                                 debug=True)
+    result = subprocess.run([str(executable)], capture_output=True, text=True)
+    if result.returncode:
+        raise RuntimeError(f'vtable probe {name} failed ({result.returncode}): {result.stderr.strip()}')
+    tokens = result.stdout.strip().split()
+    return tokens[0], tuple(int(token) for token in tokens[1:])
+
+
+def check_vtable_slots(folder, mode, failed):
+    probe_file = Path(folder) / 'vtable_probe.cpp'
+    probe_file.write_text(VTABLE_PROBE)
+
+    # Also build the lib-src header with its _WIN32 check disabled so Windows
+    # hosts catch regressions in any non-_WIN32 branch (#731).
+    non_win32_dir = Path(folder) / 'lib-src-non-win32'
+    non_win32_dir.mkdir(exist_ok=True)
+    header_text = (VGUI / 'include' / 'VGUI_TextImage.h').read_text()
+    (non_win32_dir / 'VGUI_TextImage.h').write_text(header_text.replace('_WIN32', 'VGUI_TEST_DISABLE_WIN32'))
+
+    abi, public_slots = probe_vtable_slots(folder, probe_file, 'public', [PUBLIC_VGUI_INCLUDE], mode)
+    _, lib_slots = probe_vtable_slots(folder, probe_file, 'libsrc', [VGUI / 'include'], mode)
+    _, non_win32_slots = probe_vtable_slots(folder, probe_file, 'nonwin32', [non_win32_dir, VGUI / 'include'], mode)
+
+    ok = (public_slots == lib_slots == non_win32_slots)
+    if ok and abi == 'itanium':
+        # On Itanium C++ ABI (GCC/Clang), slots follow declaration order.
+        t_len, t_str, f_scheme, f_ptr = lib_slots
+        ok = (t_len + 1 == t_str and t_str + 1 == f_scheme and f_scheme + 1 == f_ptr)
+
+    if ok:
+        print(f'PASS: vtable-slots (VGUI_ABI_COMPAT_MODE={mode}, {abi}: {lib_slots})')
+    else:
+        print(f'FAIL: vtable-slots (VGUI_ABI_COMPAT_MODE={mode}, {abi}): '
+              f'public={public_slots}, lib-src={lib_slots}, non-win32={non_win32_slots}',
+              file=sys.stderr)
+        failed.append(f'vtable-slots (VGUI_ABI_COMPAT_MODE={mode})')
 
 
 def main():
@@ -279,6 +517,7 @@ def main():
                 result = subprocess.run([str(executable), scenario])
                 if result.returncode:
                     failed.append(f'{scenario} (VGUI_ABI_COMPAT_MODE={mode})')
+            check_vtable_slots(folder, mode, failed)
     if failed:
         raise SystemExit('FAILED: ' + ', '.join(failed))
 
