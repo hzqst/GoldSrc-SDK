@@ -342,6 +342,13 @@ CImageLabel::CImageLabel( const char* pImageName,int x,int y,int wide,int tall )
 	setImage( m_pTGA );
 }
 
+CImageLabel::~CImageLabel()
+{
+	setImage( NULL );
+	delete m_pTGA;
+	m_pTGA = NULL;
+}
+
 //===========================================================
 // Image size
 int CImageLabel::getImageWide( void )
@@ -375,7 +382,11 @@ int CImageLabel::getImageTall( void )
 void CImageLabel::LoadImage(const char * pImageName)
 {
 	if ( m_pTGA )
+	{
+		setImage( NULL );
 		delete m_pTGA;
+		m_pTGA = NULL;
+	}
 
 	// Load the Image
 	m_pTGA = LoadTGAForRes(pImageName);
@@ -387,9 +398,9 @@ void CImageLabel::LoadImage(const char * pImageName)
 
 		char sz[256];
 		sprintf(sz, "%s/%s",gEngfuncs.pfnGetGameDirectory(), pImageName );
-		FileInputStream* fis = new FileInputStream( sz, false );
-		m_pTGA = new BitmapTGA(fis,true);
-		fis->close();
+		FileInputStream fis( sz, false );
+		m_pTGA = new BitmapTGA(&fis,true);
+		fis.close();
 	}
 
 	if ( m_pTGA == NULL )
