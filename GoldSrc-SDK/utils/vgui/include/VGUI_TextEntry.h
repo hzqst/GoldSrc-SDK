@@ -21,6 +21,9 @@ class ActionSignal;
 
 class VGUIAPI TextEntry : public Panel , public InputSignal
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 public:
 	TextEntry(const char* text,int x,int y,int wide,int tall);
 #if VGUI_ABI_COMPAT_MODE != 1

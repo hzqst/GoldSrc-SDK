@@ -27,6 +27,7 @@
 #include <VGUI_ChangeSignal.h>
 #include <VGUI_CompatPanelAccess.h>
 #include <VGUI_Dar.h>
+#include <VGUI_FocusChangeSignal.h>
 #include <VGUI_HeaderPanel.h>
 #include <VGUI_InputSignal.h>
 #include <VGUI_IntChangeSignal.h>
@@ -36,6 +37,7 @@
 #include <VGUI_Slider.h>
 #include <VGUI_TablePanel.h>
 #include <VGUI_TextImage.h>
+#include <VGUI_TextEntry.h>
 
 namespace vgui
 {
@@ -269,6 +271,21 @@ struct VGuiCompatAccess : VGuiCompatPanelAccess
 			::operator delete(dynamic_cast<void*>(fakeInputPanel));
 		}
 		tablePanel->_editableCellPanel = NULL;
+	}
+
+	// A privately owned cell editor has only TextEntry's built-in focus signal.
+	static void cleanupCellTextEntry(TextEntry* textEntry)
+	{
+		if (textEntry == NULL)
+			return;
+		textEntry->removeInputSignal(textEntry);
+		for (int i = 0; i < textEntry->_focusChangeSignalDar.getCount(); i++)
+			destroyOwned(textEntry->_focusChangeSignalDar[i]);
+		for (int i = 0; i < textEntry->_actionSignalDar.getCount(); i++)
+			destroyOwned(textEntry->_actionSignalDar[i]);
+		releaseDarStorage(textEntry->_actionSignalDar);
+		releaseDarStorage(textEntry->_lineDar);
+		cleanupPanelStorage(textEntry);
 	}
 };
 
