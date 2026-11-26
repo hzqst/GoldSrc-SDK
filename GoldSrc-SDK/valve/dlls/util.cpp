@@ -1984,10 +1984,12 @@ void CSave :: WriteFunction( const char *pname, void **data, int count )
 	const char *functionName;
 
 	functionName = NAME_FOR_FUNCTION( (uint32)*data );
-	if ( functionName )
-		BufferField( pname, strlen(functionName) + 1, functionName );
-	else
-		ALERT( at_error, "Invalid function pointer in entity!" );
+	if ( !functionName )
+	{
+		ALERT( at_error, "Invalid function pointer in entity field %s!\n", pname );
+		functionName = "";
+	}
+	BufferField( pname, strlen(functionName) + 1, functionName );
 }
 
 
