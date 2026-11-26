@@ -2479,6 +2479,9 @@ int TeamFortressViewport::MsgFunc_ScoreInfo( const char *pszName, int iSize, voi
 // if this message is never received, then scores will simply be the combined totals of the players.
 int TeamFortressViewport::MsgFunc_TeamScore( const char *pszName, int iSize, void *pbuf )
 {
+	if (!m_pScoreBoard)
+		return 1;
+
 	BEGIN_READ( pbuf, iSize );
 	char *TeamName = READ_STRING();
 
