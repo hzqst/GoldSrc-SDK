@@ -57,6 +57,9 @@ public:
 	virtual void  setSize(int wide,int tall);
 protected:
 	virtual void paint(Panel* panel);
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 };
 
 }

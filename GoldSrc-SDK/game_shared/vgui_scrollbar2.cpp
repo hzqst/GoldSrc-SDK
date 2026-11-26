@@ -9,6 +9,7 @@
 #include "vgui_scrollbar2.h"
 #include "vgui_slider2.h"
 #include "vgui_loadtga.h"
+#include "vgui_compat_cleanup.h"
 
 #include<VGUI_IntChangeSignal.h>
 #include<VGUI_Button.h>
@@ -71,14 +72,20 @@ public:
 			setImage(m_pImage);
 		}
 
-		setBorder(new LineBorder(Color(60, 60, 60, 0)));	// owned by the Panel
+		setBorder(VGuiCompat_OwnBorder(new LineBorder(Color(60, 60, 60, 0))));	// owned by the Panel
 	}
 
 	~ScrollBarButton()
 	{
 		setImage(NULL);
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiGameShared_ReleaseBitmapPixels(m_pImage);
+#endif
 		delete m_pImage;
 		m_pImage = NULL;
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiGameShared_CleanupButtonMembers(this);
+#endif
 	}
 
 	virtual void paintBackground()
@@ -133,6 +140,53 @@ ScrollBar2::ScrollBar2(int x,int y,int wide,int tall,bool vertical) : Panel(x,y,
 
 	validate();
  }
+
+#if VGUI_ABI_COMPAT_MODE == 1
+namespace
+{
+void DeleteCompatScrollBarButton(Button* button)
+{
+	if (button == NULL)
+		return;
+
+	if (ScrollBarButton* scrollButton = dynamic_cast<ScrollBarButton*>(button))
+	{
+		delete scrollButton;
+		return;
+	}
+
+	VGuiGameShared_CleanupButtonMembers(button);
+	::operator delete(button);
+}
+}
+
+ScrollBar2::~ScrollBar2()
+{
+	for (int i = 0; i < 2; i++)
+	{
+		if (_button[i] != null)
+		{
+			removeChild(_button[i]);
+			DeleteCompatScrollBarButton(_button[i]);
+			_button[i] = null;
+		}
+	}
+
+	if (_slider != null)
+	{
+		removeChild(_slider);
+		delete _slider;
+		_slider = null;
+	}
+
+	for (int i = 0; i < _intChangeSignalDar.getCount(); i++)
+	{
+		VGuiCompatAccess::destroyOwned(_intChangeSignalDar[i]);
+	}
+	VGuiGameShared_ReleaseDarStorage(_intChangeSignalDar);
+	VGuiGameShared_CleanupPanelStorage(this);
+}
+#endif
 
 void ScrollBar2::setSize(int wide,int tall)
 {
@@ -222,12 +276,14 @@ void ScrollBar2::setButton(Button* button,int index)
 		removeChild(_button[index]);
 #if VGUI_ABI_COMPAT_MODE != 1
 		delete _button[index];	// this scrollbar owned it as a child
+#else
+		DeleteCompatScrollBarButton(_button[index]);
 #endif
 	}
 	_button[index]=button;
 	addChild(_button[index]);
 
-	_button[index]->addActionSignal(new FooDefaultButtonSignal(this,index));
+	_button[index]->addActionSignal(VGuiCompat_OwnActionSignal(new FooDefaultButtonSignal(this,index)));
 
 	validate();
 
@@ -246,12 +302,14 @@ void ScrollBar2::setSlider(Slider2 *slider)
 		removeChild(_slider);
 #if VGUI_ABI_COMPAT_MODE != 1
 		delete _slider;	// this scrollbar owned it as a child
+#else
+		delete _slider;
 #endif
 	}
 	_slider=slider;
 	addChild(_slider);
 
-	_slider->addIntChangeSignal(new FooDefaultScrollBarIntChangeSignal(this));
+	_slider->addIntChangeSignal(VGuiCompat_OwnIntChangeSignal(new FooDefaultScrollBarIntChangeSignal(this)));
 
 	validate();
 }

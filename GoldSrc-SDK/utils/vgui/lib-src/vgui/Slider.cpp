@@ -5,6 +5,10 @@
 #include "VGUI_KeyCode.h"
 #include "VGUI_Panel.h"
 
+#if VGUI_ABI_COMPAT_MODE == 1
+#include <type_traits>
+#endif
+
 namespace
 {
 
@@ -42,6 +46,11 @@ public:
 protected:
 	Slider*	_slider;
 };
+
+#if VGUI_ABI_COMPAT_MODE == 1
+static_assert( std::is_trivially_destructible<FooDefaultSliderSignal>::value,
+	"VGUI_ABI_COMPAT_MODE == 1 teardown releases FooDefaultSliderSignal storage directly" );
+#endif
 
 void FooDefaultSliderSignal::cursorEntered( Panel* )
 {

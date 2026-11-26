@@ -1024,6 +1024,7 @@ void ShutdownInput (void)
 }
 
 #include "interface.h"
+#include "vgui_int.h"
 void CL_UnloadParticleMan( void );
 
 #if defined( _TFC )
@@ -1034,6 +1035,7 @@ void CL_DLLEXPORT HUD_Shutdown( void )
 {
 //	RecClShutdown();
 
+	VGui_Shutdown();
 	ShutdownInput();
 
 #if defined( _TFC )

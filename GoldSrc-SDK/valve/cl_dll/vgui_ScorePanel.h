@@ -15,6 +15,7 @@
 #include<VGUI_Label.h>
 #include<VGUI_TextImage.h>
 #include "vgui_listbox.h"
+#include "vgui_compat_teardown.h"
 
 #include <ctype.h>
 
@@ -46,6 +47,10 @@ public:
 
 	~CTextImage2()
 	{
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompatAccess::releaseTextImage(_image[0]);
+		VGuiCompatAccess::releaseTextImage(_image[1]);
+#endif
 		delete _image[0];
 		delete _image[1];
 	}
@@ -121,6 +126,10 @@ public:
 	~CLabelHeader()
 	{
 		delete _dualImage;
+		_dualImage = NULL;
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_CleanupPanelMembers(this);
+#endif
 	}
 
 	void setRow(int row)
@@ -284,6 +293,7 @@ public:
 public:
 
 	ScorePanel(int x,int y,int wide,int tall);
+	~ScorePanel();
 
 	void Update( void );
 

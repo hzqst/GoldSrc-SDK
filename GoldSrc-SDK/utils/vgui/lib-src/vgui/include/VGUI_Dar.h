@@ -12,6 +12,10 @@ namespace vgui
 template <class ELEMTYPE>
 class Dar
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+	friend struct VGuiCompatPanelAccess;
+#endif
 public:
 	Dar()
 	{

@@ -29,6 +29,9 @@ class VGUIAPI ScrollBar2 : public Panel
 {
 public:
 	ScrollBar2(int x,int y,int wide,int tall,bool vertical);
+#if VGUI_ABI_COMPAT_MODE == 1
+	~ScrollBar2();
+#endif
 public:
 	virtual void    setValue(int value);
 	virtual int     getValue();

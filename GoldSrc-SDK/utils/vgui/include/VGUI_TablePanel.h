@@ -22,6 +22,9 @@ class VGUIAPI TablePanel : public Panel
 {
 friend class FooVGuiTablePanelHandler;
 friend class FooTablePanelHeaderSignal;
+#if VGUI_ABI_COMPAT_MODE == 1
+friend struct VGuiCompatAccess;
+#endif
 private:
 	vgui::Dar<int> _columnDar;
 	bool           _gridVisible[2];

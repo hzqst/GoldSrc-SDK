@@ -144,6 +144,7 @@ public:
 	void			RepositionLabels();
 
 	void			FreeBitmaps();
+	void			OnViewportDestroyed(vgui::Panel *viewport);
 
 	void			UpdateServerState(bool bForce);
 
@@ -195,7 +196,7 @@ public:
 	HSPRITE				m_VoiceHeadModel;		// Voice head model (goes above players who are speaking).
 	float				m_VoiceHeadModelHeight;	// Height above their head to place the model.
 
-	vgui::Image			*m_pSpeakerLabelIcon;	// Icon next to speaker labels.
+	vgui::BitmapTGA		*m_pSpeakerLabelIcon;	// Icon next to speaker labels.
 
 	// Lower-right icons telling when the local player is talking..
 	vgui::BitmapTGA		*m_pLocalBitmap;		// Represents the local client talking.

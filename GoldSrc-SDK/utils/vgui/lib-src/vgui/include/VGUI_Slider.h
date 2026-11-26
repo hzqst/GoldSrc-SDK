@@ -13,6 +13,9 @@ class IntChangeSignal;
 
 class VGUIAPI Slider : public Panel
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 public:
 	Slider( int x, int y, int wide, int tall, bool vertical );
 

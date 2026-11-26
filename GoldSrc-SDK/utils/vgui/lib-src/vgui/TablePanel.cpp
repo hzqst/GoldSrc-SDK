@@ -9,6 +9,10 @@
 
 #include <string.h>
 
+#if VGUI_ABI_COMPAT_MODE == 1
+#include <type_traits>
+#endif
+
 #define COLUMN_EXTENT_BITS	12
 #define COLUMN_EXTENT_MASK	((1 << COLUMN_EXTENT_BITS) - 1)
 
@@ -75,6 +79,13 @@ public:
 	TablePanel*		_table;
 	HeaderPanel*	_header;
 };
+
+#if VGUI_ABI_COMPAT_MODE == 1
+static_assert( std::is_trivially_destructible<FooVGuiTablePanelHandler>::value,
+	"VGUI_ABI_COMPAT_MODE == 1 teardown releases FooVGuiTablePanelHandler storage directly" );
+static_assert( std::is_trivially_destructible<FooTablePanelHeaderSignal>::value,
+	"VGUI_ABI_COMPAT_MODE == 1 teardown releases FooTablePanelHeaderSignal storage directly" );
+#endif
 
 void FooTablePanelHeaderSignal::valueChanged( Panel* panel )
 {

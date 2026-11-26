@@ -141,6 +141,10 @@ private:
 	OwnScheme         _ownScheme;
 #endif
 	friend class SurfaceBase;
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+	friend struct VGuiCompatPanelAccess;
+#endif
 };
 }
 

@@ -19,6 +19,7 @@
 
 #include "vgui_TeamFortressViewport.h"
 #include "vgui_ServerBrowser.h"
+#include "vgui_compat_teardown.h"
 
 using namespace vgui;
 
@@ -80,6 +81,18 @@ public:
 		m_pLabel = new Label( "", 0, 0 /*,wide, tall*/ );
 		
 		m_nMouseOverRow = 0;
+	}
+
+	~ServerBrowserTablePanel()
+	{
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_DeletePanelTree( m_pLabel );
+		m_pLabel = NULL;
+		VGuiCompat_CleanupPanelMembers( this );
+#else
+		delete m_pLabel;
+		m_pLabel = NULL;
+#endif
 	}
 
 public:
@@ -466,7 +479,7 @@ public:
 	{
 		m_pBrowser = browser;
 
-		addInputSignal( new LabelSortInputHandler( (ServerBrowserTablePanel * )m_pBrowser, m_szSortKey ) );
+		addInputSignal( VGuiCompat_OwnInputSignal(new LabelSortInputHandler( (ServerBrowserTablePanel * )m_pBrowser, m_szSortKey )) );
 	}
 };
 
@@ -509,7 +522,7 @@ ServerBrowser::ServerBrowser(int x,int y,int wide,int tall) : CTransparentPanel(
 	_tablePanel->setFgColor( 100,100,100, 100 );
 	_tablePanel->setBgColor( 0, 0, 0, 100 );
 
-	_tablePanel->addInputSignal( new CBrowser_InputSignal( (ServerBrowserTablePanel *)_tablePanel ) );
+	_tablePanel->addInputSignal( VGuiCompat_OwnInputSignal(new CBrowser_InputSignal( (ServerBrowserTablePanel *)_tablePanel )) );
 
 	for ( i = 0; i < 5; i++ )
 	{
@@ -523,13 +536,13 @@ ServerBrowser::ServerBrowser(int x,int y,int wide,int tall) : CTransparentPanel(
 
 	_connectButton = new CommandButton( "Connect", btnx, by, bw, bh );
 	_connectButton->setParent( this );
-	_connectButton->addActionSignal( new ConnectHandler(  (ServerBrowserTablePanel * )_tablePanel ) );
+	_connectButton->addActionSignal( VGuiCompat_OwnActionSignal(new ConnectHandler(  (ServerBrowserTablePanel * )_tablePanel )) );
 
 	btnx += bw;
 
 	_refreshButton = new CommandButton( "Refresh", btnx, by, bw, bh );
 	_refreshButton->setParent( this );
-	_refreshButton->addActionSignal( new RefreshHandler(  (ServerBrowserTablePanel * )_tablePanel ) );
+	_refreshButton->addActionSignal( VGuiCompat_OwnActionSignal(new RefreshHandler(  (ServerBrowserTablePanel * )_tablePanel )) );
 
 	/*
 	btnx += bw;
@@ -543,7 +556,7 @@ ServerBrowser::ServerBrowser(int x,int y,int wide,int tall) : CTransparentPanel(
 
 	_stopButton = new CommandButton( "Stop", btnx, by, bw, bh );
 	_stopButton->setParent( this );
-	_stopButton->addActionSignal( new StopHandler(  (ServerBrowserTablePanel * )_tablePanel ) );
+	_stopButton->addActionSignal( VGuiCompat_OwnActionSignal(new StopHandler(  (ServerBrowserTablePanel * )_tablePanel )) );
 
 	/*
 	btnx += bw;
@@ -563,12 +576,25 @@ ServerBrowser::ServerBrowser(int x,int y,int wide,int tall) : CTransparentPanel(
 
 	_cancelButton = new CommandButton( "Close", btnx, by, bw, bh );
 	_cancelButton->setParent( this );
-	_cancelButton->addActionSignal( new CancelHandler(  (ServerBrowserTablePanel * )_tablePanel ) );
+	_cancelButton->addActionSignal( VGuiCompat_OwnActionSignal(new CancelHandler(  (ServerBrowserTablePanel * )_tablePanel )) );
 
 	setPaintBorderEnabled(false);
 	setPaintBackgroundEnabled(false);
 	setPaintEnabled(false);
 
+}
+
+ServerBrowser::~ServerBrowser()
+{
+#if VGUI_ABI_COMPAT_MODE == 1
+	if ( _tablePanel != NULL )
+	{
+		VGuiCompatAccess::detachFromParent( _tablePanel );
+		delete static_cast<ServerBrowserTablePanel *>( _tablePanel );
+		_tablePanel = NULL;
+	}
+	VGuiCompat_CleanupPanelMembers( this );
+#endif
 }
 
 void ServerBrowser::setSize(int wide,int tall)

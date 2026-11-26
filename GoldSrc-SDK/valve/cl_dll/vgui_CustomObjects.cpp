@@ -33,6 +33,7 @@
 #include "vgui_TeamFortressViewport.h"
 #include "vgui_ServerBrowser.h"
 #include "vgui_loadtga.h"
+#include "vgui_compat_teardown.h"
 
 // Arrow filenames
 char *sArrowFilenames[] =
@@ -115,7 +116,7 @@ void CommandButton::Init( void )
 
 	// Add the Highlight signal
 	if (!m_bNoHighlight)
-		addInputSignal( new CHandler_CommandButtonHighlight(this) );
+		addInputSignal( VGuiCompat_OwnInputSignal(new CHandler_CommandButtonHighlight(this)) );
 
 	// not bound to any button yet
 	m_cBoundKey = 0;
@@ -345,8 +346,14 @@ CImageLabel::CImageLabel( const char* pImageName,int x,int y,int wide,int tall )
 CImageLabel::~CImageLabel()
 {
 	setImage( NULL );
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompatAccess::releaseBitmapPixels( m_pTGA );
+#endif
 	delete m_pTGA;
 	m_pTGA = NULL;
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompat_CleanupPanelMembers( this );
+#endif
 }
 
 //===========================================================
@@ -384,6 +391,9 @@ void CImageLabel::LoadImage(const char * pImageName)
 	if ( m_pTGA )
 	{
 		setImage( NULL );
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompatAccess::releaseBitmapPixels( m_pTGA );
+#endif
 		delete m_pTGA;
 		m_pTGA = NULL;
 	}
@@ -441,15 +451,21 @@ CTFScrollButton::CTFScrollButton(int iArrow, const char* text,int x,int y,int wi
 	setImage( m_pTGA );
 
 	// Highlight signal
-	InputSignal *pISignal = new CHandler_CommandButtonHighlight(this);
+	CHandler_CommandButtonHighlight *pISignal = VGuiCompat_OwnInputSignal(new CHandler_CommandButtonHighlight(this));
 	addInputSignal(pISignal);
 }
 
 CTFScrollButton::~CTFScrollButton()
 {
 	setImage( NULL );
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompatAccess::releaseBitmapPixels( m_pTGA );
+#endif
 	delete m_pTGA;
 	m_pTGA = NULL;
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompat_CleanupPanelMembers( this );
+#endif
 }
 
 void CTFScrollButton::paint( void )
@@ -521,17 +537,37 @@ void CTFSlider::paintBackground( void )
 CTFScrollPanel::CTFScrollPanel(int x,int y,int wide,int tall) : ScrollPanel(x,y,wide,tall)
 {
 	ScrollBar *pScrollBar = getVerticalScrollBar();
+#if VGUI_ABI_COMPAT_MODE == 1
+	Button *pOldVertBtn0 = pScrollBar->getButton( 0 );
+	Button *pOldVertBtn1 = pScrollBar->getButton( 1 );
+	Slider *pOldVertSlider = pScrollBar->getSlider();
+#endif
 	pScrollBar->setButton( new CTFScrollButton( ARROW_UP, "", 0,0,16,16 ), 0 );
 	pScrollBar->setButton( new CTFScrollButton( ARROW_DOWN, "", 0,0,16,16 ), 1 );
 	pScrollBar->setSlider( new CTFSlider(0,wide-1,wide,(tall-(wide*2))+2,true) ); 
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompat_DeletePanelTree( pOldVertBtn0 );
+	VGuiCompat_DeletePanelTree( pOldVertBtn1 );
+	VGuiCompat_DeletePanelTree( pOldVertSlider );
+#endif
 	pScrollBar->setPaintBorderEnabled(false);
 	pScrollBar->setPaintBackgroundEnabled(false);
 	pScrollBar->setPaintEnabled(false);
 
 	pScrollBar = getHorizontalScrollBar();
+#if VGUI_ABI_COMPAT_MODE == 1
+	Button *pOldHorizBtn0 = pScrollBar->getButton( 0 );
+	Button *pOldHorizBtn1 = pScrollBar->getButton( 1 );
+	Slider *pOldHorizSlider = pScrollBar->getSlider();
+#endif
 	pScrollBar->setButton( new CTFScrollButton( ARROW_LEFT, "", 0,0,16,16 ), 0 );
 	pScrollBar->setButton( new CTFScrollButton( ARROW_RIGHT, "", 0,0,16,16 ), 1 );
 	pScrollBar->setSlider( new CTFSlider(tall,0,wide-(tall*2),tall,false) );
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompat_DeletePanelTree( pOldHorizBtn0 );
+	VGuiCompat_DeletePanelTree( pOldHorizBtn1 );
+	VGuiCompat_DeletePanelTree( pOldHorizSlider );
+#endif
 	pScrollBar->setPaintBorderEnabled(false);
 	pScrollBar->setPaintBackgroundEnabled(false);
 	pScrollBar->setPaintEnabled(false);

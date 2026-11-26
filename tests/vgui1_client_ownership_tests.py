@@ -39,7 +39,7 @@ from vgui1_panel_tests import VGUI, vgui1_sources
 ROOT = Path(__file__).resolve().parents[1]
 GAME_SHARED = ROOT / 'GoldSrc-SDK/game_shared'
 CONTROLS = ['vgui_listbox.cpp', 'vgui_scrollbar2.cpp', 'vgui_slider2.cpp', 'vgui_grid.cpp', 'vgui_checkbutton2.cpp']
-VGUI_SOURCES = ['ImagePanel.cpp']
+VGUI_SOURCES = ['Bitmap.cpp', 'BitmapTGA.cpp', 'DataInputStream.cpp', 'ImagePanel.cpp']
 # The client controls use the public headers' null and the MSVC _vsnprintf,
 # which only needs a replacement where stdio.h does not declare it.
 CONTROL_DEFINES = ['null=0'] + ([] if os.name == 'nt' else ['_vsnprintf=vsnprintf'])
@@ -47,15 +47,21 @@ CONTROL_DEFINES = ['null=0'] + ([] if os.name == 'nt' else ['_vsnprintf=vsnprint
 TESTS = r'''
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <stdexcept>
 #include <string>
 
+#include "VGUI_ActionSignal.h"
 #include "VGUI_App.h"
 #include "VGUI_BitmapTGA.h"
+#include "VGUI_Border.h"
+#include "VGUI_Button.h"
+#include "VGUI_InputStream.h"
 #include "VGUI_IntChangeSignal.h"
 #include "VGUI_Label.h"
 #include "VGUI_Panel.h"
 #include "vgui_checkbutton2.h"
+#include "vgui_compat_cleanup.h"
 #include "vgui_defaultinputsignal.h"
 #include "vgui_grid.h"
 #include "vgui_listbox.h"
@@ -63,9 +69,55 @@ TESTS = r'''
 
 using namespace vgui;
 
+class TinyTGAStream : public InputStream
+{
+public:
+ TinyTGAStream() : pos_( 0 )
+ {
+  static const uchar kTga[22] = {
+   0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+   1, 0, 1, 0, 32, 0,
+   0x11, 0x22, 0x33, 0xff
+  };
+  std::memcpy( data_, kTga, sizeof( kTga ) );
+ }
+ virtual void seekStart( bool& success ) override { pos_ = 0; success = true; }
+ virtual void seekRelative( int count, bool& success ) override
+ {
+  int next = pos_ + count;
+  success = next >= 0 && next <= (int)sizeof( data_ );
+  if (success) pos_ = next;
+ }
+ virtual void seekEnd( bool& success ) override { pos_ = (int)sizeof( data_ ); success = true; }
+ virtual int getAvailable( bool& success ) override { success = true; return (int)sizeof( data_ ) - pos_; }
+ virtual uchar readUChar( bool& success ) override
+ {
+  if (pos_ >= (int)sizeof( data_ )) { success = false; return 0; }
+  success = true;
+  return data_[pos_++];
+ }
+ virtual void readUChar( uchar* buf, int count, bool& success ) override
+ {
+  if (count < 0 || pos_ + count > (int)sizeof( data_ )) { success = false; return; }
+  std::memcpy( buf, data_ + pos_, (size_t)count );
+  pos_ += count;
+  success = true;
+ }
+ virtual void close( bool& success ) override { success = true; }
+
+private:
+ uchar data_[22];
+ int pos_;
+};
+
+static bool loadRealTga = false;
+
 BitmapTGA* vgui_LoadTGA( char const* )
 {
- return NULL;
+ if (!loadRealTga)
+  return NULL;
+ TinyTGAStream stream;
+ return new BitmapTGA( &stream, false );
 }
 
 class TestApp : public App
@@ -73,6 +125,9 @@ class TestApp : public App
 public:
  TestApp() : App( true ) {}
  virtual void main( int, char** ) override {}
+ Panel* mouseCapture() const { return _mouseCapture; }
+ Panel* wantedKeyFocus() const { return _wantedKeyFocus; }
+ Panel* mouseArenaPanel() const { return _mouseArenaPanel; }
 };
 
 static const int ITEM_COUNT = 3;
@@ -81,6 +136,46 @@ static const int SCROLL_MAX = 100;
 static const int SCROLL_VALUE = 50;
 
 static int deletedSignals;
+static int deletedActions;
+static int deletedBorders;
+static int deletedChildren;
+
+class CountingAction : public ActionSignal
+{
+public:
+#if VGUI_ABI_COMPAT_MODE != 1
+ virtual ~CountingAction() override { ++deletedActions; }
+#else
+ ~CountingAction() { ++deletedActions; }
+#endif
+ virtual void actionPerformed( Panel* ) override {}
+};
+
+class CountingBorder : public Border
+{
+public:
+#if VGUI_ABI_COMPAT_MODE != 1
+ virtual ~CountingBorder() override { ++deletedBorders; }
+#else
+ ~CountingBorder() { ++deletedBorders; }
+#endif
+ virtual void paint( Panel* ) override {}
+};
+
+class CountingChildPanel : public Panel
+{
+public:
+ CountingChildPanel() : Panel( 0, 0, 4, 4 ) {}
+#if VGUI_ABI_COMPAT_MODE != 1
+ virtual ~CountingChildPanel() override { ++deletedChildren; }
+#else
+ ~CountingChildPanel()
+ {
+  ++deletedChildren;
+  VGuiCompatAccess::cleanupPanelStorage( this );
+ }
+#endif
+};
 
 class CountingIntChange : public IntChangeSignal
 {
@@ -88,6 +183,8 @@ public:
  CountingIntChange() : calls( 0 ) {}
 #if VGUI_ABI_COMPAT_MODE != 1
  virtual ~CountingIntChange() override { ++deletedSignals; }
+#else
+ ~CountingIntChange() { ++deletedSignals; }
 #endif
  virtual void intChanged( int, Panel* ) override { ++calls; }
 
@@ -143,25 +240,50 @@ static void Run(const std::string& test)
   Check(button->IsChecked(), "label click toggles");
   PanelInput::press( &button->m_CheckboxPanel );
   Check(!button->IsChecked(), "box click toggles");
-#if VGUI_ABI_COMPAT_MODE != 1
   delete button;
-#endif
  }
  else if (test == "scroll-bar2-fires-once")
  {
+  loadRealTga = true;
   ScrollBar2* scrollBar = new ScrollBar2( 0, 0, 20, 100, true );
   scrollBar->setRange( 0, SCROLL_MAX );
   CountingIntChange* first = new CountingIntChange();
   CountingIntChange* second = new CountingIntChange();
-  scrollBar->addIntChangeSignal( first );
-  scrollBar->addIntChangeSignal( second );
+  scrollBar->addIntChangeSignal( VGuiCompat_OwnIntChangeSignal( first ) );
+  scrollBar->addIntChangeSignal( VGuiCompat_OwnIntChangeSignal( second ) );
   scrollBar->setValue( SCROLL_VALUE );
   Check(1 == first->calls && 1 == second->calls, "each signal called once");
-#if VGUI_ABI_COMPAT_MODE != 1
   delete scrollBar;
+  loadRealTga = false;
   Check(2 == deletedSignals, "scroll bar deleted its signals");
-#endif
  }
+#if VGUI_ABI_COMPAT_MODE == 1
+ else if (test == "compat-button-focus-and-owned")
+ {
+  TestApp* app = static_cast<TestApp*>( App::getInstance() );
+  Button* button = new Button( "Spec", 0, 0, 40, 20 );
+  CountingChildPanel* child = new CountingChildPanel();
+  child->setParent( button );
+  button->addActionSignal( VGuiCompat_OwnActionSignal( new CountingAction() ) );
+  button->setBorder( VGuiCompat_OwnBorder( new CountingBorder() ) );
+  app->setMouseCapture( button );
+  app->requestFocus( button );
+  app->setMouseArena( button );
+  Check(app->mouseCapture() == button && app->wantedKeyFocus() == button && app->mouseArenaPanel() == button, "app refs set");
+  int childCount = 0;
+  Panel** children = VGuiCompatAccess::takeChildren( button, childCount );
+  Check(childCount == 1 && children[0] == child, "child detached");
+  delete static_cast<CountingChildPanel*>( children[0] );
+  delete[] children;
+  VGuiGameShared_CleanupButtonMembers( button );
+  delete button;
+  Check(app->mouseCapture() == NULL, "capture cleared");
+  Check(app->getFocus() == NULL && app->wantedKeyFocus() == NULL, "focus cleared");
+  Check(app->mouseArenaPanel() == NULL, "mouse arena cleared");
+  app->externalTick();
+  Check(deletedActions == 1 && deletedBorders == 1 && deletedChildren == 1, "owned members freed");
+ }
+#endif
 #if VGUI_ABI_COMPAT_MODE != 1
  else if (test == "list-box-tree")
  {
@@ -211,7 +333,7 @@ int main(int argc, char** argv)
 
 SCENARIOS = ['forwarder', 'check-button-toggles', 'scroll-bar2-fires-once']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
-MODES = {'1': SCENARIOS, '0': SCENARIOS + ['list-box-tree', 'check-button-tree']}
+MODES = {'1': SCENARIOS + ['compat-button-focus-and-owned'], '0': SCENARIOS + ['list-box-tree', 'check-button-tree']}
 
 
 def main():
@@ -228,8 +350,7 @@ def main():
             executable = compile_program(sources, executable, includes=[VGUI / 'include', VGUI, GAME_SHARED],
                                          defines=['VGUI_STATIC', f'VGUI_ABI_COMPAT_MODE={mode}'] + CONTROL_DEFINES,
                                          debug=True, sanitizers=['address'])
-            # Without destructors the compatible build frees no panel; only check
-            # its memory errors.
+            # The forwarder fixture still embeds a raw compat Panel on the stack.
             env = dict(os.environ)
             if mode == '1':
                 env['ASAN_OPTIONS'] = 'detect_leaks=0:' + env.get('ASAN_OPTIONS', '')

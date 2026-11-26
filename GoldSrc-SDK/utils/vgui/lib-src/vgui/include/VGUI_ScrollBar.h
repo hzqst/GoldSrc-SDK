@@ -14,6 +14,9 @@ class IntChangeSignal;
 
 class VGUIAPI ScrollBar : public Panel
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 public:
 	ScrollBar( int x, int y, int wide, int tall, bool vertical );
 

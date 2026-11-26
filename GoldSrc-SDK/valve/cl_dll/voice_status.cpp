@@ -24,6 +24,7 @@
 #include "vgui_loadtga.h"
 #include "vgui_helpers.h"
 #include "VGUI_MouseCode.h"
+#include "vgui_compat_teardown.h"
 
 
 
@@ -133,6 +134,8 @@ CVoiceStatus::CVoiceStatus()
 	m_bTalking = m_bServerAcked = false;
 
 	memset(m_pBanButtons, 0, sizeof(m_pBanButtons));
+	memset(m_Labels, 0, sizeof(m_Labels));
+	m_pLocalLabel = NULL;
 
 	m_pParentPanel = NULL;
 
@@ -145,29 +148,28 @@ CVoiceStatus::CVoiceStatus()
 CVoiceStatus::~CVoiceStatus()
 {
 	g_pInternalVoiceStatus = NULL;
-	
-#if VGUI_ABI_COMPAT_MODE == 1
+	for (auto& button : m_pBanButtons)
+		button = NULL;
+	FreeBitmaps();
+
 	for(int i=0; i < MAX_VOICE_SPEAKERS; i++)
 	{
-		delete m_Labels[i].m_pLabel;
-		m_Labels[i].m_pLabel = NULL;
-
-		delete m_Labels[i].m_pIcon;
-		m_Labels[i].m_pIcon = NULL;
-		
-		delete m_Labels[i].m_pBackground;
-		m_Labels[i].m_pBackground = NULL;
-	}				
-
-	delete m_pLocalLabel;
-	m_pLocalLabel = NULL;
+		Panel* background = m_Labels[i].m_pBackground;
+		if (background)
+			background->setParent(NULL);
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_DeletePanelTree(background);
 #else
-	// g_VoiceStatus is destroyed when the client DLL unloads, after
-	// VGuiWrap_Shutdown deleted the panel tree, and with it every label
-	// parented to it. A label that was never parented leaks at exit.
+		delete background;
 #endif
-
-	FreeBitmaps();
+	}
+	if (m_pLocalLabel)
+		m_pLocalLabel->setParent(NULL);
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompat_DeletePanelTree(m_pLocalLabel);
+#else
+	delete m_pLocalLabel;
+#endif
 
 	if(m_pchGameDir)
 	{
@@ -180,6 +182,20 @@ CVoiceStatus::~CVoiceStatus()
 	}
 }
 
+void CVoiceStatus::OnViewportDestroyed(Panel *viewport)
+{
+	if (!viewport)
+		return;
+	for (auto& label : m_Labels)
+	{
+		if (label.m_pBackground && label.m_pBackground->getParent() == viewport)
+			label.m_pBackground->setParent(NULL);
+	}
+	if (m_pLocalLabel && m_pLocalLabel->getParent() == viewport)
+		m_pLocalLabel->setParent(NULL);
+	for (auto& button : m_pBanButtons)
+		button = NULL;
+}
 
 int CVoiceStatus::Init(
 	IVoiceStatusHelper *pHelper,
@@ -789,6 +805,30 @@ void CVoiceStatus::RepositionLabels()
 
 void CVoiceStatus::FreeBitmaps()
 {
+	for (auto* button : m_pBanButtons)
+	{
+		if (button)
+			button->setImage(NULL);
+	}
+	for (auto& label : m_Labels)
+	{
+		if (label.m_pIcon)
+			label.m_pIcon->setImage(NULL);
+	}
+	if (m_pLocalLabel)
+		m_pLocalLabel->setImage(NULL);
+
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompatAccess::releaseBitmapPixels(m_pLocalBitmap);
+	VGuiCompatAccess::releaseBitmapPixels(m_pAckBitmap);
+	VGuiCompatAccess::releaseBitmapPixels(m_pSpeakerLabelIcon);
+	VGuiCompatAccess::releaseBitmapPixels(m_pScoreboardNeverSpoken);
+	VGuiCompatAccess::releaseBitmapPixels(m_pScoreboardNotSpeaking);
+	VGuiCompatAccess::releaseBitmapPixels(m_pScoreboardSpeaking);
+	VGuiCompatAccess::releaseBitmapPixels(m_pScoreboardSpeaking2);
+	VGuiCompatAccess::releaseBitmapPixels(m_pScoreboardSquelch);
+	VGuiCompatAccess::releaseBitmapPixels(m_pScoreboardBanned);
+#endif
 	// Delete all the images we have loaded.
 	delete m_pLocalBitmap;
 	m_pLocalBitmap = NULL;
@@ -817,17 +857,6 @@ void CVoiceStatus::FreeBitmaps()
 	delete m_pScoreboardBanned;
 	m_pScoreboardBanned = NULL;
 
-	// Clear references to the images in panels.
-	for(int i=0; i < VOICE_MAX_PLAYERS; i++)
-	{
-		if (m_pBanButtons[i])
-		{
-			m_pBanButtons[i]->setImage(NULL);
-		}
-	}
-
-	if(m_pLocalLabel)
-		m_pLocalLabel->setImage(NULL);
 }
 
 //-----------------------------------------------------------------------------

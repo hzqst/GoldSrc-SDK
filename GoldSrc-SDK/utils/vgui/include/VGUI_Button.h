@@ -62,6 +62,9 @@ protected:
 	int                _mouseClickMask;
 	ButtonGroup*       _buttonGroup;
 	ButtonController*  _buttonController;
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 };
 
 }
