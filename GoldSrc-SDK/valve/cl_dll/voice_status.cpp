@@ -148,6 +148,8 @@ CVoiceStatus::CVoiceStatus()
 CVoiceStatus::~CVoiceStatus()
 {
 	g_pInternalVoiceStatus = NULL;
+	for (auto& button : m_pBanButtons)
+		button = NULL;
 	FreeBitmaps();
 
 	for(int i=0; i < MAX_VOICE_SPEAKERS; i++)
@@ -182,6 +184,8 @@ CVoiceStatus::~CVoiceStatus()
 
 void CVoiceStatus::OnViewportDestroyed(Panel *viewport)
 {
+	if (!viewport)
+		return;
 	for (auto& label : m_Labels)
 	{
 		if (label.m_pBackground && label.m_pBackground->getParent() == viewport)

@@ -204,10 +204,10 @@ char* GetVGUITGAName(const char *pszName)
 //================================================================
 // COMMAND MENU
 //================================================================
-void CCommandMenu::AddButton( CommandButton *pButton )
+bool CCommandMenu::AddButton( CommandButton *pButton )
 {
 	if (m_iButtons >= MAX_BUTTONS)
-		return;
+		return false;
 
 	m_aButtons[m_iButtons] = pButton;
 	m_iButtons++;
@@ -223,17 +223,22 @@ void CCommandMenu::AddButton( CommandButton *pButton )
 	{
 		pButton->setBoundKey( '0' );
 	}
+
+	return true;
 }
 
 void CCommandMenu::RemoveAllButtons(void)
 {
+	removeAllChildren();
+
 	const int buttonCount = m_iButtons;
 	m_iButtons = 0;
 	for (int i = 0; i < buttonCount; i++)
 	{
 		CommandButton *button = m_aButtons[i];
 		m_aButtons[i] = NULL;
-		button->setParent(NULL);
+		if (!button)
+			continue;
 #if VGUI_ABI_COMPAT_MODE == 1
 		VGuiCompat_DeletePanelTree(button);
 #else
@@ -781,6 +786,11 @@ void VGuiCompat_DeletePanelTree(Panel *panel)
 	if (CCheckButton2 *checkButton = dynamic_cast<CCheckButton2 *>(panel))
 	{
 		delete checkButton;
+		return;
+	}
+	if (DragNDropPanel *dragPanel = dynamic_cast<DragNDropPanel *>(panel))
+	{
+		delete dragPanel;
 		return;
 	}
 
@@ -1713,7 +1723,15 @@ void TeamFortressViewport::UpdatePlayerMenu(int menuIndex)
 
 		pButton->setBoundKey( (char)255  );
 		pButton->setContentAlignment( vgui::Label::a_center );
-		m_pCommandMenus[menuIndex]->AddButton( pButton );
+		if ( !m_pCommandMenus[menuIndex]->AddButton( pButton ) )
+		{
+#if VGUI_ABI_COMPAT_MODE == 1
+			VGuiCompat_DeletePanelTree( pButton );
+#else
+			delete pButton;
+#endif
+			continue;
+		}
 		pButton->setParentMenu( m_pCommandMenus[menuIndex] );
 
 		// Override font in CommandMenu

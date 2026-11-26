@@ -276,6 +276,8 @@ struct VGuiCompatAccess : VGuiCompatPanelAccess
 	// A privately owned cell editor has only TextEntry's built-in focus signal.
 	static void cleanupCellTextEntry(TextEntry* textEntry)
 	{
+		if (textEntry == NULL)
+			return;
 		textEntry->removeInputSignal(textEntry);
 		for (int i = 0; i < textEntry->_focusChangeSignalDar.getCount(); i++)
 			destroyOwned(textEntry->_focusChangeSignalDar[i]);
