@@ -426,7 +426,7 @@ public:
 
 	float		m_flButtonSizeY;
 	int			m_iSpectCmdMenu;
-	void		AddButton( CommandButton *pButton );
+	bool		AddButton( CommandButton *pButton );
 	bool		RecalculateVisibles( int iNewYPos, bool bHideAll );
 	void		RecalculatePositions( int iYOffset );
 	void		MakeVisible( CCommandMenu *pChildMenu );
