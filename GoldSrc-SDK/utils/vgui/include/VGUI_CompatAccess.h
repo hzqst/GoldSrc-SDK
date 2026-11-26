@@ -27,6 +27,7 @@
 #include <VGUI_ChangeSignal.h>
 #include <VGUI_CompatPanelAccess.h>
 #include <VGUI_Dar.h>
+#include <VGUI_FocusChangeSignal.h>
 #include <VGUI_HeaderPanel.h>
 #include <VGUI_InputSignal.h>
 #include <VGUI_IntChangeSignal.h>
