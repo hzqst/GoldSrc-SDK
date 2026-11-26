@@ -473,12 +473,12 @@ extern DLL_GLOBAL BOOL		g_fGameOver;
 
 void CWorld :: Spawn( void )
 {
-	g_fGameOver = FALSE;
 	Precache( );
 }
 
 void CWorld :: Precache( void )
 {
+	g_fGameOver = FALSE;
 	g_pLastSpawn = NULL;
 	
 #if 1
