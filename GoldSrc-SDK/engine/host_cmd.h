@@ -37,7 +37,6 @@ struct SAVELIGHTSTYLE
 };
 
 SAVERESTOREDATA*	LoadSaveData( const char* level );
-void				ParseSaveTables( SAVERESTOREDATA* save, SAVE_HEADER* header, int updateGlobals );
 void				EntityPatchRead( SAVERESTOREDATA* save, const char* level );
 void				EntityPatchWrite( SAVERESTOREDATA* save, const char* level );
 int					CreateEntityList( SAVERESTOREDATA* save, int levelMask );
