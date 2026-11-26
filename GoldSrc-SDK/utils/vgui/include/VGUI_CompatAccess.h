@@ -25,6 +25,7 @@
 #include <VGUI_Button.h>
 #include <VGUI_ButtonController.h>
 #include <VGUI_ChangeSignal.h>
+#include <VGUI_CompatPanelAccess.h>
 #include <VGUI_Dar.h>
 #include <VGUI_HeaderPanel.h>
 #include <VGUI_InputSignal.h>
@@ -39,7 +40,7 @@
 namespace vgui
 {
 
-struct VGuiCompatAccess
+struct VGuiCompatAccess : VGuiCompatPanelAccess
 {
 	struct DestroyEntry
 	{
@@ -99,36 +100,6 @@ struct VGuiCompatAccess
 		::operator delete(mostDerived);
 	}
 
-	template <class T>
-	static void releaseDarStorage(Dar<T>& dar)
-	{
-		delete[] dar._data;
-		dar._data = NULL;
-		dar._count = 0;
-		dar._capacity = 0;
-	}
-
-	// Mirrors App::panelDeleted() when VGUI_ABI_COMPAT_MODE == 1 omits it,
-	// preventing dangling App focus/capture references across client reloads.
-	static void forgetPanel(App* app, Panel* panel)
-	{
-		if (app == NULL || panel == NULL)
-			return;
-
-		if (app->_mouseCapture == panel)
-			app->setMouseCapture(NULL);
-		if (app->_mouseArenaPanel == panel)
-			app->setMouseArena(0, 0, 0, 0, false);
-		if (app->_keyFocus == panel)
-			app->_keyFocus = NULL;
-		if (app->_oldMouseFocus == panel)
-			app->_oldMouseFocus = NULL;
-		if (app->_mouseFocus == panel)
-			app->_mouseFocus = NULL;
-		if (app->_wantedKeyFocus == panel)
-			app->_wantedKeyFocus = NULL;
-	}
-
 	static void releaseBitmapPixels(Bitmap* bitmap)
 	{
 		if (bitmap == NULL)
@@ -157,17 +128,6 @@ struct VGuiCompatAccess
 			panel->_parent->removeChild(panel);
 		panel->_parent = NULL;
 		panel->_surfaceBase = NULL;
-	}
-
-	static void releasePanelDars(Panel* panel)
-	{
-		if (panel == NULL)
-			return;
-
-		releaseDarStorage(panel->_childDar);
-		releaseDarStorage(panel->_inputSignalDar);
-		releaseDarStorage(panel->_repaintSignalDar);
-		releaseDarStorage(panel->_focusChangeSignalDar);
 	}
 
 	static void cleanupPanelStorage(Panel* panel)

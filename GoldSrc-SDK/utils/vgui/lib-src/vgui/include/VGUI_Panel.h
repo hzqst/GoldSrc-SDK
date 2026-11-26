@@ -28,6 +28,7 @@ class VGUIAPI Panel
 {
 #if VGUI_ABI_COMPAT_MODE == 1
 	friend struct VGuiCompatAccess;
+	friend struct VGuiCompatPanelAccess;
 #endif
 	friend class App;
 	friend class Image;
