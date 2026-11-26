@@ -130,6 +130,7 @@ foreach(name IN ITEMS
 		tfc_text_window
 		transparent_entity
 		utl_containers
+		valve_node_graph
 		vgui1_app_focus
 		vgui1_build_group
 		vgui1_button_group

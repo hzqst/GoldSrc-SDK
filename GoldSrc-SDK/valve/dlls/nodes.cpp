@@ -23,6 +23,10 @@
 #include	"nodes.h"
 #include	"animation.h"
 #include	"doors.h"
+#include <climits>
+#include <cmath>
+#include <cstdint>
+#include <type_traits>
 
 #if !defined ( _WIN32 )
 #include <sys/stat.h>
@@ -38,6 +42,7 @@
 // any given node is allowed to 'see' in the first stage of graph creation "LinkVisibleNodes()".
 #define	MAX_NODE_INITIAL_LINKS	128
 #define	MAX_NODES               1024
+#define ENTRY_STATE_EMPTY -1
 
 extern DLL_GLOBAL edict_t		*g_pBodyQueueHead;
 
@@ -106,6 +111,7 @@ void CGraph :: InitGraph( void)
 	m_cNodes = 0;
 	m_cLinks = 0;
 	m_nRouteInfo = 0;
+	m_nHashLinks = 0;
 
 	m_iLastActiveIdleSearch = 0;
 	m_iLastCoverSearch = 0;
@@ -519,15 +525,29 @@ float CGraph::PathLength( int iStart, int iDest, int iHull, int afCapMask )
 // Parse the routing table at iCurrentNode for the next node on the shortest path to iDest
 int CGraph::NextNodeInRoute( int iCurrentNode, int iDest, int iHull, int iCap )
 {
+	if ( !m_pNodes || !m_pRouteInfo || m_cNodes <= 0 || m_nRouteInfo <= 0
+		 || iCurrentNode < 0 || iCurrentNode >= m_cNodes
+		 || iDest < 0 || iDest >= m_cNodes
+		 || iHull < 0 || iHull >= MAX_NODE_HULLS
+		 || iCap < 0 || iCap >= 2 )
+		return iCurrentNode;
+
+	int offset = m_pNodes[ iCurrentNode ].m_pNextBestNode[iHull][iCap];
+	if ( offset < 0 || offset >= m_nRouteInfo )
+		return iCurrentNode;
+
 	int iNext = iCurrentNode;
 	int nCount = iDest+1;
-	char *pRoute = m_pRouteInfo + m_pNodes[ iCurrentNode ].m_pNextBestNode[iHull][iCap];
+	const char *pRoute = m_pRouteInfo + offset;
+	const char *pRouteEnd = m_pRouteInfo + m_nRouteInfo;
 
 	// Until we decode the next best node
 	//
 	while (nCount > 0)
 	{
-		char ch = *pRoute++;
+		if ( pRoute >= pRouteEnd )
+			return iCurrentNode;
+		int ch = static_cast<signed char>( *pRoute++ );
 		//ALERT(at_aiconsole, "C(%d)", ch);
 		if (ch < 0)
 		{
@@ -549,14 +569,18 @@ int CGraph::NextNodeInRoute( int iCurrentNode, int iDest, int iHull, int iCap )
 		else
 		{
 			//ALERT(at_aiconsole, "C(%d)", *pRoute);
+			if ( pRoute >= pRouteEnd )
+				return iCurrentNode;
 
 			// Repeat phrase
 			//
 			if (nCount <= ch+1)
 			{
-				iNext = iCurrentNode + *pRoute;
+				iNext = iCurrentNode + static_cast<signed char>( *pRoute );
 				if (iNext >= m_cNodes) iNext -= m_cNodes;
 				else if (iNext < 0) iNext += m_cNodes;
+				if (iNext < 0 || iNext >= m_cNodes)
+					return iCurrentNode;
 				nCount = 0;
 				//ALERT(at_aiconsole, "REP: iNext=%d\n", iNext);
 			}
@@ -812,7 +836,10 @@ void inline CalcBounds(int &Lower, int &Upper, int Goal, int Best)
 //
 inline int CALC_RANGE(int x, int lower, int upper)
 {
-	return NUM_RANGES*(x-lower)/((upper-lower+1));
+	const int64_t span = (int64_t)upper - (int64_t)lower + 1;
+	if ( span <= 0 )
+		return 0;
+	return (int)( ( (int64_t)NUM_RANGES * ( (int64_t)x - (int64_t)lower ) ) / span );
 }
 
 
@@ -2336,172 +2363,203 @@ void CQueuePriority::Heap_SiftUp(void)
 //=========================================================
 int CGraph :: FLoadGraph ( char *szMapName )
 {
-	char	szFilename[MAX_PATH];
-	int		iVersion;
-	int     length;
-	byte    *aMemFile;
-	byte    *pMemFile;
+	if ( !szMapName || !szMapName[0] )
+		return FALSE;
 
-	// make sure the directories have been made
-	char	szDirName[MAX_PATH];
-	GET_GAME_DIR( szDirName );
-	strcat( szDirName, "/maps" );
-	CreateDirectory( szDirName, NULL );
-	strcat( szDirName, "/graphs" );
-	CreateDirectory( szDirName, NULL );
+	char filename[MAX_PATH];
+	const int nameLength = snprintf( filename, sizeof( filename ), "maps/graphs/%s.nod", szMapName );
+	if ( nameLength < 0 || (size_t)nameLength >= sizeof( filename ) )
+		return FALSE;
 
-	strcpy ( szFilename, "maps/graphs/" );
-	strcat ( szFilename, szMapName );
-	strcat( szFilename, ".nod" );
+	int length;
+	byte* file = LOAD_FILE_FOR_ME( filename, &length );
+	if ( !file )
+		return FALSE;
 
-	pMemFile = aMemFile = LOAD_FILE_FOR_ME(szFilename, &length);
-
-	if ( !aMemFile )
+	CGraph graph = {};
+	const auto decode = [&]()
 	{
+		constexpr size_t headerSize = sizeof( int ) + sizeof( CGraph );
+		if ( length < 0 || (size_t)length < headerSize )
+			return false;
+
+		int version;
+		memcpy( &version, file, sizeof( version ) );
+		if ( version != GRAPH_VERSION )
+			return false;
+
+		// The v16 writer stores the native x86 layout, including unused pointer slots.
+		memcpy( &graph, file + sizeof( version ), sizeof( graph ) );
+		graph.m_pNodes = NULL;
+		graph.m_pLinkPool = NULL;
+		graph.m_di = NULL;
+		graph.m_pRouteInfo = NULL;
+		graph.m_pHashLinks = NULL;
+
+		if ( graph.m_cNodes <= 0 || graph.m_cNodes > MAX_NODES
+			 || graph.m_cLinks < 0 || graph.m_cLinks > SHRT_MAX
+			 || graph.m_nRouteInfo <= 0 || graph.m_nHashLinks != 3 * graph.m_cLinks / 2 + 3 )
+			return false;
+
+		const size_t nodesSize = sizeof( CNode ) * graph.m_cNodes;
+		const size_t linksSize = sizeof( CLink ) * graph.m_cLinks;
+		const size_t distSize = sizeof( DIST_INFO ) * graph.m_cNodes;
+		const uint64_t hashSize = sizeof( short ) * (uint64_t)graph.m_nHashLinks;
+		if ( headerSize + nodesSize + linksSize + distSize + graph.m_nRouteInfo + hashSize != (uint64_t)length )
+			return false;
+
+		const byte* cursor = file + headerSize;
+		const auto copySection = [&]( auto*& output, size_t bytes )
+		{
+			if ( !bytes )
+				return true;
+			output = static_cast<std::remove_reference_t<decltype(output)>>( malloc( bytes ) );
+			if ( !output )
+				return false;
+			memcpy( output, cursor, bytes );
+			cursor += bytes;
+			return true;
+		};
+		if ( !copySection( graph.m_pNodes, nodesSize )
+			 || !copySection( graph.m_pLinkPool, linksSize )
+			 || !copySection( graph.m_di, distSize )
+			 || !copySection( graph.m_pRouteInfo, graph.m_nRouteInfo )
+			 || !copySection( graph.m_pHashLinks, (size_t)hashSize ) )
+			return false;
+
+		const auto validNode = [&]( int index ) { return index >= 0 && index < graph.m_cNodes; };
+		const auto finiteVec = []( const Vector& v ) { return std::isfinite( v.x ) && std::isfinite( v.y ) && std::isfinite( v.z ); };
+		for ( int i = 0; i < graph.m_cNodes; ++i )
+		{
+			const CNode& node = graph.m_pNodes[i];
+			if ( !finiteVec( node.m_vecOrigin ) || !finiteVec( node.m_vecOriginPeek ) || !std::isfinite( node.m_flHintYaw ) )
+				return false;
+			if ( node.m_iFirstLink < 0 || node.m_iFirstLink > graph.m_cLinks
+				 || node.m_cNumLinks < 0 || node.m_cNumLinks > graph.m_cLinks - node.m_iFirstLink )
+				return false;
+			for ( int j = 0; j < node.m_cNumLinks; ++j )
+			{
+				if ( graph.m_pLinkPool[node.m_iFirstLink + j].m_iSrcNode != i )
+					return false;
+			}
+			for ( const auto& hull : node.m_pNextBestNode )
+			{
+				for ( int offset : hull )
+				{
+					if ( offset < 0 || offset >= graph.m_nRouteInfo )
+						return false;
+					int remaining = graph.m_cNodes;
+					while ( remaining > 0 )
+					{
+						if ( offset >= graph.m_nRouteInfo )
+							return false;
+						const int phrase = static_cast<signed char>( graph.m_pRouteInfo[offset++] );
+						if ( phrase < 0 )
+						{
+							remaining += phrase;
+							continue;
+						}
+						if ( offset >= graph.m_nRouteInfo )
+							return false;
+						int next = i + static_cast<signed char>( graph.m_pRouteInfo[offset++] );
+						if ( next >= graph.m_cNodes )
+							next -= graph.m_cNodes;
+						else if ( next < 0 )
+							next += graph.m_cNodes;
+						if ( !validNode( next ) )
+							return false;
+						remaining -= phrase + 1;
+					}
+					if ( remaining != 0 )
+						return false;
+				}
+			}
+			for ( int sorted : graph.m_di[i].m_SortedBy )
+			{
+				if ( !validNode( sorted ) )
+					return false;
+			}
+			graph.m_di[i].m_CheckedEvent = 0;
+		}
+
+		for ( int i = 0; i < graph.m_cLinks; ++i )
+		{
+			CLink& link = graph.m_pLinkPool[i];
+			if ( !validNode( link.m_iSrcNode ) || !validNode( link.m_iDestNode )
+				 || !std::isfinite( link.m_flWeight ) || link.m_flWeight < 0.0f )
+				return false;
+			if ( !link.m_pLinkEnt )
+				memset( link.m_szLinkEntModelname, 0, sizeof( link.m_szLinkEntModelname ) );
+			link.m_pLinkEnt = NULL;
+		}
+		constexpr float kMaxRegionCoord = 1000000.0f;
+		for ( int axis = 0; axis < 3; ++axis )
+		{
+			const float minVal = graph.m_RegionMin[axis];
+			const float maxVal = graph.m_RegionMax[axis];
+			if ( !std::isfinite( minVal ) || !std::isfinite( maxVal )
+				 || minVal < -kMaxRegionCoord || maxVal > kMaxRegionCoord
+				 || (int)maxVal < (int)minVal )
+				return false;
+			for ( int region = 0; region < NUM_RANGES; ++region )
+			{
+				const int first = graph.m_RangeStart[axis][region];
+				const int last = graph.m_RangeEnd[axis][region];
+				if ( first <= last && ( !validNode( first ) || !validNode( last ) ) )
+					return false;
+			}
+		}
+		for ( const auto& entry : graph.m_Cache )
+		{
+			if ( entry.n != NO_NODE && !validNode( entry.n ) )
+				return false;
+		}
+
+		bool hasEmptyBucket = false;
+		for ( int i = 0; i < graph.m_nHashLinks; ++i )
+		{
+			const short index = graph.m_pHashLinks[i];
+			if ( index == ENTRY_STATE_EMPTY )
+				hasEmptyBucket = true;
+			else if ( index < 0 || index >= graph.m_cLinks )
+				return false;
+		}
+		for ( int step : graph.m_HashPrimes )
+		{
+			if ( step <= 0 || step >= graph.m_nHashLinks )
+				return false;
+			int divisor = step;
+			int dividend = graph.m_nHashLinks;
+			while ( divisor )
+			{
+				const int remainder = dividend % divisor;
+				dividend = divisor;
+				divisor = remainder;
+			}
+			if ( dividend != 1 )
+				return false;
+		}
+		return hasEmptyBucket;
+	};
+
+	const bool valid = decode();
+	FREE_FILE( file );
+	if ( !valid )
+	{
+		graph.InitGraph();
+		ALERT( at_aiconsole, "Invalid v%d node graph: %s\n", GRAPH_VERSION, filename );
 		return FALSE;
 	}
-	else
-	{
-		// Read the graph version number
-		//
-		length -= sizeof(int);
-		if (length < 0) goto ShortFile;
-		memcpy(&iVersion, pMemFile, sizeof(int));
-		pMemFile += sizeof(int);
 
-		if ( iVersion != GRAPH_VERSION )
-		{
-			// This file was written by a different build of the dll!
-			//
-			ALERT ( at_aiconsole, "**ERROR** Graph version is %d, expected %d\n",iVersion, GRAPH_VERSION );
-			goto ShortFile;
-		}
-
-		// Read the graph class
-		//
-		length -= sizeof(CGraph);
-		if (length < 0) goto ShortFile;
-		memcpy(this, pMemFile, sizeof(CGraph));
-		pMemFile += sizeof(CGraph);
-
-		// Set the pointers to zero, just in case we run out of memory.
-		//
-		m_pNodes     = NULL;
-		m_pLinkPool  = NULL;
-		m_di         = NULL;
-		m_pRouteInfo = NULL;
-		m_pHashLinks = NULL;
-
-
-		// Malloc for the nodes
-		//
-		m_pNodes = ( CNode * )calloc ( sizeof ( CNode ), m_cNodes );
-
-		if ( !m_pNodes )
-		{
-			ALERT ( at_aiconsole, "**ERROR**\nCouldn't malloc %d nodes!\n", m_cNodes );
-			goto NoMemory;
-		}
-
-		// Read in all the nodes
-		//
-		length -= sizeof(CNode) * m_cNodes;
-		if (length < 0) goto ShortFile;
-		memcpy(m_pNodes, pMemFile, sizeof(CNode)*m_cNodes);
-		pMemFile += sizeof(CNode) * m_cNodes;
-
-		
-		// Malloc for the link pool
-		//
-		m_pLinkPool = ( CLink * )calloc ( sizeof ( CLink ), m_cLinks );
-
-		if ( !m_pLinkPool )
-		{
-			ALERT ( at_aiconsole, "**ERROR**\nCouldn't malloc %d link!\n", m_cLinks );
-			goto NoMemory;
-		}
-
-		// Read in all the links
-		//
-		length -= sizeof(CLink)*m_cLinks;
-		if (length < 0) goto ShortFile;
-		memcpy(m_pLinkPool, pMemFile, sizeof(CLink)*m_cLinks);
-		pMemFile += sizeof(CLink)*m_cLinks;
-
-		// Malloc for the sorting info.
-		//
-		m_di = (DIST_INFO *)calloc( sizeof(DIST_INFO), m_cNodes );
-		if ( !m_di )
-		{
-			ALERT ( at_aiconsole, "***ERROR**\nCouldn't malloc %d entries sorting nodes!\n", m_cNodes );
-			goto NoMemory;
-		}
-
-		// Read it in.
-		//
-		length -= sizeof(DIST_INFO)*m_cNodes;
-		if (length < 0) goto ShortFile;
-		memcpy(m_di, pMemFile, sizeof(DIST_INFO)*m_cNodes);
-		pMemFile += sizeof(DIST_INFO)*m_cNodes;
-
-		// Malloc for the routing info.
-		//
-		m_fRoutingComplete = FALSE;
-		m_pRouteInfo = (char *)calloc( sizeof(char), m_nRouteInfo );
-		if ( !m_pRouteInfo )
-		{
-			ALERT ( at_aiconsole, "***ERROR**\nCounldn't malloc %d route bytes!\n", m_nRouteInfo );
-			goto NoMemory;
-		}
-		m_CheckedCounter = 0;
-		for (int i = 0; i < m_cNodes; i++)
-		{
-			m_di[i].m_CheckedEvent = 0;
-		}
-		
-		// Read in the route information.
-		//
-		length -= sizeof(char)*m_nRouteInfo;
-		if (length < 0) goto ShortFile;
-		memcpy(m_pRouteInfo, pMemFile, sizeof(char)*m_nRouteInfo);
-		pMemFile += sizeof(char)*m_nRouteInfo;
-		m_fRoutingComplete = TRUE;;
-
-		// malloc for the hash links
-		//
-		m_pHashLinks = (short *)calloc(sizeof(short), m_nHashLinks);
-		if (!m_pHashLinks)
-		{
-			ALERT ( at_aiconsole, "***ERROR**\nCounldn't malloc %d hash link bytes!\n", m_nHashLinks );
-			goto NoMemory;
-		}
-
-		// Read in the hash link information
-		//
-		length -= sizeof(short)*m_nHashLinks;
-		if (length < 0) goto ShortFile;
-		memcpy(m_pHashLinks, pMemFile, sizeof(short)*m_nHashLinks);
-		pMemFile += sizeof(short)*m_nHashLinks;
-
-		// Set the graph present flag, clear the pointers set flag
-		//
-		m_fGraphPresent = TRUE;
-		m_fGraphPointersSet = FALSE;
-		
-		FREE_FILE(aMemFile);
-
-		if (length != 0)
-		{
-			ALERT ( at_aiconsole, "***WARNING***:Node graph was longer than expected by %d bytes.!\n", length);
-		}
-
-		return TRUE;
-	}
-
-ShortFile:
-NoMemory:
-	FREE_FILE(aMemFile);
-	return FALSE;
+	InitGraph();
+	graph.m_CheckedCounter = 0;
+	graph.m_iLastActiveIdleSearch = 0;
+	graph.m_iLastCoverSearch = 0;
+	graph.m_fGraphPresent = TRUE;
+	graph.m_fGraphPointersSet = FALSE;
+	graph.m_fRoutingComplete = TRUE;
+	*this = graph;
+	return TRUE;
 }
 
 //=========================================================
@@ -2588,7 +2646,7 @@ int CGraph :: FSetGraphPointers ( void )
 	for ( i = 0 ; i < m_cLinks ; i++ )
 	{// go through all of the links
 		
-		if ( m_pLinkPool[ i ].m_pLinkEnt != NULL )
+		if ( m_pLinkPool[ i ].m_pLinkEnt != NULL || m_pLinkPool[ i ].m_szLinkEntModelname[ 0 ] != '\0' )
 		{
 			char name[5];
 			// when graphs are saved, any valid pointers are will be non-zero, signifying that we should
@@ -2606,6 +2664,7 @@ int CGraph :: FSetGraphPointers ( void )
 			// ( like a func_breakable that's been destroyed or something ). Make sure that LinkEnt is null.
 				ALERT ( at_aiconsole, "**Could not find model %s\n", name );
 				m_pLinkPool[ i ].m_pLinkEnt = NULL;
+				memset( m_pLinkPool[ i ].m_szLinkEntModelname, 0, sizeof( m_pLinkPool[ i ].m_szLinkEntModelname ) );
 			}
 			else
 			{
@@ -2674,7 +2733,6 @@ int CGraph :: CheckNODFile ( char *szMapName )
 	return retValue;
 }
 
-#define ENTRY_STATE_EMPTY -1
 
 struct tagNodePair
 {
@@ -3170,8 +3228,8 @@ void CGraph :: ComputeStaticRoutingTables( void )
 					char *p = pRoute;
 					for (int i = 0; i < m_cNodes; i++)
 					{
-						BOOL CanRepeat = ((BestNextNodes[i] == iLastNode) && cRepeats < 127);
-						BOOL CanSequence = (BestNextNodes[i] == i && cSequence < 128);
+						BOOL CanRepeat = ((BestNextNodes[i] == iLastNode) && cRepeats < SCHAR_MAX);
+						BOOL CanSequence = (BestNextNodes[i] == i && cSequence < SCHAR_MAX);
 
 						if (cRepeats)
 						{
