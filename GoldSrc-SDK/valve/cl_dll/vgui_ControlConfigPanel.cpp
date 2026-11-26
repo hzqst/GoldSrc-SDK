@@ -15,6 +15,7 @@
 #include<VGUI_DataInputStream.h>
 #include<VGUI.h>
 #include<VGUI_TextEntry.h>
+#include "vgui_compat_teardown.h"
 
 using namespace vgui;
 
@@ -37,6 +38,20 @@ public:
 
 		_textEntry=new TextEntry("",0,0,100,20);
 		//_textEntry->setFont(Scheme::sf_primary3);
+	}
+
+	~FooTablePanel()
+	{
+		stopCellEditing();
+		_label->setParent(NULL);
+		_textEntry->setParent(NULL);
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompatAccess::cleanupCellTextEntry(_textEntry);
+		VGuiCompat_CleanupPanelMembers(_label);
+		VGuiCompat_CleanupPanelMembers(this);
+#endif
+		delete _textEntry;
+		delete _label;
 	}
 public:
 	virtual int getRowCount()
@@ -155,6 +170,22 @@ ControlConfigPanel::ControlConfigPanel(int x,int y,int wide,int tall) : Panel(x,
 	_tablePanel->setFgColor(Color(Scheme::sc_primary2));
 	_tablePanel->setGridVisible(true,true);
 	_tablePanel->setGridSize(1,1);
+}
+
+ControlConfigPanel::~ControlConfigPanel()
+{
+	_tablePanel->setParent(NULL);
+	delete static_cast<FooTablePanel*>(_tablePanel);
+
+	for(int i=0;i<_cvarDar.getCount();i++)
+		delete[] _cvarDar[i];
+	for(int i=0;i<_descDar.getCount();i++)
+		delete[] _descDar[i];
+#if VGUI_ABI_COMPAT_MODE == 1
+	VGuiCompatAccess::releaseDarStorage(_cvarDar);
+	VGuiCompatAccess::releaseDarStorage(_descDar);
+	VGuiCompat_CleanupPanelMembers(this);
+#endif
 }
 
 void ControlConfigPanel::AddCVar(const char* cvar,const char* desc)

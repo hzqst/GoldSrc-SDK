@@ -57,6 +57,7 @@
 #include "vgui_ScorePanel.h"
 #include "vgui_SpectatorPanel.h"
 #include "vgui_compat_teardown.h"
+#include "vgui_ControlConfigPanel.h"
 #include "vgui_checkbutton2.h"
 #include "vgui_grid.h"
 #include "vgui_listbox.h"
@@ -709,6 +710,11 @@ void VGuiCompat_DeletePanelTree(Panel *panel)
 	if (panel == NULL)
 		return;
 
+	if (ControlConfigPanel *configPanel = dynamic_cast<ControlConfigPanel *>(panel))
+	{
+		delete configPanel;
+		return;
+	}
 	if (ScorePanel *scorePanel = dynamic_cast<ScorePanel *>(panel))
 	{
 		delete scorePanel;
