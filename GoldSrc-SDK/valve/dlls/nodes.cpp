@@ -25,7 +25,6 @@
 #include	"doors.h"
 #include <climits>
 #include <cstdint>
-#include <numeric>
 #include <type_traits>
 
 #if !defined ( _WIN32 )
@@ -2482,7 +2481,17 @@ int CGraph :: FLoadGraph ( char *szMapName )
 		}
 		for ( int step : graph.m_HashPrimes )
 		{
-			if ( step <= 0 || step >= graph.m_nHashLinks || std::gcd( step, graph.m_nHashLinks ) != 1 )
+			if ( step <= 0 || step >= graph.m_nHashLinks )
+				return false;
+			int divisor = step;
+			int dividend = graph.m_nHashLinks;
+			while ( divisor )
+			{
+				const int remainder = dividend % divisor;
+				dividend = divisor;
+				divisor = remainder;
+			}
+			if ( dividend != 1 )
 				return false;
 		}
 		return hasEmptyBucket;
