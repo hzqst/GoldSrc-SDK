@@ -1570,6 +1570,7 @@ public:
 		if (_border == m_pBorder)
 			setBorder(NULL);
 		delete m_pBorder;
+		m_pBorder = NULL;
 	}
 
 	virtual void setDragged( bool bState )
