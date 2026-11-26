@@ -1565,6 +1565,13 @@ public:
 		m_pBorder = new LineBorder();
 	}
 
+	~DragNDropPanel()
+	{
+		if (_border == m_pBorder)
+			setBorder(NULL);
+		delete m_pBorder;
+	}
+
 	virtual void setDragged( bool bState )
 	{
 		m_bBeingDragged = bState;
