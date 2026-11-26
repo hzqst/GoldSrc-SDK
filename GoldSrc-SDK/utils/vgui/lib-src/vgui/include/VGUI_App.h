@@ -17,6 +17,9 @@ class TickSignal;
 
 class VGUIAPI App
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 public:
 	App();
 	App( bool externalMain );

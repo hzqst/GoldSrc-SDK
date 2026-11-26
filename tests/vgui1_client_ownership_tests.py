@@ -39,7 +39,7 @@ from vgui1_panel_tests import VGUI, vgui1_sources
 ROOT = Path(__file__).resolve().parents[1]
 GAME_SHARED = ROOT / 'GoldSrc-SDK/game_shared'
 CONTROLS = ['vgui_listbox.cpp', 'vgui_scrollbar2.cpp', 'vgui_slider2.cpp', 'vgui_grid.cpp', 'vgui_checkbutton2.cpp']
-VGUI_SOURCES = ['ImagePanel.cpp']
+VGUI_SOURCES = ['Bitmap.cpp', 'BitmapTGA.cpp', 'DataInputStream.cpp', 'ImagePanel.cpp']
 # The client controls use the public headers' null and the MSVC _vsnprintf,
 # which only needs a replacement where stdio.h does not declare it.
 CONTROL_DEFINES = ['null=0'] + ([] if os.name == 'nt' else ['_vsnprintf=vsnprintf'])
@@ -56,6 +56,7 @@ TESTS = r'''
 #include "VGUI_Label.h"
 #include "VGUI_Panel.h"
 #include "vgui_checkbutton2.h"
+#include "vgui_compat_cleanup.h"
 #include "vgui_defaultinputsignal.h"
 #include "vgui_grid.h"
 #include "vgui_listbox.h"
@@ -88,6 +89,8 @@ public:
  CountingIntChange() : calls( 0 ) {}
 #if VGUI_ABI_COMPAT_MODE != 1
  virtual ~CountingIntChange() override { ++deletedSignals; }
+#else
+ ~CountingIntChange() { ++deletedSignals; }
 #endif
  virtual void intChanged( int, Panel* ) override { ++calls; }
 
@@ -143,9 +146,7 @@ static void Run(const std::string& test)
   Check(button->IsChecked(), "label click toggles");
   PanelInput::press( &button->m_CheckboxPanel );
   Check(!button->IsChecked(), "box click toggles");
-#if VGUI_ABI_COMPAT_MODE != 1
   delete button;
-#endif
  }
  else if (test == "scroll-bar2-fires-once")
  {
@@ -153,14 +154,12 @@ static void Run(const std::string& test)
   scrollBar->setRange( 0, SCROLL_MAX );
   CountingIntChange* first = new CountingIntChange();
   CountingIntChange* second = new CountingIntChange();
-  scrollBar->addIntChangeSignal( first );
-  scrollBar->addIntChangeSignal( second );
+	  scrollBar->addIntChangeSignal( VGuiCompat_OwnIntChangeSignal( first ) );
+	  scrollBar->addIntChangeSignal( VGuiCompat_OwnIntChangeSignal( second ) );
   scrollBar->setValue( SCROLL_VALUE );
   Check(1 == first->calls && 1 == second->calls, "each signal called once");
-#if VGUI_ABI_COMPAT_MODE != 1
   delete scrollBar;
   Check(2 == deletedSignals, "scroll bar deleted its signals");
-#endif
  }
 #if VGUI_ABI_COMPAT_MODE != 1
  else if (test == "list-box-tree")
@@ -228,8 +227,7 @@ def main():
             executable = compile_program(sources, executable, includes=[VGUI / 'include', VGUI, GAME_SHARED],
                                          defines=['VGUI_STATIC', f'VGUI_ABI_COMPAT_MODE={mode}'] + CONTROL_DEFINES,
                                          debug=True, sanitizers=['address'])
-            # Without destructors the compatible build frees no panel; only check
-            # its memory errors.
+            # The forwarder fixture still embeds a raw compat Panel on the stack.
             env = dict(os.environ)
             if mode == '1':
                 env['ASAN_OPTIONS'] = 'detect_leaks=0:' + env.get('ASAN_OPTIONS', '')

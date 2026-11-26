@@ -13,6 +13,9 @@ class FooTablePanelHeaderSignal;
 
 class VGUIAPI TablePanel : public Panel
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 	friend class FooVGuiTablePanelHandler;
 	friend class FooTablePanelHeaderSignal;
 

@@ -9,6 +9,9 @@ namespace vgui
 
 class VGUIAPI TextImage : public Image
 {
+#if VGUI_ABI_COMPAT_MODE == 1
+	friend struct VGuiCompatAccess;
+#endif
 public:
 	TextImage( int textBufferLen, const char* text );
 	TextImage( const char* text );
