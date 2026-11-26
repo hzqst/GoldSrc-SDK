@@ -1876,7 +1876,7 @@ static const char* SaveRecordEnd( const SAVERESTOREDATA* data, const char* name,
 		cursor += sizeof( size );
 		Q_memcpy( &token, cursor, sizeof( token ) );
 		cursor += sizeof( token );
-		return size <= end - cursor && token < data->tokenCount && data->pTokens[token];
+		return size <= end - cursor && data->pTokens && token < data->tokenCount && data->pTokens[token];
 	};
 
 	unsigned short size, token;
@@ -2239,7 +2239,10 @@ static bool Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean
 		SV_LoadEntities();
 		SV_ActivateServer( 1 );
 		if ( !sv.active )
+		{
+			SCR_EndLoadingPlaque();
 			return false;
+		}
 
 		if ( cls.state != ca_dedicated )
 		{
@@ -3272,14 +3275,20 @@ int SaveReadHeader_0( FileHandle_t pFile, GAME_HEADER* pHeader, int readGlobalSt
 {
 	int i, size, tokenCount, tokenSize;
 	char* pszTokenList;
+	char* pszTokenEnd;
 	SAVERESTOREDATA* pSaveData;
 
-	FS_Read( &size, sizeof( int ), 1, pFile );
-	FS_Read( &tokenCount, sizeof( int ), 1, pFile );
-	FS_Read( &tokenSize, sizeof( int ), 1, pFile );
+	if ( FS_Read( &size, sizeof( int ), 1, pFile ) != sizeof( int )
+		 || FS_Read( &tokenCount, sizeof( int ), 1, pFile ) != sizeof( int )
+		 || FS_Read( &tokenSize, sizeof( int ), 1, pFile ) != sizeof( int ) )
+	{
+		FS_Close( pFile );
+		return 0;
+	}
 
-	if ( size < 0 || tokenCount < 0 || tokenSize < 0 || INT_MAX - size < tokenSize
-		 || INT_MAX - ( size + tokenSize ) < (int)sizeof( SAVERESTOREDATA ) )
+	if ( size <= 0 || tokenCount <= 0 || tokenCount > USHRT_MAX + 1 || tokenSize < tokenCount
+		 || INT_MAX - size < tokenSize || INT_MAX - ( size + tokenSize ) < (int)sizeof( SAVERESTOREDATA )
+		 || (uint64_t)sizeof( int ) * 5 + (uint64_t)size + (uint64_t)tokenSize > FS_Size( pFile ) )
 	{
 		FS_Close( pFile );
 		return 0;
@@ -3295,37 +3304,71 @@ int SaveReadHeader_0( FileHandle_t pFile, GAME_HEADER* pHeader, int readGlobalSt
 	pSaveData->tableCount = 0;
 	pSaveData->pTable = NULL;
 	pSaveData->connectionCount = 0;
+	pSaveData->tokenCount = tokenCount;
+	pSaveData->tokenSize = tokenSize;
 
 	pszTokenList = (char*)( pSaveData + 1 );
+	pszTokenEnd = pszTokenList + tokenSize;
 
-	if ( tokenSize > 0 )
+	if ( FS_Read( pszTokenList, tokenSize, 1, pFile ) != tokenSize )
 	{
-		pSaveData->tokenCount = tokenCount;
-		pSaveData->tokenSize = tokenSize;
+		SaveExit( pSaveData );
+		FS_Close( pFile );
+		return 0;
+	}
 
-		FS_Read( pszTokenList, tokenSize, 1, pFile );
+	pSaveData->pTokens = (char**)Mem_Calloc( tokenCount, sizeof( char* ) );
+	if ( !pSaveData->pTokens )
+	{
+		SaveExit( pSaveData );
+		FS_Close( pFile );
+		return 0;
+	}
 
-		if ( !pSaveData->pTokens )
-			pSaveData->pTokens = (char**)Mem_Calloc( tokenCount, sizeof( char* ) );
-
-		for ( i = 0; i < tokenCount; i++ )
+	for ( i = 0; i < tokenCount; i++ )
+	{
+		char* terminator = (char*)memchr( pszTokenList, 0, (size_t)( pszTokenEnd - pszTokenList ) );
+		if ( !terminator )
 		{
-			pSaveData->pTokens[i] = *pszTokenList ? pszTokenList : NULL;
-			pszTokenList += strlen( pszTokenList ) + 1;
+			SaveExit( pSaveData );
+			FS_Close( pFile );
+			return 0;
 		}
+		pSaveData->pTokens[i] = *pszTokenList ? pszTokenList : NULL;
+		pszTokenList = terminator + 1;
+	}
+	if ( pszTokenList != pszTokenEnd )
+	{
+		SaveExit( pSaveData );
+		FS_Close( pFile );
+		return 0;
 	}
 
 	pSaveData->size = 0;
 	pSaveData->bufferSize = size;
 	pSaveData->fUseLandmark = 0;
 	pSaveData->time = 0.0f;
-	pSaveData->pCurrentData = pszTokenList;
-	pSaveData->pBaseData = pszTokenList;
+	pSaveData->pCurrentData = pszTokenEnd;
+	pSaveData->pBaseData = pszTokenEnd;
 
-	FS_Read( pszTokenList, size, 1, pFile );
+	if ( FS_Read( pszTokenEnd, size, 1, pFile ) != size )
+	{
+		SaveExit( pSaveData );
+		FS_Close( pFile );
+		return 0;
+	}
 
-	gEntityInterface.pfnSaveReadFields(
-		pSaveData, "GameHeader", pHeader, gGameHeaderDescription, ARRAYSIZE( gGameHeaderDescription ) );
+	Q_memset( pHeader, 0, sizeof( *pHeader ) );
+	if ( !ReadSaveRecord( pSaveData, "GameHeader", 0, pHeader, gGameHeaderDescription, ARRAYSIZE( gGameHeaderDescription ) )
+		 || !pHeader->mapName[0] || !memchr( pHeader->mapName, 0, sizeof( pHeader->mapName ) )
+		 || !memchr( pHeader->comment, 0, sizeof( pHeader->comment ) )
+		 || pHeader->mapCount < 0 )
+	{
+		SaveExit( pSaveData );
+		FS_Close( pFile );
+		return 0;
+	}
+
 	if ( readGlobalState )
 		gEntityInterface.pfnRestoreGlobalState( pSaveData );
 
@@ -4122,12 +4165,20 @@ void Host_Map_f()
 	ContinueLoadingProgressBar( "Server", 1, 0.0f );
 
 	Cvar_Set( "HostMap", name );
-	Host_Map( FALSE, mapstring, name, FALSE );
+	const bool bMapLoaded = Host_Map( FALSE, mapstring, name, FALSE );
 
 	if ( COM_CheckParm( "-steam" ) && PF_IsDedicatedServer() )
 	{
 		g_bMajorMapChange = FALSE;
 		Sys_Printf( "\n" );
+	}
+
+	if ( !bMapLoaded )
+	{
+		if ( g_careerState == CAREER_LOADING )
+			g_careerState = CAREER_NONE;
+		SetCareerAudioState( 0 );
+		return;
 	}
 
 	ContinueLoadingProgressBar( "Server", 11, 0.0f );
