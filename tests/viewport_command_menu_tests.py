@@ -32,6 +32,7 @@ STUBS = r'''
 #include <string>
 #include <vector>
 #define MAX_MENUS 3
+#define MAX_BUTTONS 4
 #define MAX_MAPNAME 64
 #define MAX_BUTTON_SIZE 32
 #define BUTTON_SIZE_Y 30
@@ -43,6 +44,8 @@ static const char* sTFClasses[] = {"", "SCOUT", "SNIPER", "SOLDIER", "DEMOMAN", 
 class CException {};
 #endif
 namespace Scheme { enum { sf_primary3 }; }
+template <class T> T* VGuiCompat_OwnActionSignal(T* signal) { return signal; }
+template <class T> T* VGuiCompat_OwnInputSignal(T* signal) { return signal; }
 static int liveMenus = 0, liveButtons = 0, liveSignals = 0;
 struct Signal {
  Signal() { ++liveSignals; }
@@ -99,8 +102,9 @@ static bool menuExists = true;
 static char* loadedFile = nullptr;
 static int wrongFrees = 0;
 static struct {
- void* COM_LoadFile(const char*, int, int*) {
+ void* COM_LoadFile(const char*, int, int* length) {
   if (!menuExists) return nullptr;
+	  if (length) *length = (int)menuText.size();
   loadedFile = new char[menuText.size() + 1];
   memcpy(loadedFile, menuText.c_str(), menuText.size() + 1);
   return loadedFile;
@@ -130,6 +134,9 @@ static struct {
   token[length] = 0;
   return data;
  }
+	 const char* COM_ParseFile(const char* data, char* token) {
+	  return COM_ParseFile(const_cast<char*>(data), token);
+	 }
 } gEngfuncs;
 // only the members the command menu loaders use
 class ViewportStub : public Panel {
@@ -151,8 +158,8 @@ public:
 
 VIEWPORTS = {
     'valve': ('valve/cl_dll/vgui_TeamFortressViewport.cpp', 'TeamFortressViewport',
-              'int CreateCommandMenu(char* menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset);',
-              'int TeamFortressViewport::CreateCommandMenu(', 'viewport.CreateCommandMenu(menuFile, 0, 0, false, 160, 30, 0)'),
+              'int CreateCommandMenu(char* menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset, int reservedMenus);',
+              'int TeamFortressViewport::CreateCommandMenu(', 'viewport.CreateCommandMenu(menuFile, 0, 0, false, 160, 30, 0, 0)'),
     'tfc': ('tfc/cl_dll/vgui_TeamFortressViewport.cpp', 'TeamFortressViewport',
             'int CreateCommandMenu(char* menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset);',
             'int TeamFortressViewport::CreateCommandMenu(', 'viewport.CreateCommandMenu(menuFile, 0, 0, false, 160, 30, 0)'),
@@ -194,16 +201,52 @@ static void Run() {
 LABELS = {'valve': 'Half-Life', 'tfc': 'Team Fortress Classic', 'ricochet': 'Ricochet', 'dmc': 'Deathmatch Classic',
           'gearbox': 'Opposing Force'}
 
+VALVE_TESTS = r'''
+namespace valve {
+static void RunRejectedSubmenu() {
+ char filename[] = "commandmenu.txt";
+ menuText = R"MENU(
+  "1" "Kept submenu" "{"
+    "1" "Kept child" "say inside"
+  "}"
+  "2" "Rejected submenu" "{"
+    MAP "crossfire" "1" "{" "say brace"
+    TEAM1 "2" "}" "say brace"
+    "3" "Nested submenu" "{"
+      TOGGLE "1" "" "hud_draw"
+    "}"
+  "}"
+  "3" "Following sibling" "say after"
+ )MENU";
+ {
+  TeamFortressViewport viewport;
+  int root = viewport.CreateCommandMenu(filename, 0, 0, false, 160, 30, 0, 1);
+  assert(viewport.m_iNumMenus == 2);
+  assert(viewport.m_pCommandMenus[root]->GetNumButtons() == 2);
+  assert(viewport.m_pCommandMenus[1]->GetNumButtons() == 1);
+  assert(!loadedFile);
+ }
+ Build("\"1\" \"Truncated");
+ assert(0 == liveMenus && 0 == liveButtons && 0 == liveSignals);
+}
+}
+'''
+
 
 def main():
     code = STUBS
     for name, (path, viewport, declaration, signature, build) in VIEWPORTS.items():
         source = (ROOT / path).read_text(encoding='latin-1')
         code += f'namespace {name} {{\nclass {viewport} : public ViewportStub {{\npublic:\n {declaration}\n}};\n'
+        if name == 'valve':
+            helpers = source.index('namespace\n{\nstruct MenuToken')
+            code += source[helpers:source.index('//-----------------------------------------------------------------------------', helpers)]
         code += command_menu(source, signature) + '\n}\n'
         code += (TESTS.replace('NAME', name).replace('VIEWPORT', viewport).replace('BUILD', build)
                  .replace('LABEL', LABELS[name]))
-    code += '\nint main() {\n' + ''.join(f' {name}::Run();\n' for name in VIEWPORTS) + '}\n'
+    code += VALVE_TESTS
+    code += '\nint main() {\n' + ''.join(f' {name}::Run();\n' for name in VIEWPORTS)
+    code += ' valve::RunRejectedSubmenu();\n}\n'
     with tempfile.TemporaryDirectory(prefix='goldsrc-viewport-command-menu-') as folder:
         folder = Path(folder)
         (folder / 'test.cpp').write_text(code, encoding='utf-8')

@@ -909,10 +909,8 @@ bool ReadMenuToken(const char *&cursor, const char *end, MenuToken &token)
 		return false;
 	}
 
-	// COM_ParseFile strips quotes. The consumed input still distinguishes
-	// a literal brace token from a submenu delimiter.
 	if ((token.text[0] == '{' || token.text[0] == '}') &&
-		token.text[1] == '\0' && cursor[-1] == token.text[0])
+		token.text[1] == '\0')
 		token.brace = token.text[0];
 	return true;
 }
@@ -971,7 +969,7 @@ bool ReadMenuEntry(const char *&cursor, const char *end, MenuToken &token, MenuE
 		return false;
 
 	entry.key = token.text[0];
-	if (!ReadMenuToken(cursor, end, entry.title) || entry.title.brace ||
+	if (!ReadMenuToken(cursor, end, entry.title) ||
 		!ReadMenuToken(cursor, end, entry.command) || entry.command.brace == '}')
 		return false;
 
