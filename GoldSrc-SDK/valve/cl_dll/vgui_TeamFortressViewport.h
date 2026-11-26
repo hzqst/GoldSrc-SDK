@@ -258,6 +258,9 @@ public:
 		ArmedBorderColor = NULL;
 		delete UnArmedBorderColor;
 		UnArmedBorderColor = NULL;
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_CleanupPanelMembers(this);
+#endif
 	}
 	
 
@@ -1572,6 +1575,9 @@ public:
 			setBorder(NULL);
 		delete m_pBorder;
 		m_pBorder = NULL;
+#if VGUI_ABI_COMPAT_MODE == 1
+		VGuiCompat_CleanupPanelMembers(this);
+#endif
 	}
 
 	virtual void setDragged( bool bState )
