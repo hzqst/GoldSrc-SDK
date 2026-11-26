@@ -64,14 +64,21 @@ class ScrollBarButton : public Button
 public:
 	ScrollBarButton(const char *filename, int x, int y, int wide, int tall) : Button("", x, y, wide, tall)
 	{
-		Image *image = vgui_LoadTGA(filename);
-		if (image)
+		m_pImage = vgui_LoadTGA(filename);
+		if (m_pImage)
 		{
-			image->setColor(Color(140, 140, 140, 0));
-			setImage(image);
+			m_pImage->setColor(Color(140, 140, 140, 0));
+			setImage(m_pImage);
 		}
 
 		setBorder(new LineBorder(Color(60, 60, 60, 0)));	// owned by the Panel
+	}
+
+	~ScrollBarButton()
+	{
+		setImage(NULL);
+		delete m_pImage;
+		m_pImage = NULL;
 	}
 
 	virtual void paintBackground()
@@ -83,6 +90,9 @@ public:
 		drawSetColor(0, 0, 0, 0);
 		drawFilledRect(0, 0, wide, tall);
 	}
+
+private:
+	BitmapTGA *m_pImage;
 };
 
 
