@@ -86,6 +86,8 @@ void* VGui_GetPanel()
 void VGui_Startup()
 {
 	Panel* root=(Panel*)VGui_GetPanel();
+	if (!root)
+		return;
 	root->setBgColor(128,128,0,0);
 	//root->setNonPainted(false);
 	//root->setBorder(new LineBorder());
@@ -102,6 +104,8 @@ void VGui_Startup()
 //		gViewPort = NULL;
 
 		gViewPort->AttachRootLayout(root);
+		if (gViewPort->getParent() != root)
+			gViewPort->setParent(root);
 		gViewPort->Initialize();
 	}
 	else

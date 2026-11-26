@@ -70,6 +70,8 @@ void VGuiWrap_Shutdown()
 	// DLL is still loaded here.
 	delete staticPanel;
 #else
+	if ( staticPanel )
+		staticPanel->removeAllChildren();
 	::operator delete( staticPanel );
 #endif
 	staticPanel = NULL;
