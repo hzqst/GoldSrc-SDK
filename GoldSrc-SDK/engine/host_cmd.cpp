@@ -1767,7 +1767,9 @@ SAVERESTOREDATA* LoadSaveData( const char* level )
 	}
 
 	constexpr unsigned int headerSize = 6 * sizeof( int );
+	constexpr int minimumRecordSize = 2 * sizeof( unsigned short ) + sizeof( int );
 	if ( size <= 0 || tableCount < 0 || (uint32_t)tableCount > INT_MAX / sizeof( ENTITYTABLE )
+		 || tableCount > size / minimumRecordSize
 		 || tokenCount <= 0 || tokenCount > USHRT_MAX + 1 || tokenSize < tokenCount
 		 || (uint64_t)headerSize + size + tokenSize > FS_Size( pFile ) )
 	{
