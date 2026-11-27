@@ -254,11 +254,13 @@ void AddAmmoNameToAmmoRegistry( const char *szAmmoname )
 	}
 
 
-	giAmmoIndex++;
-	ASSERT( giAmmoIndex < MAX_AMMO_SLOTS );
-	if ( giAmmoIndex >= MAX_AMMO_SLOTS )
-		giAmmoIndex = 0;
+	if ( giAmmoIndex + 1 >= MAX_AMMO_SLOTS )
+	{
+		ALERT( at_error, "Too many ammo types (max %d), ignoring %s\n", MAX_AMMO_SLOTS - 1, szAmmoname );
+		return;
+	}
 
+	giAmmoIndex++;
 	CBasePlayerItem::AmmoInfoArray[giAmmoIndex].pszName = szAmmoname;
 	CBasePlayerItem::AmmoInfoArray[giAmmoIndex].iId = giAmmoIndex;   // yes, this info is redundant
 }

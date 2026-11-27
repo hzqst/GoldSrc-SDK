@@ -1081,6 +1081,9 @@ CCommandMenu* CTFViewport::CreateSubMenu( CommandButton* button, CCommandMenu* p
 
 CCommandMenu* CTFViewport::CreateDisguiseSubmenu( CommandButton* button, CCommandMenu* parent, const char* commandText )
 {
+	if ( m_iNumMenus >= MAX_MENUS )
+		return NULL;
+
 	CCommandMenu* menu = CreateSubMenu( button, parent );
 	m_pCommandMenus[m_iNumMenus++] = menu;
 	for ( int i = 1; i <= 9; i++ )
@@ -1238,6 +1241,9 @@ CommandButton* CTFViewport::CreateCustomButton( char* text, char* name )
 	CCommandMenu* menu = NULL;
 	if ( !strcmp( name, "!CHANGETEAM" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		button = new CommandButton( text, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y );
 		menu = CreateSubMenu( button, m_pCurrentCommandMenu );
 		m_pCommandMenus[m_iNumMenus++] = menu;
@@ -1261,6 +1267,9 @@ CommandButton* CTFViewport::CreateCustomButton( char* text, char* name )
 	}
 	if ( !strcmp( name, "!CHANGECLASS" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		button = new ClassButton( -1, text, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y, false );
 		menu = CreateSubMenu( button, m_pCurrentCommandMenu );
 		m_pCommandMenus[m_iNumMenus++] = menu;
@@ -1316,12 +1325,18 @@ CommandButton* CTFViewport::CreateCustomButton( char* text, char* name )
 	}
 	else if ( !strcmp( name, "!DISGUISEENEMY" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		button = new DisguiseButton( DISGUISE_TEAM2, text, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y );
 		CreateDisguiseSubmenu( button, m_pCurrentCommandMenu, "disguise_enemy" );
 		return button;
 	}
 	else if ( !strcmp( name, "!DISGUISEFRIENDLY" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		button = new DisguiseButton( DISGUISE_TEAM1 | DISGUISE_TEAM2, text, 0,
 			BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y );
 		CreateDisguiseSubmenu( button, m_pCurrentCommandMenu, "disguise_friendly" );
@@ -1329,6 +1344,9 @@ CommandButton* CTFViewport::CreateCustomButton( char* text, char* name )
 	}
 	else if ( !strcmp( name, "!DISGUISE" ) )
 	{
+		if ( m_iNumMenus + 5 > MAX_MENUS )
+			return NULL;
+
 		button = new DisguiseButton( DISGUISE_TEAM3 | DISGUISE_TEAM4, text, 0,
 			BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y );
 		menu = CreateSubMenu( button, m_pCurrentCommandMenu );
@@ -1347,6 +1365,9 @@ CommandButton* CTFViewport::CreateCustomButton( char* text, char* name )
 	}
 	else if ( !strcmp( name, "!DETPACKSTART" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		button = new DetpackButton( 2, text, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y );
 		menu = CreateSubMenu( button, m_pCurrentCommandMenu );
 		m_pCommandMenus[m_iNumMenus++] = menu;

@@ -38,7 +38,7 @@ struct SAVELIGHTSTYLE
 
 SAVERESTOREDATA*	LoadSaveData( const char* level );
 void				EntityPatchRead( SAVERESTOREDATA* save, const char* level );
-void				EntityPatchWrite( SAVERESTOREDATA* save, const char* level );
+bool				EntityPatchWrite( SAVERESTOREDATA* save, const char* level );
 int					CreateEntityList( SAVERESTOREDATA* save, int levelMask );
-void				LoadAdjacentEntities( const char* oldLevel, const char* landmarkName );
+bool				LoadAdjacentEntities( const char* oldLevel, const char* landmarkName );
 int					LoadGamestate( char* level, int createPlayers );

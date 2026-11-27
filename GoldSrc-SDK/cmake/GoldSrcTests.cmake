@@ -44,6 +44,7 @@ foreach(name IN ITEMS
 		engine_font_fallback
 		engine_post_restart_args
 		engine_save_grow
+		engine_save_recovery
 		engine_save_restore
 		engine_stufftext
 		file_read_length
@@ -85,6 +86,7 @@ foreach(name IN ITEMS
 		localize_utf8
 		map_sprite_bmp_bounds
 		mixer_failure
+		mod_save_weapon_bounds
 		monster_relationship_vehicle
 		netapi_serverinfo
 		netchan_file_decompress
@@ -103,6 +105,7 @@ foreach(name IN ITEMS
 		perf_counter_init
 		playback_demo_commands
 		scoreboard_selection
+		scorepanel_talk_format
 		sequence_info_null_model
 		server_file_consistency
 		server_model

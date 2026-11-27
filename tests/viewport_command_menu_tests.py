@@ -279,10 +279,84 @@ static void RunRejectedSubmenu() {
   assert(subBtns.size() == 1 && subBtns[0]->m_text == "Kept child");
   assert(!loadedFile);
  }
+ {
+  // When m_iNumMenus is already at MAX_MENUS, CreateCommandMenu must return -1 without writing out of bounds
+  TeamFortressViewport viewport;
+  viewport.m_iNumMenus = MAX_MENUS;
+  assert(viewport.CreateCommandMenu(filename, 0, 0, false, 160, 30, 0, 0) == -1);
+  assert(viewport.m_iNumMenus == MAX_MENUS);
+ }
  Build("\"1\" \"Truncated");
  assert(0 == liveMenus && 0 == liveButtons && 0 == liveSignals);
  puts("PASS: Half-Life command menu parses empty keys, brace commands, CUSTOM items and deeply nested rejected submenus");
 }
+}
+'''
+
+TFC_CUSTOM_MENU_TEST = r'''
+namespace valve_tfc {
+#define _TFC 1
+#undef MAX_MENUS
+#define MAX_MENUS 6
+class TeamFortressViewport : public ViewportStub {
+public:
+ CCommandMenu* m_pCommandMenus[MAX_MENUS] = {};
+ ~TeamFortressViewport() {
+  for (int i = 0; i < m_iNumMenus; ++i) { delete m_pCommandMenus[i]; m_pCommandMenus[i] = nullptr; }
+  m_iNumMenus = 0;
+ }
+ CommandButton* CreateCustomButton(const char* text, const char* name, int) {
+  if (!strcmp(name, "!DISGUISEENEMY") || !strcmp(name, "!DISGUISEFRIENDLY")) {
+   assert(m_iNumMenus < MAX_MENUS);
+   m_pCommandMenus[m_iNumMenus++] = new CCommandMenu(m_pCurrentCommandMenu);
+   return new CommandButton(text);
+  }
+  if (!strcmp(name, "!DISGUISE")) {
+   assert(m_iNumMenus + 5 <= MAX_MENUS);
+   for (int i = 0; i < 5; ++i)
+    m_pCommandMenus[m_iNumMenus++] = new CCommandMenu(m_pCurrentCommandMenu);
+   return new CommandButton(text);
+  }
+  return new CommandButton(text);
+ }
+ int CreateCommandMenu(char* menuFile, int direction, int yOffset, bool flatDesign, float flButtonSizeX, float flButtonSizeY, int xOffset, int reservedMenus);
+};
+__TFC_HELPERS__
+__TFC_LOADER__
+
+static void Run() {
+ char filename[] = "commandmenu.txt";
+ // With MAX_MENUS=6, root takes 1 slot, leaving 5 slots:
+ // !DISGUISEENEMY takes 1 slot (not 5), so 2 of them fit; then !DISGUISE (needs 5) must be rejected without overflowing.
+ menuText = R"MENU(
+  CUSTOM "1" "Disguise Enemy" "!DISGUISEENEMY"
+  CUSTOM "2" "Disguise Friendly" "!DISGUISEFRIENDLY"
+  CUSTOM "3" "Disguise Full" "!DISGUISE"
+ )MENU";
+ {
+  TeamFortressViewport vp;
+  int root = vp.CreateCommandMenu(filename, 0, 0, false, 160, 30, 0, 0);
+  assert(root == 0);
+  assert(vp.m_iNumMenus == 3);
+  assert(vp.m_pCommandMenus[root]->m_buttons.size() == 2);
+  assert(vp.m_pCommandMenus[root]->m_buttons[0]->m_text == "Disguise Enemy");
+  assert(vp.m_pCommandMenus[root]->m_buttons[1]->m_text == "Disguise Friendly");
+ }
+ // With 5 free slots, !DISGUISE fits exactly (1 root + 5 = 6)
+ menuText = R"MENU(
+  CUSTOM "1" "Disguise Full" "!DISGUISE"
+ )MENU";
+ {
+  TeamFortressViewport vp;
+  int root = vp.CreateCommandMenu(filename, 0, 0, false, 160, 30, 0, 0);
+  assert(root == 0);
+  assert(vp.m_iNumMenus == 6);
+  assert(vp.m_pCommandMenus[root]->m_buttons.size() == 1);
+ }
+ assert(0 == liveMenus && 0 == liveButtons && 0 == liveSignals);
+ puts("PASS: Half-Life _TFC custom menu preflight counts !DISGUISEENEMY/!DISGUISEFRIENDLY as 1 and !DISGUISE as 5");
+}
+#undef _TFC
 }
 '''
 
@@ -298,9 +372,16 @@ def main():
         code += command_menu(source, signature) + '\n}\n'
         code += (TESTS.replace('NAME', name).replace('VIEWPORT', viewport).replace('BUILD', build)
                  .replace('LABEL', LABELS[name]))
+    valve_src = (ROOT / VIEWPORTS['valve'][0]).read_text(encoding='latin-1')
+    valve_helpers_pos = valve_src.index('namespace\n{\nstruct MenuToken')
+    valve_helpers = valve_src[valve_helpers_pos:valve_src.index('//-----------------------------------------------------------------------------', valve_helpers_pos)]
+    valve_loader = command_menu(valve_src, VIEWPORTS['valve'][3])
     code += VALVE_TESTS
+    code += (TFC_CUSTOM_MENU_TEST
+             .replace('__TFC_HELPERS__', valve_helpers)
+             .replace('__TFC_LOADER__', valve_loader))
     code += '\nint main() {\n' + ''.join(f' {name}::Run();\n' for name in VIEWPORTS)
-    code += ' valve::RunRejectedSubmenu();\n}\n'
+    code += ' valve::RunRejectedSubmenu();\n valve_tfc::Run();\n}\n'
     with tempfile.TemporaryDirectory(prefix='goldsrc-viewport-command-menu-') as folder:
         folder = Path(folder)
         (folder / 'test.cpp').write_text(code, encoding='utf-8')

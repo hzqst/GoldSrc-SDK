@@ -96,7 +96,7 @@ int CHudMOTD :: Draw( float fTime )
 	{
 		int line_length = 0;  // count the length of the current line
 		for ( char *next_line = ch; *next_line != '\n' && *next_line != 0; next_line++ )
-			line_length += gHUD.m_scrinfo.charWidths[ *next_line ];
+			line_length += gHUD.m_scrinfo.charWidths[ static_cast<unsigned char>(*next_line) ];
 		char *top = next_line;
 		if ( *top == '\n' )
 			*top = 0;
@@ -133,7 +133,13 @@ int CHudMOTD :: MsgFunc_MOTD( const char *pszName, int iSize, void *pbuf )
 	BEGIN_READ( pbuf, iSize );
 
 	int is_finished = READ_BYTE();
-	strcat( m_szMOTD, READ_STRING() );
+	const char *pszChunk = READ_STRING();
+	const size_t currentLen = strlen( m_szMOTD );
+	if ( currentLen + 1 < sizeof( m_szMOTD ) )
+	{
+		strncat( m_szMOTD, pszChunk, sizeof( m_szMOTD ) - currentLen - 1 );
+		m_szMOTD[ sizeof( m_szMOTD ) - 1 ] = '\0';
+	}
 
 	if ( is_finished )
 	{

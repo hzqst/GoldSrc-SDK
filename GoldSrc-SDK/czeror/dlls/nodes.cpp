@@ -593,9 +593,15 @@ int CGraph :: FindShortestPath ( int *piPath, int iStart, int iDest, int iHull, 
 		return FALSE;
 	}
 
-	if ( iStart < 0 || iStart > m_cNodes )
+	if ( iStart < 0 || iStart >= m_cNodes )
 	{// The start node is bad?
 		ALERT ( at_aiconsole, "Can't build a path, iStart is %d!\n", iStart );
+		return FALSE;
+	}
+
+	if ( iDest < 0 || iDest >= m_cNodes )
+	{// The destination node is bad?
+		ALERT ( at_aiconsole, "Can't build a path, iDest is %d!\n", iDest );
 		return FALSE;
 	}
 

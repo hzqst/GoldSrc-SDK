@@ -2060,7 +2060,10 @@ void CSave :: WriteFunction( const char *pname, void **data, int count )
 	if ( functionName )
 		BufferField( pname, strlen(functionName) + 1, functionName );
 	else
+	{
 		ALERT( at_error, "Invalid function pointer in entity!" );
+		BufferField( pname, 1, "" );
+	}
 }
 
 
@@ -2477,12 +2480,12 @@ int CRestore::ReadFields( const char *pname, void *pBaseData, TYPEDESCRIPTION *p
 		ALERT( at_error, "No token table array in TokenHash()!" );
 		return 0;
 	}
-	unsigned short	i, token;
-	int		lastField, fileCount;
+	unsigned short	size, token;
+	int		i, lastField, fileCount;
 	HEADER	header;
 
-	i = ReadShort();
-	ASSERT( i == sizeof(int) );			// First entry should be an int
+	size = ReadShort();
+	ASSERT( size == sizeof(int) );			// First entry should be an int
 
 	token = ReadShort();
 
@@ -2509,9 +2512,12 @@ int CRestore::ReadFields( const char *pname, void *pBaseData, TYPEDESCRIPTION *p
 
 	for ( i = 0; i < fileCount; i++ )
 	{
+		if ( Empty() )
+			break;
+
 		BufferReadHeader( &header );
 		if ( header.token >= m_pdata->tokenCount || !m_pdata->pTokens[header.token] )
-			return 0;
+			continue;
 		lastField = ReadField( pBaseData, pFields, fieldCount, lastField, header.size, m_pdata->pTokens[header.token], header.pData );
 		lastField++;
 	}
