@@ -158,27 +158,27 @@ Panel* ScoreTablePanel::getCellRenderer( int column, int row, bool, bool, bool )
 		{
 		case 0:
 			if ( rowType == TEAM_UNASSIGNED )
-				sprintf( sz2, CHudTextMessage::BufferedLocaliseTextString( "#Unassigned" ) );
+				snprintf( sz2, sizeof(sz2), "%s", CHudTextMessage::BufferedLocaliseTextString( "#Unassigned" ) );
 			else if ( rowType == TEAM_SPECTATORS )
-				sprintf( sz2, CHudTextMessage::BufferedLocaliseTextString( "#Spectators" ) );
+				snprintf( sz2, sizeof(sz2), "%s", CHudTextMessage::BufferedLocaliseTextString( "#Spectators" ) );
 			else
-				sprintf( sz2, CHudTextMessage::BufferedLocaliseTextString( team_info->name ) );
+				snprintf( sz2, sizeof(sz2), "%s", CHudTextMessage::BufferedLocaliseTextString( team_info->name ) );
 
 			{
-				int i;
-				for ( i = 0; i < (int)strlen( sz2 ); i++ )
+				size_t i = 0;
+				for ( ; sz2[i] && i + 1 < sizeof( sz ); i++ )
 				{
-					if ( sz2[i] )
-						sz[i] = (char)toupper( sz2[i] );
+					sz[i] = (char)toupper( static_cast<unsigned char>( sz2[i] ) );
 				}
 				sz[i] = 0;
 			}
 			if ( rowType == TEAM_YES )
 			{
+				size_t len = strlen( sz );
 				if ( team_info->players == 1 )
-					sprintf( sz, "%s (1 player)", sz );
+					snprintf( sz + len, sizeof( sz ) - len, " (1 player)" );
 				else
-					sprintf( sz, "%s (%d players)", sz, team_info->players );
+					snprintf( sz + len, sizeof( sz ) - len, " (%d players)", team_info->players );
 			}
 			break;
 		case 2:
@@ -205,7 +205,7 @@ Panel* ScoreTablePanel::getCellRenderer( int column, int row, bool, bool, bool )
 		switch ( column )
 		{
 		case 0:
-			sprintf( sz, "  %s", pl_info->name );
+			snprintf( sz, sizeof( sz ), "  %s", pl_info->name );
 			break;
 		case 1:
 			{
@@ -216,7 +216,7 @@ Panel* ScoreTablePanel::getCellRenderer( int column, int row, bool, bool, bool )
 				int playerclass = g_PlayerExtraInfo[index].playerclass;
 				if ( !playerclass && gViewPort->GetValidClasses( team ) != -1 )
 					break;
-				strcpy( sz, CHudTextMessage::BufferedLocaliseTextString( sLocalisedClasses[team - 1][playerclass] ) );
+				snprintf( sz, sizeof( sz ), "%s", CHudTextMessage::BufferedLocaliseTextString( sLocalisedClasses[team - 1][playerclass] ) );
 			}
 			break;
 		case 2:
@@ -234,7 +234,7 @@ Panel* ScoreTablePanel::getCellRenderer( int column, int row, bool, bool, bool )
 		}
 	}
 
-	m_pLabel->setText( sz );
+	m_pLabel->setText( "%s", sz );
 	return m_pLabel;
 }
 
@@ -328,8 +328,8 @@ void ScorePanel::Update()
 	if ( gViewPort->m_szServerName )
 	{
 		char sz[60];
-		sprintf( sz, "  SCORES: %s", gViewPort->m_szServerName );
-		m_pTitleLabel->setText( sz );
+		snprintf( sz, sizeof( sz ), "  SCORES: %s", gViewPort->m_szServerName );
+		m_pTitleLabel->setText( "%s", sz );
 	}
 	_tablePanel->m_iRows = 0;
 	gViewPort->GetAllPlayersInfo();

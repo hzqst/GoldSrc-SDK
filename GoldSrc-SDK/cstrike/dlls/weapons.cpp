@@ -243,8 +243,12 @@ void AddAmmoNameToAmmoRegistry( const char* szAmmoname )
 			&& !stricmp( CBasePlayerItem::AmmoInfoArray[i].pszName, szAmmoname ) )
 			return;
 	}
-	if ( ++giAmmoIndex >= MAX_AMMO_SLOTS )
-		giAmmoIndex = 0;
+	if ( giAmmoIndex + 1 >= MAX_AMMO_SLOTS )
+	{
+		ALERT( at_error, "Too many ammo types (max %d), ignoring %s\n", MAX_AMMO_SLOTS - 1, szAmmoname );
+		return;
+	}
+	giAmmoIndex++;
 	CBasePlayerItem::AmmoInfoArray[giAmmoIndex].pszName = szAmmoname;
 	CBasePlayerItem::AmmoInfoArray[giAmmoIndex].iId = giAmmoIndex;   // yes, this info is redundant
 }
@@ -267,6 +271,12 @@ void UTIL_PrecacheOtherWeapon2( const char* szClassname )
 		memset( &info, 0, sizeof( info ) );
 		if ( ((CBasePlayerItem*)pEntity)->GetItemInfo( &info ) )
 		{
+			if ( info.iId < 0 || info.iId >= MAX_WEAPONS )
+			{
+				ALERT( at_error, "Invalid weapon ID %d for %s\n", info.iId, szClassname );
+				REMOVE_ENTITY( pent );
+				return;
+			}
 			CBasePlayerItem::ItemInfoArray[info.iId] = info;
 			if ( info.pszAmmo1 && *info.pszAmmo1 )
 				AddAmmoNameToAmmoRegistry( info.pszAmmo1 );

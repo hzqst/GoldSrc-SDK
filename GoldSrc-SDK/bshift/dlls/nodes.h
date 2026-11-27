@@ -211,7 +211,7 @@ public:
 	inline	CNode &Node( int i )
 	{
 #ifdef _DEBUG
-		if ( !m_pNodes || i < 0 || i > m_cNodes )
+		if ( !m_pNodes || i < 0 || i >= m_cNodes )
 			ALERT( at_error, "Bad Node!\n" );
 #endif
 #ifdef _MSC_VER
@@ -223,7 +223,7 @@ public:
 	inline	CLink &Link( int i )
 	{
 #ifdef _DEBUG
-		if ( !m_pLinkPool || i < 0 || i > m_cLinks )
+		if ( !m_pLinkPool || i < 0 || i >= m_cLinks )
 			ALERT( at_error, "Bad link!\n" );
 #endif
 #ifdef _MSC_VER

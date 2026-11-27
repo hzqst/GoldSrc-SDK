@@ -2396,12 +2396,15 @@ int CRestore::ReadEntVars( const char *pname, entvars_t *pev )
 
 int CRestore::ReadFields( const char *pname, void *pBaseData, TYPEDESCRIPTION *pFields, int fieldCount )
 {
-	unsigned short	i, token;
-	int		lastField, fileCount;
+	unsigned short	size, token;
+	int		i, lastField, fileCount;
 	HEADER	header;
 
-	i = ReadShort();
-	ASSERT( i == sizeof(int) );			// First entry should be an int
+	if ( !m_pdata || !m_pdata->pTokens )
+		return 0;
+
+	size = ReadShort();
+	ASSERT( size == sizeof(int) );			// First entry should be an int
 
 	token = ReadShort();
 
@@ -2426,10 +2429,13 @@ int CRestore::ReadFields( const char *pname, void *pBaseData, TYPEDESCRIPTION *p
 			memset( ((char *)pBaseData + pFields[i].fieldOffset), 0, pFields[i].fieldSize * gSizes[pFields[i].fieldType] );
 	}
 
-	for ( int field = 0; field < fileCount; field++ )
+	for ( i = 0; i < fileCount; i++ )
 	{
+		if ( Empty() )
+			break;
+
 		BufferReadHeader( &header );
-		if ( !m_pdata->pTokens || header.token >= m_pdata->tokenCount || !m_pdata->pTokens[header.token] )
+		if ( header.token >= m_pdata->tokenCount || !m_pdata->pTokens[header.token] )
 			continue;
 
 		lastField = ReadField( pBaseData, pFields, fieldCount, lastField, header.size, m_pdata->pTokens[header.token], header.pData );

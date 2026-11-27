@@ -269,7 +269,7 @@ void CHudMessage::MessageDrawScan( client_textmessage_t *pMessage, float time )
 			width = 0;
 		}
 		else
-			width += gHUD.m_scrinfo.charWidths[*pText];
+			width += gHUD.m_scrinfo.charWidths[ static_cast<unsigned char>(*pText) ];
 		pText++;
 		length++;
 	}
@@ -296,7 +296,8 @@ void CHudMessage::MessageDrawScan( client_textmessage_t *pMessage, float time )
 			m_parms.lineLength++;
 			pText++;
 		}
-		pText++;		// Skip LF
+		if ( *pText == '\n' )
+			pText++;		// Skip LF
 		line[m_parms.lineLength] = 0;
 
 		m_parms.x = XPosition( pMessage->x, m_parms.width, m_parms.totalWidth );
@@ -462,7 +463,8 @@ void CHudMessage::MessageAdd( const char *pName, float time )
 				g_pCustomMessage.fxtime = 0.25;
 				g_pCustomMessage.holdtime = 5;
 				g_pCustomMessage.pName = g_pCustomName;
-				strcpy( g_pCustomText, pName );
+				strncpy( g_pCustomText, pName, sizeof( g_pCustomText ) - 1 );
+				g_pCustomText[ sizeof( g_pCustomText ) - 1 ] = '\0';
 				g_pCustomMessage.pMessage = g_pCustomText;
 
 				tempMessage = &g_pCustomMessage;

@@ -158,6 +158,8 @@ static bool Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean
 int __cdecl Host_Load( const char* name );
 int Host_ValidSave();
 bool FileCopy( FileHandle_t output, FileHandle_t input, int fileSize );
+bool DirectoryExtract( FileHandle_t pFile, int fileCount );
+static bool ReplaceSaveFile( const char* temporary, const char* name );
 int FileSize( FileHandle_t file );
 void SaveExit( SAVERESTOREDATA* save );
 int SaveReadHeader( FileHandle_t file, GAME_HEADER* header, int readGlobalState );
@@ -1509,7 +1511,6 @@ int __cdecl Host_Load( const char* pName )
 	GAME_HEADER gameHeader;
 	FileHandle_t pFile;
 	const char* pszExt;
-	int i;
 
 	if ( !pName || !pName[0] )
 		return 0;
@@ -1578,32 +1579,13 @@ int __cdecl Host_Load( const char* pName )
 	SV_InactivateClients();
 	SCR_BeginLoadingPlaque( FALSE );
 
-	for ( i = 0; i < gameHeader.mapCount; i++ )
+	if ( !DirectoryExtract( pFile, gameHeader.mapCount ) )
 	{
-		char fileName[MAX_PATH];
-		int fileSize;
-
-		FS_Read( fileName, sizeof( fileName ), 1, pFile );
-		fileName[sizeof( fileName ) - 1] = '\0';
-		FS_Read( &fileSize, sizeof( fileSize ), 1, pFile );
-
-		pszExt = COM_FileExtension( fileName );
-		if ( !pszExt || Q_strstr( fileName, "\\" ) || Q_strstr( fileName, ":" ) || Q_strstr( fileName, ".." )
-			 || Q_strstr( fileName, "~" ) || fileName[0] == '/' || pszExt[0] != 'H' || pszExt[1] != 'L' )
-		{
-			FS_Seek( pFile, fileSize, FILESYSTEM_SEEK_CURRENT );
-		}
-		else
-		{
-			char szPath[MAX_PATH];
-
-			_snprintf( szPath, sizeof( szPath ), "%s%s", Host_SaveGameDirectory(), fileName );
-			COM_FixSlashes( szPath );
-
-			FileHandle_t pCopy = FS_OpenPathID( szPath, "wb", "GAMECONFIG" );
-			FileCopy( pCopy, pFile, fileSize );
-			FS_Close( pCopy );
-		}
+		FS_Close( pFile );
+		SCR_EndLoadingPlaque();
+		giStateInfo = STATE_ENDTRAINING;
+		Cbuf_AddText( "\ndisconnect\n" );
+		return 0;
 	}
 
 	FS_Close( pFile );
@@ -2045,6 +2027,9 @@ void EntityPatchRead( SAVERESTOREDATA* pSaveData, const char* level )
 	FileHandle_t pFile;
 	int i, size, entityId;
 
+	if ( !pSaveData || !pSaveData->pTable || pSaveData->tableCount <= 0 )
+		return;
+
 	_snprintf( name, sizeof( name ), "%s%s.HL3", Host_SaveGameDirectory(), level );
 	COM_FixSlashes( name );
 
@@ -2236,6 +2221,11 @@ static bool Host_Map( qboolean bIsDemo, char* mapstring, char* mapName, qboolean
 		sv.paused = TRUE;
 		sv.loadgame = TRUE;
 		SV_ActivateServer( 0 );
+		if ( !sv.active )
+		{
+			SCR_EndLoadingPlaque();
+			return false;
+		}
 	}
 	else
 	{
@@ -2515,18 +2505,25 @@ int CreateEntityList( SAVERESTOREDATA* pSaveData, int levelMask )
 	return movedCount;
 }
 
-void EntityPatchWrite( SAVERESTOREDATA* pSaveData, const char* level )
+bool EntityPatchWrite( SAVERESTOREDATA* pSaveData, const char* level )
 {
 	char name[MAX_PATH];
+	char tempName[sizeof( name ) + sizeof( ".tmp" )];
 	FileHandle_t pFile;
 	int i, size;
+	bool written;
+
+	if ( !pSaveData || ( pSaveData->tableCount > 0 && !pSaveData->pTable ) || !level )
+		return false;
 
 	_snprintf( name, sizeof( name ), "%s%s.HL3", Host_SaveGameDirectory(), level );
+	name[sizeof( name ) - 1] = '\0';
 	COM_FixSlashes( name );
+	snprintf( tempName, sizeof( tempName ), "%s.tmp", name );
 
-	pFile = FS_OpenPathID( name, "wb", "GAMECONFIG" );
+	pFile = FS_OpenPathID( tempName, "wb", "GAMECONFIG" );
 	if ( !pFile )
-		return;
+		return false;
 
 	size = 0;
 	for ( i = 0; i < pSaveData->tableCount; i++ )
@@ -2536,17 +2533,28 @@ void EntityPatchWrite( SAVERESTOREDATA* pSaveData, const char* level )
 	}
 
 	// Patch count
-	FS_Write( &size, sizeof( int ), 1, pFile );
-	for ( i = 0; i < pSaveData->tableCount; i++ )
+	written = FS_Write( &size, sizeof( int ), 1, pFile ) == (int)sizeof( int );
+	for ( i = 0; written && i < pSaveData->tableCount; i++ )
 	{
 		if ( pSaveData->pTable[i].flags & FENTTABLE_REMOVED )
-			FS_Write( &i, sizeof( int ), 1, pFile );
+			written = FS_Write( &i, sizeof( int ), 1, pFile ) == (int)sizeof( int );
 	}
 
+	if ( written )
+	{
+		FS_Flush( pFile );
+		written = FS_IsOk( pFile ) != 0;
+	}
 	FS_Close( pFile );
+	if ( !written || !ReplaceSaveFile( tempName, name ) )
+	{
+		FS_RemoveFile( tempName, "GAMECONFIG" );
+		return false;
+	}
+	return true;
 }
 
-void LoadAdjacentEntities( const char* pOldLevel, const char* pLandmarkName )
+bool LoadAdjacentEntities( const char* pOldLevel, const char* pLandmarkName )
 {
 	SAVERESTOREDATA currentLevelData;
 	SAVERESTOREDATA* pSaveData;
@@ -2555,7 +2563,6 @@ void LoadAdjacentEntities( const char* pOldLevel, const char* pLandmarkName )
 	const char* pLevel;
 	int i, test, index;
 	uint32_t flags;
-	int movedCount = 0;
 
 	Q_memset( &currentLevelData, 0, sizeof( SAVERESTOREDATA ) );
 	gGlobalVariables.pSaveData = &currentLevelData;
@@ -2596,6 +2603,7 @@ void LoadAdjacentEntities( const char* pOldLevel, const char* pLandmarkName )
 		VectorSubtract( landmarkOrigin, oldLandmarkOrigin, pSaveData->vecLandmarkOffset );
 
 		flags = 0;
+		int movedCount = 0;
 		if ( !Q_strcmp( pLevel, pOldLevel ) )
 			flags |= FENTTABLE_PLAYER;
 
@@ -2607,13 +2615,19 @@ void LoadAdjacentEntities( const char* pOldLevel, const char* pLandmarkName )
 
 		if ( flags )
 			movedCount = CreateEntityList( pSaveData, (int)flags );
-		if ( movedCount )
-			EntityPatchWrite( pSaveData, pLevel );
+		if ( movedCount && !EntityPatchWrite( pSaveData, pLevel ) )
+		{
+			Con_Printf( "Unable to update entity patch file for %s.\n", pLevel );
+			SaveExit( pSaveData );
+			gGlobalVariables.pSaveData = NULL;
+			return false;
+		}
 
 		SaveExit( pSaveData );
 	}
 
 	gGlobalVariables.pSaveData = NULL;
+	return true;
 }
 
 void Host_EndSection( const char* pszSection )
@@ -2893,40 +2907,50 @@ static bool ReplaceSaveFile( const char* temporary, const char* name )
 #ifdef _MSC_VER
 #pragma warning( suppress: 6262 )
 #endif
-void CL_Save( const char* name )
+bool CL_Save( const char* name )
 {
 	DECALLIST decalList[4096];
 	DECALLIST* entry;
 	FileHandle_t pFile;
 	int i, decalCount, tag;
+	bool written;
 
 	decalCount = DecalListCreate( decalList );
 
 	pFile = FS_OpenPathID( name, "wb", "GAMECONFIG" );
 	if ( !pFile )
-		return;
+		return false;
 
 	tag = SAVEFILE_HEADER;
-	FS_Write( &tag, sizeof( int ), 1, pFile );
+	written = FS_Write( &tag, sizeof( int ), 1, pFile ) == (int)sizeof( int );
 	tag = SAVEGAME_VERSION;
-	FS_Write( &tag, sizeof( int ), 1, pFile );
-	FS_Write( &decalCount, sizeof( int ), 1, pFile );
+	written = written && FS_Write( &tag, sizeof( int ), 1, pFile ) == (int)sizeof( int );
+	written = written && FS_Write( &decalCount, sizeof( int ), 1, pFile ) == (int)sizeof( int );
 
-	for ( i = 0; i < decalCount; i++ )
+	for ( i = 0; written && i < decalCount; i++ )
 	{
 		entry = &decalList[i];
 #ifdef _WIN32
-		FS_Write( entry->name, DECAL_NAME_BYTES, 1, pFile );
+		const int nameBytes = DECAL_NAME_BYTES;
 #else
-		FS_Write( entry->name, sizeof( entry->name ), 1, pFile );
+		const int nameBytes = (int)sizeof( entry->name );
 #endif
-		FS_Write( &entry->entityIndex, sizeof( entry->entityIndex ), 1, pFile );
-		FS_Write( &entry->depth, sizeof( entry->depth ), 1, pFile );
-		FS_Write( &entry->flags, sizeof( entry->flags ), 1, pFile );
-		FS_Write( entry->position, sizeof( entry->position ), 1, pFile );
+		written = FS_Write( entry->name, nameBytes, 1, pFile ) == nameBytes
+			&& FS_Write( &entry->entityIndex, sizeof( entry->entityIndex ), 1, pFile ) == (int)sizeof( entry->entityIndex )
+			&& FS_Write( &entry->depth, sizeof( entry->depth ), 1, pFile ) == (int)sizeof( entry->depth )
+			&& FS_Write( &entry->flags, sizeof( entry->flags ), 1, pFile ) == (int)sizeof( entry->flags )
+			&& FS_Write( entry->position, sizeof( entry->position ), 1, pFile ) == (int)sizeof( entry->position );
 	}
 
+	if ( written )
+	{
+		FS_Flush( pFile );
+		written = FS_IsOk( pFile ) != 0;
+	}
 	FS_Close( pFile );
+	if ( !written )
+		FS_RemoveFile( name, "GAMECONFIG" );
+	return written;
 }
 
 SAVERESTOREDATA* SaveGamestate()
@@ -3073,11 +3097,30 @@ SAVERESTOREDATA* SaveGamestate()
 		return NULL;
 	}
 
-	EntityPatchWrite( pSaveData, sv.name );
+	if ( !EntityPatchWrite( pSaveData, sv.name ) )
+	{
+		FS_RemoveFile( name, "GAMECONFIG" );
+		Con_Printf( "Unable to write entity patch file for %s.\n", sv.name );
+		SaveWriteExit( pSaveData );
+		return NULL;
+	}
 
-	_snprintf( name, sizeof( name ), "%s%s.HL2", Host_SaveGameDirectory(), sv.name );
-	COM_FixSlashes( name );
-	CL_Save( name );
+	char hl2Name[256];
+	_snprintf( hl2Name, sizeof( hl2Name ), "%s%s.HL2", Host_SaveGameDirectory(), sv.name );
+	hl2Name[sizeof( hl2Name ) - 1] = '\0';
+	COM_FixSlashes( hl2Name );
+	if ( !CL_Save( hl2Name ) )
+	{
+		FS_RemoveFile( name, "GAMECONFIG" );
+		char hl3Name[256];
+		_snprintf( hl3Name, sizeof( hl3Name ), "%s%s.HL3", Host_SaveGameDirectory(), sv.name );
+		hl3Name[sizeof( hl3Name ) - 1] = '\0';
+		COM_FixSlashes( hl3Name );
+		FS_RemoveFile( hl3Name, "GAMECONFIG" );
+		Con_Printf( "Unable to write client save file %s.\n", hl2Name );
+		SaveWriteExit( pSaveData );
+		return NULL;
+	}
 
 	return pSaveData;
 }
@@ -3090,8 +3133,6 @@ void Host_Changelevel2_f()
 	char* startspot;
 	SAVERESTOREDATA* pSaveData;
 	int restored;
-
-	giActive = DLL_TRANS;
 
 	if ( Cmd_Argc() < 2 )
 	{
@@ -3111,6 +3152,7 @@ void Host_Changelevel2_f()
 		return;
 	}
 
+	giActive = DLL_TRANS;
 	SCR_BeginLoadingPlaque( TRUE );
 	S_StopAllSounds( TRUE );
 
@@ -3148,7 +3190,16 @@ void Host_Changelevel2_f()
 	if ( !restored )
 		SV_LoadEntities();
 
-	LoadAdjacentEntities( oldlevel, startspot );
+	const bool adjacentLoaded = LoadAdjacentEntities( oldlevel, startspot );
+	if ( !adjacentLoaded )
+	{
+		Host_ShutdownServer( FALSE );
+		Host_ClearMemory( TRUE );
+		giActive = DLL_ACTIVE;
+		SCR_EndLoadingPlaque();
+		Cbuf_AddText( "\ndisconnect\n" );
+		return;
+	}
 
 	sv.paused = TRUE;
 	sv.loadgame = TRUE;
@@ -3410,7 +3461,7 @@ static bool DirectoryCopy( const char* pPath, FileHandle_t pFile )
 	return true;
 }
 
-void DirectoryExtract( FileHandle_t pFile, int fileCount )
+bool DirectoryExtract( FileHandle_t pFile, int fileCount )
 {
 	char fileName[MAX_PATH];
 	char szName[MAX_PATH];
@@ -3418,16 +3469,23 @@ void DirectoryExtract( FileHandle_t pFile, int fileCount )
 	FileHandle_t pCopy;
 	int i, fileSize;
 
-#if defined( _WIN32 ) && ( defined( HL25_HW_ENGINE ) || defined( SW_RENDERER ) )
+	if ( !pFile || fileCount < 0 )
+		return false;
+
+	const unsigned int totalFileSize = FS_Size( pFile );
+
 	for ( i = 0; i < fileCount; i++ )
-#else
-	for ( i = 0; i != fileCount; i++ )
-#endif
 	{
 		// Filename can only be as long as a map name + extension
-		FS_Read( fileName, MAX_PATH, 1, pFile );
+		if ( FS_Read( fileName, MAX_PATH, 1, pFile ) != MAX_PATH )
+			return false;
 		fileName[MAX_PATH - 1] = '\0';
-		FS_Read( &fileSize, sizeof( int ), 1, pFile );
+		if ( FS_Read( &fileSize, sizeof( int ), 1, pFile ) != (int)sizeof( int ) || fileSize < 0 )
+			return false;
+
+		const unsigned int currentPos = FS_Tell( pFile );
+		if ( currentPos > totalFileSize || (unsigned int)fileSize > totalFileSize - currentPos )
+			return false;
 
 		pszExt = COM_LastFileExtension( fileName );
 		if ( !pszExt || Q_strstr( fileName, "\\" ) || Q_strstr( fileName, ":" ) || Q_strstr( fileName, ".." )
@@ -3438,12 +3496,28 @@ void DirectoryExtract( FileHandle_t pFile, int fileCount )
 		}
 
 		_snprintf( szName, sizeof( szName ), "%s%s", Host_SaveGameDirectory(), fileName );
+		szName[sizeof( szName ) - 1] = '\0';
 		COM_FixSlashes( szName );
 
 		pCopy = FS_OpenPathID( szName, "wb", "GAMECONFIG" );
-		FileCopy( pCopy, pFile, fileSize );
+		if ( !pCopy )
+			return false;
+
+		bool copied = FileCopy( pCopy, pFile, fileSize );
+		if ( copied )
+		{
+			FS_Flush( pCopy );
+			copied = FS_IsOk( pCopy ) != 0;
+		}
 		FS_Close( pCopy );
+		if ( !copied )
+		{
+			FS_RemoveFile( szName, "GAMECONFIG" );
+			return false;
+		}
 	}
+
+	return true;
 }
 
 void LandmarkOrigin( SAVERESTOREDATA* pSaveData, vec_t* output, const char* pLandmarkName )

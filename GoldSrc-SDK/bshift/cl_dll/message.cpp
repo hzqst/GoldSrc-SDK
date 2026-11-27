@@ -332,7 +332,8 @@ void CHudMessage::MessageDrawScan( client_textmessage_t *pMessage, float time, u
 			m_parms.lineLength++;
 			pText++;
 		}
-		pText++;		// Skip LF
+		if ( *pText == '\n' )
+			pText++;		// Skip LF
 		if ( m_parms.lineLength < ARRAYSIZE( line ) )
 			line[m_parms.lineLength] = 0;
 
@@ -489,7 +490,8 @@ void CHudMessage::MessageAdd( const char *pName, float time, unsigned int font )
 				g_pCustomMessage.fxtime = 0.25;
 				g_pCustomMessage.holdtime = 5;
 				g_pCustomMessage.pName = g_pCustomName;
-				strcpy( g_pCustomText, pName );
+				strncpy( g_pCustomText, pName, sizeof( g_pCustomText ) - 1 );
+				g_pCustomText[ sizeof( g_pCustomText ) - 1 ] = '\0';
 				g_pCustomMessage.pMessage = g_pCustomText;
 
 				tempMessage = &g_pCustomMessage;

@@ -632,6 +632,9 @@ int TeamFortressViewport::CreateCommandMenu( char * menuFile, int direction, int
 	// COMMAND MENU
 	// Create the root of this new Command Menu
 
+	if (m_iNumMenus >= MAX_MENUS)
+		return -1;
+
 	int newIndex = m_iNumMenus;
 	
 	m_pCommandMenus[newIndex] = new CCommandMenu(NULL, direction, 0, yOffset, CMENU_SIZE_X, 300);	// This will be resized once we know how many items are in it
@@ -867,6 +870,9 @@ catch( CException *e )
 
 CCommandMenu *TeamFortressViewport::CreateDisguiseSubmenu( CommandButton *pButton, CCommandMenu *pParentMenu, const char *commandText, int iYOffset )
 {
+	if ( m_iNumMenus >= MAX_MENUS )
+		return NULL;
+
 	// create the submenu, under which the class choices will be listed
 	CCommandMenu *pMenu = CreateSubMenu( pButton, pParentMenu, iYOffset );
 	m_pCommandMenus[m_iNumMenus] = pMenu;
@@ -889,6 +895,9 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 	// ChangeTeam
 	if ( !strcmp( pButtonName, "!CHANGETEAM" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		// ChangeTeam Submenu
 		pButton = new CommandButton(pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
 

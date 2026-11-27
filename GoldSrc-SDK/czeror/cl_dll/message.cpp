@@ -380,7 +380,8 @@ void CHudMessage::MessageAdd( const char* name, float time )
 			g_pCustomMessage.fxtime = 0.25f;
 			g_pCustomMessage.holdtime = 5;
 			g_pCustomMessage.pName = g_pCustomName;
-			strcpy( g_pCustomText, name );
+			strncpy( g_pCustomText, name, sizeof( g_pCustomText ) - 1 );
+			g_pCustomText[ sizeof( g_pCustomText ) - 1 ] = '\0';
 			g_pCustomMessage.pMessage = g_pCustomText;
 			message = &g_pCustomMessage;
 		}

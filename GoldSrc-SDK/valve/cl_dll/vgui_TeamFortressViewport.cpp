@@ -632,19 +632,22 @@ TeamFortressViewport::TeamFortressViewport(int x,int y,int wide,int tall) : Pane
 	m_SpectatorOptionsMenu = CreateCommandMenu("spectatormenu.txt", 1, PANEL_HEIGHT, true, CMENU_SIZE_X, BUTTON_SIZE_Y / 2, 0, 2 );
 	m_SpectatorCameraMenu = CreateCommandMenu("spectcammenu.txt", 1, PANEL_HEIGHT, true, XRES( 200 ), BUTTON_SIZE_Y / 2, ScreenWidth - ( XRES ( 200 ) + 15 ), 1 );
 
-	m_PlayerMenu =  m_iNumMenus;
-	m_iNumMenus++;
+	if (m_iNumMenus < MAX_MENUS)
+	{
+		m_PlayerMenu = m_iNumMenus;
+		m_iNumMenus++;
 
-	float flLabelSize = ( (ScreenWidth - (XRES ( CAMOPTIONS_BUTTON_X ) + 15)) - XRES ( 24 + 15 ) ) - XRES( (15 + OPTIONS_BUTTON_X + 15) + 38 );
+		float flLabelSize = ( (ScreenWidth - (XRES ( CAMOPTIONS_BUTTON_X ) + 15)) - XRES ( 24 + 15 ) ) - XRES( (15 + OPTIONS_BUTTON_X + 15) + 38 );
 
-	m_pCommandMenus[m_PlayerMenu] = new CCommandMenu(NULL, 1, 
-									XRES( ( 15 + OPTIONS_BUTTON_X + 15 ) + 31 ),PANEL_HEIGHT, flLabelSize,300);	
-	m_pCommandMenus[m_PlayerMenu]->setParent(this);
-	m_pCommandMenus[m_PlayerMenu]->setVisible(false);
-	m_pCommandMenus[m_PlayerMenu]->m_flButtonSizeY = BUTTON_SIZE_Y /2;
-	m_pCommandMenus[m_PlayerMenu]->m_iSpectCmdMenu = 1;
+		m_pCommandMenus[m_PlayerMenu] = new CCommandMenu(NULL, 1, 
+										XRES( ( 15 + OPTIONS_BUTTON_X + 15 ) + 31 ),PANEL_HEIGHT, flLabelSize,300);	
+		m_pCommandMenus[m_PlayerMenu]->setParent(this);
+		m_pCommandMenus[m_PlayerMenu]->setVisible(false);
+		m_pCommandMenus[m_PlayerMenu]->m_flButtonSizeY = BUTTON_SIZE_Y /2;
+		m_pCommandMenus[m_PlayerMenu]->m_iSpectCmdMenu = 1;
 
-	UpdatePlayerMenu(m_PlayerMenu);
+		UpdatePlayerMenu(m_PlayerMenu);
+	}
 
 	CreateServerBrowser();
 
@@ -996,6 +999,9 @@ int TeamFortressViewport::CreateCommandMenu( char * menuFile, int direction, int
 	// COMMAND MENU
 	// Create the root of this new Command Menu
 
+	if (m_iNumMenus >= MAX_MENUS)
+		return -1;
+
 	int newIndex = m_iNumMenus;
 	const int submenuLimit = MAX_MENUS - reservedMenus;
 	
@@ -1069,9 +1075,11 @@ try
 			if (!strcmp(entry.command.text, "!CHANGETEAM") || !strcmp(entry.command.text, "!CHANGECLASS"))
 				customMenus = 1;
 #ifdef _TFC
-			else if (!strcmp(entry.command.text, "!DETPACKSTART"))
+			else if (!strcmp(entry.command.text, "!DETPACKSTART") ||
+				!strcmp(entry.command.text, "!DISGUISEENEMY") ||
+				!strcmp(entry.command.text, "!DISGUISEFRIENDLY"))
 				customMenus = 1;
-			else if (!strcmp(entry.command.text, "!DISGUISEENEMY") || !strcmp(entry.command.text, "!DISGUISEFRIENDLY"))
+			else if (!strcmp(entry.command.text, "!DISGUISE"))
 				customMenus = 5;
 #endif
 		}
@@ -1121,7 +1129,7 @@ try
 		if (entry.submenu)
 		{
 			// Some custom buttons already build their own submenu.
-			if (customMenus > 0)
+			if (customMenus > 0 || m_iNumMenus >= submenuLimit)
 			{
 				rejectedDepth = 1;
 				continue;
@@ -1166,6 +1174,9 @@ catch( CException *e )
 //-----------------------------------------------------------------------------
 CCommandMenu *TeamFortressViewport::CreateDisguiseSubmenu( CommandButton *pButton, CCommandMenu *pParentMenu, const char *commandText, int iYOffset, int iXOffset )
 {
+	if ( m_iNumMenus >= MAX_MENUS )
+		return NULL;
+
 	// create the submenu, under which the class choices will be listed
 	CCommandMenu *pMenu = CreateSubMenu( pButton, pParentMenu, iYOffset, iXOffset );
 	m_pCommandMenus[m_iNumMenus] = pMenu;
@@ -1202,6 +1213,9 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 	// ChangeTeam
 	if ( !strcmp( pButtonName, "!CHANGETEAM" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		// ChangeTeam Submenu
 		pButton = new CommandButton(pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
 
@@ -1233,6 +1247,9 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 	// ChangeClass
 	else if ( !strcmp( pButtonName, "!CHANGECLASS" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		// Create the Change class menu
 		pButton = new ClassButton(-1, pButtonText, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y, false);
 
@@ -1312,18 +1329,27 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 	// Disguise
 	else if ( !strcmp( pButtonName, "!DISGUISEENEMY" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		// Create the disguise enemy button, which active only if there are 2 teams
 		pButton = new DisguiseButton(DISGUISE_TEAM2, pButtonText, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
 		CreateDisguiseSubmenu( pButton, m_pCurrentCommandMenu, "disguise_enemy", iYOffset);
 	}
 	else if ( !strcmp( pButtonName, "!DISGUISEFRIENDLY" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		// Create the disguise friendly button, which active only if there are 1 or 2 teams
 		pButton = new DisguiseButton(DISGUISE_TEAM1 | DISGUISE_TEAM2, pButtonText, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
 		CreateDisguiseSubmenu( pButton, m_pCurrentCommandMenu, "disguise_friendly", iYOffset );
 	}
 	else if ( !strcmp( pButtonName, "!DISGUISE" ) )
 	{
+		if ( m_iNumMenus + 5 > MAX_MENUS )
+			return NULL;
+
 		// Create the Disguise button
 		pButton = new DisguiseButton( DISGUISE_TEAM3 | DISGUISE_TEAM4, pButtonText, 0, BUTTON_SIZE_Y, CMENU_SIZE_X, BUTTON_SIZE_Y);
 		CCommandMenu *pDisguiseMenu = CreateSubMenu( pButton, m_pCurrentCommandMenu, iYOffset );
@@ -1347,6 +1373,9 @@ CommandButton *TeamFortressViewport::CreateCustomButton( char *pButtonText, char
 	// Start setting a Detpack
 	else if ( !strcmp( pButtonName, "!DETPACKSTART" ) )
 	{
+		if ( m_iNumMenus >= MAX_MENUS )
+			return NULL;
+
 		// Detpack Submenu
 		pButton = new DetpackButton(2, pButtonText, 0, BUTTON_SIZE_Y * 2, CMENU_SIZE_X, BUTTON_SIZE_Y);
 
