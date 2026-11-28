@@ -4383,8 +4383,10 @@ void CBasePlayer::StudioProcessGait()
 	CalculateYawBlend();
 	CalculatePitchBlend();
 
+	// LookupActivity gives ACTIVITY_NOT_AVAILABLE (-1) for an activity the model does not have
 	studiohdr_t* model = (studiohdr_t*)GET_MODEL_PTR( edict() );
-	if ( !model )
+	if ( !model || memcmp( model, "IDST", sizeof( model->id ) ) != 0 ||
+		pev->gaitsequence < 0 || pev->gaitsequence >= model->numseq )
 		return;
 
 	mstudioseqdesc_t* sequence = (mstudioseqdesc_t*)((byte*)model + model->seqindex) + pev->gaitsequence;

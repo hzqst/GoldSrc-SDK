@@ -57,6 +57,20 @@ extern globalvars_t				*gpGlobals;
 
 #pragma warning( disable : 4244 )
 
+#ifndef IDSTUDIOHEADER
+#define IDSTUDIOHEADER	(('T'<<24)+('S'<<16)+('D'<<8)+'I') // little-endian "IDST"
+#endif
+
+// The model of GET_MODEL_PTR as a studio header; NULL for no model or a sprite (the engine gives its msprite_t)
+static studiohdr_t *GetStudioHeader( void *pmodel )
+{
+	studiohdr_t *pstudiohdr = (studiohdr_t *)pmodel;
+
+	if ( !pstudiohdr || pstudiohdr->id != IDSTUDIOHEADER )
+		return NULL;
+
+	return pstudiohdr;
+}
 studiohdr_t *g_pstudiohdr;
 float (*g_pRotationMatrix)[3][4];
 float (*g_pBoneTransform)[128][3][4];
@@ -468,8 +482,8 @@ int ExtractBbox( void *pmodel, int sequence, float *mins, float *maxs )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
-	if (! pstudiohdr)
+	pstudiohdr = GetStudioHeader( pmodel );
+	if ( !pstudiohdr || sequence < 0 || sequence >= pstudiohdr->numseq )
 		return 0;
 
 	mstudioseqdesc_t	*pseqdesc;
@@ -492,8 +506,8 @@ int LookupActivity( void *pmodel, entvars_t *, int activity )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
-	if (! pstudiohdr)
+	pstudiohdr = GetStudioHeader( pmodel );
+	if ( !pstudiohdr )
 		return 0;
 
 	mstudioseqdesc_t	*pseqdesc;
@@ -543,7 +557,7 @@ int LookupActivityHeaviest( void *pmodel, entvars_t *, int activity )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
+	pstudiohdr = GetStudioHeader( pmodel );
 	if ( !pstudiohdr )
 		return 0;
 
@@ -572,7 +586,7 @@ void GetEyePosition ( void *pmodel, float *vecEyePosition )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
+	pstudiohdr = GetStudioHeader( pmodel );
 
 	if ( !pstudiohdr )
 	{
@@ -587,7 +601,7 @@ int LookupSequence( void *pmodel, const char *label )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
+	pstudiohdr = GetStudioHeader( pmodel );
 	if (! pstudiohdr)
 		return 0;
 
@@ -620,7 +634,7 @@ void SequencePrecache( void *pmodel, const char *pSequenceName )
 	{
 		studiohdr_t *pstudiohdr;
 	
-		pstudiohdr = (studiohdr_t *)pmodel;
+		pstudiohdr = GetStudioHeader( pmodel );
 		if ( !pstudiohdr || index >= pstudiohdr->numseq )
 			return;
 
@@ -655,22 +669,15 @@ void SequencePrecache( void *pmodel, const char *pSequenceName )
 
 void GetSequenceInfo( void *pmodel, entvars_t *pev, float *pflFrameRate, float *pflGroundSpeed )
 {
-	studiohdr_t *pstudiohdr;
-	
-	pstudiohdr = (studiohdr_t *)pmodel;
-	if (! pstudiohdr)
-		return;
-
-	mstudioseqdesc_t	*pseqdesc;
-
-	if (pev->sequence >= pstudiohdr->numseq)
+	studiohdr_t *pstudiohdr = GetStudioHeader( pmodel );
+	if ( !pstudiohdr || pev->sequence < 0 || pev->sequence >= pstudiohdr->numseq )
 	{
 		*pflFrameRate = 0.0;
 		*pflGroundSpeed = 0.0;
 		return;
 	}
 
-	pseqdesc = (mstudioseqdesc_t *)((byte *)pstudiohdr + pstudiohdr->seqindex) + (int)pev->sequence;
+	mstudioseqdesc_t *pseqdesc = (mstudioseqdesc_t *)((byte *)pstudiohdr + pstudiohdr->seqindex) + pev->sequence;
 
 	if (pseqdesc->numframes > 1)
 	{
@@ -690,8 +697,8 @@ int GetSequenceFlags( void *pmodel, entvars_t *pev )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
-	if ( !pstudiohdr || pev->sequence >= pstudiohdr->numseq )
+	pstudiohdr = GetStudioHeader( pmodel );
+	if ( !pstudiohdr || pev->sequence < 0 || pev->sequence >= pstudiohdr->numseq )
 		return 0;
 
 	mstudioseqdesc_t	*pseqdesc;
@@ -705,8 +712,8 @@ int GetAnimationEvent( void *pmodel, entvars_t *pev, MonsterEvent_t *pMonsterEve
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
-	if ( !pstudiohdr || pev->sequence >= pstudiohdr->numseq || !pMonsterEvent )
+	pstudiohdr = GetStudioHeader( pmodel );
+	if ( !pstudiohdr || pev->sequence < 0 || pev->sequence >= pstudiohdr->numseq || !pMonsterEvent )
 		return 0;
 
 
@@ -752,8 +759,11 @@ float SetController( void *pmodel, entvars_t *pev, int iController, float flValu
 	studiohdr_t *pstudiohdr;
 	int i;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
+	pstudiohdr = GetStudioHeader( pmodel );
 	if (! pstudiohdr)
+		return flValue;
+
+	if ( iController < 0 || iController >= (int)ARRAYSIZE( pev->controller ) )
 		return flValue;
 
 	mstudiobonecontroller_t	*pbonecontroller = (mstudiobonecontroller_t *)((byte *)pstudiohdr + pstudiohdr->bonecontrollerindex);
@@ -806,13 +816,16 @@ float SetBlending( void *pmodel, entvars_t *pev, int iBlender, float flValue )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
-	if (! pstudiohdr)
+	pstudiohdr = GetStudioHeader( pmodel );
+	if ( !pstudiohdr || pev->sequence < 0 || pev->sequence >= pstudiohdr->numseq )
 		return flValue;
 
 	mstudioseqdesc_t	*pseqdesc;
 
 	pseqdesc = (mstudioseqdesc_t *)((byte *)pstudiohdr + pstudiohdr->seqindex) + (int)pev->sequence;
+
+	if ( iBlender < 0 || iBlender >= (int)ARRAYSIZE( pseqdesc->blendtype ) )
+		return flValue;
 
 	if (pseqdesc->blendtype[iBlender] == 0)
 		return flValue;
@@ -850,8 +863,11 @@ int FindTransition( void *pmodel, int iEndingAnim, int iGoalAnim, int *piDir )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
+	pstudiohdr = GetStudioHeader( pmodel );
 	if (! pstudiohdr)
+		return iGoalAnim;
+
+	if ( iEndingAnim < 0 || iEndingAnim >= pstudiohdr->numseq || iGoalAnim < 0 || iGoalAnim >= pstudiohdr->numseq )
 		return iGoalAnim;
 
 	mstudioseqdesc_t	*pseqdesc;
@@ -917,11 +933,11 @@ void SetBodygroup( void *pmodel, entvars_t *pev, int iGroup, int iValue )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
+	pstudiohdr = GetStudioHeader( pmodel );
 	if (! pstudiohdr)
 		return;
 
-	if (iGroup > pstudiohdr->numbodyparts)
+	if (iGroup < 0 || iGroup >= pstudiohdr->numbodyparts || iValue < 0)
 		return;
 
 	mstudiobodyparts_t *pbodypart = (mstudiobodyparts_t *)((byte *)pstudiohdr + pstudiohdr->bodypartindex) + iGroup;
@@ -939,11 +955,11 @@ int GetBodygroup( void *pmodel, entvars_t *pev, int iGroup )
 {
 	studiohdr_t *pstudiohdr;
 	
-	pstudiohdr = (studiohdr_t *)pmodel;
+	pstudiohdr = GetStudioHeader( pmodel );
 	if (! pstudiohdr)
 		return 0;
 
-	if (iGroup > pstudiohdr->numbodyparts)
+	if (iGroup < 0 || iGroup >= pstudiohdr->numbodyparts)
 		return 0;
 
 	mstudiobodyparts_t *pbodypart = (mstudiobodyparts_t *)((byte *)pstudiohdr + pstudiohdr->bodypartindex) + iGroup;
