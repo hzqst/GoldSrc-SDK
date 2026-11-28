@@ -1904,6 +1904,9 @@ void PF_setview_I( const edict_t* clientEntity, const edict_t* viewEntity )
 	if ( client->fakeclient )
 		return;
 	client->pViewEntity = viewEntity;
+	// A restored game can set the view before the local client's netchan is ready.
+	if ( !( client->active || client->spawned ) )
+		return;
 	MSG_WriteByte( &client->netchan.message, svc_setview );
 	MSG_WriteShort( &client->netchan.message, NUM_FOR_EDICT( viewEntity ) );
 }
