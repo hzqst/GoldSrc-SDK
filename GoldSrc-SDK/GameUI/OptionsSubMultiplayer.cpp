@@ -32,6 +32,8 @@
 #include "../game_shared/shared_util.h"
 #include "wrect.h"
 #include "cl_dll.h"
+#include "studio.h"
+#include "../common/studio_remap.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -483,18 +485,104 @@ void COptionsSubMultiplayer::RedrawCrosshairImage()
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Purpose: Whether a texture of the model file is one the engine remaps to
+//  topcolor and bottomcolor; pHasTextures receives whether the file has textures
+//-----------------------------------------------------------------------------
+static bool ModelFileHasRemapTexture( const char* filename, bool* pHasTextures )
+{
+	*pHasTextures = false;
+
+	FileHandle_t file = vgui2::filesystem()->Open( filename, "rb", NULL );
+	if ( !file )
+		return false;
+
+	bool remap = false;
+	unsigned int fileSize = vgui2::filesystem()->Size( file );
+	studiohdr_t header;
+
+	if ( vgui2::filesystem()->Read( &header, sizeof( header ), file ) == sizeof( header ) &&
+		memcmp( &header.id, "IDST", sizeof( header.id ) ) == 0 )
+	{
+		*pHasTextures = header.numtextures != 0;
+
+		// Only the texture table is read, and only when it lies inside the file
+		bool tableInFile = header.numtextures > 0 && header.numtextures <= MAXSTUDIOSKINS &&
+			header.textureindex >= (int)sizeof( header ) &&
+			(unsigned int)header.textureindex + header.numtextures * sizeof( mstudiotexture_t ) <= fileSize;
+
+		if ( tableInFile )
+		{
+			vgui2::filesystem()->Seek( file, header.textureindex, FILESYSTEM_SEEK_HEAD );
+
+			for ( int i = 0; i < header.numtextures && !remap; i++ )
+			{
+				mstudiotexture_t texture;
+				if ( vgui2::filesystem()->Read( &texture, sizeof( texture ), file ) != sizeof( texture ) )
+					break;
+
+				texture.name[sizeof( texture.name ) - 1] = 0;
+
+				int low, mid, high;
+				remap = Studio_IsRemapTexture( texture.name, &low, &mid, &high );
+			}
+		}
+	}
+
+	vgui2::filesystem()->Close( file );
+	return remap;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Whether the engine remaps the colors of the player model, as the
+//  studio renderer does: a model without textures has them in <model>T.mdl
+//-----------------------------------------------------------------------------
+static bool ModelHasRemapTexture( const char* modelname )
+{
+	char filename[256];
+	bool hasTextures;
+
+	int written = snprintf( filename, sizeof( filename ), "models/player/%s/%s.mdl", modelname, modelname );
+	if ( written < 0 || written >= (int)sizeof( filename ) )
+		return false;
+	if ( ModelFileHasRemapTexture( filename, &hasTextures ) )
+		return true;
+
+	if ( hasTextures )
+		return false;
+
+	written = snprintf( filename, sizeof( filename ), "models/player/%s/%sT.mdl", modelname, modelname );
+	if ( written < 0 || written >= (int)sizeof( filename ) )
+		return false;
+	return ModelFileHasRemapTexture( filename, &hasTextures );
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Shows the model's image in the colors of the sliders, or as it is
+//  when the engine does not remap the model's colors; then the sliders and
+//  their label are disabled
 //-----------------------------------------------------------------------------
 void COptionsSubMultiplayer::RemapModel()
 {
 	char modelname[256];
 	m_pModelList->GetText( modelname, sizeof( modelname ) );
-	if ( modelname[0] )
+	const bool remap = modelname[0] && ModelHasRemapTexture( modelname );
+	m_pPrimaryColorSlider->SetEnabled( remap );
+	m_pSecondaryColorSlider->SetEnabled( remap );
+	vgui2::Panel* label = FindChildByName( "Colors", false );
+	if ( label )
+		label->SetEnabled( remap );
+
+	if ( remap )
+	{
+		RemapPalette( modelname, m_nTopColor, m_nBottomColor );
+		m_pModelImage->setTexture( "models/player/remapped" );
+	}
+	else if ( modelname[0] )
 	{
 		char texture[256];
-		sprintf( texture, "models/player/remapped" );
-		RemapPalette( modelname, m_nTopColor, m_nBottomColor );
-		m_pModelImage->setTexture( texture );
+		const int written = snprintf( texture, sizeof( texture ), "models/player/%s/%s", modelname, modelname );
+		if ( written >= 0 && written < (int)sizeof( texture ) )
+			m_pModelImage->setTexture( texture );
 	}
 }
 

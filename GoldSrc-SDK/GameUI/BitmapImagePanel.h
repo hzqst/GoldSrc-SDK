@@ -25,5 +25,5 @@ protected:
 private:
 	bool	m_bUploaded;
 	int		m_nTextureId;
-	char	m_szTexture[128];
+	char	m_szTexture[256];
 };

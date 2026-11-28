@@ -1,4 +1,6 @@
 // r_studio.c: routines for setting up to draw 3DStudio models 
+#include "../common/studio_remap.h"
+
 #if defined( SW_RENDERER )
 
 #include "r_local.h"
@@ -1708,39 +1710,6 @@ void R_StudioLighting( float* lv, int bone, int flags, vec_t* normal )
 		illum = 255.0f;
 
 	*lv = (float)( lightgammatable[Q_ftol( illum * 4.0f )] * 64.0 );
-}
-
-int R_IsRemapSkin( char* pName, int* pLow, int* pMid, int* pHigh )
-{
-	int len;
-	char sz[32];
-
-	if ( Q_strnicmp( pName, "Remap", 5 ) )
-		return 0;
-
-	len = Q_strlen( pName );
-	if ( len != 22 && !( len == 18 && ( pName[5] == 'C' || pName[5] == 'c' ) ) )
-		return 0;
-
-	Q_memset( sz, 0, sizeof( sz ) );
-
-	Q_strncpy( sz, &pName[7], 3 );
-	*pLow = Q_atoi( sz );
-
-	Q_strncpy( sz, &pName[11], 3 );
-	*pMid = Q_atoi( sz );
-
-	if ( len == 22 )
-	{
-		Q_strncpy( sz, &pName[15], 3 );
-		*pHigh = Q_atoi( sz );
-	}
-	else
-	{
-		*pHigh = 0;
-	}
-
-	return 1;
 }
 
 void R_StudioFlushSkins( int keynum )
@@ -3885,8 +3854,8 @@ void R_StudioSetupSkin( void* textureheader, int index )
 	}
 	else if ( currententity->index > 0 )
 	{
-		int low = 160, mid = 191, high = 223;
-		if ( !Q_stricmp( texture->name, "DM_Base.bmp" ) || R_IsRemapSkin( texture->name, &low, &mid, &high ) )
+		int low, mid, high;
+		if ( Studio_IsRemapTexture( texture->name, &low, &mid, &high ) )
 		{
 			skin_t* skin = R_StudioGetSkin( currententity->index, index );
 			if ( skin->model != r_model || skin->topcolor != r_topcolor || skin->bottomcolor != r_bottomcolor )
@@ -6302,39 +6271,6 @@ void R_StudioLighting( float* lv, int bone, int flags, vec_t* normal )
 	*lv = (float)( (float)lightgammatable[Q_ftol( illum * 4.0f )] * ( 1.0 / 1023.0 ) ); // Light from 0 to 1.0
 }
 
-int R_IsRemapSkin( char* pName, int* pLow, int* pMid, int* pHigh )
-{
-	int len;
-	char sz[32];
-
-	if ( Q_strnicmp( pName, "Remap", 5 ) )
-		return 0;
-
-	len = Q_strlen( pName );
-	if ( len != 22 && !( len == 18 && ( pName[5] == 'C' || pName[5] == 'c' ) ) )
-		return 0;
-
-	Q_memset( sz, 0, sizeof( sz ) );
-
-	Q_strncpy( sz, &pName[7], 3 );
-	*pLow = Q_atoi( sz );
-
-	Q_strncpy( sz, &pName[11], 3 );
-	*pMid = Q_atoi( sz );
-
-	if ( len == 22 )
-	{
-		Q_strncpy( sz, &pName[15], 3 );
-		*pHigh = Q_atoi( sz );
-	}
-	else
-	{
-		*pHigh = 0;
-	}
-
-	return 1;
-}
-
 void R_StudioFlushSkins( int keynum )
 {
 	int i;
@@ -8321,11 +8257,7 @@ void R_StudioSetupSkin_0( studiohdr_t* ptexturehdr, int index )
 		return;
 	}
 
-	low = 160;
-	mid = 191;
-	high = 223;
-
-	if ( Q_strcasecmp( ptexture->name, "DM_Base.bmp" ) && !R_IsRemapSkin( ptexture->name, &low, &mid, &high ) )
+	if ( !Studio_IsRemapTexture( ptexture->name, &low, &mid, &high ) )
 	{
 		GL_Bind( ptexture->index );
 		return;
