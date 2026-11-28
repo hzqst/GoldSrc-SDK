@@ -146,6 +146,11 @@ bool CFontAmalgam::IsAdditive()
 	return false;
 }
 
+CPlatformFont* CFontAmalgam::GetFont( int index )
+{
+	return m_Fonts[index].font;
+}
+
 const char* CFontAmalgam::GetFontName( int index )
 {
 	return m_Fonts[index].font->GetName();

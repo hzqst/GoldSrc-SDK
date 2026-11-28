@@ -98,10 +98,72 @@ int CFontManager::GetFontBlur( vgui2::HFont font )
 	return m_FontAmalgams[font].GetFontBlur();
 }
 
-CPlatformFont* CFontManager::GetFontForChar( vgui2::HFont font, wchar_t ch )
+CPlatformFont* CFontManager::GetFontForChar( vgui2::HFont font, int ch )
 {
-	return m_FontAmalgams[font].GetFontForChar( ch );
+	CPlatformFont* fontForChar = m_FontAmalgams[font].GetFontForChar( ch );
+#if !defined( _WIN32 )
+	if ( fontForChar == nullptr )
+		fontForChar = AddFontForChar( font, ch );
+#endif
+	return fontForChar;
 }
+
+#if !defined( _WIN32 )
+// The highest code point, the end of the range of a font AddFontForChar adds.
+constexpr int MAX_CODE_POINT = 0x10FFFF;
+
+bool CFontManager::CharFamilyLess( const CharFamily_t& lhs, const CharFamily_t& rhs )
+{
+	if ( lhs.font != rhs.font )
+		return lhs.font < rhs.font;
+	return lhs.ch < rhs.ch;
+}
+
+CPlatformFont* CFontManager::AddFontForChar( vgui2::HFont font, int ch )
+{
+	CFontAmalgam& amalgam = m_FontAmalgams[font];
+	if ( amalgam.GetCount() <= 0 || ch < 0 || ch > MAX_CODE_POINT )
+		return nullptr;
+
+	CPlatformFont* primary = amalgam.GetFont( 0 );
+
+	CharFamily_t finder{};
+	finder.font = font;
+	finder.ch = ch;
+	int index = m_CharFamilies.Find( finder );
+	if ( !m_CharFamilies.IsValidIndex( index ) )
+	{
+		if ( !CLinuxFont::FindFamilyForChar( ch, primary->GetName(), primary->GetWeight(), primary->GetFlags(),
+				finder.family, sizeof( finder.family ) ) )
+			finder.family[0] = 0;
+		index = m_CharFamilies.Insert( finder );
+	}
+
+	const char* family = m_CharFamilies[index].family;
+	if ( family[0] == 0 )
+		return nullptr;
+
+	// A character is drawn in a rectangle of the height of the first font of the amalgam, so a taller font would be
+	// squeezed into it: its size is scaled down to fit.
+	int tall = primary->GetTall();
+	CPlatformFont* fallback = CreateOrFindWin32Font( family, tall, primary->GetWeight(), primary->GetBlur(),
+		primary->GetScanLines(), primary->GetFlags() );
+	if ( fallback != nullptr && fallback->GetHeight() > primary->GetHeight() )
+	{
+		const int scaledTall = static_cast<int>( static_cast<long long>( tall ) *
+			primary->GetHeight() / fallback->GetHeight() );
+		tall = scaledTall > 0 ? scaledTall : 1;
+		fallback = CreateOrFindWin32Font( family, tall, primary->GetWeight(), primary->GetBlur(),
+			primary->GetScanLines(), primary->GetFlags() );
+	}
+
+	if ( fallback == nullptr || !fallback->HasChar( static_cast<wchar_t>( ch ) ) )
+		return nullptr;
+
+	amalgam.AddFont( fallback, 0, MAX_CODE_POINT );
+	return fallback;
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // Purpose: returns the max height of a font
@@ -162,6 +224,7 @@ CFontManager::CFontManager()
 	std::setlocale( LC_MONETARY, "" );
 #if !defined( _WIN32 )
 	FT_Init_FreeType( &m_Library );
+	m_CharFamilies.SetLessFunc( CharFamilyLess );
 #endif
 }
 
@@ -210,6 +273,10 @@ void CFontManager::SetLanguage( const char* language )
 
 void CFontManager::ClearAllFonts()
 {
+#if !defined( _WIN32 )
+	m_CharFamilies.RemoveAll();
+#endif
+
 	int index = 0;
 	int count = m_Win32Fonts.Count();
 	if ( count > 0 )
@@ -360,7 +427,7 @@ vgui2::HFont CFontManager::GetFontByName( const char* name )
 //-----------------------------------------------------------------------------
 void CFontManager::GetCharABCwide( vgui2::HFont font, int ch, int& a, int& b, int& c )
 {
-	CPlatformFont* fontForChar = m_FontAmalgams[font].GetFontForChar( ch );
+	CPlatformFont* fontForChar = GetFontForChar( font, ch );
 	if ( fontForChar != nullptr )
 	{
 		fontForChar->GetCharABCWidths( ch, a, b, c );
@@ -380,7 +447,7 @@ bool CFontManager::IsAdditive( vgui2::HFont font )
 
 int CFontManager::GetFontAscent( vgui2::HFont font, wchar_t ch )
 {
-	CPlatformFont* fontForChar = m_FontAmalgams[font].GetFontForChar( ch );
+	CPlatformFont* fontForChar = GetFontForChar( font, ch );
 	if ( fontForChar != nullptr )
 		return fontForChar->GetAscent();
 

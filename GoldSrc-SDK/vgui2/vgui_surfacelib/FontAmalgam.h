@@ -41,6 +41,8 @@ public:
 	int GetFontMaxWidth();
 
 	int GetFlags( int index );
+	// returns the font at index, which is lower than GetCount()
+	CPlatformFont* GetFont( int index );
 	// returns the windows name for the font
 	const char* GetFontName( int index );
 	// returns the number of fonts in this amalgam

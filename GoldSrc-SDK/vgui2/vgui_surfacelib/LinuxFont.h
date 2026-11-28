@@ -37,6 +37,11 @@ public:
 		char* dataFile, int dataFileChars );
 
 	bool Create( const char* windowsFontName, int tall, int weight, int blur, int scanlines, int flags );
+
+	// Finds the family of an installed font that has the character, preferring preferredFamily and the weight and
+	// slant of the flags. Returns false when no installed font has it.
+	static bool FindFamilyForChar( int ch, const char* preferredFamily, int weight, int flags, char* family,
+		int familyChars );
 	void GetCharRGBA( int ch, int rgbaX, int rgbaY, int rgbaWide, int rgbaTall, unsigned char* rgba );
 	bool IsEqualTo( const char* windowsFontName, int tall, int weight, int blur, int scanlines, int flags );
 	bool IsValid();
@@ -46,7 +51,9 @@ public:
 	int GetMaxCharWidth();
 	int GetFlags();
 
+	int GetTall() { return m_iTall; }
 	int GetBlur() { return m_iBlur; }
+	int GetScanLines() { return m_iScanLines; }
 	bool GetUnderlined() { return m_bUnderlined; }
 	bool IsAdditive() { return m_bAdditive; }
 	const char* GetName() { return m_szName; }
