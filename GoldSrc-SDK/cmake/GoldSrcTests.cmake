@@ -239,6 +239,6 @@ if(MSVC AND TARGET sw_engine AND TARGET swds)
 	add_test(NAME engine_def_exports
 		COMMAND Python3::Interpreter -I "${GOLDSRC_TESTS_DIR}/engine_def_exports_tests.py"
 			--dumpbin "${GOLDSRC_DUMPBIN}"
-			--module "$<TARGET_FILE:sw_engine>" "${GOLDSRC_ROOT}/engine/sw_engine.def"
-			--module "$<TARGET_FILE:swds>" "${GOLDSRC_ROOT}/swds/swds.def")
+			--module "$<TARGET_FILE:sw_engine>" "$<TARGET_PROPERTY:sw_engine,GOLDSRC_ENGINE_DEF_FILE>"
+			--module "$<TARGET_FILE:swds>" "$<TARGET_PROPERTY:swds,GOLDSRC_ENGINE_DEF_FILE>")
 endif()
