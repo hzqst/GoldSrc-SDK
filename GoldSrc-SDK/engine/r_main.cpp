@@ -1,4 +1,5 @@
 #include "r_local.h"
+#include "cmodel.h"
 #include "d_local.h"
 #include "screen.h"
 
@@ -681,7 +682,8 @@ void R_DrawBEntitiesOnList()
 		VectorCopy( modelorg, r_worldmodelorg );
 		// FIXME: stop transforming twice
 		R_RotateBmodel();
-		if ( model->firstmodelsurface )
+		mnode_t* drawingNode = Mod_DrawingHullNode( model, model->hulls[0].firstclipnode );
+		if ( drawingNode && model->firstmodelsurface )
 		{
 			for ( int j = 0; j < MAX_DLIGHTS; j++ )
 			{
@@ -691,7 +693,7 @@ void R_DrawBEntitiesOnList()
 				vec3_t origin;
 				VectorCopy( light->origin, origin );
 				VectorSubtract( light->origin, currententity->origin, light->origin );
-				R_MarkLights( light, 1 << j, &model->nodes[model->hulls[0].firstclipnode] );
+				R_MarkLights( light, 1 << j, drawingNode );
 				VectorCopy( origin, light->origin );
 			}
 		}

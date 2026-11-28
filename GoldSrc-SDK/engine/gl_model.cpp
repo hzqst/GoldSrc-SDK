@@ -1618,10 +1618,11 @@ static void Mod_LoadSubmodels( lump_t* l )
 
 	for ( i = 0; i < count; i++, in++, out++ )
 	{
+		const bool marker = Mod_IsTrailingBSPModelMarker( *in, i, count );
 		for ( j = 0; j < 3; j++ )
 		{
 			// spread the mins / maxs by a pixel
-			out->mins[j] = LittleFloat( in->mins[j] ) - 1;
+			out->mins[j] = ( marker ? 0.0f : LittleFloat( in->mins[j] ) ) - 1;
 			out->maxs[j] = LittleFloat( in->maxs[j] ) + 1;
 			out->origin[j] = LittleFloat( in->origin[j] );
 		}
