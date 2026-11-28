@@ -9,6 +9,7 @@
 #define VGUI_FONT_H
 
 #include<VGUI.h>
+#include<VGUI_UTF8Text.h>
 
 namespace vgui
 {
@@ -54,6 +55,7 @@ class VGUIAPI Font
   BaseFontPlat*	_plat;
   int			_id;
  friend class Surface;
+ friend const char* vgui_getFontName(Font* font);
  };
 
 

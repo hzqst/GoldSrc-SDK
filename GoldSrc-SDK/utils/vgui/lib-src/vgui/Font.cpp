@@ -1,5 +1,7 @@
 #include "VGUI_Font.h"
 
+#include "UTF8Text.h"
+
 using namespace vgui;
 
 void Font::getTextSize( const char* text, int& wide, int& tall )
@@ -12,19 +14,26 @@ void Font::getTextSize( const char* text, int& wide, int& tall )
 	}
 	tall = getTall();
 	int lineWide = 0;
-	for ( ; *text != '\0'; ++text )
+	while ( *text != '\0' )
 	{
 		if ( *text == '\n' )
 		{
 			lineWide = 0;
 			tall += getTall();
+			++text;
 		}
 		else
 		{
 			int a;
 			int b;
 			int c;
-			getCharABCwide( (unsigned char)*text, a, b, c );
+			int length = UTF8Text_getCharABCwide( this, text, a, b, c );
+			if ( length == 0 )
+			{
+				getCharABCwide( (unsigned char)*text, a, b, c );
+				length = 1;
+			}
+			text += length;
 			lineWide += a + b + c;
 			if ( lineWide > wide )
 			{

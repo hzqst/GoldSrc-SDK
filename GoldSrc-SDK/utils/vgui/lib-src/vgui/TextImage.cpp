@@ -3,6 +3,7 @@
 #include "VGUI_App.h"
 #include "VGUI_Font.h"
 #include "VGUI_Scheme.h"
+#include "UTF8Text.h"
 
 #include <new>
 #include <string.h>
@@ -23,6 +24,19 @@ char* copyText( const char* text, int textBufferLen )
 		memcpy( copy, text, textBufferLen );
 
 	return copy;
+}
+
+// Returns the length in bytes of the character at text, a UTF-8 sequence the UTF8TextHandler measures or a byte
+// that is a glyph of the font, and its width.
+int getCharABCwide( Font* font, const char* text, int& a, int& b, int& c )
+{
+	int length = UTF8Text_getCharABCwide( font, text, a, b, c );
+	if ( length == 0 )
+	{
+		font->getCharABCwide( (signed char)*text, a, b, c );
+		length = 1;
+	}
+	return length;
 }
 
 }
@@ -117,7 +131,7 @@ void TextImage::getTextSizeWrapped( int& wide, int& tall )
 	int a;
 	int b;
 	int c;
-	font->getCharABCwide( ch, a, b, c );
+	int charLength = getCharABCwide( font, _text, a, b, c );
 	int wordWide = c + a + b;
 	if ( ch == 0 )
 		return;
@@ -148,15 +162,15 @@ void TextImage::getTextSizeWrapped( int& wide, int& tall )
 			}
 			else
 			{
-				int length = 1;
+				int length = charLength;
 				for ( signed char next = (signed char)_text[index + length];
 					next != 0 && next != '\n' && next != '\r' && next != ' ';
-					next = (signed char)_text[index + ( ++length )] )
+					next = (signed char)_text[index + length] )
 				{
 					int aa;
 					int bb;
 					int cc;
-					font->getCharABCwide( next, aa, bb, cc );
+					length += getCharABCwide( font, _text + index + length, aa, bb, cc );
 					wordWide += cc + bb + aa;
 				}
 
@@ -166,9 +180,9 @@ void TextImage::getTextSizeWrapped( int& wide, int& tall )
 					y += lineTall;
 				}
 
-				for ( int j = 0; j < length; ++j )
+				for ( int j = 0; j < length; )
 				{
-					font->getCharABCwide( (signed char)_text[index + j], a, b, c );
+					j += getCharABCwide( font, _text + index + j, a, b, c );
 					int nextX = x + c + b + a;
 					if ( nextX > wide )
 						wide = nextX;
@@ -180,7 +194,7 @@ void TextImage::getTextSizeWrapped( int& wide, int& tall )
 			}
 		}
 		ch = (signed char)_text[++index];
-		font->getCharABCwide( ch, a, b, c );
+		charLength = getCharABCwide( font, _text + index, a, b, c );
 		wordWide = c + a + b;
 	}
 	while ( ch != 0 );
@@ -212,7 +226,7 @@ void TextImage::paint( Panel* )
 	int a;
 	int b;
 	int c;
-	font->getCharABCwide( ch, a, b, c );
+	int charLength = getCharABCwide( font, _text, a, b, c );
 	int wordWide = c + a + b;
 	if ( ch == 0 )
 		return;
@@ -242,15 +256,15 @@ void TextImage::paint( Panel* )
 			}
 			else
 			{
-				int length = 1;
+				int length = charLength;
 				for ( signed char next = (signed char)_text[index + length];
 					next != 0 && next != '\n' && next != '\r' && next != ' ';
-					next = (signed char)_text[index + ( ++length )] )
+					next = (signed char)_text[index + length] )
 				{
 					int aa;
 					int bb;
 					int cc;
-					font->getCharABCwide( next, aa, bb, cc );
+					length += getCharABCwide( font, _text + index + length, aa, bb, cc );
 					wordWide += cc + bb + aa;
 				}
 
@@ -260,18 +274,22 @@ void TextImage::paint( Panel* )
 					y += lineTall;
 				}
 
-				for ( int j = 0; j < length; ++j )
+				for ( int j = 0; j < length; )
 				{
-					ch = (signed char)_text[index + j];
-					font->getCharABCwide( ch, a, b, c );
-					drawPrintChar( x, y, ch );
+					// A UTF-8 sequence goes to the surface in one call, so it sees the whole character.
+					const int sequenceLength = getCharABCwide( font, _text + index + j, a, b, c );
+					if ( sequenceLength == 1 )
+						drawPrintChar( x, y, _text[index + j] );
+					else
+						drawPrintText( x, y, _text + index + j, sequenceLength );
 					x += c + b + a;
+					j += sequenceLength;
 				}
 				index += length - 1;
 			}
 		}
 		ch = (signed char)_text[++index];
-		font->getCharABCwide( ch, a, b, c );
+		charLength = getCharABCwide( font, _text + index, a, b, c );
 		wordWide = c + a + b;
 	}
 	while ( ch != 0 );

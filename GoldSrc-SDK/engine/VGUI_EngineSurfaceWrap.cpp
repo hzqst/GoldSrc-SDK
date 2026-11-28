@@ -8,6 +8,9 @@
 #include <VGUI_Frame.h>
 #include <VGUI_Panel.h>
 #include <VGUI_ImagePanel.h>
+#if defined( _WIN32 )
+#include <VGUI_UTF8Text.h>
+#endif
 
 #undef null
 #undef VGUIAPI
@@ -26,6 +29,15 @@
 #include <cstddef>
 #include <cstring>
 #include <new>
+
+#if defined( _WIN32 ) && defined( VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT ) && VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT
+#include <windows.h>
+#include <climits>
+#include <string>
+#include <vector>
+#include "controls.h"
+#include "vgui2/BaseUISurface.h"
+#endif
 
 class FontInfoVGUI
 {
@@ -79,6 +91,101 @@ static_assert( KMOD_CAPS == 0x2000, "keymod" );
 static vgui::Font* staticFont = nullptr;
 static FontInfoVGUI* staticFontInfoVGUI = nullptr;
 static vgui::Dar<FontInfoVGUI*> staticFontInfoVGUIDar;
+
+#if defined( _WIN32 ) && defined( VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT ) && VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT
+class VGUI1UTF8TextHandler final : public vgui::UTF8TextHandler
+{
+public:
+	void Register()
+	{
+		// The original vgui.dll has no UTF-8 hooks and keeps the byte-based text path.
+		const HMODULE module = GetModuleHandleW( L"vgui.dll" );
+		if ( !module )
+			return;
+
+		setHandler = reinterpret_cast<decltype( setHandler )>( GetProcAddress( module, "vgui_setUTF8TextHandler" ) );
+		decodeChar = reinterpret_cast<decltype( decodeChar )>( GetProcAddress( module, "vgui_decodeUTF8Char" ) );
+		getFontName = reinterpret_cast<decltype( getFontName )>( GetProcAddress( module, "vgui_getFontName" ) );
+		if ( setHandler && decodeChar && getFontName )
+			setHandler( this );
+		else
+			decodeChar = nullptr;
+	}
+
+	void Unregister()
+	{
+		if ( decodeChar )
+			setHandler( nullptr );
+		decodeChar = nullptr;
+	}
+
+	bool getCharABCwide( vgui::Font* font, int codePoint, int& a, int& b, int& c ) override
+	{
+		const vgui2::HFont fontHandle = GetVGUI2Font( font, codePoint );
+		if ( !fontHandle )
+			return false;
+		vgui2::surface()->GetCharABCwide( fontHandle, codePoint, a, b, c );
+		return true;
+	}
+
+	int Draw( vgui::Font* font, const char* text, int available, int& x, int y )
+	{
+		if ( !decodeChar )
+			return 0;
+
+		int codePoint;
+		const int length = decodeChar( text, available, &codePoint );
+		if ( !length )
+			return 0;
+
+		const vgui2::HFont fontHandle = GetVGUI2Font( font, codePoint );
+		if ( !fontHandle )
+			return 0;
+
+		g_BaseUISurface.DrawVGUI1Character( fontHandle, static_cast<wchar_t>( codePoint ), x, y );
+		return length;
+	}
+
+private:
+	vgui2::HFont GetVGUI2Font( vgui::Font* font, int codePoint )
+	{
+		// The VGUI2 surface accepts one wchar_t per glyph.
+		auto* surface = vgui2::surface();
+		if ( !surface || !font || codePoint > WCHAR_MAX )
+			return 0;
+
+		const char* name = getFontName( font );
+		if ( !name || !*name )
+			return 0;
+
+		const int tall = font->getTall();
+		for ( const auto& entry : fonts )
+		{
+			if ( entry.tall == tall && _stricmp( entry.name.c_str(), name ) == 0 )
+				return entry.font;
+		}
+
+		vgui2::HFont handle = surface->CreateFont();
+		if ( handle && !surface->AddGlyphSetToFont( handle, name, tall, 0, 0, 0, 0, 0, 0 ) )
+			handle = 0;
+		fonts.push_back( { name, tall, handle } );
+		return handle;
+	}
+
+	struct FontEntry
+	{
+		std::string name;
+		int tall;
+		vgui2::HFont font;
+	};
+	std::vector<FontEntry> fonts;
+	decltype( &vgui::vgui_setUTF8TextHandler ) setHandler = nullptr;
+	decltype( &vgui::vgui_decodeUTF8Char ) decodeChar = nullptr;
+	decltype( &vgui::vgui_getFontName ) getFontName = nullptr;
+};
+
+static VGUI1UTF8TextHandler s_utf8TextHandler;
+#endif
 static int staticContextCount = 0;
 static unsigned char staticRGBA[FONT_TEXTURE_BYTES];
 
@@ -164,6 +271,10 @@ EngineSurfaceWrap::EngineSurfaceWrap( vgui::Panel* embeddedPanel, IEngineSurface
 	FreeFontInfos();
 	++staticContextCount;
 
+#if defined( _WIN32 ) && defined( VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT ) && VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT
+	s_utf8TextHandler.Register();
+#endif
+
 	vgui::FileInputStream* stream = new vgui::FileInputStream( "valve/gfx/vgui/mouse.tga", false );
 	_mouseBitmap = new vgui::BitmapTGA( stream, true );
 	stream->close();
@@ -196,6 +307,10 @@ EngineSurfaceWrap::EngineSurfaceWrap( vgui::Panel* embeddedPanel, IEngineSurface
 
 EngineSurfaceWrap::~EngineSurfaceWrap()
 {
+#if defined( _WIN32 ) && defined( VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT ) && VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT
+	s_utf8TextHandler.Unregister();
+#endif
+
 	::operator delete( _mouseBitmap );
 	FreeFontInfos();
 	for ( int index = 0; index < CURSOR_SLOT_COUNT; ++index )
@@ -419,6 +534,16 @@ void EngineSurfaceWrap::drawPrintText( const char* text, int textLen )
 		const char* end = text + textLen;
 		while ( cursor != end )
 		{
+#if defined( _WIN32 ) && defined( VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT ) && VGUI1_USE_VGUI2FONT_FOR_UTF8TEXT
+			const int utf8Bytes = s_utf8TextHandler.Draw( staticFont, cursor, static_cast<int>( end - cursor ), x, y );
+			if ( utf8Bytes )
+			{
+				cursor += utf8Bytes;
+				penX = x;
+				continue;
+			}
+#endif
+
 			const int character = static_cast<unsigned char>( *cursor );
 			int abcA = 0;
 			int abcB = 0;

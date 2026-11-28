@@ -152,6 +152,7 @@ TESTS = r'''
 #define private public
 #define protected public
 #include "VGUI_Font.h"
+#include "VGUI_UTF8Text.h"
 #undef protected
 #undef private
 
@@ -350,9 +351,38 @@ static Font* MakeFont(const char* name, int tall = FONT_TALL)
  return new Font(name, NULL, 0, tall, 0, 0.0f, FONT_WEIGHT, false, false, false, false);
 }
 
+class TestUTF8Metrics final : public UTF8TextHandler
+{
+public:
+ bool getCharABCwide(Font*, int codePoint, int& a, int& b, int& c) override
+ {
+  if (codePoint != 0x4E2D) return false;
+  a = 1;
+  b = 20;
+  c = 1;
+  return true;
+ }
+};
+
 static void Run(const char* scenario)
 {
- if (!std::strcmp(scenario, "reuse"))
+ if (!std::strcmp(scenario, "utf8-metrics"))
+ {
+  const char character[] = "\xE4\xB8\xAD";
+  int codePoint = 0;
+  Check(vgui_decodeUTF8Char(character, 3, &codePoint) == 3 && codePoint == 0x4E2D, "decode a CJK character");
+  Check(vgui_decodeUTF8Char(character, 2, &codePoint) == 0, "reject a partial character");
+  Font font("Arial", NULL, 0, FONT_TALL, 0, 0.0f, FONT_WEIGHT, false, false, false, false);
+  Check(0 == std::strcmp("Arial", vgui_getFontName(&font)), "report the VGUI1 font face");
+  int width = 0;
+  int height = 0;
+  TestUTF8Metrics metrics;
+  vgui_setUTF8TextHandler(&metrics);
+  font.getTextSize(character, width, height);
+  vgui_setUTF8TextHandler(NULL);
+  Check(width == 22 && height == font.getTall(), "measure as one Unicode glyph");
+ }
+ else if (!std::strcmp(scenario, "reuse"))
  {
   Font* first = MakeFont("Arial");
   Font* second = MakeFont("Arial");
@@ -462,11 +492,11 @@ int main(int argc, char** argv)
 }
 '''
 
-COMMON_SOURCES = ['Font.cpp', 'common/fileimage.cpp', 'common/vfontdata.cpp']
+COMMON_SOURCES = ['Font.cpp', 'UTF8Text.cpp', 'common/fileimage.cpp', 'common/vfontdata.cpp']
 # Platform -> its Font source and include directories past the shared ones.
 PLATFORMS = {'win32': ('win32/Font.cpp', [VGUI / 'win32']),
              'linux': ('linux/Font.cpp', [VGUI / 'linux', ROOT / 'GoldSrc-SDK/engine'])}
-SCENARIOS = ['reuse']
+SCENARIOS = ['reuse', 'utf8-metrics']
 NONCOMPAT_SCENARIOS = ['reset-frees-unused', 'reset-keeps-used', 'shared-platform', 'copy', 'bitmap-font']
 # VGUI_ABI_COMPAT_MODE value -> scenarios run against that build.
 MODES = {'1': SCENARIOS, '0': SCENARIOS + NONCOMPAT_SCENARIOS}

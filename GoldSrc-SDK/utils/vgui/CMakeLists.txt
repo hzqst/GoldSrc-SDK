@@ -74,6 +74,7 @@ goldsrc_add_module(vgui
 		utils/vgui/lib-src/vgui/TextPanel.cpp
 		utils/vgui/lib-src/vgui/ToggleButton.cpp
 		utils/vgui/lib-src/vgui/TreeFolder.cpp
+		utils/vgui/lib-src/vgui/UTF8Text.cpp
 		utils/vgui/lib-src/vgui/vgui.cpp
 		utils/vgui/lib-src/vgui/win32/App.cpp
 		utils/vgui/lib-src/vgui/win32/Debug.cpp

@@ -507,10 +507,10 @@ def main():
         text_image_file.write_text(text_image)
         for mode, scenarios in MODES.items():
             executable = Path(folder) / f'test-compat{mode}.exe'
-            sources = [test_file, text_image_file, VGUI / 'Image.cpp', VGUI / 'Color.cpp']
+            sources = [test_file, text_image_file, VGUI / 'Image.cpp', VGUI / 'Color.cpp', VGUI / 'UTF8Text.cpp']
             # VGUI_STATIC keeps VGUIAPI from exporting on Windows: MSVC would emit the whole
             # vtable of an exported class in every file, also for sources the test leaves out.
-            executable = compile_program(sources, executable, includes=[VGUI / 'include'],
+            executable = compile_program(sources, executable, includes=[VGUI / 'include', VGUI],
                                          defines=['VGUI_STATIC', f'VGUI_ABI_COMPAT_MODE={mode}'], debug=True,
                                          sanitizers=['address'])
             for scenario in scenarios:
