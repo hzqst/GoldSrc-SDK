@@ -2,6 +2,7 @@
 #define VGUI_FONT_H
 
 #include "VGUI.h"
+#include "VGUI_UTF8Text.h"
 
 #define VGUI_FIRST_FONT_ID	100
 
@@ -51,6 +52,8 @@ private:
 	char*			_name;
 	BaseFontPlat*	_plat;
 	int				_id;
+
+	friend const char* vgui_getFontName( Font* font );
 
 public:
 #if VGUI_ABI_COMPAT_MODE != 1

@@ -1220,6 +1220,24 @@ void BaseUISurface::DrawUnicodeChar( wchar_t ch )
 	DrawSetTextPos( x, y );
 }
 
+#if defined( _WIN32 )
+void BaseUISurface::DrawVGUI1Character( HFont font, wchar_t ch, int& x, int y )
+{
+	const HFont previousFont = m_hCurrentFont;
+	ResetCurrentTexture();
+	DrawSetTextFont( font );
+	DrawSetTextPos( x, y );
+	DrawUnicodeChar( ch );
+	DrawFlushText();
+	DrawSetTextFont( previousFont );
+	ResetCurrentTexture();
+
+	int a, b, c;
+	GetCharABCwide( font, ch, a, b, c );
+	x += a + b + c;
+}
+#endif
+
 void BaseUISurface::DrawUnicodeCharAdd( wchar_t ch )
 {
 	if ( !m_hCurrentFont )

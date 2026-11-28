@@ -55,7 +55,7 @@ FONT_LOOKUP = 'return App::getInstance()->getScheme()->getFont( _schemeFont );'
 SOURCES = ['Panel.cpp', 'App.cpp', 'Label.cpp', 'Image.cpp', 'Color.cpp', 'Button.cpp', 'ToggleButton.cpp',
            'TextEntry.cpp', 'Border.cpp', 'LineBorder.cpp', 'Scheme.cpp', 'Font.cpp', 'Cursor.cpp', 'FlowLayout.cpp',
            'Layout.cpp', 'TreeFolder.cpp', 'FocusNavGroup.cpp',
-           'ButtonGroup.cpp', 'BuildGroup.cpp']
+           'ButtonGroup.cpp', 'BuildGroup.cpp', 'UTF8Text.cpp']
 
 
 # The platform half of App (win32/App.cpp), the platform Font and Cursor code

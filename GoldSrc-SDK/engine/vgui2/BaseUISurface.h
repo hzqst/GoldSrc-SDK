@@ -163,6 +163,9 @@ public:
 
 	void SetAllowHTMLJavaScript( bool state ) override;
 	void ResetCurrentTexture();
+#if defined( _WIN32 )
+	void DrawVGUI1Character( HFont font, wchar_t ch, int& x, int y );
+#endif
 	void ResetViewPort();
 	void DrawSetTextureRGBAWithAlphaChannel(
 		int texture, const unsigned char* rgba, int width, int height, int hardwareFilter, bool forceReload );

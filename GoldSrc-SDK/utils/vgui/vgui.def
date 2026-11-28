@@ -1258,4 +1258,7 @@ EXPORTS
     ?wasMousePressed@Panel@vgui@@UAE_NW4MouseCode@2@@Z @1257
     ?wasMouseReleased@App@vgui@@UAE_NW4MouseCode@2@PAVPanel@2@@Z @1258
     ?wasMouseReleased@Panel@vgui@@UAE_NW4MouseCode@2@@Z @1259
+    vgui_decodeUTF8Char @1260
+    vgui_getFontName @1261
+    vgui_setUTF8TextHandler @1262
 
