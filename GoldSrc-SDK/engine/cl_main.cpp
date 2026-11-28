@@ -1895,8 +1895,8 @@ void CL_Init()
 	Info_SetValueForStarKey( cls.userinfo, "name", name, sizeof( cls.userinfo ) );
 	Info_SetValueForStarKey( cls.userinfo, "topcolor", "0", sizeof( cls.userinfo ) );
 	Info_SetValueForStarKey( cls.userinfo, "bottomcolor", "0", sizeof( cls.userinfo ) );
-	Info_SetValueForStarKey( cls.userinfo, "rate", "2500", sizeof( cls.userinfo ) );
-	Info_SetValueForStarKey( cls.userinfo, "cl_updaterate", "20", sizeof( cls.userinfo ) );
+	Info_SetValueForStarKey( cls.userinfo, rate.name, rate.string, sizeof( cls.userinfo ) );
+	Info_SetValueForStarKey( cls.userinfo, cl_updaterate.name, cl_updaterate.string, sizeof( cls.userinfo ) );
 	Info_SetValueForStarKey( cls.userinfo, "cl_lw", "1", sizeof( cls.userinfo ) );
 	Info_SetValueForStarKey( cls.userinfo, "cl_lc", "1", sizeof( cls.userinfo ) );
 
