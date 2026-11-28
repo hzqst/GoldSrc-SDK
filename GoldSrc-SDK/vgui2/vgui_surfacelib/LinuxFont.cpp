@@ -102,6 +102,54 @@ static FcPattern* FontMatch( const char* object, FcType type, const void* value,
 	return match;
 }
 
+bool CLinuxFont::FindFamilyForChar(
+	int ch, const char* preferredFamily, int weight, int flags, char* family, int familyChars )
+{
+	if ( !FcInit() || familyChars <= 0 )
+		return false;
+
+	FcCharSet* charSet = FcCharSetCreate();
+	FcPattern* pattern = FcPatternCreate();
+	bool found = false;
+
+	if ( charSet != nullptr && pattern != nullptr && FcCharSetAddChar( charSet, (FcChar32)ch ) )
+	{
+		// The character set ranks above the family in fontconfig's matching, so the family only picks among the
+		// fonts that have the character.
+		FcPatternAddCharSet( pattern, FC_CHARSET, charSet );
+		FcPatternAddString( pattern, FC_FAMILY, (const FcChar8*)preferredFamily );
+		FcPatternAddInteger( pattern, FC_WEIGHT, weight >= 700 ? FC_WEIGHT_BOLD : FC_WEIGHT_REGULAR );
+		FcPatternAddInteger( pattern, FC_SLANT, ( flags & FONTFLAG_ITALIC ) ? FC_SLANT_ITALIC : FC_SLANT_ROMAN );
+		FcConfigSubstitute( nullptr, pattern, FcMatchPattern );
+		FcDefaultSubstitute( pattern );
+
+		FcResult result = FcResultMatch;
+		FcPattern* match = FcFontMatch( nullptr, pattern, &result );
+		if ( match != nullptr )
+		{
+			// Without a font that has the character, the best match is some other font.
+			FcCharSet* matchCharSet = nullptr;
+			FcChar8* matchFamily = nullptr;
+			if ( FcPatternGetCharSet( match, FC_CHARSET, 0, &matchCharSet ) == FcResultMatch
+				&& FcCharSetHasChar( matchCharSet, (FcChar32)ch )
+				&& FcPatternGetString( match, FC_FAMILY, 0, &matchFamily ) == FcResultMatch )
+			{
+				strncpy( family, (const char*)matchFamily, static_cast<size_t>( familyChars - 1 ) );
+				family[familyChars - 1] = 0;
+				found = true;
+			}
+			FcPatternDestroy( match );
+		}
+	}
+
+	if ( pattern != nullptr )
+		FcPatternDestroy( pattern );
+	if ( charSet != nullptr )
+		FcCharSetDestroy( charSet );
+
+	return found;
+}
+
 bool CLinuxFont::ExtendedABCWidthsCacheLessFunc( const abc_cache_t& lhs, const abc_cache_t& rhs )
 {
 	return lhs.wch < rhs.wch;
