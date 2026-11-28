@@ -110,7 +110,8 @@ int msg_buckets[MESSAGE_STAT_BUCKETS];
 int last_data[MESSAGE_STAT_BUCKETS];
 int total_data[MESSAGE_STAT_BUCKETS];
 static oldcmd_t oldcmd[MESSAGE_HISTORY_COUNT];
-static int currentcmd;
+static int messageHistoryNext;
+static int messageHistorySize;
 
 qboolean CL_IsPlayerIndex( int index );
 qboolean CL_CheckGameDirectory( char* gamedir );
@@ -495,10 +496,10 @@ void CL_WriteErrorMessage( int starting_count, int current_count, sizebuf_t* mes
 
 void CL_WriteMessageHistory( int starting_count, int command )
 {
-	Con_Printf( "Last %i messages parsed.\n", MESSAGE_HISTORY_COUNT );
-	for ( int previous = MESSAGE_HISTORY_COUNT - 1; previous >= 1; --previous )
+	Con_Printf( "Last %i messages parsed.\n", messageHistorySize );
+	for ( int previous = messageHistorySize; previous > 0; --previous )
 	{
-		unsigned int index = ( static_cast<unsigned int>( currentcmd ) - previous - 1 ) & MESSAGE_HISTORY_MASK;
+		unsigned int index = ( static_cast<unsigned int>( messageHistoryNext ) - previous ) & MESSAGE_HISTORY_MASK;
 		Con_Printf( "%i %04i %s\n", oldcmd[index].frame_number, oldcmd[index].starting_offset,
 			CL_MsgInfo( oldcmd[index].command ) );
 	}
@@ -548,11 +549,13 @@ void CL_ParseServerMessage( qboolean normal_message )
 			break;
 		if ( command != svc_nop )
 		{
-			oldcmd_t* history = &oldcmd[currentcmd & MESSAGE_HISTORY_MASK];
-			currentcmd = static_cast<int>( static_cast<unsigned int>( currentcmd ) + 1 );
+			oldcmd_t* history = &oldcmd[messageHistoryNext];
 			history->command = command;
 			history->starting_offset = commandStart;
 			history->frame_number = host_framecount;
+			messageHistoryNext = ( messageHistoryNext + 1 ) & MESSAGE_HISTORY_MASK;
+			if ( messageHistorySize < MESSAGE_HISTORY_COUNT )
+				++messageHistorySize;
 		}
 		if ( command > svc_lastmsg )
 		{
