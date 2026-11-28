@@ -4747,8 +4747,12 @@ void SV_ConnectClient()
 	if ( reconnecting )
 	{
 		Steam_NotifyClientDisconnect( client );
+		// A client that has not entered the game can still refer to a restored player.
 		if ( ( client->active || client->spawned ) && client->edict )
+		{
 			gEntityInterface.pfnClientDisconnect( client->edict );
+			++client->edict->serialnumber;
+		}
 		Con_Printf( "%s:reconnect\n", NET_AdrToString( address ) );
 	}
 	else
@@ -4833,9 +4837,6 @@ void SV_ConnectClient()
 		Steam_NotifyBotConnect( client );
 	}
 
-	// The reconnect has been accepted. Invalidate handles before the new session's callbacks.
-	if ( reconnecting && client->edict )
-		++client->edict->serialnumber;
 	SV_ClearResourceLists( host_client );
 	SV_ClearFrames( &host_client->frames );
 	host_client->frames = static_cast<client_frame_t*>( Mem_ZeroMalloc( sizeof( client_frame_t ) * SV_UPDATE_BACKUP ) );
