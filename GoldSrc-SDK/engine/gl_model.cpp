@@ -411,7 +411,7 @@ model_t* Mod_LoadModel( model_t* mod, qboolean crash, qboolean trackCRC )
 		break;
 
 	case IDSPRITEHEADER:
-		Mod_LoadSpriteModel( mod, buf );
+		Mod_LoadSpriteModel( mod, buf, length );
 		break;
 
 	case IDSTUDIOHEADER:
@@ -469,7 +469,7 @@ static void* LoadSpriteFrame( void* pin, mspriteframe_t** ppframe, int framenum,
 	int origin[2];
 	int textureType;
 	byte* pixels;
-	byte palette[768];
+	byte palette[SPRITE_PALETTE_COLORS * SPRITE_COLOR_BYTES];
 	char name[256];
 
 	Q_memcpy( palette, pspritepal, sizeof( palette ) );
@@ -594,7 +594,7 @@ void* Mod_LoadSpriteGroup( void* pin, mspriteframe_t** ppframe, int framenum )
 Mod_LoadSpriteModel
 =================
 */
-void Mod_LoadSpriteModel( model_t* mod, void* buffer )
+void Mod_LoadSpriteModel( model_t* mod, void* buffer, int length )
 {
 	int i;
 	int version;
@@ -603,10 +603,14 @@ void Mod_LoadSpriteModel( model_t* mod, void* buffer )
 	int numframes;
 	int size;
 	dspriteframetype_t* pframetype;
-	byte* palette;
-	int numi, palsize;
 	spriteframetype_t frametype;
 
+	const int colors = SpritePaletteColorCount( buffer, length );
+	if ( !colors )
+	{
+		Sys_Error( "%s has an invalid sprite palette", mod->name );
+		return;
+	}
 	pin = (dsprite_t*)buffer;
 
 	version = LittleLong( pin->version );
@@ -621,14 +625,20 @@ void Mod_LoadSpriteModel( model_t* mod, void* buffer )
 	}
 
 	numframes = LittleLong( pin->numframes );
-
-	palette = (byte*)( pin + 1 );
-	numi = *(short*)palette;
-	palsize = numi + 2 * ( numi + 1 );
+	const int paletteBytes = colors * SPRITE_COLOR_BYTES;
+	constexpr int paletteCapacity = SPRITE_PALETTE_COLORS * SPRITE_COLOR_BYTES;
+	constexpr int paletteStorage = sizeof( unsigned short ) + paletteCapacity;
+	const int frameOffset = SPRITE_PALETTE_OFFSET + paletteBytes;
+	if ( !SpriteFrameCountFits( numframes, length - frameOffset,
+		sizeof( msprite_t ) + paletteStorage, sizeof( mspriteframedesc_t ) ) )
+	{
+		Sys_Error( "Mod_LoadSpriteModel: Invalid # of frames: %d\n", numframes );
+		return;
+	}
 
 	size = sizeof( msprite_t ) + ( numframes - 1 ) * sizeof( mspriteframedesc_t );
 
-	psprite = (msprite_t*)Hunk_AllocName( size + palsize, loadname );
+	psprite = (msprite_t*)Hunk_AllocName( size + paletteStorage, loadname );
 
 	mod->cache.data = psprite;
 
@@ -646,20 +656,16 @@ void Mod_LoadSpriteModel( model_t* mod, void* buffer )
 	mod->mins[2] = (float)( psprite->maxheight / -2 );
 	mod->maxs[2] = (float)( psprite->maxheight / 2 );
 
-	psprite->paloffset = size + sizeof( short );
-	pspritepal = (byte*)psprite + size;
-	Q_memcpy( pspritepal, palette + sizeof( short ), palsize );
-
-	//
-	// load the frames
-	//
-	if ( numframes < 1 )
-		Sys_Error( "Mod_LoadSpriteModel: Invalid # of frames: %d\n", numframes );
+	psprite->paloffset = size + sizeof( unsigned short );
+	*(unsigned short*)( (byte*)psprite + size ) = (unsigned short)colors;
+	pspritepal = (byte*)psprite + psprite->paloffset;
+	Q_memcpy( pspritepal, (byte*)buffer + SPRITE_PALETTE_OFFSET, paletteBytes );
+	Q_memset( pspritepal + paletteBytes, 0, paletteCapacity - paletteBytes );
 
 	mod->numframes = numframes;
 	mod->flags = 0;
 
-	pframetype = (dspriteframetype_t*)( palette + palsize );
+	pframetype = (dspriteframetype_t*)( (byte*)buffer + frameOffset );
 
 	for ( i = 0; i < numframes; i++ )
 	{
