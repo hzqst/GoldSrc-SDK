@@ -484,7 +484,10 @@ void SV_DropClient( client_t* client, qboolean crash, const char* format, ... )
 				finalLength = static_cast<int>( reasonLength + 2 );
 		}
 		if ( client->edict && client->spawned )
+		{
 			gEntityInterface.pfnClientDisconnect( client->edict );
+			++client->edict->serialnumber;
+		}
 		Sys_Printf( const_cast<char*>( "Dropped %s from server\nReason:  %s\n" ), client->name, reason );
 		if ( !client->fakeclient )
 			Netchan_Transmit( &client->netchan, finalLength, finalMessage );
@@ -498,8 +501,6 @@ void SV_DropClient( client_t* client, qboolean crash, const char* format, ... )
 	NET_CheckCleanupFakeIPConnection( client->netchan.sock, &client->netchan.remote_address );
 	Netchan_Clear( &client->netchan );
 	Steam_NotifyClientDisconnect( client );
-	if ( client->edict )
-		++client->edict->serialnumber;
 	client->active = 0;
 	client->connected = 0;
 	client->hasusrmsgs = 0;
