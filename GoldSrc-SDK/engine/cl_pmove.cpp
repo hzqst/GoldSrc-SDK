@@ -1,4 +1,5 @@
 #include "client.h"
+#include "cmodel.h"
 #include "cl_demo.h"
 #include "common.h"
 #include "gl_model.h"
@@ -84,10 +85,11 @@ const char* PM_CL_TraceTexture( int ground, float* vstart, float* vend )
 		VectorCopy( vend, end );
 	}
 
-	if ( pmodel->type != mod_brush || !pmodel->nodes )
+	mnode_t* node = Mod_DrawingHullNode( pmodel, firstnode );
+	if ( !node )
 		return NULL;
 
-	psurf = SurfaceAtPoint( pmodel, pmodel->nodes + firstnode, start, end );
+	psurf = SurfaceAtPoint( pmodel, node, start, end );
 	if ( !psurf )
 		return NULL;
 

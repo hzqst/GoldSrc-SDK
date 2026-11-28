@@ -1,5 +1,6 @@
 // gl_rsurf.cpp: surface-related refresh code
 #include "client.h"
+#include "cmodel.h"
 #include "sound.h"
 #include "cvar.h"
 #include "common.h"
@@ -643,7 +644,8 @@ void R_DrawBrushModel( cl_entity_t* e )
 
 	// calculate dynamic lighting for bmodel if it's not an
 	// instanced model
-	if ( clmodel->firstmodelsurface && !gl_flashblend.value )
+	mnode_t* drawingNode = Mod_DrawingHullNode( clmodel, clmodel->hulls[0].firstclipnode );
+	if ( drawingNode && clmodel->firstmodelsurface && !gl_flashblend.value )
 	{
 		for ( k = 0; k < MAX_DLIGHTS; k++ )
 		{
@@ -655,7 +657,7 @@ void R_DrawBrushModel( cl_entity_t* e )
 			VectorCopy( cl_dlights[k].origin, saveOrigin );
 			VectorSubtract( cl_dlights[k].origin, e->origin, cl_dlights[k].origin );
 
-			R_MarkLights( &cl_dlights[k], 1 << k, clmodel->nodes + clmodel->hulls[0].firstclipnode );
+			R_MarkLights( &cl_dlights[k], 1 << k, drawingNode );
 
 			VectorCopy( saveOrigin, cl_dlights[k].origin );
 		}
@@ -2844,6 +2846,9 @@ void R_DecalShoot_( texture_t* ptexture, int index, int entity, int modelIndex, 
 		return;
 	}
 
+	mnode_t* drawingNode = Mod_DrawingHullNode( gDecalModel, gDecalModel->hulls[0].firstclipnode );
+	if ( !drawingNode )
+		return;
 	pnodes = gDecalModel->nodes;
 
 	if ( entity )
@@ -2857,7 +2862,7 @@ void R_DecalShoot_( texture_t* ptexture, int index, int entity, int modelIndex, 
 
 			VectorSubtract( position, phull->clip_mins, temp );
 			VectorSubtract( temp, pent->origin, gDecalPos );
-			pnodes = pnodes + phull->firstclipnode;
+			pnodes = drawingNode;
 		}
 
 		if ( pent->angles[0] || pent->angles[1] || pent->angles[2] )
@@ -3049,6 +3054,9 @@ void R_FireCustomDecal( int textureIndex, int entity, int modelIndex, vec_t* pos
 		return;
 	}
 
+	mnode_t* drawingNode = Mod_DrawingHullNode( gDecalModel, gDecalModel->hulls[0].firstclipnode );
+	if ( !drawingNode )
+		return;
 	pnodes = gDecalModel->nodes;
 
 	if ( entity )
@@ -3062,7 +3070,7 @@ void R_FireCustomDecal( int textureIndex, int entity, int modelIndex, vec_t* pos
 
 			VectorSubtract( position, phull->clip_mins, temp );
 			VectorSubtract( temp, pent->origin, gDecalPos );
-			pnodes = pnodes + phull->firstclipnode;
+			pnodes = drawingNode;
 		}
 
 		if ( pent->angles[0] || pent->angles[1] || pent->angles[2] )

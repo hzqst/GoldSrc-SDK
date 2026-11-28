@@ -1,4 +1,5 @@
 #include "info.h"
+#include "cmodel.h"
 #include "cvar.h"
 #include "server.h"
 #include "common.h"
@@ -436,10 +437,11 @@ const char* TraceTexture( edict_t* pTextureEntity, const float* v1, const float*
 		VectorCopy( v2, end );
 	}
 
-	if ( !pmodel || pmodel->type != mod_brush || !pmodel->nodes )
+	mnode_t* node = Mod_DrawingHullNode( pmodel, firstnode );
+	if ( !node )
 		return NULL;
 
-	psurf = SurfaceAtPoint( pmodel, &pmodel->nodes[firstnode], start, end );
+	psurf = SurfaceAtPoint( pmodel, node, start, end );
 	return psurf ? psurf->texinfo->texture->name : NULL;
 }
 

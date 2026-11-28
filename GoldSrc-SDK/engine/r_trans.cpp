@@ -1,6 +1,7 @@
 #if defined( SW_RENDERER )
 
 #include "r_local.h"
+#include "cmodel.h"
 #include "d_local.h"
 #include "client.h"
 #include "render.h"
@@ -625,7 +626,8 @@ void R_DrawTEntitiesOnList( qboolean clientOnly )
 				VectorSubtract( r_origin, r_entorigin, modelorg );
 				VectorCopy( modelorg, r_worldmodelorg );
 				R_RotateBmodel();
-				if ( currententity->curstate.rendermode == kRenderTransAlpha && model->firstmodelsurface )
+				mnode_t* drawingNode = Mod_DrawingHullNode( model, model->hulls[0].firstclipnode );
+				if ( drawingNode && currententity->curstate.rendermode == kRenderTransAlpha && model->firstmodelsurface )
 				{
 					for ( int light = 0; light < MAX_DLIGHTS; light++ )
 					{
@@ -635,7 +637,7 @@ void R_DrawTEntitiesOnList( qboolean clientOnly )
 							vec3_t lightorg;
 							VectorCopy( dl->origin, lightorg );
 							VectorSubtract( lightorg, currententity->origin, dl->origin );
-							R_MarkLights( dl, 1 << light, model->nodes + model->hulls[0].firstclipnode );
+							R_MarkLights( dl, 1 << light, drawingNode );
 							VectorCopy( lightorg, dl->origin );
 						}
 					}

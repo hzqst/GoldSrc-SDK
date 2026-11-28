@@ -1,4 +1,5 @@
 #include "r_local.h"
+#include "cmodel.h"
 #include "d_local.h"
 #include "client.h"
 #include "common.h"
@@ -1732,12 +1733,15 @@ void R_DecalShoot_( texture_t* texture, int index, int entity, int modelIndex, v
 		Con_DPrintf( "Decals must hit mod_brush!\n" );
 		return;
 	}
+	mnode_t* drawingNode = Mod_DrawingHullNode( gDecalModel, gDecalModel->hulls[0].firstclipnode );
+	if ( !drawingNode )
+		return;
 	mnode_t* node = gDecalModel->nodes;
 	if ( entity )
 	{
 		if ( gDecalModel != cl.worldmodel )
 		{
-			node += gDecalModel->hulls[0].firstclipnode;
+			node = drawingNode;
 #if defined( _WIN32 )
 			gDecalPos[0] = position[0] - gDecalModel->hulls[0].clip_mins[0] - ent->origin[0];
 			gDecalPos[1] = position[1] - gDecalModel->hulls[0].clip_mins[1] - ent->origin[1];
