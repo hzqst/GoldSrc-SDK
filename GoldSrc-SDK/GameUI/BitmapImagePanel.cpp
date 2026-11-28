@@ -45,7 +45,8 @@ void CBitmapImagePanel::PaintBackground()
 
 void CBitmapImagePanel::setTexture( const char* filename )
 {
-	strcpy( m_szTexture, filename );
+	strncpy( m_szTexture, filename, sizeof( m_szTexture ) - 1 );
+	m_szTexture[sizeof( m_szTexture ) - 1] = 0;
 	if ( m_bUploaded )
 		forceReload();
 	else
