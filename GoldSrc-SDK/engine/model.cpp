@@ -301,7 +301,7 @@ model_t* Mod_LoadModel( model_t* mod, qboolean crash, qboolean trackCRC )
 		Mod_LoadAliasModel( mod, buffer );
 		break;
 	case IDSPRITEHEADER:
-		Mod_LoadSpriteModel( mod, buffer );
+		Mod_LoadSpriteModel( mod, buffer, length );
 		break;
 	case IDSTUDIOHEADER:
 		Mod_LoadStudioModel( mod, buffer );
@@ -447,19 +447,31 @@ void* Mod_LoadSpriteGroup( void* pin, mspriteframe_t** ppframe )
 Mod_LoadSpriteModel
 =================
 */
-void Mod_LoadSpriteModel( model_t* mod, void* buffer )
+void Mod_LoadSpriteModel( model_t* mod, void* buffer, int length )
 {
+	const int entries = SpritePaletteColorCount( buffer, length );
+	if ( !entries )
+	{
+		Sys_Error( "%s has an invalid sprite palette", mod->name );
+		return;
+	}
 	dsprite_t* in = (dsprite_t*)buffer;
 	int version = LittleLong( in->version );
 	if ( version != SPRITE_VERSION )
 		Sys_Error( "%s has wrong version number (%i should be %i)", mod->name, version, SPRITE_VERSION );
 
 	int count = LittleLong( in->numframes );
+	const int frameOffset = SPRITE_PALETTE_OFFSET + entries * SPRITE_COLOR_BYTES;
+	constexpr int paletteCapacity = sizeof( PackedColorVec ) * SPRITE_PALETTE_COLORS;
+	constexpr int paletteStorage = sizeof( unsigned short ) + paletteCapacity;
+	if ( !SpriteFrameCountFits( count, length - frameOffset,
+		sizeof( msprite_t ) + paletteStorage, sizeof( mspriteframedesc_t ) ) )
+	{
+		Sys_Error( "Mod_LoadSpriteModel: Invalid # of frames: %d\n", count );
+		return;
+	}
 	int size = sizeof( msprite_t ) + ( count - 1 ) * sizeof( mspriteframedesc_t );
-	byte* palette = (byte*)( in + 1 );
-	int entries = *(unsigned short*)palette;
-	msprite_t* out = (msprite_t*)Hunk_AllocName(
-		size + sizeof( PackedColorVec ) * *(short*)palette + sizeof( unsigned short ), loadname );
+	msprite_t* out = (msprite_t*)Hunk_AllocName( size + paletteStorage, loadname );
 
 	mod->cache.data = out;
 	out->type = (short)LittleLong( in->type );
@@ -478,8 +490,9 @@ void Mod_LoadSpriteModel( model_t* mod, void* buffer )
 	out->paloffset = size + sizeof( unsigned short );
 	*(unsigned short*)( (byte*)out + size ) = (unsigned short)entries;
 	PackedColorVec* colors = (PackedColorVec*)( (byte*)out + out->paloffset );
-	byte* rgb = palette + sizeof( unsigned short );
-	for ( int i = 0; i < entries; i++, rgb += 3, colors++ )
+	byte* rgb = (byte*)buffer + SPRITE_PALETTE_OFFSET;
+	Q_memset( colors, 0, paletteCapacity );
+	for ( int i = 0; i < entries; i++, rgb += SPRITE_COLOR_BYTES, colors++ )
 	{
 		colors->r = rgb[0];
 		colors->g = rgb[1];
@@ -487,12 +500,9 @@ void Mod_LoadSpriteModel( model_t* mod, void* buffer )
 		colors->a = 0;
 	}
 
-	if ( count <= 0 )
-		Sys_Error( "Mod_LoadSpriteModel: Invalid # of frames: %d\n", count );
-
 	mod->numframes = count;
 	mod->flags = 0;
-	dspriteframetype_t* frame = (dspriteframetype_t*)( palette + sizeof( unsigned short ) + entries * 3 );
+	dspriteframetype_t* frame = (dspriteframetype_t*)( (byte*)buffer + frameOffset );
 	for ( int i = 0; i < count; i++ )
 	{
 		out->frames[i].type = (spriteframetype_t)LittleLong( frame->type );
